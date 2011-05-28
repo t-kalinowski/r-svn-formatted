@@ -2180,6 +2180,8 @@ SEXP attribute_hidden do_isnan(SEXP call, SEXP op, SEXP args, SEXP rho)
         dims = names = R_NilValue;
     switch (TYPEOF(x))
     {
+    case STRSXP:
+    case RAWSXP:
     case NILSXP:
     case LGLSXP:
     case INTSXP:
@@ -2195,7 +2197,7 @@ SEXP attribute_hidden do_isnan(SEXP call, SEXP op, SEXP args, SEXP rho)
             LOGICAL(ans)[i] = (R_IsNaN(COMPLEX(x)[i].r) || R_IsNaN(COMPLEX(x)[i].i));
         break;
     default:
-        errorcall(call, _("default method only implemented for numeric atomic vectors"));
+        errorcall(call, _("default method not implemented for type '%s'"), type2char(TYPEOF(x)));
     }
     if (dims != R_NilValue)
         setAttrib(ans, R_DimSymbol, dims);
@@ -2242,12 +2244,16 @@ SEXP attribute_hidden do_isfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
         dims = names = R_NilValue;
     switch (TYPEOF(x))
     {
+    case STRSXP:
+    case RAWSXP:
+    case NILSXP:
+        for (i = 0; i < n; i++)
+            LOGICAL(ans)[i] = 0;
+        break;
     case LGLSXP:
     case INTSXP:
         for (i = 0; i < n; i++)
             LOGICAL(ans)[i] = (INTEGER(x)[i] != NA_INTEGER);
-        break;
-    case NILSXP:
         break;
     case REALSXP:
         for (i = 0; i < n; i++)
@@ -2258,7 +2264,7 @@ SEXP attribute_hidden do_isfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
             LOGICAL(ans)[i] = (R_FINITE(COMPLEX(x)[i].r) && R_FINITE(COMPLEX(x)[i].i));
         break;
     default:
-        errorcall(call, _("default method only implemented for numeric atomic vectors"));
+        errorcall(call, _("default method not implemented for type '%s'"), type2char(TYPEOF(x)));
     }
     if (dims != R_NilValue)
         setAttrib(ans, R_DimSymbol, dims);
@@ -2302,6 +2308,8 @@ SEXP attribute_hidden do_isinfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
         dims = names = R_NilValue;
     switch (TYPEOF(x))
     {
+    case STRSXP:
+    case RAWSXP:
     case NILSXP:
     case LGLSXP:
     case INTSXP:
@@ -2330,7 +2338,7 @@ SEXP attribute_hidden do_isinfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         break;
     default:
-        errorcall(call, _("default method only implemented for numeric atomic vectors"));
+        errorcall(call, _("default method not implemented for type '%s'"), type2char(TYPEOF(x)));
     }
     if (!isNull(dims))
         setAttrib(ans, R_DimSymbol, dims);
