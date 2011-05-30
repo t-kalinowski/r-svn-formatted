@@ -151,9 +151,9 @@ void formatInteger(int *x, int n, int *fieldwidth)
 #define R_nearbyintl rintl
 #else
 #define R_nearbyintl private_nearbyintl
-LDOUBLE private_nearbyintl(LDOUBLE x)
+long double private_nearbyintl(long double x)
 {
-    LDOUBLE x1;
+    long double x1;
     x1 = -floorl(-x + 0.5);
     x = floorl(x + 0.5);
     if (x == x1)
@@ -193,7 +193,7 @@ static void format_via_sprintf(double r, int d, int *kpower, int *nsig)
     *nsig = i;
 }
 
-static const LDOUBLE tbl[] = {
+static const long double tbl[] = {
     /* Powers exactly representable with 64 bit mantissa */
     1e00, 1e01, 1e02, 1e03, 1e04, 1e05, 1e06, 1e07, 1e08, 1e09, 1e10, 1e11, 1e12, 1e13,
     1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22, 1e23, 1e24, 1e25, 1e26, 1e27};
@@ -237,7 +237,7 @@ static void scientific(double *x, int *sgn, int *kpower, int *nsig)
         }
         kp = floor(log10(r)) - R_print.digits + 1; /* r = |x|; 10^(kp + digits - 1) <= r */
 #if SIZEOF_LONG_DOUBLE > SIZEOF_DOUBLE
-        LDOUBLE r_prec = r;
+        long double r_prec = r;
         /* use exact scaling factor in long double precision, if possible */
         if (abs(kp) <= 27)
         {
@@ -248,7 +248,7 @@ static void scientific(double *x, int *sgn, int *kpower, int *nsig)
         }
 #ifdef HAVE_POWL
         else
-            r_prec /= powl(10.0, (LDOUBLE)kp);
+            r_prec /= powl(10.0, (long double)kp);
 #else
         else if (kp <= R_dec_min_exponent)
             r_prec = (r_prec * 1e+303) / pow(10.0, (double)(kp + 303));

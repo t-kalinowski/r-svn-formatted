@@ -93,7 +93,7 @@ static double wprob(double w, double rr, double cc)
                                        0.160078328543346226334652529543, 0.203167426723065921749064455810,
                                        0.233492536538354808760849898925, 0.249147045813402785000562436043};
     double a, ac, pr_w, b, binc, blb, c, cc1, pminus, pplus, qexpo, qsqz, rinsum, wi, wincr, xx;
-    LDOUBLE bub, einsum, elsum;
+    long double bub, einsum, elsum;
     int j, jj;
 
     qsqz = w * 0.5;

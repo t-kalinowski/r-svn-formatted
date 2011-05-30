@@ -480,7 +480,7 @@ static void matprod(double *x, int nrx, int ncx, double *y, int nry, int ncy, do
     char *transa = "N", *transb = "N";
     int i, j, k;
     double one = 1.0, zero = 0.0;
-    LDOUBLE sum;
+    long double sum;
     Rboolean have_na = FALSE;
 
     if (nrx > 0 && ncx > 0 && nry > 0 && ncy > 0)
@@ -541,7 +541,7 @@ static void cmatprod(Rcomplex *x, int nrx, int ncx, Rcomplex *y, int nry, int nc
 #else
     int i, j, k;
     double xij_r, xij_i, yjk_r, yjk_i;
-    LDOUBLE sum_i, sum_r;
+    long double sum_i, sum_r;
 
     for (i = 0; i < nrx; i++)
         for (k = 0; k < ncy; k++)
@@ -1380,7 +1380,7 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
     Rboolean NaRm, keepNA;
     int *ix;
     double *rx;
-    LDOUBLE sum = 0.0;
+    long double sum = 0.0;
 #ifdef HAVE_OPENMP
     int nthreads;
 #endif
@@ -1498,15 +1498,15 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (type == REALSXP)
         {
             int *Cnt = NULL, *c;
-            LDOUBLE *rans, *ra;
+            long double *rans, *ra;
             if (n <= 10000)
             {
-                rans = (LDOUBLE *)alloca(n * sizeof(LDOUBLE));
+                rans = (long double *)alloca(n * sizeof(long double));
                 R_CheckStack();
-                memset(rans, 0, n * sizeof(LDOUBLE));
+                memset(rans, 0, n * sizeof(long double));
             }
             else
-                rans = Calloc(n, LDOUBLE);
+                rans = Calloc(n, long double);
             rx = REAL(x);
             if (!keepNA && OP == 3)
                 Cnt = Calloc(n, int);
