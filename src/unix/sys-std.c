@@ -57,7 +57,7 @@
 
 extern SA_TYPE SaveAction;
 extern Rboolean UsingReadline;
-extern FILE *ifp;
+extern FILE *ifp; /* from system.c */
 
 /*
  *  1) FATAL MESSAGES AT STARTUP
@@ -1111,9 +1111,9 @@ void attribute_hidden Rstd_CleanUp(SA_TYPE saveact, int status, int runLast)
         KillAllDevices();
     R_CleanTempDir();
     if (saveact != SA_SUICIDE && R_CollectWarnings)
-        PrintWarnings(); /* from device close and .Last */
+        PrintWarnings(); /* from device close and (if run) .Last */
     if (ifp)
-        fclose(ifp);
+        fclose(ifp); /* input file from -f or --file= */
     fpu_setup(FALSE);
 
     exit(status);

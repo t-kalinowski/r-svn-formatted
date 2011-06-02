@@ -1,8 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2007  Robert Gentleman, Ross Ihaka and the
- *                            R Development Core Team
+ *  Copyright (C) 1997--2011  The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -498,19 +497,20 @@ void R_CleanUp(SA_TYPE saveact, int status, int runLast)
     R_RunExitFinalizers();
     editorcleanall();
     CleanEd();
-    KillAllDevices();
-    AllDevicesKilled = TRUE;
-    R_CleanTempDir(); /* changes directory */
+    KillAllDevices();        /* Unix does not do this under SA_SUICIDE */
+    AllDevicesKilled = TRUE; /* used in devWindows.c to inhibit callbacks */
+    R_CleanTempDir();        /* changes directory */
     if (R_Interactive && CharacterMode == RTerm)
         SetConsoleTitle(oldtitle);
-    if (R_CollectWarnings && saveact != SA_SUICIDE && CharacterMode == RTerm)
-        PrintWarnings();
+    if (R_CollectWarnings && saveact != SA_SUICIDE && CharacterMode == RTerm) /* no point in doing this for Rgui
+                                                                 as the console is about to close */
+        PrintWarnings();                                                      /* from device close and (if run) .Last */
     app_cleanup();
     RConsole = NULL;
     if (ifp)
-        fclose(ifp);
+        fclose(ifp); /* input file from -f or --file= */
     if (ifile[0])
-        unlink(ifile);
+        unlink(ifile); /* input file from -e */
     exit(status);
 }
 
@@ -1195,9 +1195,6 @@ int cmdlineoptions(int ac, char **av)
             R_Suicide(_("cannot use -e with -f or --file"));
         Rp->R_Interactive = FALSE;
         Rp->ReadConsole = FileReadConsole;
-        /* tmpfile() seems not to work on Vista: it tries to write in c:/
-        ifp = tmpfile();
-        */
         {
             char *tm;
             tm = getenv("TMPDIR");
