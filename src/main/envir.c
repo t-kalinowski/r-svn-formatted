@@ -361,6 +361,7 @@ static SEXP DeleteItem(SEXP symbol, SEXP lst)
         if (TAG(lst) == symbol)
         {
             SETCAR(lst, R_UnboundValue); /* in case binging is cached */
+            LOCK_BINDING(lst);           /* in case binging is cached */
             lst = CDR(lst);
         }
     }
@@ -745,6 +746,7 @@ static SEXP RemoveFromList(SEXP thing, SEXP list, int *found)
     {
         *found = 1;
         SETCAR(list, R_UnboundValue); /* in case binging is cached */
+        LOCK_BINDING(list);           /* in case binging is cached */
         return CDR(list);
     }
     else
@@ -757,6 +759,7 @@ static SEXP RemoveFromList(SEXP thing, SEXP list, int *found)
             {
                 *found = 1;
                 SETCAR(next, R_UnboundValue); /* in case binging is cached */
+                LOCK_BINDING(next);           /* in case binging is cached */
                 SETCDR(last, CDR(next));
                 return list;
             }
@@ -855,7 +858,7 @@ static SEXP findVarLocInFrame(SEXP rho, SEXP symbol, Rboolean *canCache)
         if (val != R_UnboundValue)
         {
             /* The result should probably be identified as being from
-               a suer database, or maybe use an active binding
+               a user database, or maybe use an active binding
                mechanism to allow setting a new value to get back to
                the data base. */
             tmp = allocSExp(LISTSXP);

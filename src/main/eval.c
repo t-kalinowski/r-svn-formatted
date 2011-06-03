@@ -3444,7 +3444,7 @@ static R_INLINE SEXP GET_BINDING_CELL(SEXP symbol, SEXP rho)
 static R_INLINE Rboolean SET_BINDING_VALUE(SEXP loc, SEXP value)
 {
     /* This depends on the current implementation of bindings */
-    if (loc != R_NilValue && !BINDING_IS_LOCKED(loc) && !IS_ACTIVE_BINDING(loc) && CAR(loc) != R_UnboundValue)
+    if (loc != R_NilValue && !BINDING_IS_LOCKED(loc) && !IS_ACTIVE_BINDING(loc))
     {
         if (CAR(loc) != value)
         {
