@@ -13,6 +13,7 @@ static double K(int n, double d);
 static void m_multiply(double *A, double *B, double *C, int m);
 static void m_power(double *A, int eA, double *V, int *eV, int m, int n);
 
+/* Two-sample two-sided asymptotic distribution */
 void pkstwo(Sint *n, double *x, double *tol)
 {
     /* x[1:n] is input and output
@@ -72,6 +73,7 @@ void pkstwo(Sint *n, double *x, double *tol)
     }
 }
 
+/* Two-sided two-sample */
 void psmirnov2x(double *x, Sint *m, Sint *n)
 {
     double md, nd, q, *u, w;
@@ -115,6 +117,7 @@ void psmirnov2x(double *x, Sint *m, Sint *n)
     *x = u[*n];
 }
 
+/* The two-sided one-sample 'exact' distribution */
 void pkolmogorov2x(double *x, Sint *n)
 {
     /* x is input and output. */
@@ -135,6 +138,12 @@ static double K(int n, double d)
     int k, m, i, j, g, eH, eQ;
     double h, s, *H, *Q;
 
+    /*
+       The faster right-tail approximation is omitted here.
+       s = d*d*n;
+       if(s > 7.24 || (s > 3.76 && n > 99))
+           return 1-2*exp(-(2.000071+.331/sqrt(n)+1.409/n)*s);
+    */
     k = (int)(n * d) + 1;
     m = 2 * k - 1;
     h = k - n * d;
