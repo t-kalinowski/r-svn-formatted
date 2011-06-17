@@ -703,7 +703,7 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
         error(_("generic function not specified"));
     PROTECT(generic);
 
-    if (!isString(generic) || length(generic) > 1)
+    if (!isString(generic) || length(generic) != 1)
         error(_("invalid generic argument to NextMethod"));
 
     if (CHAR(STRING_ELT(generic, 0))[0] == '\0')
@@ -717,7 +717,7 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     else
         PROTECT(group);
 
-    if (!isString(group) || length(group) > 1)
+    if (!isString(group) || length(group) != 1)
         error(_("invalid 'group' argument found in NextMethod"));
 
     /* determine the root: either the group or the generic will be it */

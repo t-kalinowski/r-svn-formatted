@@ -1478,7 +1478,7 @@ SEXP attribute_hidden do_asvector(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     x = CAR(args);
 
-    if (!isString(CADR(args)) || LENGTH(CADR(args)) < 1)
+    if (!isString(CADR(args)) || LENGTH(CADR(args)) != 1)
         errorcall_return(call, R_MSG_mode);
     if (!strcmp("function", (CHAR(STRING_ELT(CADR(args), 0))))) /* ASCII */
         type = CLOSXP;
@@ -1989,7 +1989,7 @@ SEXP attribute_hidden do_isvector(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
     x = CAR(args);
-    if (!isString(CADR(args)) || LENGTH(CADR(args)) <= 0)
+    if (!isString(CADR(args)) || LENGTH(CADR(args)) != 1)
         errorcall_return(call, R_MSG_mode);
 
     stype = CHAR(STRING_ELT(CADR(args), 0)); /* ASCII */
