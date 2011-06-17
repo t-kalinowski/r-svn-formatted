@@ -34,6 +34,8 @@ static R_len_t asVecSize(SEXP x)
 
     if (isVectorAtomic(x) && LENGTH(x) >= 1)
     {
+        if (LENGTH(x) > 1)
+            warning(_("%d lengths supplied: the first will be used"), LENGTH(x));
         switch (TYPEOF(x))
         {
         case LGLSXP:
