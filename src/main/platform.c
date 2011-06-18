@@ -2814,13 +2814,13 @@ static int winSetFileTime(const char *fn, time_t ftime)
     st.wHour = (WORD)utctm->tm_hour;
     st.wMinute = (WORD)utctm->tm_min;
     st.wSecond = (WORD)utctm->tm_sec;
-    st.wMilliseconds = (WORD)ms;
+    st.wMilliseconds = (WORD)0;
     if (!SystemTimeToFileTime(&st, &modft))
-        return;
+        return 0;
 
     hFile = CreateFile(fn, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
     if (hFile == INVALID_HANDLE_VALUE)
-        return;
+        return 0;
     int res = SetFileTime(hFile, NULL, NULL, &modft);
     CloseHandle(hFile);
     return res != 0; /* success is non-zero */
