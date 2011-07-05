@@ -431,6 +431,7 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort, const cha
                     cptr[i] = outbuf = (char *)R_alloc(outb0 + 1, sizeof(char));
                     outb = 3 * inb;
                     Riconv(obj, NULL, NULL, &outbuf, &outb);
+                    errno = 0; /* precaution */
                     res = Riconv(obj, &inbuf, &inb, &outbuf, &outb);
                     if (res == -1 && errno == E2BIG)
                     {
@@ -578,6 +579,7 @@ static SEXP CPtrToRObj(void *p, SEXP arg, int Fort, R_NativePrimitiveArgType typ
                     p = outbuf = (char *)R_alloc(outb0 + 1, sizeof(char));
                     outb = outb0;
                     Riconv(obj, NULL, NULL, &outbuf, &outb);
+                    errno = 0; /* precaution */
                     res = Riconv(obj, &inbuf, &inb, &outbuf, &outb);
                     if (res == -1 && errno == E2BIG)
                     {

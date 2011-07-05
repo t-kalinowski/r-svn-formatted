@@ -371,6 +371,7 @@ int dummy_vfprintf(Rconnection con, const char *format, va_list ap)
                 onb -= ninit;
                 ninit = 0;
             }
+            errno = 0;
             ires = Riconv(con->outconv, &ib, &inb, &ob, &onb);
             if (ires == (size_t)(-1) && errno == E2BIG)
                 again = TRUE;
@@ -437,6 +438,7 @@ int dummy_fgetc(Rconnection con)
             inb = con->inavail;
             ob = con->oconvbuff;
             onb = 50;
+            errno = 0;
             res = Riconv(con->inconv, &ib, &inb, &ob, &onb);
             con->inavail = inb;
             if (res == (size_t)-1)
@@ -943,6 +945,7 @@ static Rboolean fifo_open(Rconnection con)
         flags |= O_NONBLOCK;
     if (con->mode[0] == 'a')
         flags |= O_APPEND;
+    errno = 0; /* precaution */
     fd = open(name, flags);
     if (fd < 0)
     {
@@ -1325,6 +1328,7 @@ static Rboolean gzfile_open(Rconnection con)
         sprintf(mode, "ab%1d", gzcon->compress);
     else
         strcpy(mode, "rb");
+    errno = 0; /* precaution */
     fp = R_gzopen(R_ExpandFileName(con->description), mode);
     if (!fp)
     {
@@ -1471,6 +1475,7 @@ static Rboolean bzfile_open(Rconnection con)
     /* regardless of the R view of the file, the file must be opened in
        binary mode where it matters */
     mode[0] = con->mode[0];
+    errno = 0; /* precaution */
     fp = R_fopen(R_ExpandFileName(con->description), mode);
     if (!fp)
     {
@@ -1674,6 +1679,7 @@ static Rboolean xzfile_open(Rconnection con)
     /* regardless of the R view of the file, the file must be opened in
        binary mode where it matters */
     mode[0] = con->mode[0];
+    errno = 0; /* precaution */
     xz->fp = R_fopen(R_ExpandFileName(con->description), mode);
     if (!xz->fp)
     {
