@@ -134,6 +134,7 @@ static void print2buff(const char *, LocalParseData *);
 static void printtab2buff(int, LocalParseData *);
 static void writeline(LocalParseData *);
 static void vector2buff(SEXP, LocalParseData *);
+static void src2buff1(SEXP, LocalParseData *);
 static Rboolean src2buff(SEXP, int, LocalParseData *);
 static void vec2buff(SEXP, LocalParseData *);
 static void linebreak(Rboolean *lbreak, LocalParseData *);
@@ -822,14 +823,8 @@ static void deparse2buff(SEXP s, LocalParseData *d)
     case CLOSXP:
         if (localOpts & SHOWATTRIBUTES)
             attr1(s, d);
-        if ((d->opts & USESOURCE) && (n = length(t = getAttrib(s, R_SourceSymbol))) > 0 && isString(t))
-        {
-            for (i = 0; i < n; i++)
-            {
-                print2buff(translateChar(STRING_ELT(t, i)), d);
-                writeline(d);
-            }
-        }
+        if ((d->opts & USESOURCE) && !isNull(t = getAttrib(s, R_SrcrefSymbol)))
+            src2buff1(t, d);
         else
         {
             /* We have established that we don't want to use the
@@ -1553,27 +1548,34 @@ static void vector2buff(SEXP vector, LocalParseData *d)
     }
 }
 
+/* src2buff1: Deparse one source ref to buffer */
+
+static void src2buff1(SEXP srcref, LocalParseData *d)
+{
+    int i, n;
+    PROTECT(srcref);
+
+    PROTECT(srcref = lang2(install("as.character"), srcref));
+    PROTECT(srcref = eval(srcref, R_BaseEnv));
+    n = length(srcref);
+    for (i = 0; i < n; i++)
+    {
+        print2buff(translateChar(STRING_ELT(srcref, i)), d);
+        if (i < n - 1)
+            writeline(d);
+    }
+    UNPROTECT(3);
+}
+
 /* src2buff : Deparse source element k to buffer, if possible; return FALSE on failure */
 
 static Rboolean src2buff(SEXP sv, int k, LocalParseData *d)
 {
     SEXP t;
-    int i, n;
 
     if (TYPEOF(sv) == VECSXP && length(sv) > k && !isNull(t = VECTOR_ELT(sv, k)))
     {
-        PROTECT(t);
-
-        PROTECT(t = lang2(install("as.character"), t));
-        PROTECT(t = eval(t, R_BaseEnv));
-        n = length(t);
-        for (i = 0; i < n; i++)
-        {
-            print2buff(translateChar(STRING_ELT(t, i)), d);
-            if (i < n - 1)
-                writeline(d);
-        }
-        UNPROTECT(3);
+        src2buff1(t, d);
         return TRUE;
     }
     else
