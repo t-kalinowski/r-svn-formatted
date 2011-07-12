@@ -682,6 +682,7 @@ static int RxmlNanoHTTPRecv(RxmlNanoHTTPCtxtPtr ctxt)
         while (1)
         {
             int maxfd = 0, howmany;
+            struct timeval tv_save; /* select() is destructive on Linux, so save tv */
             R_ProcessEvents();
 #ifdef Unix
             if (R_wait_usec > 0)
@@ -701,6 +702,8 @@ static int RxmlNanoHTTPRecv(RxmlNanoHTTPCtxtPtr ctxt)
             tv.tv_sec = timeout;
             tv.tv_usec = 0;
 #endif
+
+            tv_save = tv;
 
 #ifdef Unix
             maxfd = setSelectMask(R_InputHandlers, &rfd);
@@ -722,7 +725,7 @@ static int RxmlNanoHTTPRecv(RxmlNanoHTTPCtxtPtr ctxt)
             }
             if (howmany == 0)
             {
-                used += tv.tv_sec + 1e-6 * tv.tv_usec;
+                used += tv_save.tv_sec + 1e-6 * tv_save.tv_usec;
                 if (used >= timeout)
                     return (0);
                 continue;
@@ -1097,6 +1100,7 @@ static int RxmlNanoHTTPConnectAttempt(struct sockaddr *addr)
     while (1)
     {
         int maxfd = 0;
+        struct timeval tv_save; /* select() is destructive on Linux, so save tv */
         R_ProcessEvents();
 #ifdef Unix
         if (R_wait_usec > 0)
@@ -1117,6 +1121,8 @@ static int RxmlNanoHTTPConnectAttempt(struct sockaddr *addr)
         tv.tv_usec = 0;
 #endif
 
+        tv_save = tv;
+
 #ifdef Unix
         maxfd = setSelectMask(R_InputHandlers, &rfd);
 #else
@@ -1132,7 +1138,7 @@ static int RxmlNanoHTTPConnectAttempt(struct sockaddr *addr)
         case 0:
             /* Time out */
             RxmlMessage(0, "Connect attempt timed out");
-            used += tv.tv_sec + 1e-6 * tv.tv_usec;
+            used += tv_save.tv_sec + 1e-6 * tv_save.tv_usec;
             if (used < timeout)
                 continue;
             closesocket(s);
