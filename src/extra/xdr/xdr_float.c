@@ -109,7 +109,9 @@ register float *fp;
 {
 
 #ifndef WORDS_BIGENDIAN
+#ifndef _X86_
 #define _X86_
+#endif
 #endif
 
 #ifdef vax
