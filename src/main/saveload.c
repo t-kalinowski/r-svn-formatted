@@ -109,7 +109,7 @@ typedef struct
 
     typedef struct
 {
-    /* These 4 variables are accessed in the
+    /* These variables are accessed in the
        InInteger, InComplex, InReal, InString
        methods for Ascii, Binary, XDR.
        bufsize is only used in XdrInString!
@@ -123,7 +123,6 @@ typedef struct
     char smbuf[512]; /* Small buffer for temp use */
     /* smbuf is only used by Ascii. */
     XDR xdrs;
-
 } SaveLoadData;
 
 /* ----- I / O -- F u n c t i o n -- P o i n t e r s ----- */
@@ -2318,7 +2317,7 @@ int attribute_hidden R_XDRDecodeInteger(void *buf)
     return i;
 }
 
-/* Next two were used in gnomeGUI package, are in Rintterface.h  */
+/* Next two were used in gnomeGUI package, are in Rinterface.h  */
 void R_SaveGlobalEnvToFile(const char *name)
 {
     SEXP sym = install("sys.save.image");
