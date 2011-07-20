@@ -360,8 +360,8 @@ static SEXP DeleteItem(SEXP symbol, SEXP lst)
         SETCDR(lst, DeleteItem(symbol, CDR(lst)));
         if (TAG(lst) == symbol)
         {
-            SETCAR(lst, R_UnboundValue); /* in case binging is cached */
-            LOCK_BINDING(lst);           /* in case binging is cached */
+            SETCAR(lst, R_UnboundValue); /* in case binding is cached */
+            LOCK_BINDING(lst);           /* in case binding is cached */
             lst = CDR(lst);
         }
     }
@@ -745,8 +745,8 @@ static SEXP RemoveFromList(SEXP thing, SEXP list, int *found)
     else if (TAG(list) == thing)
     {
         *found = 1;
-        SETCAR(list, R_UnboundValue); /* in case binging is cached */
-        LOCK_BINDING(list);           /* in case binging is cached */
+        SETCAR(list, R_UnboundValue); /* in case binding is cached */
+        LOCK_BINDING(list);           /* in case binding is cached */
         return CDR(list);
     }
     else
@@ -758,8 +758,8 @@ static SEXP RemoveFromList(SEXP thing, SEXP list, int *found)
             if (TAG(next) == thing)
             {
                 *found = 1;
-                SETCAR(next, R_UnboundValue); /* in case binging is cached */
-                LOCK_BINDING(next);           /* in case binging is cached */
+                SETCAR(next, R_UnboundValue); /* in case binding is cached */
+                LOCK_BINDING(next);           /* in case binding is cached */
                 SETCDR(last, CDR(next));
                 return list;
             }
