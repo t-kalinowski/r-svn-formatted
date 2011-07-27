@@ -177,15 +177,20 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
             {
                 if (strlen(*av) < 12)
                 {
-                    ac--;
-                    av++;
-                    p = *av;
+                    if (ac > 1)
+                    {
+                        ac--;
+                        av++;
+                        p = *av;
+                    }
+                    else
+                        p = NULL;
                 }
                 else
                     p = &(*av)[11];
                 if (p == NULL)
                 {
-                    R_ShowMessage(_("WARNING: no value given for --encoding given\n"));
+                    R_ShowMessage(_("WARNING: no value given for --encoding"));
                 }
                 else
                 {
@@ -204,24 +209,31 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                      !strcmp(*av, "-nsize") || !strcmp(*av, "-vsize") || !strcmp(*av, "-V") || !strcmp(*av, "-n") ||
                      !strcmp(*av, "-v"))
             {
-                snprintf(msg, 1024, _("WARNING: option '%s' no longer supported\n"), *av);
+                snprintf(msg, 1024, _("WARNING: option '%s' no longer supported"), *av);
                 R_ShowMessage(msg);
             }
             /* mop up --max/min/-n/vsize */
             else if (!strncmp(*av, "--min-nsize", 11) || !strncmp(*av, "--max-nsize", 11) ||
                      !strncmp(*av, "--min-vsize", 11) || !strncmp(*av, "--max-vsize", 11))
             {
+                snprintf(msg, 1024, "WARNING: option '%s' is deprecated", *av);
+                R_ShowMessage(msg);
                 if (strlen(*av) < 13)
                 {
-                    ac--;
-                    av++;
-                    p = *av;
+                    if (ac > 1)
+                    {
+                        ac--;
+                        av++;
+                        p = *av;
+                    }
+                    else
+                        p = NULL;
                 }
                 else
                     p = &(*av)[12];
                 if (p == NULL)
                 {
-                    snprintf(msg, 1024, _("WARNING: no value given for '%s'\n"), *av);
+                    snprintf(msg, 1024, _("WARNING: no value given for '%s'"), *av);
                     R_ShowMessage(msg);
                     break;
                 }
@@ -229,9 +241,9 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                 if (ierr)
                 {
                     if (ierr < 0)
-                        snprintf(msg, 1024, _("WARNING: '%s' value is invalid: ignored\n"), *av);
+                        snprintf(msg, 1024, _("WARNING: '%s' value is invalid: ignored"), *av);
                     else
-                        sprintf(msg, _("WARNING: %s: too large and ignored\n"), *av);
+                        sprintf(msg, _("WARNING: %s: too large and ignored"), *av);
                     R_ShowMessage(msg);
                 }
                 else
@@ -250,25 +262,30 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
             {
                 if (strlen(*av) < 14)
                 {
-                    ac--;
-                    av++;
-                    p = *av;
+                    if (ac > 1)
+                    {
+                        ac--;
+                        av++;
+                        p = *av;
+                    }
+                    else
+                        p = NULL;
                 }
                 else
                     p = &(*av)[13];
                 if (p == NULL)
                 {
-                    R_ShowMessage(_("WARNING: no value given for '--max-ppsize'\n"));
+                    R_ShowMessage(_("WARNING: no value given for '--max-ppsize'"));
                     break;
                 }
                 lval = strtol(p, &p, 10);
                 if (lval < 0)
-                    R_ShowMessage(_("WARNING: '--max-ppsize' value is negative: ignored\n"));
+                    R_ShowMessage(_("WARNING: '--max-ppsize' value is negative: ignored"));
                 else if (lval < 10000)
-                    R_ShowMessage(_("WARNING: '--max-ppsize' value is too small: ignored\n"));
+                    R_ShowMessage(_("WARNING: '--max-ppsize' value is too small: ignored"));
 
                 else if (lval > 500000)
-                    R_ShowMessage(_("WARNING: '--max-ppsize' value is too large: ignored\n"));
+                    R_ShowMessage(_("WARNING: '--max-ppsize' value is too large: ignored"));
                 else
                     Rp->ppsize = (size_t)lval;
             }
