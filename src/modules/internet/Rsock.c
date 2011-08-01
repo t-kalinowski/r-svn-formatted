@@ -201,9 +201,7 @@ static int setSelectMask(InputHandler *handlers, fd_set *readMask)
 }
 #endif
 
-static unsigned int timeout = 60;
-
-static int R_SocketWait(int sockfd, int write)
+static int R_SocketWait(int sockfd, int write, int timeout)
 {
     fd_set rfd, wfd;
     struct timeval tv;
@@ -310,7 +308,7 @@ int R_SocketWaitMultiple(int nsock, int *insockfd, int *ready, int *write, doubl
         }
         else
         { /* always poll occationally--not really necessary */
-            tv.tv_sec = timeout;
+            tv.tv_sec = 60;
             tv.tv_usec = 0;
         }
 #elif defined(Win32)
@@ -397,12 +395,7 @@ int in_Rsockselect(int nsock, int *insockfd, int *ready, int *write, double time
     return R_SocketWaitMultiple(nsock, insockfd, ready, write, timeout);
 }
 
-void R_SockTimeout(int delay)
-{
-    timeout = (unsigned int)delay;
-}
-
-int R_SockConnect(int port, char *host)
+int R_SockConnect(int port, char *host, int timeout)
 {
     SOCKET s;
     fd_set wfd, rfd;
@@ -552,11 +545,11 @@ int R_SockClose(int sockp)
     return closesocket(sockp);
 }
 
-int R_SockRead(int sockp, void *buf, int len, int blocking)
+int R_SockRead(int sockp, void *buf, int len, int blocking, int timeout)
 {
     int res;
 
-    if (blocking && R_SocketWait(sockp, 0) != 0)
+    if (blocking && R_SocketWait(sockp, 0, timeout) != 0)
         return 0;
     res = (int)recv(sockp, buf, len, 0);
     return (res >= 0) ? res : -socket_errno();
@@ -568,17 +561,17 @@ int R_SockOpen(int port)
     return Sock_open(port, NULL);
 }
 
-int R_SockListen(int sockp, char *buf, int len)
+int R_SockListen(int sockp, char *buf, int len, int timeout)
 {
     check_init();
     /* inserting a wait here will eliminate most blocking, but there
        are scenarios under which the Sock_listen call might block
        after the wait has completed. LT */
-    R_SocketWait(sockp, 0);
+    R_SocketWait(sockp, 0, timeout);
     return Sock_listen(sockp, buf, len, NULL);
 }
 
-int R_SockWrite(int sockp, const void *buf, int len)
+int R_SockWrite(int sockp, const void *buf, int len, int timeout)
 {
     int res, out = 0;
 
@@ -590,7 +583,7 @@ int R_SockWrite(int sockp, const void *buf, int len)
        has been written.  LT */
     do
     {
-        if (/*blocking && */ R_SocketWait(sockp, 1) != 0)
+        if (R_SocketWait(sockp, 1, timeout) != 0)
             return out;
         res = (int)send(sockp, buf, len, 0);
         if (res < 0 && socket_errno() != EWOULDBLOCK)
