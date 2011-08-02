@@ -29,6 +29,8 @@ static const R_CallMethodDef callMethods[] = {{"nextStream", (DL_FUNC)&nextStrea
                                               {"mc_select_children", (DL_FUNC)&mc_select_children, 2},
                                               {"mc_read_child", (DL_FUNC)&mc_read_child, 1},
                                               {"mc_exit", (DL_FUNC)&mc_exit, 1},
+#else
+                                              {"ncpus", (DL_FUNC)&npus, 1},
 #endif
                                               {NULL, NULL, 0}};
 

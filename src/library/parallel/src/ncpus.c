@@ -17,28 +17,17 @@
  *  http://www.r-project.org/Licenses/
  */
 
-#ifndef R_PARALLEL_H
-#define R_PARALLEL_H
+#include <R.h>
+#include "parallel.h"
 
-#include <Rinternals.h>
-#ifdef ENABLE_NLS
-#include <libintl.h>
-#define _(String) dgettext ("tools", String)
-#else
-#define _(String) (String)
-#endif
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
-SEXP nextStream(SEXP);
-SEXP nextSubStream(SEXP);
-
-#ifndef WIN32
-SEXP mc_fork(void);
-SEXP mc_send_master(SEXP);
-SEXP mc_select_children(SEXP, SEXP);
-SEXP mc_read_child(SEXP);
-SEXP mc_exit(SEXP);
-#else
-SEXP ncpus(SEXP);
-#endif
-
-#endif
+SEXP ncpus(SEXP virtual)
+{
+    int virt = asLogical(virtual);
+    SYSTEM_INFO info;
+    GetSystemInfo(&info);
+    int nc = info.dwNumberOfProcessors;
+    return ScalarInteger(nc);
+}
