@@ -6,15 +6,16 @@
 
    (C)Copyright 2008-11 Simon Urbanek
 
-   see package DESCRIPTION for licensing terms */
+   see package DESCRIPTION for licensing terms (GPL-2) */
 
-#include "parallel.h">
+#include "parallel.h"
 
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/select.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <errno.h>
 
 #include <R.h>
 #include <Rinternals.h>
@@ -23,15 +24,15 @@
 
 typedef struct child_info
 {
-    pid_t pid;
-    int pfd, sifd;
+    pid_t pid;     /* child's pid */
+    int pfd, sifd; /* master's ends of pipes */
     struct child_info *next;
 } child_info_t;
 
-static child_info_t *children;
+static child_info_t *children; /* in master, linked list of details of children */
 
-static int master_fd = -1;
-static int is_master = 1;
+static int master_fd = -1; /* in child, write end of data pipe */
+static int is_master = 1;  /* 0 in child */
 
 static int rm_child_(int pid)
 {
@@ -99,7 +100,7 @@ static void child_sig_handler(int sig)
 
 SEXP mc_fork()
 {
-    int pipefd[2];
+    int pipefd[2]; /* write end, read end */
     int sipfd[2];
     pid_t pid;
     SEXP res = allocVector(INTSXP, 3);
@@ -116,12 +117,11 @@ SEXP mc_fork()
     pid = fork();
     if (pid == -1)
     {
-        perror("fork");
         close(pipefd[0]);
         close(pipefd[1]);
         close(sipfd[0]);
         close(sipfd[1]);
-        error(_("unable to fork"));
+        error(_("unable to fork: possible reason %s"), strerror(errno));
     }
     res_i[0] = (int)pid;
     if (pid == 0)
@@ -160,23 +160,22 @@ SEXP mc_fork()
         ci->next = children;
         children = ci;
     }
-    return res;
+    return res; /* (pid, fd of data pipe, fd of child-stdin pipe) */
 }
 
-#ifdef UNUSED
-SEXP close_stdout()
+SEXP mc_close_stdout()
 {
     close(STDOUT_FILENO);
     return R_NilValue;
 }
 
-SEXP close_stderr()
+SEXP mc_close_stderr()
 {
     close(STDERR_FILENO);
     return R_NilValue;
 }
 
-SEXP close_fds(SEXP sFDS)
+SEXP mc_close_fds(SEXP sFDS)
 {
     int *fd, fds, i = 0;
     if (TYPEOF(sFDS) != INTSXP)
@@ -187,7 +186,6 @@ SEXP close_fds(SEXP sFDS)
         close(fd[i++]);
     return ScalarLogical(1);
 }
-#endif
 
 SEXP mc_send_master(SEXP what)
 {
@@ -224,14 +222,13 @@ SEXP mc_send_master(SEXP what)
     return ScalarLogical(1);
 }
 
-#ifdef UNUSED
-SEXP send_child_stdin(SEXP sPid, SEXP what)
+SEXP mc_send_child_stdin(SEXP sPid, SEXP what)
 {
     unsigned char *b;
     unsigned int len = 0, i = 0, fd;
     int pid = asInteger(sPid);
     if (!is_master)
-        error("only master (parent) process can send data to a child process");
+        error(_("only the master process can send data to a child process"));
     if (TYPEOF(what) != RAWSXP)
         error("what must be a raw vector");
     child_info_t *ci = children;
@@ -242,7 +239,7 @@ SEXP send_child_stdin(SEXP sPid, SEXP what)
         ci = ci->next;
     }
     if (!ci)
-        error("child %d doesn't exist", pid);
+        error(_("child %d does not exist"), pid);
     len = LENGTH(what);
     b = RAW(what);
     fd = ci->sifd;
@@ -255,7 +252,6 @@ SEXP send_child_stdin(SEXP sPid, SEXP what)
     }
     return ScalarLogical(1);
 }
-#endif
 
 SEXP mc_select_children(SEXP sTimeout, SEXP sWhich)
 {
@@ -282,14 +278,11 @@ SEXP mc_select_children(SEXP sTimeout, SEXP sWhich)
         which = INTEGER(sWhich);
         wlen = LENGTH(sWhich);
     }
-#ifndef WIN32
     {
         int wstat;
         while (waitpid(-1, &wstat, WNOHANG) > 0)
-        {
-        };
-    } /* check for zombies */
-#endif
+            ; /* check for zombies */
+    }
     FD_ZERO(&fs);
     while (ci && ci->pid)
     {
@@ -353,7 +346,7 @@ SEXP mc_select_children(SEXP sTimeout, SEXP sWhich)
 #endif
     if (sr < 0)
     {
-        perror("select");
+        warning(_("error %s in select"), strerror(errno));
         return ScalarLogical(0); /* FALSE on select error */
     }
     if (sr < 1)
@@ -457,8 +450,7 @@ SEXP mc_read_child(SEXP sPid)
     return read_child_ci(ci);
 }
 
-#ifdef UNUSED
-SEXP read_children(SEXP sTimeout)
+SEXP mc_read_children(SEXP sTimeout)
 {
     int maxfd = 0, sr;
     child_info_t *ci = children;
@@ -478,9 +470,8 @@ SEXP read_children(SEXP sTimeout)
     {
         int wstat;
         while (waitpid(-1, &wstat, WNOHANG) > 0)
-        {
-        };
-    } /* check for zombies */
+            ; /* check for zombies */
+    }
     FD_ZERO(&fs);
     while (ci && ci->pid)
     {
@@ -526,12 +517,11 @@ SEXP read_children(SEXP sTimeout)
     return R_NilValue;
 }
 
-SEXP rm_child(SEXP sPid)
+SEXP mc_rm_child(SEXP sPid)
 {
     int pid = asInteger(sPid);
     return ScalarLogical(rm_child_(pid));
 }
-#endif
 
 SEXP mc_children()
 {
@@ -558,7 +548,6 @@ SEXP mc_children()
     return res;
 }
 
-#ifdef UNUSED
 SEXP mc_fds(SEXP sFdi)
 {
     int fdi = asInteger(sFdi);
@@ -602,7 +591,6 @@ SEXP mc_kill(SEXP sPid, SEXP sSig)
         error("Kill failed.");
     return ScalarLogical(1);
 }
-#endif
 
 SEXP mc_exit(SEXP sRes)
 {
