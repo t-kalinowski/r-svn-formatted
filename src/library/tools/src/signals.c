@@ -62,6 +62,11 @@ SEXP ps_sigs(SEXP signo)
     switch (asInteger(signo))
     {
         /* only SIGINT and SIGTERM are in C99 */
+#ifdef SIGHUP
+    case 1:
+        res = SIGHUP;
+        break;
+#endif
 #ifdef SIGINT
     case 2:
         res = SIGINT;
@@ -85,6 +90,11 @@ SEXP ps_sigs(SEXP signo)
 #ifdef SIGSTOP
     case 17:
         res = SIGSTOP;
+        break;
+#endif
+#ifdef SIGTSTP
+    case 18:
+        res = SIGTSTP;
         break;
 #endif
 #ifdef SIGCHLD
