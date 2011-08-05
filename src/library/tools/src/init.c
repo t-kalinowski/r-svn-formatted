@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2003-6   The R Development Core Team.
+ *  Copyright (C) 2003-11   The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,10 +27,14 @@ void Renctest(char **x)
     Rprintf("'%s', nbytes = %d\n", x[0], strlen(x[0]));
 }
 
-static const R_CallMethodDef callMethods[] = {
-    {"delim_match", (DL_FUNC)&delim_match, 2},       {"Rmd5", (DL_FUNC)&Rmd5, 1},
-    {"check_nonASCII", (DL_FUNC)&check_nonASCII, 2}, {"check_nonASCII2", (DL_FUNC)&check_nonASCII2, 1},
-    {"doTabExpand", (DL_FUNC)&doTabExpand, 2},       {NULL, NULL, 0}};
+static const R_CallMethodDef callMethods[] = {{"delim_match", (DL_FUNC)&delim_match, 2},
+                                              {"Rmd5", (DL_FUNC)&Rmd5, 1},
+                                              {"check_nonASCII", (DL_FUNC)&check_nonASCII, 2},
+                                              {"check_nonASCII2", (DL_FUNC)&check_nonASCII2, 1},
+                                              {"doTabExpand", (DL_FUNC)&doTabExpand, 2},
+                                              {"ps_kill", (DL_FUNC)&ps_kill, 2},
+                                              {"ps_sigs", (DL_FUNC)&ps_sigs, 1},
+                                              {NULL, NULL, 0}};
 
 static const R_CMethodDef CEntries[] = {{"Renctest", (DL_FUNC)&Renctest, 1}, {NULL, NULL, 0}};
 
