@@ -321,7 +321,7 @@ int R_SocketWaitMultiple(int nsock, int *insockfd, int *ready, int *write, doubl
             tv.tv_usec = 1e6 * (mytimeout - used - tv.tv_sec);
         }
         else
-        { /* always poll occationally--not really necessary */
+        { /* always poll occasionally--not really necessary */
             tv.tv_sec = timeout;
             tv.tv_usec = 0;
         }
