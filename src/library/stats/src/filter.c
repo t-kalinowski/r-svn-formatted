@@ -97,6 +97,7 @@ void filter1(double *x, int *n, double *filter, int *nfilt, int *sides, int *cir
     }
 }
 
+/* recursive filtering */
 void filter2(double *x, int *n, double *filter, int *nfilt, double *out)
 {
     int i, j, nf = *nfilt;
@@ -112,7 +113,7 @@ void filter2(double *x, int *n, double *filter, int *nfilt, double *out)
                 sum += tmp * filter[j];
             else
             {
-                out[i] = NA_REAL;
+                out[nf + i] = NA_REAL;
                 goto bad3;
             }
         }
