@@ -34,6 +34,7 @@ static const R_CallMethodDef callMethods[] = {{"delim_match", (DL_FUNC)&delim_ma
                                               {"doTabExpand", (DL_FUNC)&doTabExpand, 2},
                                               {"ps_kill", (DL_FUNC)&ps_kill, 2},
                                               {"ps_sigs", (DL_FUNC)&ps_sigs, 1},
+                                              {"ps_priority", (DL_FUNC)&ps_priority, 2},
                                               {NULL, NULL, 0}};
 
 static const R_CMethodDef CEntries[] = {{"Renctest", (DL_FUNC)&Renctest, 1}, {NULL, NULL, 0}};
