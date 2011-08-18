@@ -619,8 +619,6 @@ SEXP mc_read_children(SEXP sTimeout)
         return ScalarLogical(1);
     else
         return read_child_ci(ci);
-    /* we should never land here */
-    return R_NilValue;
 }
 
 SEXP mc_rm_child(SEXP sPid)
