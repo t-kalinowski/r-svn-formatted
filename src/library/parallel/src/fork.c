@@ -707,7 +707,8 @@ SEXP mc_exit(SEXP sRes)
     if (master_fd != -1)
     { /* send 0 to signify that we're leaving */
         unsigned int len = 0;
-        write(master_fd, &len, sizeof(len));
+        /* assign result for Fedora security settings */
+        ssize_t res = write(master_fd, &len, sizeof(len));
         /* make sure the pipe is closed before we enter any waiting */
         close(master_fd);
         master_fd = -1;
