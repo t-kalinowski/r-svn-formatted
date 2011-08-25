@@ -2748,7 +2748,7 @@ static void PostScriptEndPage(FILE *fp)
 
 static void PostScriptInitColorSpace(FILE *fp)
 {
-    /* From PLRM 3rd Ed pg 225 */
+    /* From PLRM 3rd Ed pg 225
     fprintf(fp, "[ /CIEBasedABC\n");
     fprintf(fp, "  << /DecodeLMN\n");
     fprintf(fp, "       [ { dup 0.03928 le {12.92321 div} {0.055 add 1.055 div 2.4 exp } ifelse } bind dup dup ]\n");
@@ -2756,6 +2756,8 @@ static void PostScriptInitColorSpace(FILE *fp)
     fprintf(fp, "     /WhitePoint [0.9505 1.0 1.0890]\n");
     fprintf(fp, "  >>\n");
     fprintf(fp, "] setcolorspace\n");
+    */
+    fprintf(fp, "srgb\n");
 }
 
 static void PostScriptSetClipRect(FILE *fp, double x0, double x1, double y0, double y1)
