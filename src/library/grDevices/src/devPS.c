@@ -2721,6 +2721,20 @@ static void PSFileHeader(FILE *fp, const char *papername, double paperwidth, dou
     fprintf(fp, "%% begin .ps.prolog\n");
     for (i = 0; i < length(prolog); i++)
         fprintf(fp, "%s\n", CHAR(STRING_ELT(prolog, i)));
+    if (streql(pd->colormodel, "rgb") || streql(pd->colormodel, "rgb-nogray"))
+    {
+        SEXP graphicsNS = R_FindNamespace(ScalarString(mkChar("grDevices")));
+        prolog = findVar(install(".ps.prolog.srgb"), graphicsNS);
+        /* under lazy loading this will be a promise on first use */
+        if (TYPEOF(prolog) == PROMSXP)
+        {
+            PROTECT(prolog);
+            prolog = eval(prolog, graphicsNS);
+            UNPROTECT(1);
+        }
+        for (i = 0; i < length(prolog); i++)
+            fprintf(fp, "%s\n", CHAR(STRING_ELT(prolog, i)));
+    }
     fprintf(fp, "%% end   .ps.prolog\n");
     PSEncodeFonts(fp, pd);
 
@@ -2744,20 +2758,6 @@ static void PostScriptStartPage(FILE *fp, int pageno)
 static void PostScriptEndPage(FILE *fp)
 {
     fprintf(fp, "ep\n");
-}
-
-static void PostScriptInitColorSpace(FILE *fp)
-{
-    /* From PLRM 3rd Ed pg 225
-    fprintf(fp, "[ /CIEBasedABC\n");
-    fprintf(fp, "  << /DecodeLMN\n");
-    fprintf(fp, "       [ { dup 0.03928 le {12.92321 div} {0.055 add 1.055 div 2.4 exp } ifelse } bind dup dup ]\n");
-    fprintf(fp, "     /MatrixLMN [0.412457 0.212673 0.019334 0.357576 0.715152 0.119192 0.180437 0.072175 0.950301]\n");
-    fprintf(fp, "     /WhitePoint [0.9505 1.0 1.0890]\n");
-    fprintf(fp, "  >>\n");
-    fprintf(fp, "] setcolorspace\n");
-    */
-    fprintf(fp, "srgb\n");
 }
 
 static void PostScriptSetClipRect(FILE *fp, double x0, double x1, double y0, double y1)
@@ -3219,7 +3219,7 @@ static void PostScriptSetCol(FILE *fp, double r, double g, double b, const char 
                 fprintf(fp, " 1");
             else
                 fprintf(fp, " %.4f", b);
-            fprintf(fp, " setrgb");
+            fprintf(fp, " rgb");
         }
     }
 }
@@ -3893,7 +3893,6 @@ static void PS_NewPage(const pGEcontext gc, pDevDesc dd)
     else
         pd->pageno++;
     PostScriptStartPage(pd->psfp, pd->pageno);
-    PostScriptInitColorSpace(pd->psfp);
     Invalidate(dd);
     CheckAlpha(gc->fill, pd);
     if (R_OPAQUE(gc->fill))
@@ -6828,21 +6827,8 @@ static void PDF_startfile(PDFDesc *pd)
     pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
     fprintf(pd->pdffp, "2 0 obj\n<< /Type /Catalog /Pages 3 0 R >>\nendobj\n");
 
-    /* Object 3 will be at the end */
-
-    ++pd->nobjs;
-
-    /* Object 4 will be at the end */
-
-    ++pd->nobjs;
-
-    /* Object 5 will be at the end */
-
-    ++pd->nobjs;
-
-    /* Object 6 will be at the end */
-
-    ++pd->nobjs;
+    /* Objects 3-6 will be at the end */
+    pd->nobjs += 4;
 }
 
 static const char *Base14[] = {"Courier",          "Courier-Oblique",   "Courier-Bold",   "Courier-BoldOblique",
@@ -7000,19 +6986,16 @@ static void PDF_endfile(PDFDesc *pd)
         fprintf(pd->pdffp, "/GSais %d 0 R ", ++tempnobj);
     fprintf(pd->pdffp, ">>\n");
 
+    /* Objects 5 and 6 are the sRGB color space */
     /* The sRGB colorspace */
     fprintf(pd->pdffp, "/ColorSpace << /sRGB 5 0 R >>\n");
-
     fprintf(pd->pdffp, ">>\nendobj\n");
-
-    /* Objects 5 and 6 are the sRGB color space */
-
-    /* sRGB colorspace */
     pd->pos[5] = (int)ftell(pd->pdffp);
     fprintf(pd->pdffp, "5 0 obj\n[/ICCBased 6 0 R]\nendobj\n");
     pd->pos[6] = (int)ftell(pd->pdffp);
     fprintf(pd->pdffp, "6 0 obj\n");
-    PDFwritesRGBcolorspace(pd);
+    if (streql(pd->colormodel, "rgb"))
+        PDFwritesRGBcolorspace(pd);
     fprintf(pd->pdffp, "endobj\n");
 
     /*
@@ -7640,12 +7623,12 @@ static void PDF_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDe
         }
         xx = x[0];
         yy = y[0];
-        fprintf(pd->pdffp, "  %.2f %.2f m\n", xx, yy);
+        fprintf(pd->pdffp, "%.2f %.2f m\n", xx, yy);
         for (i = 1; i < n; i++)
         {
             xx = x[i];
             yy = y[i];
-            fprintf(pd->pdffp, "  %.2f %.2f l\n", xx, yy);
+            fprintf(pd->pdffp, "%.2f %.2f l\n", xx, yy);
         }
         if (pd->fillOddEven)
         {
@@ -7704,13 +7687,13 @@ static void PDF_Path(double *x, double *y, int npoly, int *nper, Rboolean windin
             xx = x[index];
             yy = y[index];
             index++;
-            fprintf(pd->pdffp, "  %.2f %.2f m\n", xx, yy);
+            fprintf(pd->pdffp, "%.2f %.2f m\n", xx, yy);
             for (j = 1; j < nper[i]; j++)
             {
                 xx = x[index];
                 yy = y[index];
                 index++;
-                fprintf(pd->pdffp, "  %.2f %.2f l\n", xx, yy);
+                fprintf(pd->pdffp, "%.2f %.2f l\n", xx, yy);
             }
             if (i < npoly - 1)
                 fprintf(pd->pdffp, "h\n");
