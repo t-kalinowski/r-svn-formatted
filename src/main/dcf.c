@@ -154,7 +154,7 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                         {
                             offset = 0;
                         }
-                        need += strlen(line + regmatch[0].rm_eo);
+                        need += strlen(line + offset);
                     }
                     if (buflen < need)
                     {
