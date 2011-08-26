@@ -36,6 +36,8 @@ static void con_cleanup(void *data)
         con->close(con);
 }
 
+static Rboolean field_is_foldable_p(const char *, SEXP);
+
 SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     int nwhat, nret, nc, nr, m, k, lastm, need;
@@ -48,6 +50,11 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
     Rconnection con = NULL;
     Rboolean wasopen, is_eblankline;
     RCNTXT cntxt;
+
+    SEXP fold_excludes;
+    Rboolean field_fold = TRUE, has_fold_excludes;
+    const char *field_name;
+    int offset;
 
     checkArity(op, args);
 
@@ -66,9 +73,14 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!con->canread)
         error(_("cannot read from this connection"));
 
-    PROTECT(what = coerceVector(CADR(args), STRSXP)); /* argument fields */
+    args = CDR(args);
+    PROTECT(what = coerceVector(CAR(args), STRSXP)); /* argument fields */
     nwhat = LENGTH(what);
     dynwhat = (nwhat == 0);
+
+    args = CDR(args);
+    PROTECT(fold_excludes = coerceVector(CAR(args), STRSXP));
+    has_fold_excludes = (LENGTH(fold_excludes) > 0);
 
     buf = (char *)malloc(buflen);
     if (!buf)
@@ -106,23 +118,20 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                 blank_skip = TRUE;
                 lastm = -1;
                 field_skip = FALSE;
+                field_fold = TRUE;
             }
         }
         else
         {
             blank_skip = FALSE;
-            /* Remove trailing whitespace. */
-            if (tre_regexecb(&trailblank, line, 1, regmatch, 0) == 0)
-                line[regmatch[0].rm_so] = '\0';
             if (tre_regexecb(&contline, line, 1, regmatch, 0) == 0)
             {
                 /* A continuation line: wrong if at the beginning of a
                    record. */
-                if (lastm == -1 && !field_skip)
+                if ((lastm == -1) && !field_skip)
                 {
                     line[20] = '\0';
                     error(_("Found continuation line starting '%s ...' at begin of record."), line);
-                    continue;
                 }
                 if (lastm >= 0)
                 {
@@ -134,6 +143,17 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                     else
                     {
                         is_eblankline = FALSE;
+                        if (field_fold)
+                        {
+                            offset = regmatch[0].rm_eo;
+                            /* Also remove trailing whitespace. */
+                            if ((tre_regexecb(&trailblank, line, 1, regmatch, 0) == 0))
+                                line[regmatch[0].rm_so] = '\0';
+                        }
+                        else
+                        {
+                            offset = 0;
+                        }
                         need += strlen(line + regmatch[0].rm_eo);
                     }
                     if (buflen < need)
@@ -146,7 +166,7 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                     strcpy(buf, CHAR(STRING_ELT(retval, lastm + nwhat * k)));
                     strcat(buf, "\n");
                     if (!is_eblankline)
-                        strcat(buf, line + regmatch[0].rm_eo);
+                        strcat(buf, line + offset);
                     SET_STRING_ELT(retval, lastm + nwhat * k, mkChar(buf));
                 }
             }
@@ -160,9 +180,26 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                         if (strlen(line) > whatlen && line[whatlen] == ':' &&
                             strncmp(CHAR(STRING_ELT(what, m)), line, whatlen) == 0)
                         {
-                            SET_STRING_ELT(retval, m + nwhat * k, mkChar(line + regmatch[0].rm_eo));
+                            /* An already known field we are recording. */
                             lastm = m;
                             field_skip = FALSE;
+                            field_name = CHAR(STRING_ELT(what, lastm));
+                            if (has_fold_excludes)
+                            {
+                                field_fold = field_is_foldable_p(field_name, fold_excludes);
+                            }
+                            if (field_fold)
+                            {
+                                offset = regmatch[0].rm_eo;
+                                /* Also remove trailing whitespace. */
+                                if ((tre_regexecb(&trailblank, line, 1, regmatch, 0) == 0))
+                                    line[regmatch[0].rm_so] = '\0';
+                            }
+                            else
+                            {
+                                offset = 0;
+                            }
+                            SET_STRING_ELT(retval, m + nwhat * k, mkChar(line + offset));
                             break;
                         }
                         else
@@ -175,7 +212,7 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                     if (dynwhat && (lastm == -1))
                     {
                         /* A previously unseen field and we are
-                           recording all fields */
+                         * recording all fields */
                         field_skip = FALSE;
                         PROTECT(what2 = allocVector(STRSXP, nwhat + 1));
                         PROTECT(retval2 = allocMatrixNA(STRSXP, nrows(retval) + 1, ncols(retval)));
@@ -195,6 +232,13 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                         UNPROTECT_PTR(what);
                         retval = retval2;
                         what = what2;
+                        /* FIXME:
+                           Why are we doing this?
+                           We need to copy the matched beginning of the
+                           line to buf, so shouldn't we need
+                             regmatch[0].rm_eo
+                           bytes?
+                        */
                         need = strlen(line + regmatch[0].rm_eo);
                         if (buflen < need)
                         {
@@ -209,7 +253,19 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                         nwhat++;
                         /* lastm uses C indexing, hence nwhat - 1 */
                         lastm = nwhat - 1;
-                        SET_STRING_ELT(retval, lastm + nwhat * k, mkChar(line + regmatch[0].rm_eo));
+                        field_name = CHAR(STRING_ELT(what, lastm));
+                        if (has_fold_excludes)
+                        {
+                            field_fold = field_is_foldable_p(field_name, fold_excludes);
+                        }
+                        offset = regmatch[0].rm_eo;
+                        if (field_fold)
+                        {
+                            /* Also remove trailing whitespace. */
+                            if ((tre_regexecb(&trailblank, line, 1, regmatch, 0) == 0))
+                                line[regmatch[0].rm_so] = '\0';
+                        }
+                        SET_STRING_ELT(retval, lastm + nwhat * k, mkChar(line + offset));
                     }
                 }
                 else
@@ -247,7 +303,7 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
     SET_VECTOR_ELT(dimnames, 1, what);
     setAttrib(retval2, R_DimSymbol, dims);
     setAttrib(retval2, R_DimNamesSymbol, dimnames);
-    UNPROTECT(5);
+    UNPROTECT(6);
     return (retval2);
 }
 
@@ -270,4 +326,15 @@ static void transferVector(SEXP s, SEXP t)
 {
     for (int i = 0; i < LENGTH(t); i++)
         SET_STRING_ELT(s, i, STRING_ELT(t, i));
+}
+
+static Rboolean field_is_foldable_p(const char *field, SEXP excludes)
+{
+    int i, n = LENGTH(excludes);
+    for (i = 0; i < n; i++)
+    {
+        if (strcmp(field, CHAR(STRING_ELT(excludes, i))) == 0)
+            return FALSE;
+    }
+    return TRUE;
 }
