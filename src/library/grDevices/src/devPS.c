@@ -2698,10 +2698,12 @@ static void PSFileHeader(FILE *fp, const char *papername, double paperwidth, dou
     fprintf(fp, "%%%%BoundingBox: %.0f %.0f %.0f %.0f\n", left, bottom, right, top);
     fprintf(fp, "%%%%EndComments\n");
     fprintf(fp, "%%%%BeginProlog\n");
+    fprintf(fp, "/bp  { gs");
+    if (streql(pd->colormodel, "srgb-nogray"))
+        fprintf(fp, " sRGB");
     if (landscape)
-        fprintf(fp, "/bp  { gs %.2f 0 translate 90 rotate gs } def\n", paperwidth);
-    else
-        fprintf(fp, "/bp  { gs gs } def\n");
+        fprintf(fp, " %.2f 0 translate 90 rotate", paperwidth);
+    fprintf(fp, " gs } def\n");
     prolog = findVar(install(".ps.prolog"), R_GlobalEnv);
     if (prolog == R_UnboundValue)
     {
@@ -2721,6 +2723,7 @@ static void PSFileHeader(FILE *fp, const char *papername, double paperwidth, dou
     fprintf(fp, "%% begin .ps.prolog\n");
     for (i = 0; i < length(prolog); i++)
         fprintf(fp, "%s\n", CHAR(STRING_ELT(prolog, i)));
+    fprintf(fp, "%% end   .ps.prolog\n");
     if (streql(pd->colormodel, "srgb") || streql(pd->colormodel, "srgb-nogray"))
     {
         SEXP graphicsNS = R_FindNamespace(ScalarString(mkChar("grDevices")));
@@ -2735,7 +2738,10 @@ static void PSFileHeader(FILE *fp, const char *papername, double paperwidth, dou
         for (i = 0; i < length(prolog); i++)
             fprintf(fp, "%s\n", CHAR(STRING_ELT(prolog, i)));
     }
-    fprintf(fp, "%% end   .ps.prolog\n");
+    if (streql(pd->colormodel, "srgb"))
+        fprintf(fp, "/srgb { sRGB setcolor } bind def\n");
+    else if (streql(pd->colormodel, "srgb-nogray"))
+        fprintf(fp, "/srgb { setcolor } bind def\n");
     PSEncodeFonts(fp, pd);
 
     fprintf(fp, "%%%%EndProlog\n");
@@ -4160,7 +4166,7 @@ static void PS_grayimagedata(rcolorPtr raster, int w, int h, PostScriptDesc *pd)
     }
 }
 
-/* FIXME: this should support other values of 'colormodel' */
+/* Could support 'colormodel = "cmyk"' */
 static void PS_writeRaster(unsigned int *raster, int w, int h, double x, double y, double width, double height,
                            double rot, pDevDesc dd)
 {
@@ -4175,7 +4181,7 @@ static void PS_writeRaster(unsigned int *raster, int w, int h, double x, double 
     /* Save graphics state */
     fprintf(pd->psfp, "gsave\n");
     /* set the colour space */
-    if (streql(pd->colormodel, "srgb") || streql(pd->colormodel, "srgb-nogray"))
+    if (streql(pd->colormodel, "srgb"))
         fprintf(pd->psfp, "sRGB\n");
     /* translate */
     fprintf(pd->psfp, "%.2f %.2f translate\n", x, y);
@@ -5918,6 +5924,7 @@ static void writeMaskXObject(rasterImage raster, int n, PDFDesc *pd)
     fprintf(pd->pdffp, "  /Subtype /Image\n");
     fprintf(pd->pdffp, "  /Width %d\n", raster.w);
     fprintf(pd->pdffp, "  /Height %d\n", raster.h);
+    /* This is not a mask but a 'soft mask' */
     fprintf(pd->pdffp, "  /ColorSpace /DeviceGray\n");
     fprintf(pd->pdffp, "  /BitsPerComponent 8\n");
     fprintf(pd->pdffp, "  /Length %u\n", (unsigned)(pd->useCompression ? outlen : 2 * outlen + 1));
