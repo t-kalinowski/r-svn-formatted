@@ -4153,6 +4153,8 @@ static void PS_imagedata(rcolorPtr raster, int w, int h, PostScriptDesc *pd)
     }
 }
 
+/* FIXME: this should support other values of 'colormodel', at least
+   "gray" */
 static void PS_writeRaster(unsigned int *raster, int w, int h, double x, double y, double width, double height,
                            double rot, pDevDesc dd)
 {
@@ -4166,22 +4168,27 @@ static void PS_writeRaster(unsigned int *raster, int w, int h, double x, double 
      */
     /* Save graphics state */
     fprintf(pd->psfp, "gsave\n");
+    /* set the colour space */
+    if (streql(pd->colormodel, "srgb") || streql(pd->colormodel, "srgb-nogray"))
+        fprintf(pd->psfp, "sRGB\n");
     /* translate */
     fprintf(pd->psfp, "%.2f %.2f translate\n", x, y);
     /* rotate */
-    fprintf(pd->psfp, "%.2f rotate\n", rot);
+    if (rot != 0.0)
+        fprintf(pd->psfp, "%.2f rotate\n", rot);
     /* scale */
     fprintf(pd->psfp, "%.2f %.2f scale\n", width, height);
     /* Begin image */
     /* Image characteristics */
     /* width height bitspercomponent matrix */
-    fprintf(pd->psfp, "  %d %d 8 [%d 0 0 %d 0 %d]\n", w, h, w, -h, h);
+    fprintf(pd->psfp, "%d %d 8 [%d 0 0 %d 0 %d]\n", w, h, w, -h, h);
     /* Begin image data */
     fprintf(pd->psfp, "{<\n");
     /* The image stream */
     PS_imagedata(raster, w, h, pd);
     /* End image */
     fprintf(pd->psfp, "\n>}\n");
+    /* single source, 3 components (interleaved) */
     fprintf(pd->psfp, "false 3 colorimage\n");
     /* Restore graphics state */
     fprintf(pd->psfp, "grestore\n");
@@ -5792,6 +5799,8 @@ static int *initMaskArray(int numRasters)
     return masks;
 }
 
+/* FIXME: this should support other values of 'colormodel', at least
+   "gray" */
 static void writeRasterXObject(rasterImage raster, int n, int mask, int maskObj, PDFDesc *pd)
 {
     Bytef *buf, *buf2, *p;
