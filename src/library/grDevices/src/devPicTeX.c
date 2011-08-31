@@ -579,15 +579,10 @@ static Rboolean PicTeXDeviceDriver(pDevDesc dd, const char *filename, const char
     dd->text = PicTeX_Text;
     dd->strWidth = PicTeX_StrWidth;
     dd->rect = PicTeX_Rect;
-    /* Not implemented
-      dd->raster     = PicTeX_Raster;
-      dd->cap        = PicTeX_Cap; */
     dd->circle = PicTeX_Circle;
     /* dd->path = PicTeX_Path; not implemented */
     dd->polygon = PicTeX_Polygon;
     dd->polyline = PicTeX_Polyline;
-    /* dd->locator = PicTeX_Locator;
-       dd->mode = PicTeX_Mode; */
     dd->metricInfo = PicTeX_MetricInfo;
     dd->hasTextUTF8 = FALSE;
     dd->useRotatedTextInContour = FALSE;
@@ -633,9 +628,6 @@ static Rboolean PicTeXDeviceDriver(pDevDesc dd, const char *filename, const char
 
     dd->haveTransparency = 1;
     dd->haveTransparentBg = 2;
-    dd->haveRaster = 1;
-    dd->haveCapture = 1;
-    dd->haveLocator = 1;
 
     dd->deviceSpecific = (void *)ptd;
     dd->displayListOn = FALSE;

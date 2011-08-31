@@ -63,14 +63,6 @@ static void NULL_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevD
 static void NULL_Path(double *x, double *y, int npoly, int *nper, Rboolean winding, const pGEcontext gc, pDevDesc dev)
 {
 }
-static void NULL_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height, double rot,
-                        Rboolean interpolate, const pGEcontext gc, pDevDesc dd)
-{
-}
-static SEXP NULL_Cap(pDevDesc dd)
-{
-    return R_NilValue;
-}
 static void NULL_Polyline(int n, double *x, double *y, const pGEcontext gc, pDevDesc dev)
 {
 }
@@ -98,13 +90,6 @@ static void NULL_Clip(double x0, double x1, double y0, double y1, pDevDesc dev)
 }
 static void NULL_Deactivate(pDevDesc dev)
 {
-}
-static void NULL_Mode(int mode, pDevDesc dev)
-{
-}
-static Rboolean NULL_Locator(double *x, double *y, pDevDesc dev)
-{
-    return FALSE;
 }
 static void NULL_MetricInfo(int c, const pGEcontext gc, double *ascent, double *descent, double *width, pDevDesc dev)
 {
@@ -161,10 +146,6 @@ static Rboolean nullDeviceDriver(pDevDesc dev)
     dev->polyline = NULL_Polyline;
     dev->polygon = NULL_Polygon;
     dev->path = NULL_Path;
-    dev->raster = NULL_Raster;
-    dev->cap = NULL_Cap;
-    dev->locator = NULL_Locator;
-    dev->mode = NULL_Mode;
     dev->metricInfo = NULL_MetricInfo;
     dev->hasTextUTF8 = FALSE;
     dev->useRotatedTextInContour = FALSE;
@@ -205,6 +186,9 @@ static Rboolean nullDeviceDriver(pDevDesc dev)
     dev->canHAdj = 2;
     dev->canChangeGamma = FALSE;
     dev->displayListOn = FALSE;
+
+    dev->haveTransparency = 1;
+    dev->haveTransparentBg = 2;
 
     return TRUE;
 }
