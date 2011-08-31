@@ -3517,7 +3517,23 @@ static Rboolean GADeviceDriver(pDevDesc dd, const char *display, double width, d
     xd->cntxt = NULL;
     dd->holdflush = GA_holdflush;
     xd->holdlevel = 0;
-
+    dd->haveRaster = 2;
+    dd->haveCapture = 1;
+    dd->haveLocator = 1;
+    switch (xd->kind)
+    {
+    case SCREEN:
+    case PRINTER:
+    case METAFILE:
+        dd->haveTransparency = 4;
+        break;
+    case PNG:
+        dd->haveTransparency = 2;
+        break;
+    default: /* JPEG, BMP, TIFF */
+        dd->haveTransparency = 1;
+        break;
+    }
     /* set graphics parameters that must be set by device driver */
     /* Window Dimensions in Pixels */
     rr = getrect(xd->gawin);
