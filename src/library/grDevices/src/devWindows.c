@@ -3520,7 +3520,7 @@ static Rboolean GADeviceDriver(pDevDesc dd, const char *display, double width, d
 
     dd->haveRaster = 2; /* full support */
     dd->haveCapture = dd->haveLocator = (xd->kind == SCREEN) ? 2 : 1;
-    dd->haveTransparency = 4;
+    dd->haveTransparency = 2;
     switch (xd->kind)
     {
     case SCREEN:

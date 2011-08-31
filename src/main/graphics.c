@@ -2687,9 +2687,7 @@ void GLine(double x1, double y1, double x2, double y2, int coords, pGEDevDesc dd
 /* Read the current "pen" position. */
 Rboolean GLocator(double *x, double *y, int coords, pGEDevDesc dd)
 {
-    if (!dd->dev->locator)
-        error(_("no locator capability in device driver"));
-    if (dd->dev->locator(x, y, dd->dev))
+    if (dd->dev->locator && dd->dev->locator(x, y, dd->dev))
     {
         GConvert(x, y, DEVICE, coords, dd);
         return TRUE;
