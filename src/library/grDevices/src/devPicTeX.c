@@ -122,9 +122,11 @@ static const char *const fontname[] = {"cmss10", "cmssbx10", "cmssi10", "cmssxi1
 
 /* Device driver actions */
 
+static void PicTeX_Activate(pDevDesc dd);
 static void PicTeX_Circle(double x, double y, double r, const pGEcontext gc, pDevDesc dd);
 static void PicTeX_Clip(double x0, double x1, double y0, double y1, pDevDesc dd);
 static void PicTeX_Close(pDevDesc dd);
+static void PicTeX_Deactivate(pDevDesc dd);
 static void PicTeX_Line(double x1, double y1, double x2, double y2, const pGEcontext gc, pDevDesc dd);
 static void PicTeX_MetricInfo(int c, const pGEcontext gc, double *ascent, double *descent, double *width, pDevDesc dd);
 static void PicTeX_NewPage(const pGEcontext gc, pDevDesc dd);
@@ -173,6 +175,14 @@ static void SetFont(int face, int size, picTeXDesc *ptd)
         ptd->fontsize = lsize;
         ptd->fontface = lface;
     }
+}
+
+static void PicTeX_Activate(pDevDesc dd)
+{
+}
+
+static void PicTeX_Deactivate(pDevDesc dd)
+{
 }
 
 static void PicTeX_MetricInfo(int c, const pGEcontext gc, double *ascent, double *descent, double *width, pDevDesc dd)
@@ -559,6 +569,8 @@ static Rboolean PicTeXDeviceDriver(pDevDesc dd, const char *filename, const char
     dd->startfont = 1;
     dd->startgamma = 1;
 
+    dd->activate = PicTeX_Activate;
+    dd->deactivate = PicTeX_Deactivate;
     dd->close = PicTeX_Close;
     dd->clip = PicTeX_Clip;
     dd->size = PicTeX_Size;
@@ -621,6 +633,9 @@ static Rboolean PicTeXDeviceDriver(pDevDesc dd, const char *filename, const char
 
     dd->haveTransparency = 1;
     dd->haveTransparentBg = 2;
+    dd->haveRaster = 1;
+    dd->haveCapture = 1;
+    dd->haveLocator = 1;
 
     dd->deviceSpecific = (void *)ptd;
     dd->displayListOn = FALSE;
