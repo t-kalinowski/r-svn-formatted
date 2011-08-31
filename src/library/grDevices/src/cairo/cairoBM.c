@@ -437,6 +437,7 @@ static Rboolean BMDeviceDriver(pDevDesc dd, int kind, const char *filename, int 
 #endif
     dd->useRotatedTextInContour = FALSE;
 
+    dd->haveTransparency = 2;
     dd->haveRaster = 2;
     dd->haveCapture = 1;
     dd->haveLocator = 1;
@@ -446,11 +447,11 @@ static Rboolean BMDeviceDriver(pDevDesc dd, int kind, const char *filename, int 
     case SVG:
     case PNG:
     case PNGdirect:
-        dd->haveTransparency = 4;
+        dd->haveTransparentBg = 3;
         break;
     case PS:
-        dd->haveTransparency = 2;
-        dd->haveRaster = 3;
+        dd->haveTransparentBg = 2;
+        dd->haveRaster = 3; /* ?? */
         break;
     default: /* TIFF, BMP */
         dd->haveTransparency = 1;

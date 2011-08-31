@@ -3692,8 +3692,9 @@ Rboolean PSDeviceDriver(pDevDesc dd, const char *file, const char *paper, const 
     dd->textUTF8 = PS_TextUTF8;
     dd->strWidthUTF8 = PS_StrWidthUTF8;
     dd->useRotatedTextInContour = TRUE;
-    dd->haveTransparency = 3; /* fully transparent */
-    dd->haveRaster = 3;       /* non-missing colours */
+    dd->haveTransparency = 1;
+    dd->haveTransparentBg = 2;
+    dd->haveRaster = 3; /* non-missing colours */
     dd->haveCapture = 1;
     dd->haveLocator = 1;
 
@@ -5200,6 +5201,7 @@ static Rboolean XFigDeviceDriver(pDevDesc dd, const char *file, const char *pape
     dd->hasTextUTF8 = FALSE;
     dd->useRotatedTextInContour = FALSE; /* maybe */
     dd->haveTransparency = 1;
+    dd->haveTransparentBg = 1;
     dd->haveRaster = 1;
     dd->haveCapture = 1;
     dd->haveLocator = 1;
@@ -6528,7 +6530,8 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
     dd->textUTF8 = PDF_TextUTF8;
     dd->strWidthUTF8 = PDF_StrWidthUTF8;
     dd->useRotatedTextInContour = TRUE;
-    dd->haveTransparency = 4;
+    dd->haveTransparency = 2;
+    dd->haveTransparentBg = 3;
     dd->haveRaster = 2;
     dd->haveCapture = 1;
     dd->haveLocator = 1;

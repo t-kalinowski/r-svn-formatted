@@ -2906,7 +2906,8 @@ int Rf_setX11DeviceData(pDevDesc dd, double gamma_fac, pX11Desc xd)
         dd->text = dd->textUTF8 = Cairo_Text;
 #endif
         dd->holdflush = Cairo_holdflush;
-        dd->haveTransparency = 4;
+        dd->haveTransparency = 2;
+        dd->haveTransparentBg = 3;
         dd->haveRaster = 2;
         dd->haveCapture = (xd->type > WINDOW) ? 1 : 2;
         dd->haveLocator = (xd->type > WINDOW) ? 1 : 2;
@@ -2935,6 +2936,7 @@ int Rf_setX11DeviceData(pDevDesc dd, double gamma_fac, pX11Desc xd)
         dd->canGenKeybd = TRUE;
 
         dd->haveTransparency = 1;
+        dd->haveTransparentBg = 2;
         dd->haveRaster = 3;
         dd->haveCapture = (xd->type > WINDOW) ? 1 : 2;
         dd->haveLocator = (xd->type > WINDOW) ? 1 : 2;

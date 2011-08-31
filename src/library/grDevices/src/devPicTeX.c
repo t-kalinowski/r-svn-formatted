@@ -664,6 +664,7 @@ static Rboolean PicTeXDeviceDriver(pDevDesc dd, const char *filename, const char
     ptd->debug = debug;
 
     dd->haveTransparency = 1;
+    dd->haveTransparentBg = 2;
     dd->haveRaster = 1;
     dd->haveCapture = 1;
     dd->haveLocator = 1;
