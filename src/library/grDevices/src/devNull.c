@@ -82,13 +82,7 @@ static Rboolean NULL_Open(pDevDesc dev)
 {
     return TRUE;
 }
-static void NULL_Activate(pDevDesc dev)
-{
-}
 static void NULL_Clip(double x0, double x1, double y0, double y1, pDevDesc dev)
-{
-}
-static void NULL_Deactivate(pDevDesc dev)
 {
 }
 static void NULL_MetricInfo(int c, const pGEcontext gc, double *ascent, double *descent, double *width, pDevDesc dev)
@@ -133,8 +127,6 @@ static Rboolean nullDeviceDriver(pDevDesc dev)
      * Device functions
      */
     dev->close = NULL_Close;
-    dev->activate = NULL_Activate;
-    dev->deactivate = NULL_Deactivate;
     dev->size = NULL_Size;
     dev->newPage = NULL_NewPage;
     dev->clip = NULL_Clip;

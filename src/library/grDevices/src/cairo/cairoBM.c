@@ -81,14 +81,6 @@ static void cbm_Size(double *left, double *right, double *bottom, double *top, p
 #include "bitmap.h"
 #endif
 
-static void null_Activate(pDevDesc dd)
-{
-}
-
-static void null_Deactivate(pDevDesc dd)
-{
-}
-
 static Rboolean BM_Open(pDevDesc dd, pX11Desc xd, int width, int height)
 {
     cairo_status_t res;
@@ -398,8 +390,6 @@ static Rboolean BMDeviceDriver(pDevDesc dd, int kind, const char *filename, int 
         xd->onefile = quality != 0;
 
     /* Set up Data Structures  */
-    dd->activate = null_Activate;
-    dd->deactivate = null_Deactivate;
     dd->size = cbm_Size;
     dd->clip = Cairo_Clip;
     dd->rect = Cairo_Rect;
@@ -409,8 +399,6 @@ static Rboolean BMDeviceDriver(pDevDesc dd, int kind, const char *filename, int 
     dd->polygon = Cairo_Polygon;
     dd->path = Cairo_Path;
     dd->raster = Cairo_Raster;
-    /* dd->locator = null_Locator;
-       dd->mode = null_Mode; */
 #ifdef HAVE_PANGOCAIRO
     dd->metricInfo = PangoCairo_MetricInfo;
     dd->strWidth = dd->strWidthUTF8 = PangoCairo_StrWidth;
@@ -430,8 +418,6 @@ static Rboolean BMDeviceDriver(pDevDesc dd, int kind, const char *filename, int 
 
     dd->haveTransparency = 2;
     dd->haveRaster = 2;
-    /* dd->haveCapture = 1;
-       dd->haveLocator = 1; */
     switch (xd->type)
     {
     case PDF:
