@@ -5651,10 +5651,6 @@ static void XFig_MetricInfo(int c, const pGEcontext gc, double *ascent, double *
 
 ************************************************************************/
 
-/* TODO
-   Flate encoding?
-*/
-
 typedef struct
 {
     rcolorPtr raster;
@@ -5694,10 +5690,11 @@ typedef struct
         R_GE_lineend lend;
         R_GE_linejoin ljoin;
         double lmitre;
-        int fontsize; /* font size in points */
-        rcolor col;   /* color */
-        rcolor fill;  /* fill color */
-        rcolor bg;    /* color */
+        int fontsize;         /* font size in points */
+        rcolor col;           /* color */
+        rcolor fill;          /* fill color */
+        rcolor bg;            /* color */
+        int srgb_fg, srgb_bg; /* Are stroke and fill colorspaces set? */
     } current;
 
     /*
@@ -6529,29 +6526,22 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
     return TRUE;
 }
 
+/* Called at the start of a page and when clipping is reset */
 static void PDF_Invalidate(pDevDesc dd)
 {
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
 
     pd->current.fontsize = -1;
-    /*
-     * Paul:  make all these settings "invalid"
-     pd->current.lwd = 1;
-     */
     pd->current.lwd = -1;
     pd->current.lty = -1;
     pd->current.lend = 0;
     pd->current.ljoin = 0;
     pd->current.lmitre = 0;
     /* page starts with black as the default fill and stroke colours */
-    /*
-     * Paul:  make all these settings "invalid"
-     pd->current.col = 0;
-     pd->current.fill = 0;
-     */
     pd->current.col = INVALID_COL;
     pd->current.fill = INVALID_COL;
     pd->current.bg = INVALID_COL;
+    pd->current.srgb_fg = pd->current.srgb_bg = 0;
 }
 
 /*
@@ -6666,7 +6656,12 @@ static void PDF_SetLineColor(int color, pDevDesc dd)
         {
             if (!streql(pd->colormodel, "srgb"))
                 warning(_("unknown 'colormodel', using 'srgb'"));
-            fprintf(pd->pdffp, "/sRGB CS %.3f %.3f %.3f SCN\n", R_RED(color) / 255.0, R_GREEN(color) / 255.0,
+            if (!pd->current.srgb_bg)
+            {
+                fprintf(pd->pdffp, "/sRGB CS\n");
+                pd->current.srgb_bg = 1;
+            }
+            fprintf(pd->pdffp, "%.3f %.3f %.3f SCN\n", R_RED(color) / 255.0, R_GREEN(color) / 255.0,
                     R_BLUE(color) / 255.0);
         }
         pd->current.col = color;
@@ -6719,7 +6714,12 @@ static void PDF_SetFill(int color, pDevDesc dd)
         {
             if (!streql(pd->colormodel, "srgb"))
                 warning(_("unknown 'colormodel', using 'srgb'"));
-            fprintf(pd->pdffp, "/sRGB cs %.3f %.3f %.3f scn\n", R_RED(color) / 255.0, R_GREEN(color) / 255.0,
+            if (!pd->current.srgb_fg)
+            {
+                fprintf(pd->pdffp, "/sRGB cs\n");
+                pd->current.srgb_fg = 1;
+            }
+            fprintf(pd->pdffp, "%.3f %.3f %.3f scn\n", R_RED(color) / 255.0, R_GREEN(color) / 255.0,
                     R_BLUE(color) / 255.0);
         }
 
