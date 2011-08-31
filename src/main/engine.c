@@ -1452,6 +1452,12 @@ void GERect(double x0, double y0, double x1, double y1, const pGEcontext gc, pGE
 
 void GEPath(double *x, double *y, int npoly, int *nper, Rboolean winding, const pGEcontext gc, pGEDevDesc dd)
 {
+    /* safety check: this will be NULL if the device did not set it. */
+    if (!dd->dev->path)
+    {
+        warning(_("Path rendering is not implemented for this device"));
+        return;
+    }
     /* FIXME: what about clipping? (if the device can't)
      */
     if (gc->lty == LTY_BLANK)
@@ -1486,6 +1492,13 @@ void GEPath(double *x, double *y, int npoly, int *nper, Rboolean winding, const 
 void GERaster(unsigned int *raster, int w, int h, double x, double y, double width, double height, double angle,
               Rboolean interpolate, const pGEcontext gc, pGEDevDesc dd)
 {
+    /* safety check: this will be NULL if the device did not set it. */
+    if (!dd->dev->raster)
+    {
+        warning(_("Raster rendering is not implemented for this device"));
+        return;
+    }
+
     /* FIXME: what about clipping? (if the device can't)
      * Maybe not too bad because it is just a matter of shaving off
      * some rows and columns from the image? (because R only does
@@ -1504,6 +1517,12 @@ void GERaster(unsigned int *raster, int w, int h, double x, double y, double wid
 
 SEXP GECap(pGEDevDesc dd)
 {
+    /* safety check: this will be NULL if the device did not set it. */
+    if (!dd->dev->cap)
+    {
+        warning(_("Raster capture is not available for this device"));
+        return R_NilValue;
+    }
     return dd->dev->cap(dd->dev);
 }
 
