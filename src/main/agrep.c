@@ -223,23 +223,28 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP attribute_hidden do_adist(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP pattern, x, y, ans, dim, dimnames, counts, names;
+    SEXP x, y, ans, dim, dimnames, counts, names;
+    SEXP lpositions, rpositions, rpositions_k, elt;
     int opt_cost_ins, opt_cost_del, opt_cost_sub, opt_partial, opt_counts, opt_icase, useBytes;
-    int i, j, k, nx, ny, nxy;
+    int i = 0, j = 0, k, l, m, nx, ny, nxy;
+    int lpos, rpos;
     const char *s, *t;
-    size_t delta;
 
     regex_t reg;
-    regaparams_t params;
+    regaparams_t params_x_y, params_y_x;
     regamatch_t match;
-    int rc, cflags = REG_EXTENDED | REG_NOSUB;
+    int rc, cflags = REG_EXTENDED | REG_NOSUB | REG_LITERAL;
+
+    Rboolean do_x_y;
 
     checkArity(op, args);
-    pattern = CAR(args);
-    args = CDR(args);
     x = CAR(args);
     args = CDR(args);
     y = CAR(args);
+    args = CDR(args);
+    lpositions = CAR(args);
+    args = CDR(args);
+    rpositions = CAR(args);
     args = CDR(args);
     opt_cost_ins = asInteger(CAR(args));
     args = CDR(args);
@@ -264,8 +269,6 @@ SEXP attribute_hidden do_adist(SEXP call, SEXP op, SEXP args, SEXP env)
     if (useBytes == NA_INTEGER)
         useBytes = 0;
 
-    if (opt_partial)
-        cflags |= REG_LITERAL;
     if (opt_icase)
         cflags |= REG_ICASE;
 
@@ -289,102 +292,128 @@ SEXP attribute_hidden do_adist(SEXP call, SEXP op, SEXP args, SEXP env)
         PROTECT(counts = allocArray(REALSXP, dim));
     }
 
-    tre_regaparams_default(&params);
-    params.max_cost = INT_MAX;
-    params.cost_ins = opt_cost_ins;
-    params.cost_del = opt_cost_del;
-    params.cost_subst = opt_cost_sub;
+    tre_regaparams_default(&params_x_y);
+    params_x_y.max_cost = INT_MAX;
+    params_x_y.cost_ins = opt_cost_ins;
+    params_x_y.cost_del = opt_cost_del;
+    params_x_y.cost_subst = opt_cost_sub;
+
+    tre_regaparams_default(&params_y_x);
+    params_y_x.max_cost = INT_MAX;
+    params_y_x.cost_ins = opt_cost_ins;
+    params_y_x.cost_del = opt_cost_del;
+    params_y_x.cost_subst = opt_cost_sub;
 
     /* Handle encoding stuff etc lateron. */
-    for (i = 0; i < nx; i++)
+    for (k = 0; k < LENGTH(lpositions); k++)
     {
-        if (STRING_ELT(pattern, i) == NA_STRING)
+        lpos = INTEGER(lpositions)[k];
+
+        if (opt_partial || (lpos < nx))
         {
-            for (j = 0; j < ny; j++)
-            {
-                if (opt_counts)
-                {
-                    for (k = 0; k < 3; k++)
-                    {
-                        COUNTS(i, j, k) = NA_REAL;
-                    }
-                }
-                else
-                {
-                    ANS(i, j) = NA_REAL;
-                }
-            }
-            continue;
+            do_x_y = TRUE;
+            i = lpos;
+            elt = STRING_ELT(x, i);
         }
-        rc = tre_regcomp(&reg, CHAR(STRING_ELT(pattern, i)), cflags);
-        if (rc)
+        else
         {
-            char errbuf[1001];
-            tre_regerror(rc, &reg, errbuf, 1001);
-            error(_("regcomp error:  '%s'"), errbuf);
-        }
-        for (j = 0; j < ny; j++)
-        {
-            if (STRING_ELT(y, j) == NA_STRING)
-            {
-                if (opt_counts)
-                {
-                    for (k = 0; k < 3; k++)
-                    {
-                        COUNTS(i, j, k) = NA_REAL;
-                    }
-                }
-                else
-                {
-                    ANS(i, j) = NA_REAL;
-                }
-                continue;
-            }
-            /* Argh. */
-            /* For full matching (where we use regexps of regexp-quoted
-             * strings anchored by ^ and $) there is a problem in case
-             * of substring matches, where TRE finds a substitution
-             * where there is none.  Cf.
-             *   $ echo "AB" | tre-agrep -5 -s A
-             *   0:AB
-             *   $ echo "AB" | tre-agrep -5 -s -w A
-             *   2:AB
-             * So we need to explicitly catch these cases.
-             */
-            if (!opt_partial)
-            {
-                s = CHAR(STRING_ELT(x, i));
-                t = CHAR(STRING_ELT(y, j));
-                if (strstr(t, s) != NULL)
-                {
-                    delta = (strlen(t) - strlen(s));
-                    ANS(i, j) = (double)(delta * opt_cost_ins);
-                    if (opt_counts)
-                    {
-                        COUNTS(i, j, 0) = (double)delta;
-                        COUNTS(i, j, 1) = (double)0.;
-                        COUNTS(i, j, 2) = (double)0.;
-                    }
-                    continue;
-                }
-            }
-            /* Perform match. */
-            /* undocumented, must be zeroed */
-            memset(&match, 0, sizeof(match));
-            rc = tre_regaexec(&reg, CHAR(STRING_ELT(y, j)), &match, params, 0);
-            ANS(i, j) = (double)match.cost;
-            if (opt_counts)
-            {
-                COUNTS(i, j, 0) = (double)match.num_ins;
-                COUNTS(i, j, 1) = (double)match.num_del;
-                COUNTS(i, j, 2) = (double)match.num_subst;
-            }
-            else
-            {
-            }
+            do_x_y = FALSE;
+            j = lpos - nx;
+            elt = STRING_ELT(y, j);
         }
 
-        tre_regfree(&reg);
+        rpositions_k = VECTOR_ELT(rpositions, k);
+
+        if (elt == NA_STRING)
+        {
+            for (l = 0; l < LENGTH(rpositions_k); l++)
+            {
+                rpos = INTEGER(rpositions_k)[l];
+                if (do_x_y)
+                {
+                    j = rpos - nx;
+                }
+                else
+                {
+                    i = rpos;
+                }
+                ANS(i, j) = NA_REAL;
+                if (opt_counts)
+                {
+                    for (m = 0; m < 3; m++)
+                    {
+                        COUNTS(i, j, m) = NA_REAL;
+                    }
+                }
+            }
+        }
+        else
+        {
+            s = CHAR(elt);
+            rc = tre_regcomp(&reg, s, cflags);
+            if (rc)
+            {
+                char errbuf[1001];
+                tre_regerror(rc, &reg, errbuf, 1001);
+                error(_("regcomp error:  '%s'"), errbuf);
+            }
+            for (l = 0; l < LENGTH(rpositions_k); l++)
+            {
+                rpos = INTEGER(rpositions_k)[l];
+                if (do_x_y)
+                {
+                    j = rpos - nx;
+                    elt = STRING_ELT(y, j);
+                }
+                else
+                {
+                    i = rpos;
+                    elt = STRING_ELT(x, i);
+                }
+                if (elt == NA_STRING)
+                {
+                    ANS(i, j) = NA_REAL;
+                    if (opt_counts)
+                    {
+                        for (m = 0; m < 3; m++)
+                        {
+                            COUNTS(i, j, m) = NA_REAL;
+                        }
+                    }
+                }
+                else
+                {
+                    /* Perform match. */
+                    /* undocumented, must be zeroed */
+                    memset(&match, 0, sizeof(match));
+                    t = CHAR(elt);
+                    if (do_x_y)
+                    {
+                        rc = tre_regaexec(&reg, t, &match, params_x_y, 0);
+                    }
+                    else
+                    {
+                        rc = tre_regaexec(&reg, t, &match, params_y_x, 0);
+                    }
+                    ANS(i, j) = (double)match.cost;
+                    if (opt_counts)
+                    {
+                        if (do_x_y)
+                        {
+                            COUNTS(i, j, 0) = (double)match.num_ins;
+                            COUNTS(i, j, 1) = (double)match.num_del;
+                        }
+                        else
+                        {
+                            COUNTS(i, j, 0) = (double)match.num_del;
+                            COUNTS(i, j, 1) = (double)match.num_ins;
+                        }
+                        COUNTS(i, j, 2) = (double)match.num_subst;
+                    }
+                }
+            }
+            tre_regfree(&reg);
+        }
     }
 
     x = getAttrib(x, R_NamesSymbol);
