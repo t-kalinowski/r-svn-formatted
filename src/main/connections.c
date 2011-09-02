@@ -1091,6 +1091,7 @@ SEXP attribute_hidden do_fifo(SEXP call, SEXP op, SEXP args, SEXP env)
     con = Connections[ncon] = newfifo(file, strlen(open) ? open : "r");
     con->blocking = block;
     strncpy(con->encname, CHAR(STRING_ELT(enc, 0)), 100); /* ASCII */
+    con->ex_ptr = R_MakeExternalPtr(con->id, install("connection"), R_NilValue);
 
     /* open it if desired */
     if (strlen(open))
@@ -1108,7 +1109,6 @@ SEXP attribute_hidden do_fifo(SEXP call, SEXP op, SEXP args, SEXP env)
     SET_STRING_ELT(class, 0, mkChar("fifo"));
     SET_STRING_ELT(class, 1, mkChar("connection"));
     classgets(ans, class);
-    con->ex_ptr = R_MakeExternalPtr(con->id, install("connection"), R_NilValue);
     setAttrib(ans, R_ConnIdSymbol, con->ex_ptr);
     R_RegisterCFinalizerEx(con->ex_ptr, conFinalizer, FALSE);
     UNPROTECT(2);
@@ -1261,6 +1261,7 @@ SEXP attribute_hidden do_pipe(SEXP call, SEXP op, SEXP args, SEXP env)
         con = newpipe(file, ienc, strlen(open) ? open : "r");
     Connections[ncon] = con;
     strncpy(con->encname, CHAR(STRING_ELT(enc, 0)), 100); /* ASCII */
+    con->ex_ptr = R_MakeExternalPtr(con->id, install("connection"), R_NilValue);
 
     /* open it if desired */
     if (strlen(open))
@@ -1282,7 +1283,6 @@ SEXP attribute_hidden do_pipe(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
     SET_STRING_ELT(class, 1, mkChar("connection"));
     classgets(ans, class);
-    con->ex_ptr = R_MakeExternalPtr(con->id, install("connection"), R_NilValue);
     setAttrib(ans, R_ConnIdSymbol, con->ex_ptr);
     R_RegisterCFinalizerEx(con->ex_ptr, conFinalizer, FALSE);
     UNPROTECT(2);
@@ -1992,6 +1992,7 @@ SEXP attribute_hidden do_gzfile(SEXP call, SEXP op, SEXP args, SEXP env)
     /* see the comment in do_url */
     if (con->encname[0] && !streql(con->encname, "native.enc"))
         con->canseek = 0;
+    con->ex_ptr = R_MakeExternalPtr(con->id, install("connection"), R_NilValue);
 
     /* open it if desired */
     if (strlen(open))
@@ -2020,7 +2021,6 @@ SEXP attribute_hidden do_gzfile(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     SET_STRING_ELT(class, 1, mkChar("connection"));
     classgets(ans, class);
-    con->ex_ptr = R_MakeExternalPtr(con->id, install("connection"), R_NilValue);
     setAttrib(ans, R_ConnIdSymbol, con->ex_ptr);
     R_RegisterCFinalizerEx(con->ex_ptr, conFinalizer, FALSE);
     UNPROTECT(2);
@@ -3218,6 +3218,7 @@ SEXP attribute_hidden do_sockconn(SEXP call, SEXP op, SEXP args, SEXP env)
     Connections[ncon] = con;
     con->blocking = blocking;
     strncpy(con->encname, CHAR(STRING_ELT(enc, 0)), 100); /* ASCII */
+    con->ex_ptr = R_MakeExternalPtr(con->id, install("connection"), R_NilValue);
 
     /* open it if desired */
     if (strlen(open))
@@ -3235,7 +3236,6 @@ SEXP attribute_hidden do_sockconn(SEXP call, SEXP op, SEXP args, SEXP env)
     SET_STRING_ELT(class, 0, mkChar("sockconn"));
     SET_STRING_ELT(class, 1, mkChar("connection"));
     classgets(ans, class);
-    con->ex_ptr = R_MakeExternalPtr(con->id, install("connection"), R_NilValue);
     setAttrib(ans, R_ConnIdSymbol, con->ex_ptr);
     R_RegisterCFinalizerEx(con->ex_ptr, conFinalizer, FALSE);
     UNPROTECT(2);
@@ -3272,6 +3272,7 @@ SEXP attribute_hidden do_unz(SEXP call, SEXP op, SEXP args, SEXP env)
     ncon = NextConnection();
     con = Connections[ncon] = R_newunz(file, strlen(open) ? open : "r");
     strncpy(con->encname, CHAR(STRING_ELT(enc, 0)), 100); /* ASCII */
+    con->ex_ptr = R_MakeExternalPtr(con->id, install("connection"), R_NilValue);
 
     /* open it if desired */
     if (strlen(open))
@@ -3289,7 +3290,6 @@ SEXP attribute_hidden do_unz(SEXP call, SEXP op, SEXP args, SEXP env)
     SET_STRING_ELT(class, 0, mkChar("unz"));
     SET_STRING_ELT(class, 1, mkChar("connection"));
     classgets(ans, class);
-    con->ex_ptr = R_MakeExternalPtr(con->id, install("connection"), R_NilValue);
     setAttrib(ans, R_ConnIdSymbol, con->ex_ptr);
     R_RegisterCFinalizerEx(con->ex_ptr, conFinalizer, FALSE);
     UNPROTECT(2);
@@ -5397,6 +5397,10 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
        connection intended to be used in binary mode? */
     if (con->encname[0] && !streql(con->encname, "native.enc"))
         con->canseek = 0;
+    /* This is referenced in do_getconnection, so set up before
+       any warning */
+    con->ex_ptr = R_MakeExternalPtr(con->id, install("connection"), R_NilValue);
+
     /* open it if desired */
     if (strlen(open))
     {
@@ -5413,7 +5417,6 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     SET_STRING_ELT(class, 0, mkChar(class2));
     SET_STRING_ELT(class, 1, mkChar("connection"));
     classgets(ans, class);
-    con->ex_ptr = R_MakeExternalPtr(con->id, install("connection"), R_NilValue);
     setAttrib(ans, R_ConnIdSymbol, con->ex_ptr);
     R_RegisterCFinalizerEx(con->ex_ptr, conFinalizer, FALSE);
     UNPROTECT(2);
@@ -5816,6 +5819,7 @@ SEXP attribute_hidden do_gzcon(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     Connections[icon] = new;
     strncpy(new->encname, incon->encname, 100);
+    new->ex_ptr = R_MakeExternalPtr((void *)new->id, install("connection"), R_NilValue);
     if (incon->isopen)
         new->open(new);
 
@@ -5824,7 +5828,6 @@ SEXP attribute_hidden do_gzcon(SEXP call, SEXP op, SEXP args, SEXP rho)
     SET_STRING_ELT(class, 0, mkChar("gzcon"));
     SET_STRING_ELT(class, 1, mkChar("connection"));
     classgets(ans, class);
-    new->ex_ptr = R_MakeExternalPtr((void *)new->id, install("connection"), R_NilValue);
     setAttrib(ans, R_ConnIdSymbol, new->ex_ptr);
     R_RegisterCFinalizerEx(new->ex_ptr, conFinalizer, FALSE);
     UNPROTECT(2);
