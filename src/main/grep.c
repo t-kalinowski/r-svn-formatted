@@ -3062,6 +3062,9 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP pat, vec, ans, matchpos, matchlen;
     int opt_icase, opt_fixed, useBytes;
 
+    Rboolean haveBytes, useWC = FALSE;
+    const char *s, *t;
+
     regex_t reg;
     size_t nmatch;
     regmatch_t *pmatch;
@@ -3106,7 +3109,54 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
 
     n = LENGTH(vec);
 
-    rc = tre_regcomp(&reg, CHAR(STRING_ELT(pat, 0)), cflags);
+    if (!useBytes)
+    {
+        haveBytes = IS_BYTES(STRING_ELT(pat, 0));
+        if (!haveBytes)
+            for (i = 0; i < n; i++)
+            {
+                if (IS_BYTES(STRING_ELT(vec, i)))
+                {
+                    haveBytes = TRUE;
+                    break;
+                }
+            }
+        if (haveBytes)
+        {
+            warning(_("string marked as \"bytes\" found, so using useBytes = TRUE"));
+            useBytes = TRUE;
+        }
+    }
+
+    if (!useBytes)
+    {
+        useWC = !strIsASCII(CHAR(STRING_ELT(pat, 0)));
+        if (!useWC)
+        {
+            for (i = 0; i < n; i++)
+            {
+                if (STRING_ELT(vec, i) == NA_STRING)
+                    continue;
+                if (!strIsASCII(CHAR(STRING_ELT(vec, i))))
+                {
+                    useWC = TRUE;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (useBytes)
+        rc = tre_regcompb(&reg, CHAR(STRING_ELT(pat, 0)), cflags);
+    else if (useWC)
+        rc = tre_regwcomp(&reg, wtransChar(STRING_ELT(pat, 0)), cflags);
+    else
+    {
+        s = translateChar(STRING_ELT(pat, 0));
+        if (mbcslocale && !mbcsValid(s))
+            error(_("regular expression is invalid in this locale"));
+        rc = tre_regcomp(&reg, s, cflags);
+    }
     if (rc)
     {
         char errbuf[1001];
@@ -3131,8 +3181,18 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         else
         {
-            rc = tre_regexec(&reg, CHAR(STRING_ELT(vec, i)), nmatch, pmatch, 0);
-            if (rc == 0)
+            if (useBytes)
+                rc = tre_regexecb(&reg, CHAR(STRING_ELT(vec, i)), nmatch, pmatch, 0);
+            else if (useWC)
+                rc = tre_regwexec(&reg, wtransChar(STRING_ELT(vec, i)), nmatch, pmatch, 0);
+            else
+            {
+                t = translateChar(STRING_ELT(vec, i));
+                if (mbcslocale && !mbcsValid(t))
+                    error(_("input string %d is invalid in this locale"), i + 1);
+                rc = tre_regexec(&reg, t, nmatch, pmatch, 0);
+            }
+            if (rc == REG_OK)
             {
                 PROTECT(matchpos = allocVector(INTSXP, nmatch));
                 PROTECT(matchlen = allocVector(INTSXP, nmatch));
@@ -3151,9 +3211,8 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
             else
             {
                 /* No match (or could there be an error?). */
-                /* FIXME:
-                   Should this perhaps return nmatch -1 values?
-                */
+                /* Alternatively, could return nmatch -1 values.
+                 */
                 PROTECT(matchpos = ScalarInteger(-1));
                 PROTECT(matchlen = ScalarInteger(-1));
                 setAttrib(matchpos, install("match.length"), matchlen);
