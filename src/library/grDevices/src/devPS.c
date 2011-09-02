@@ -4198,8 +4198,13 @@ static void PS_writeRaster(unsigned int *raster, int w, int h, double x, double 
      * image.  This will not work for larger images
      * (more than 10000 pixels, e.g., 100x100)
      * due to hard limits in the PostScript language.
-     * There is no support for semitransparent images.
+     * There is no support for semitransparent images, not even
+     * for transparent pixels (missing values in image(useRaster = TRUE) ).
+     * The latter could be added by using the level-3 feature of
+     * the 'image' operator with an image dictionary and ImageType 3:
+     * see PLRM 3rd ed section 4.10.6
      */
+
     /* Save graphics state */
     fprintf(pd->psfp, "gsave\n");
     /* set the colour space */
