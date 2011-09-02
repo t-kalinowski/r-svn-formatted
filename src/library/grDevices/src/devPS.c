@@ -4207,7 +4207,8 @@ static void PS_writeRaster(unsigned int *raster, int w, int h, double x, double 
 
        (b) add a mask with ImageType 3: see PLRM 3rd ed section 4.10.6.
 
-       (c) interpolation (done)
+       (c) interpolation (done, but at least ghostscript seems to
+       ignore the request (and Mac preview always interpolates.)
 
        (d) sRGB colorspace (done)
     */
@@ -4257,6 +4258,8 @@ static void PS_writeRaster(unsigned int *raster, int w, int h, double x, double 
     fprintf(pd->psfp, "grestore\n");
 }
 
+/* see comments above */
+#define OLD 1
 static void PS_Raster(unsigned int *raster, int w, int h, double x, double y, double width, double height, double rot,
                       Rboolean interpolate, const pGEcontext gc, pDevDesc dd)
 {
