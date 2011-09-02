@@ -341,6 +341,8 @@ ConsoleData newconsoledata(font f, int rows, int cols, int bufbytes, int bufline
     if (!p)
         return NULL;
     p->kind = kind;
+    /* PR#14624 claimed this was needed, with no example */
+    p->chbrk = p->modbrk = NULL;
     if (kind == CONSOLE)
     {
         p->lbuf = newxbuf(bufbytes, buflines, SLBUF);
