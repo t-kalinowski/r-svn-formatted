@@ -2700,7 +2700,7 @@ static void PSFileHeader(FILE *fp, const char *papername, double paperwidth, dou
     fprintf(fp, "%%%%EndComments\n");
     fprintf(fp, "%%%%BeginProlog\n");
     fprintf(fp, "/bp  { gs");
-    if (streql(pd->colormodel, "srgb-nogray"))
+    if (streql(pd->colormodel, "srgb"))
         fprintf(fp, " sRGB");
     if (landscape)
         fprintf(fp, " %.2f 0 translate 90 rotate", paperwidth);
@@ -2725,7 +2725,7 @@ static void PSFileHeader(FILE *fp, const char *papername, double paperwidth, dou
     for (i = 0; i < length(prolog); i++)
         fprintf(fp, "%s\n", CHAR(STRING_ELT(prolog, i)));
     fprintf(fp, "%% end   .ps.prolog\n");
-    if (streql(pd->colormodel, "srgb") || streql(pd->colormodel, "srgb-nogray"))
+    if (streql(pd->colormodel, "srgb+gray") || streql(pd->colormodel, "srgb"))
     {
         SEXP graphicsNS = R_FindNamespace(ScalarString(mkChar("grDevices")));
         prolog = findVar(install(".ps.prolog.srgb"), graphicsNS);
@@ -2739,9 +2739,9 @@ static void PSFileHeader(FILE *fp, const char *papername, double paperwidth, dou
         for (i = 0; i < length(prolog); i++)
             fprintf(fp, "%s\n", CHAR(STRING_ELT(prolog, i)));
     }
-    if (streql(pd->colormodel, "srgb"))
+    if (streql(pd->colormodel, "srgb+gray"))
         fprintf(fp, "/srgb { sRGB setcolor } bind def\n");
-    else if (streql(pd->colormodel, "srgb-nogray"))
+    else if (streql(pd->colormodel, "srgb"))
         fprintf(fp, "/srgb { setcolor } bind def\n");
     PSEncodeFonts(fp, pd);
 
@@ -3148,7 +3148,7 @@ static void PS_TextUTF8(double x, double y, const char *str, double rot, double 
 static void PostScriptSetCol(FILE *fp, double r, double g, double b, PostScriptDesc *pd, Rboolean fg)
 {
     const char *mm = pd->colormodel;
-    if (r == g && g == b && !(streql(mm, "cmyk") || streql(mm, "srgb-nogray") || streql(mm, "rgb-nogray")))
+    if (r == g && g == b && !(streql(mm, "cmyk") || streql(mm, "srgb") || streql(mm, "rgb-nogray")))
     { /* grey */
         if (r == 0)
             fprintf(fp, "0");
@@ -3226,7 +3226,7 @@ static void PostScriptSetCol(FILE *fp, double r, double g, double b, PostScriptD
                 fprintf(fp, " 1");
             else
                 fprintf(fp, " %.4f", b);
-            if (streql(mm, "srgb"))
+            if (streql(mm, "srgb+gray"))
             {
                 if (fg)
                 {
@@ -3241,7 +3241,7 @@ static void PostScriptSetCol(FILE *fp, double r, double g, double b, PostScriptD
                 else
                     fprintf(fp, " srgb");
             }
-            else if (streql(mm, "srgb-nogray"))
+            else if (streql(mm, "srgb"))
                 fprintf(fp, " srgb");
             else
                 fprintf(fp, " rgb");
@@ -4215,9 +4215,9 @@ static void PS_writeRaster(unsigned int *raster, int w, int h, double x, double 
     fprintf(pd->psfp, "gsave\n");
     /* set the colour space: this form of the image operator uses the
        current colour space. */
-    if (streql(pd->colormodel, "srgb"))
+    if (streql(pd->colormodel, "srgb+gray"))
         fprintf(pd->psfp, "sRGB\n");
-    else if (streql(pd->colormodel, "srgb-nogray"))
+    else if (streql(pd->colormodel, "srgb")) /* set for page */
         ;
     else if (streql(pd->colormodel, "gray"))
         fprintf(pd->psfp, "/DeviceGray setcolorspace\n");
