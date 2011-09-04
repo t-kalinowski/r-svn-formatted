@@ -5649,9 +5649,10 @@ typedef struct
     int versionMajor;
     int versionMinor;
 
-    int nobjs;    /* number of objects */
-    int *pos;     /* object positions */
-    int *pageobj; /* page object numbers */
+    int nobjs;     /* number of objects */
+    int *pos;      /* object positions */
+    int max_nobjs; /* current allocation size */
+    int *pageobj;  /* page object numbers */
     int pagemax;
     int startstream; /* position of start of current stream */
     Rboolean inText;
@@ -5677,8 +5678,8 @@ typedef struct
 
     /* Raster images used on the device */
     rasterImage *rasters;
-    int numRasters;
-    int maxRasters;
+    int numRasters; /* number in use */
+    int maxRasters; /* size of array allocated */
     /* Soft masks for raster images */
     int *masks;
     int numMasks;
@@ -6022,7 +6023,7 @@ static void PDFcleanup(int stage, PDFDesc *pd)
 Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const char *family, const char **afmpaths,
                          const char *encoding, const char *bg, const char *fg, double width, double height, double ps,
                          int onefile, int pagecentre, const char *title, SEXP fonts, int versionMajor, int versionMinor,
-                         const char *colormodel, int dingbats, int useKern, Rboolean fillOddEven, int maxRasters,
+                         const char *colormodel, int dingbats, int useKern, Rboolean fillOddEven,
                          Rboolean useCompression)
 {
     /* If we need to bail out with some sort of "error" */
@@ -6059,24 +6060,27 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
     pd->versionMajor = versionMajor;
     pd->versionMinor = versionMinor;
 
-    /* FIXME: pos is allocated of a static size that is never checked
-       as objects are added. This can lead to buffer overflows (and
-       has in the past when it was independent of maxRasters). */
-    pd->pos = (int *)calloc(1150 + maxRasters * 2, sizeof(int));
+    /* This is checked at the start of every page.  We typically have
+       three objects per page plus one or two for each raster image,
+       so this is an ample initial allocation.
+     */
+    pd->max_nobjs = 2000;
+    pd->pos = (int *)calloc(pd->max_nobjs, sizeof(int));
     if (!pd->pos)
     {
         PDFcleanup(1, pd);
         free(dd);
-        error(_("cannot allocate pd->pos"));
+        error("cannot allocate pd->pos");
     }
-    pd->pageobj = (int *)calloc(100, sizeof(int));
+    /* This one is dynamic: initial allocation */
+    pd->pagemax = 100;
+    pd->pageobj = (int *)calloc(pd->pagemax, sizeof(int));
     if (!pd->pageobj)
     {
         PDFcleanup(2, pd);
         free(dd);
-        error(_("cannot allocate pd->pageobj"));
+        error("cannot allocate pd->pageobj");
     }
-    pd->pagemax = 100;
 
     /* initialize PDF device description */
     strcpy(pd->filename, file);
@@ -6279,7 +6283,7 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
      *****************************/
 
     pd->numRasters = 0;
-    pd->maxRasters = maxRasters;
+    pd->maxRasters = 64; /* dynamic */
     pd->rasters = initRasterArray(pd->maxRasters);
     if (!pd->rasters)
     {
@@ -7080,6 +7084,16 @@ static void PDF_endfile(PDFDesc *pd)
         fprintf(pd->pdffp, ">>\nendobj\n");
     }
 
+    if (tempnobj >= pd->max_nobjs)
+    {
+        int new = tempnobj + 500;
+        void *tmp = realloc(pd->pos, new * sizeof(int));
+        if (!pd->pos || !pd->pageobj)
+            error("unable to increase object limit: please shutdown the pdf device");
+        pd->pos = (int *)tmp;
+        pd->max_nobjs = new;
+    }
+
     /*
      * Write out objects representing the encodings
      */
@@ -7391,13 +7405,22 @@ static void PDF_NewPage(const pGEcontext gc, pDevDesc dd)
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
     char buf[512];
 
-    if (pd->pageno >= pd->pagemax || pd->nobjs >= 3 * pd->pagemax)
+    if (pd->pageno >= pd->pagemax)
     {
-        pd->pageobj = (int *)realloc(pd->pageobj, 2 * pd->pagemax * sizeof(int));
-        pd->pos = (int *)realloc(pd->pos, (6 * pd->pagemax + 550) * sizeof(int));
-        if (!pd->pos || !pd->pageobj)
-            error(_("unable to increase page limit: please shutdown the pdf device"));
+        void *tmp = realloc(pd->pageobj, 2 * pd->pagemax * sizeof(int));
+        if (!pd->pageobj)
+            error("unable to increase page limit: please shutdown the pdf device");
+        pd->pageobj = (int *)tmp;
         pd->pagemax *= 2;
+    }
+    if (pd->nobjs + 500 >= pd->max_nobjs)
+    {
+        int new = pd->max_nobjs + 2000;
+        void *tmp = realloc(pd->pos, new * sizeof(int));
+        if (!pd->pos || !pd->pageobj)
+            error("unable to increase object limit: please shutdown the pdf device");
+        pd->pos = (int *)tmp;
+        pd->max_nobjs = new;
     }
 
     if (pd->pageno > 0)
@@ -8655,7 +8678,7 @@ SEXP PDF(SEXP args)
     const char *file, *paper, *encoding, *family = NULL /* -Wall */, *bg, *fg, *title, call[] = "PDF", *colormodel;
     const char *afms[5];
     double height, width, ps;
-    int i, onefile, pagecentre, major, minor, dingbats, useKern, maxRasters, useCompression;
+    int i, onefile, pagecentre, major, minor, dingbats, useKern, useCompression;
     SEXP fam, fonts;
     Rboolean fillOddEven;
 
@@ -8719,10 +8742,6 @@ SEXP PDF(SEXP args)
     args = CDR(args);
     if (fillOddEven == NA_LOGICAL)
         error(_("invalid value of '%s'"), "fillOddEven");
-    maxRasters = asInteger(CAR(args));
-    args = CDR(args);
-    if (maxRasters == NA_INTEGER || maxRasters <= 0)
-        error(_("invalid 'maxRasters' parameter in %s"), call);
     useCompression = asLogical(CAR(args));
     args = CDR(args);
     if (useCompression == NA_LOGICAL)
@@ -8736,8 +8755,7 @@ SEXP PDF(SEXP args)
         if (!(dev = (pDevDesc)calloc(1, sizeof(DevDesc))))
             return 0;
         if (!PDFDeviceDriver(dev, file, paper, family, afms, encoding, bg, fg, width, height, ps, onefile, pagecentre,
-                             title, fonts, major, minor, colormodel, dingbats, useKern, fillOddEven, maxRasters,
-                             useCompression))
+                             title, fonts, major, minor, colormodel, dingbats, useKern, fillOddEven, useCompression))
         {
             /* we no longer get here: error is thrown in PDFDeviceDriver */
             error(_("unable to start %s() device"), "pdf");
