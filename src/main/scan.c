@@ -1858,9 +1858,14 @@ SEXP attribute_hidden do_readtablehead(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (nbuf >= buf_size - 1)
             {
                 buf_size *= 2;
-                buf = (char *)realloc(buf, buf_size);
-                if (!buf)
+                char *tmp = (char *)realloc(buf, buf_size);
+                if (!tmp)
+                {
+                    free(buf);
                     error(_("cannot allocate buffer in 'readTableHead'"));
+                }
+                else
+                    buf = tmp;
             }
             /* Need to handle escaped embedded quotes, and how they are
                escaped depends on 'sep' */
