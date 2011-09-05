@@ -100,10 +100,7 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
                     break;
                 }
         if (haveBytes)
-        {
-            warning(_("string marked as \"bytes\" found, so using useBytes = TRUE"));
             useBytes = TRUE;
-        }
     }
     if (!useBytes)
     {
@@ -122,6 +119,9 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
             }
         }
     }
+
+    /* wtransChar and translateChar can R_alloc */
+    vmax = vmaxget();
     if (useBytes)
         rc = tre_regcompb(&reg, CHAR(STRING_ELT(pat, 0)), cflags);
     else if (useWC)
@@ -151,8 +151,6 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
     n = LENGTH(vec);
     PROTECT(ind = allocVector(LGLSXP, n));
     nmatches = 0;
-    /* wtransChar and translateChar can R_alloc */
-    vmax = vmaxget();
     for (i = 0; i < n; i++)
     {
         if (STRING_ELT(vec, i) == NA_STRING)
@@ -229,6 +227,7 @@ SEXP attribute_hidden do_adist(SEXP call, SEXP op, SEXP args, SEXP env)
     int i = 0, j = 0, k, l, m, nx, ny, nxy;
     int lpos, rpos;
     const char *s, *t;
+    const void *vmax = NULL;
 
     Rboolean haveBytes, useWC = FALSE;
 
@@ -318,10 +317,7 @@ SEXP attribute_hidden do_adist(SEXP call, SEXP op, SEXP args, SEXP env)
             }
         }
         if (haveBytes)
-        {
-            warning(_("string marked as \"bytes\" found, so using useBytes = TRUE"));
             useBytes = TRUE;
-        }
     }
 
     if (!useBytes)
@@ -373,6 +369,8 @@ SEXP attribute_hidden do_adist(SEXP call, SEXP op, SEXP args, SEXP env)
         PROTECT(counts = allocArray(REALSXP, dim));
     }
 
+    /* wtransChar and translateChar can R_alloc */
+    vmax = vmaxget();
     for (k = 0; k < LENGTH(lpositions); k++)
     {
         lpos = INTEGER(lpositions)[k];
@@ -421,7 +419,10 @@ SEXP attribute_hidden do_adist(SEXP call, SEXP op, SEXP args, SEXP env)
             if (useBytes)
                 rc = tre_regcompb(&reg, CHAR(elt), cflags);
             else if (useWC)
+            {
                 rc = tre_regwcomp(&reg, wtransChar(elt), cflags);
+                vmaxset(vmax);
+            }
             else
             {
                 s = translateChar(elt);
@@ -437,6 +438,7 @@ SEXP attribute_hidden do_adist(SEXP call, SEXP op, SEXP args, SEXP env)
                     }
                 }
                 rc = tre_regcomp(&reg, s, cflags);
+                vmaxset(vmax);
             }
             if (rc)
             {
@@ -479,7 +481,10 @@ SEXP attribute_hidden do_adist(SEXP call, SEXP op, SEXP args, SEXP env)
                     if (useBytes)
                         rc = tre_regaexecb(&reg, CHAR(elt), &match, params, 0);
                     else if (useWC)
+                    {
                         rc = tre_regawexec(&reg, wtransChar(elt), &match, params, 0);
+                        vmax = vmaxget();
+                    }
                     else
                     {
                         t = translateChar(elt);
@@ -495,6 +500,7 @@ SEXP attribute_hidden do_adist(SEXP call, SEXP op, SEXP args, SEXP env)
                             }
                         }
                         rc = tre_regaexec(&reg, t, &match, params, 0);
+                        vmax = vmaxget();
                     }
                     if (rc == REG_OK)
                     {

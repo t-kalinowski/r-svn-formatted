@@ -188,7 +188,6 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
         if (haveBytes)
         {
-            warning(_("string marked as \"bytes\" found, so using useBytes = TRUE"));
             useBytes = TRUE;
         }
         else
@@ -3122,10 +3121,7 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
             }
         if (haveBytes)
-        {
-            warning(_("string marked as \"bytes\" found, so using useBytes = TRUE"));
             useBytes = TRUE;
-        }
     }
 
     if (!useBytes)
