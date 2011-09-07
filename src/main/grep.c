@@ -958,7 +958,6 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
         if (haveBytes)
         {
-            warning(_("string marked as \"bytes\" found, so using useBytes = TRUE"));
             useBytes = TRUE;
         }
     }
@@ -3063,6 +3062,7 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
 
     Rboolean haveBytes, useWC = FALSE;
     const char *s, *t;
+    const void *vmax = NULL;
 
     regex_t reg;
     size_t nmatch;
@@ -3177,16 +3177,21 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         else
         {
+            vmax = vmaxget();
             if (useBytes)
                 rc = tre_regexecb(&reg, CHAR(STRING_ELT(vec, i)), nmatch, pmatch, 0);
             else if (useWC)
+            {
                 rc = tre_regwexec(&reg, wtransChar(STRING_ELT(vec, i)), nmatch, pmatch, 0);
+                vmaxset(vmax);
+            }
             else
             {
                 t = translateChar(STRING_ELT(vec, i));
                 if (mbcslocale && !mbcsValid(t))
                     error(_("input string %d is invalid in this locale"), i + 1);
                 rc = tre_regexec(&reg, t, nmatch, pmatch, 0);
+                vmaxset(vmax);
             }
             if (rc == REG_OK)
             {
