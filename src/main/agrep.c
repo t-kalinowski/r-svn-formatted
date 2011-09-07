@@ -483,7 +483,7 @@ SEXP attribute_hidden do_adist(SEXP call, SEXP op, SEXP args, SEXP env)
                     else if (useWC)
                     {
                         rc = tre_regawexec(&reg, wtransChar(elt), &match, params, 0);
-                        vmax = vmaxget();
+                        vmaxset(vmax);
                     }
                     else
                     {
@@ -500,7 +500,7 @@ SEXP attribute_hidden do_adist(SEXP call, SEXP op, SEXP args, SEXP env)
                             }
                         }
                         rc = tre_regaexec(&reg, t, &match, params, 0);
-                        vmax = vmaxget();
+                        vmaxset(vmax);
                     }
                     if (rc == REG_OK)
                     {
