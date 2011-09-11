@@ -915,7 +915,7 @@ SEXP attribute_hidden do_pmatch(SEXP call, SEXP op, SEXP args, SEXP env)
     int *used = NULL, *ians;
     const char **in, **tar;
     Rboolean no_dups;
-    Rboolean useUTF8 = FALSE;
+    Rboolean useBytes = FALSE, useUTF8 = FALSE;
 
     checkArity(op, args);
     input = CAR(args);
@@ -939,24 +939,50 @@ SEXP attribute_hidden do_pmatch(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 
     for (i = 0; i < n_input; i++)
-        if (ENC_KNOWN(STRING_ELT(input, i)))
+    {
+        if (IS_BYTES(STRING_ELT(input, i)))
         {
-            useUTF8 = TRUE;
+            useBytes = TRUE;
+            useUTF8 = FALSE;
             break;
         }
-    if (!useUTF8)
+        else if (ENC_KNOWN(STRING_ELT(input, i)))
+        {
+            useUTF8 = TRUE;
+        }
+    }
+    if (!useBytes)
+    {
         for (i = 0; i < n_target; i++)
-            if (ENC_KNOWN(STRING_ELT(target, i)))
+        {
+            if (IS_BYTES(STRING_ELT(target, i)))
             {
-                useUTF8 = TRUE;
+                useBytes = TRUE;
+                useUTF8 = FALSE;
                 break;
             }
+            else if (ENC_KNOWN(STRING_ELT(target, i)))
+            {
+                useUTF8 = TRUE;
+            }
+        }
+    }
 
     in = (const char **)R_alloc((size_t)n_input, sizeof(char *));
     tar = (const char **)R_alloc((size_t)n_target, sizeof(char *));
     PROTECT(ans = allocVector(INTSXP, n_input));
     ians = INTEGER(ans);
-    if (useUTF8)
+    if (useBytes)
+    {
+        for (i = 0; i < n_input; i++)
+        {
+            in[i] = CHAR(STRING_ELT(input, i));
+            ians[i] = 0;
+        }
+        for (j = 0; j < n_target; j++)
+            tar[j] = CHAR(STRING_ELT(target, j));
+    }
+    else if (useUTF8)
     {
         for (i = 0; i < n_input; i++)
         {
@@ -1005,8 +1031,12 @@ SEXP attribute_hidden do_pmatch(SEXP call, SEXP op, SEXP args, SEXP env)
            since the tradeoff involves memory as well as time
            it is not really possible to optimize there.
          */
-        if (n_target > 100 && 10 * n_input > n_target)
+        if (!useBytes && (n_target > 100) && (10 * n_input > n_target))
         {
+            /* <FIXME>
+               Currently no hashing when using bytes.
+               </FIXME>
+            */
             HashData data;
             HashTableSetup(target, &data);
             data.useUTF8 = useUTF8;
@@ -1090,7 +1120,7 @@ SEXP attribute_hidden do_charmatch(SEXP call, SEXP op, SEXP args, SEXP env)
     int i, j, k, imatch, n_input, n_target, no_match, *ians;
     size_t temp;
     const char *ss, *st;
-    Rboolean useUTF8 = FALSE;
+    Rboolean useBytes = FALSE, useUTF8 = FALSE;
     const void *vmax;
 
     checkArity(op, args);
@@ -1105,18 +1135,34 @@ SEXP attribute_hidden do_charmatch(SEXP call, SEXP op, SEXP args, SEXP env)
     no_match = asInteger(CADDR(args));
 
     for (i = 0; i < n_input; i++)
-        if (ENC_KNOWN(STRING_ELT(input, i)))
+    {
+        if (IS_BYTES(STRING_ELT(input, i)))
         {
-            useUTF8 = TRUE;
+            useBytes = TRUE;
+            useUTF8 = FALSE;
             break;
         }
-    if (!useUTF8)
+        else if (ENC_KNOWN(STRING_ELT(input, i)))
+        {
+            useUTF8 = TRUE;
+        }
+    }
+    if (!useBytes)
+    {
         for (i = 0; i < n_target; i++)
-            if (ENC_KNOWN(STRING_ELT(target, i)))
+        {
+            if (IS_BYTES(STRING_ELT(target, i)))
             {
-                useUTF8 = TRUE;
+                useBytes = TRUE;
+                useUTF8 = FALSE;
                 break;
             }
+            else if (ENC_KNOWN(STRING_ELT(target, i)))
+            {
+                useUTF8 = TRUE;
+            }
+        }
+    }
 
     PROTECT(ans = allocVector(INTSXP, n_input));
     ians = INTEGER(ans);
@@ -1124,7 +1170,9 @@ SEXP attribute_hidden do_charmatch(SEXP call, SEXP op, SEXP args, SEXP env)
     vmax = vmaxget();
     for (i = 0; i < n_input; i++)
     {
-        if (useUTF8)
+        if (useBytes)
+            ss = CHAR(STRING_ELT(input, i));
+        else if (useUTF8)
             ss = translateCharUTF8(STRING_ELT(input, i));
         else
             ss = translateChar(STRING_ELT(input, i));
@@ -1134,7 +1182,9 @@ SEXP attribute_hidden do_charmatch(SEXP call, SEXP op, SEXP args, SEXP env)
         /* we could reset vmax here too: worth it? */
         for (j = 0; j < n_target; j++)
         {
-            if (useUTF8)
+            if (useBytes)
+                st = CHAR(STRING_ELT(target, j));
+            else if (useUTF8)
                 st = translateCharUTF8(STRING_ELT(target, j));
             else
                 st = translateChar(STRING_ELT(target, j));
