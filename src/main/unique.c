@@ -152,6 +152,7 @@ static int shash(SEXP x, int indx, HashData *d)
     const void *vmax = vmaxget();
     if (!d->useUTF8 && d->useCache)
         return cshash(x, indx, d);
+    /* Not having d->useCache really should not happen anymore. */
     p = translateCharUTF8(STRING_ELT(x, indx));
     k = 0;
     while (*p++)
@@ -434,10 +435,14 @@ SEXP duplicated(SEXP x, Rboolean from_last)
         data.useCache = TRUE;                                                                                          \
         for (i = 0; i < length(x); i++)                                                                                \
         {                                                                                                              \
+            if (IS_BYTES(STRING_ELT(x, i)))                                                                            \
+            {                                                                                                          \
+                data.useUTF8 = FALSE;                                                                                  \
+                break;                                                                                                 \
+            }                                                                                                          \
             if (ENC_KNOWN(STRING_ELT(x, i)))                                                                           \
             {                                                                                                          \
                 data.useUTF8 = TRUE;                                                                                   \
-                break;                                                                                                 \
             }                                                                                                          \
             if (!IS_CACHED(STRING_ELT(x, i)))                                                                          \
             {                                                                                                          \
@@ -811,15 +816,21 @@ SEXP match5(SEXP itable, SEXP ix, int nmatch, SEXP incomp, SEXP env)
     HashTableSetup(table, &data);
     if (type == STRSXP)
     {
+        Rboolean useBytes = FALSE;
         Rboolean useUTF8 = FALSE;
         Rboolean useCache = TRUE;
         for (i = 0; i < length(x); i++)
         {
             SEXP s = STRING_ELT(x, i);
+            if (IS_BYTES(s))
+            {
+                useBytes = TRUE;
+                useUTF8 = FALSE;
+                break;
+            }
             if (ENC_KNOWN(s))
             {
                 useUTF8 = TRUE;
-                break;
             }
             if (!IS_CACHED(s))
             {
@@ -827,15 +838,20 @@ SEXP match5(SEXP itable, SEXP ix, int nmatch, SEXP incomp, SEXP env)
                 break;
             }
         }
-        if (!useUTF8 || useCache)
+        if (!useBytes || useCache)
         {
             for (i = 0; i < length(table); i++)
             {
                 SEXP s = STRING_ELT(table, i);
+                if (IS_BYTES(s))
+                {
+                    useBytes = TRUE;
+                    useUTF8 = FALSE;
+                    break;
+                }
                 if (ENC_KNOWN(s))
                 {
                     useUTF8 = TRUE;
-                    break;
                 }
                 if (!IS_CACHED(s))
                 {
@@ -1031,7 +1047,7 @@ SEXP attribute_hidden do_pmatch(SEXP call, SEXP op, SEXP args, SEXP env)
            since the tradeoff involves memory as well as time
            it is not really possible to optimize there.
          */
-        if (!useBytes && (n_target > 100) && (10 * n_input > n_target))
+        if ((n_target > 100) && (10 * n_input > n_target))
         {
             /* <FIXME>
                Currently no hashing when using bytes.
