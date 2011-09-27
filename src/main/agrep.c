@@ -35,13 +35,86 @@
 #include <wchar.h>
 #include <tre/tre.h>
 
+static void amatch_regaparams(regaparams_t *params, int patlen, double *bounds, int *costs)
+{
+    int cost, max_cost, warn = 0;
+    double bound;
+
+    cost = params->cost_ins = max_cost = costs[0];
+    cost = params->cost_del = costs[1];
+    if (cost > max_cost)
+        max_cost = cost;
+    cost = params->cost_subst = costs[2];
+    if (cost > max_cost)
+        max_cost = cost;
+    bound = bounds[0];
+    if (ISNA(bound))
+    {
+        params->max_cost = INT_MAX;
+    }
+    else
+    {
+        if (bound < 1)
+            bound *= (patlen * max_cost);
+        params->max_cost = IntegerFromReal(ceil(bound), &warn);
+        CoercionWarning(warn);
+    }
+    bound = bounds[1];
+    if (ISNA(bound))
+    {
+        params->max_del = INT_MAX;
+    }
+    else
+    {
+        if (bound < 1)
+            bound *= patlen;
+        params->max_del = IntegerFromReal(ceil(bound), &warn);
+        CoercionWarning(warn);
+    }
+    bound = bounds[2];
+    if (ISNA(bound))
+    {
+        params->max_ins = INT_MAX;
+    }
+    else
+    {
+        if (bound < 1)
+            bound *= patlen;
+        params->max_ins = IntegerFromReal(ceil(bound), &warn);
+        CoercionWarning(warn);
+    }
+    bound = bounds[3];
+    if (ISNA(bound))
+    {
+        params->max_subst = INT_MAX;
+    }
+    else
+    {
+        if (bound < 1)
+            bound *= patlen;
+        params->max_subst = IntegerFromReal(ceil(bound), &warn);
+        CoercionWarning(warn);
+    }
+    bound = bounds[4];
+    if (ISNA(bound))
+    {
+        params->max_err = INT_MAX;
+    }
+    else
+    {
+        if (bound < 1)
+            bound *= patlen;
+        params->max_err = IntegerFromReal(ceil(bound), &warn);
+        CoercionWarning(warn);
+    }
+}
+
 SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP pat, vec, ind, ans;
     SEXP opt_costs, opt_bounds;
-    int i, j, n, nmatches;
-    int opt_icase, opt_value, useBytes;
-    int opt_fixed;
+    int opt_icase, opt_value, opt_fixed, useBytes;
+    int i, j, n, nmatches, patlen;
     Rboolean useWC = FALSE;
     const void *vmax = NULL;
 
@@ -82,7 +155,8 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isString(pat) || length(pat) < 1)
         error(_("invalid '%s' argument"), "pattern");
     if (length(pat) > 1)
-        warning(_("argument '%s' has length > 1 and only the first element will be used"), "pat");
+        warning(_("argument '%s' has length > 1 and only the first element will be used"), "pattern");
+
     if (!isString(vec))
         error(_("invalid '%s' argument"), "x");
 
@@ -121,6 +195,36 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
 
+    if (STRING_ELT(pat, 0) == NA_STRING)
+    {
+        if (opt_value)
+        {
+            PROTECT(ans = allocVector(STRSXP, n));
+            for (i = 0; i < n; i++)
+                SET_STRING_ELT(ans, i, NA_STRING);
+            SEXP nms = getAttrib(vec, R_NamesSymbol);
+            if (!isNull(nms))
+                setAttrib(ans, R_NamesSymbol, nms);
+        }
+        else
+        {
+            PROTECT(ans = allocVector(INTSXP, n));
+            for (i = 0; i < n; i++)
+                INTEGER(ans)[i] = NA_INTEGER;
+        }
+        UNPROTECT(1);
+        return ans;
+    }
+
+    if (useBytes)
+        PROTECT(call = lang3(install("nchar"), pat, ScalarString(mkChar("bytes"))));
+    else
+        PROTECT(call = lang3(install("nchar"), pat, ScalarString(mkChar("chars"))));
+    patlen = asInteger(eval(call, env));
+    UNPROTECT(1);
+    if (!patlen)
+        error(_("'pattern' must be a non-empty character string"));
+
     /* wtransChar and translateChar can R_alloc */
     vmax = vmaxget();
     if (useBytes)
@@ -142,15 +246,7 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 
     tre_regaparams_default(&params);
-    params.cost_ins = INTEGER(opt_costs)[0];
-    ;
-    params.cost_del = INTEGER(opt_costs)[1];
-    params.cost_subst = INTEGER(opt_costs)[2];
-    params.max_cost = INTEGER(opt_bounds)[0];
-    params.max_del = INTEGER(opt_bounds)[1];
-    params.max_ins = INTEGER(opt_bounds)[2];
-    params.max_subst = INTEGER(opt_bounds)[3];
-    params.max_err = INTEGER(opt_bounds)[4];
+    amatch_regaparams(&params, patlen, REAL(opt_bounds), INTEGER(opt_costs));
 
     /* Matching. */
     n = LENGTH(vec);
@@ -780,7 +876,7 @@ SEXP attribute_hidden do_aregexec(SEXP call, SEXP op, SEXP args, SEXP env)
     regmatch_t *pmatch;
     regaparams_t params;
     regamatch_t match;
-    int i, j, n, so;
+    int i, j, n, so, patlen;
     int rc, cflags = REG_EXTENDED;
 
     checkArity(op, args);
@@ -860,6 +956,15 @@ SEXP attribute_hidden do_aregexec(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 
     if (useBytes)
+        PROTECT(call = lang3(install("nchar"), pat, ScalarString(mkChar("bytes"))));
+    else
+        PROTECT(call = lang3(install("nchar"), pat, ScalarString(mkChar("chars"))));
+    patlen = asInteger(eval(call, env));
+    UNPROTECT(1);
+    if (!patlen)
+        error(_("'pattern' must be a non-empty character string"));
+
+    if (useBytes)
         rc = tre_regcompb(&reg, CHAR(STRING_ELT(pat, 0)), cflags);
     else if (useWC)
         rc = tre_regwcomp(&reg, wtransChar(STRING_ELT(pat, 0)), cflags);
@@ -882,15 +987,7 @@ SEXP attribute_hidden do_aregexec(SEXP call, SEXP op, SEXP args, SEXP env)
     pmatch = (regmatch_t *)malloc(nmatch * sizeof(regmatch_t));
 
     tre_regaparams_default(&params);
-    params.cost_ins = INTEGER(opt_costs)[0];
-    ;
-    params.cost_del = INTEGER(opt_costs)[1];
-    params.cost_subst = INTEGER(opt_costs)[2];
-    params.max_cost = INTEGER(opt_bounds)[0];
-    params.max_del = INTEGER(opt_bounds)[1];
-    params.max_ins = INTEGER(opt_bounds)[2];
-    params.max_subst = INTEGER(opt_bounds)[3];
-    params.max_err = INTEGER(opt_bounds)[4];
+    amatch_regaparams(&params, patlen, REAL(opt_bounds), INTEGER(opt_costs));
 
     PROTECT(ans = allocVector(VECSXP, n));
 
