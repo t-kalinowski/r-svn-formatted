@@ -75,14 +75,18 @@ static R_CMethodDef CEntries[] = {CDEF(R_chull),
 #name, (DL_FUNC)&name, n                                                                                       \
     }
 
-static const R_CallMethodDef CallEntries[] = {CALLDEF(Type1FontInUse, 2),
-                                              CALLDEF(CIDFontInUse, 2),
-                                              {"R_GD_nullDevice", (DL_FUNC)&R_GD_nullDevice, 0},
+static const R_CallMethodDef CallEntries[] = {
+    // NB: each *also* needs an entry in useDynLib() in ../NAMESPACE !
+    CALLDEF(Type1FontInUse, 2),
+    CALLDEF(CIDFontInUse, 2),
+    CALLDEF(R_CreateAtVector, 4),
+    CALLDEF(R_GAxisPars, 3),
+    {"R_GD_nullDevice", (DL_FUNC)&R_GD_nullDevice, 0},
 #ifndef WIN32
-                                              CALLDEF(makeQuartzDefault, 0),
-                                              CALLDEF(cairoProps, 1),
+    CALLDEF(makeQuartzDefault, 0),
+    CALLDEF(cairoProps, 1),
 #endif
-                                              {NULL, NULL, 0}};
+    {NULL, NULL, 0}};
 
 #define EXTDEF(name, n)                                                                                                \
     {                                                                                                                  \
