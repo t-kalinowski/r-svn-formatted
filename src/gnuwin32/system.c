@@ -833,9 +833,7 @@ char *PrintUsage(void)
                   "   Don't restore previously saved objects\n  --no-restore-history  Don't restore the R history "
                   "file\n  --no-restore          Don't restore anything\n",
          msg2[] = "  --vanilla             Combine --no-save, --no-restore, --no-site-file,\n                          "
-                  "--no-init-file and --no-environ\n  --min-vsize=N         Set vector heap min to N bytes; '4M' = 4 "
-                  "MegaB\n  --max-vsize=N         Set vector heap max to N bytes;\n  --min-nsize=N         Set min "
-                  "number of cons cells to N\n  --max-nsize=N         Set max number of cons cells to N\n",
+                  "--no-init-file and --no-environ\n",
          msg2b[] = "  --max-mem-size=N      Set limit for memory to be used by R\n  --max-ppsize=N        Set max size "
                    "of protect stack to N\n",
          msg3[] = "  -q, --quiet           Don't print startup message\n  --silent              Same as --quiet\n  "

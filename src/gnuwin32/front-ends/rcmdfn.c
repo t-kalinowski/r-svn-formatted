@@ -66,9 +66,9 @@ void rcmdusage(char *RCMD)
             "  SHLIB    Make a DLL for use with dynload\n", "  BATCH    Run R in batch mode\n",
             "  build    Build add-on packages\n", "  check    Check add-on packages\n",
             "  Rprof    Post process R profiling files\n", "  Rdconv   Convert Rd format to various other formats\n",
-            "  Rdiff    difference R output files\n", "  Rd2dvi   Convert Rd format to DVI\n",
-            "  Rd2pdf   Convert Rd format to PDF\n", "  Rd2txt   Convert Rd format to pretty text\n",
-            "  Stangle  Extract S/R code from Sweave documentation\n", "  Sweave   Process Sweave documentation\n",
+            "  Rdiff    difference R output files\n", "  Rd2pdf   Convert Rd format to PDF\n",
+            "  Rd2txt   Convert Rd format to pretty text\n", "  Stangle  Extract S/R code from Sweave documentation\n",
+            "  Sweave   Process Sweave documentation\n",
             "  config   Obtain configuration information about R\n"
             "  open     Open a file via Windows file associations\n"
             "  texify   Process a latex file\n");
@@ -501,19 +501,11 @@ int rcmdfn(int cmdarg, int argc, char **argv)
                  getRHOME(3), BINDIR);
         PROCESS_CMD("nextArg");
     }
-    else if (!strcmp(argv[cmdarg], "Rd2dvi"))
-    {
-        snprintf(cmd, CMD_LEN,
-                 "%s/%s/Rterm.exe -e tools:::..Rd2dvi() R_DEFAULT_PACKAGES= LC_ALL=C --vanilla --slave --args ",
-                 getRHOME(3), BINDIR);
-        PROCESS_CMD("nextArg");
-    }
     else if (!strcmp(argv[cmdarg], "Rd2pdf"))
     {
-        snprintf(
-            cmd, CMD_LEN,
-            "%s/%s/Rterm.exe -e tools:::..Rd2dvi() R_DEFAULT_PACKAGES= LC_ALL=C --vanilla --slave --args nextArg--pdf",
-            getRHOME(3), BINDIR);
+        snprintf(cmd, CMD_LEN,
+                 "%s/%s/Rterm.exe -e tools:::..Rd2pdf() R_DEFAULT_PACKAGES= LC_ALL=C --vanilla --slave --args nextArg",
+                 getRHOME(3), BINDIR);
         PROCESS_CMD("nextArg");
     }
     else if (!strcmp(argv[cmdarg], "Sweave"))
