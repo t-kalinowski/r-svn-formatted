@@ -80,12 +80,15 @@ double fround(double x, double digits)
     long double pow10, sgn, intx;
     int dig;
 
-#ifdef IEEE_754
     if (ISNAN(x) || ISNAN(digits))
         return x + digits;
     if (!R_FINITE(x))
         return x;
-#endif
+
+    if (digits == R_PosInf)
+        return x;
+    else if (digits == R_NegInf)
+        return 0.0;
 
     if (digits > MAX_DIGITS)
         digits = MAX_DIGITS;
