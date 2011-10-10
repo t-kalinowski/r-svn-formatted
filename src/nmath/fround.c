@@ -85,9 +85,9 @@ double fround(double x, double digits)
     if (!R_FINITE(x))
         return x;
 
-    if (digits == R_PosInf)
+    if (digits == ML_POSINF)
         return x;
-    else if (digits == R_NegInf)
+    else if (digits == ML_NEGINF)
         return 0.0;
 
     if (digits > MAX_DIGITS)
