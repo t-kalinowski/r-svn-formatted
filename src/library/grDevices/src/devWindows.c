@@ -3080,11 +3080,14 @@ static void doRaster(unsigned int *raster, int x, int y, int w, int h, double ro
         imageData[i * 4 + 0] = 0.49 + fac * R_BLUE(raster[i]);
     }
     setpixels(img, imageData);
-    gsetcliprect(xd->bm, xd->clip);
     if (xd->kind != SCREEN)
+    {
+        gsetcliprect(xd->gawin, xd->clip);
         gcopyalpha2(xd->gawin, img, dr);
+    }
     else
     {
+        gsetcliprect(xd->bm, xd->clip);
         gcopyalpha2(xd->bm, img, dr);
         if (!xd->buffered)
             gbitblt(xd->gawin, xd->bm, pt(0, 0), getrect(xd->bm));
