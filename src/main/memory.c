@@ -2367,6 +2367,7 @@ SEXP allocVector(SEXPTYPE type, R_len_t length)
             ATTRIB(s) = R_NilValue;
             TYPEOF(s) = type;
             LENGTH(s) = length;
+            TRUELENGTH(s) = 0;
             NAMED(s) = 0;
             return (s);
         }
@@ -2557,6 +2558,7 @@ SEXP allocVector(SEXPTYPE type, R_len_t length)
         GC_PROT(s = allocSExpNonCons(type));
     }
     LENGTH(s) = length;
+    TRUELENGTH(s) = 0;
     NAMED(s) = 0;
 
     /* The following prevents disaster in the case */
