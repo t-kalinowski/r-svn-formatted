@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2003-7   The R Development Core Team
+ *  Copyright (C) 2003-11   The R Development Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,7 +31,6 @@ SEXP attribute_hidden do_mapply(SEXP f, SEXP varyingArgs, SEXP constantArgs, SEX
 
     m = length(varyingArgs);
     vnames = PROTECT(getAttrib(varyingArgs, R_NamesSymbol));
-
     named = vnames != R_NilValue;
 
     lengths = (int *)R_alloc(m, sizeof(int));
@@ -49,8 +48,8 @@ SEXP attribute_hidden do_mapply(SEXP f, SEXP varyingArgs, SEXP constantArgs, SEX
     mindex = PROTECT(allocVector(VECSXP, m));
     nindex = PROTECT(allocVector(VECSXP, m));
 
-    /* build a call
-       f(dots[[1]][[4]],dots[[2]][[4]],dots[[3]][[4]],d=7)
+    /* build a call like
+       f(dots[[1]][[4]], dots[[2]][[4]], dots[[3]][[4]], d=7)
     */
 
     if (constantArgs == R_NilValue)
@@ -64,17 +63,14 @@ SEXP attribute_hidden do_mapply(SEXP f, SEXP varyingArgs, SEXP constantArgs, SEX
     {
         SET_VECTOR_ELT(mindex, j, ScalarInteger(j + 1));
         SET_VECTOR_ELT(nindex, j, allocVector(INTSXP, 1));
-
         PROTECT(tmp1 = lang3(R_Bracket2Symbol, install("dots"), VECTOR_ELT(mindex, j)));
-
         PROTECT(tmp2 = lang3(R_Bracket2Symbol, tmp1, VECTOR_ELT(nindex, j)));
-
         UNPROTECT(3);
         PROTECT(fcall = LCONS(tmp2, fcall));
-
         if (named && CHAR(STRING_ELT(vnames, j))[0] != '\0')
             SET_TAG(fcall, install(translateChar(STRING_ELT(vnames, j))));
     }
+
     UNPROTECT(1);
     PROTECT(fcall = LCONS(f, fcall));
 
