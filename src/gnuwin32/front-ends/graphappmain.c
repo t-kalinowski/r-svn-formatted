@@ -12,7 +12,7 @@ int PASCAL WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, in
 {
     extern void AppMain(int argc, char **argv);
 
-#ifdef W64
+#ifdef _W64
     extern int __argc;
     extern char **__argv;
 

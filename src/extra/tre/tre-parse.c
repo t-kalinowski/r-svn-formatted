@@ -191,7 +191,7 @@ int tre_isascii_func(tre_cint_t c)
 #endif /* !tre_isascii */
 
 /* R addition:  this platform has the function but not the declaration */
-#ifdef W64
+#ifdef _W64
 int iswblank(wint_t wc);
 #endif
 
