@@ -3365,7 +3365,7 @@ static Rboolean GA_Locator(double *x, double *y, pDevDesc dd)
     begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_NilValue, R_NilValue, R_NilValue, R_NilValue);
     cntxt.cend = &donelocator;
     cntxt.cenddata = xd;
-    xd->cntxt = &cntxt;
+    xd->cntxt = (void *)&cntxt;
 
     /* and an exit handler in case the window gets closed */
     dd->onExit = GA_onExit;
@@ -4022,7 +4022,7 @@ static void GA_onExit(pDevDesc dd)
     dd->gettingEvent = FALSE;
 
     if (xd->cntxt)
-        endcontext(xd->cntxt);
+        endcontext((RCNTXT *)xd->cntxt);
     if (xd->locator)
         donelocator((void *)xd);
 
