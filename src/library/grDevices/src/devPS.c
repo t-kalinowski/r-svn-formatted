@@ -5596,6 +5596,8 @@ typedef struct
 typedef struct
 {
     char filename[PATH_MAX];
+    int open_type;
+    char cmd[PATH_MAX];
 
     char papername[64]; /* paper name */
     int paperwidth;     /* paper width in big points (1/72 in) */
@@ -5614,6 +5616,9 @@ typedef struct
 
     FILE *pdffp; /* output file */
     FILE *mainfp;
+#ifndef Win32
+    FILE *pipefp;
+#endif
 
     /* This group of variables track the current device status.
      * They should only be set by routines that emit PDF. */
@@ -6954,6 +6959,16 @@ static int isSans(const char *name)
 }
 
 #define boldslant(x) ((x == 3) ? ",BoldItalic" : ((x == 2) ? ",Italic" : ((x == 1) ? ",Bold" : "")))
+
+#if defined(BUFSIZ) && (BUFSIZ > 512)
+/* OS's buffer size in stdio.h, probably.
+   Windows has 512, Solaris 1024, glibc 8192
+ */
+#define APPENDBUFSIZE BUFSIZ
+#else
+#define APPENDBUFSIZE 512
+#endif
+
 static void PDF_endfile(PDFDesc *pd)
 {
     int i, startxref, tempnobj, nenc, nfonts, cidnfonts, firstencobj;
@@ -7311,19 +7326,62 @@ static void PDF_endfile(PDFDesc *pd)
     rewind(pd->pdffp);
     fprintf(pd->pdffp, "%%PDF-%i.%i\n", pd->versionMajor, pd->versionMinor);
     fclose(pd->pdffp);
+    if (pd->open_type == 1)
+    {
+        char buf[APPENDBUFSIZE];
+        int nc;
+        pd->pdffp = R_fopen(pd->filename, "rb");
+        while ((nc = fread(buf, 1, APPENDBUFSIZE, pd->pdffp)))
+        {
+            fwrite(buf, 1, nc, pd->pipefp);
+            if (nc < APPENDBUFSIZE)
+                break;
+        }
+        fclose(pd->pdffp);
+        pclose(pd->pipefp);
+        unlink(pd->filename);
+    }
 }
 
 static Rboolean PDF_Open(pDevDesc dd, PDFDesc *pd)
 {
     char buf[512];
 
-    /* NB: this must be binary to get tell positions and line endings right,
-       as well as allowing binary streams */
-
     if (pd->offline)
         return TRUE;
 
+    if (pd->filename[0] == '|')
+    {
+#ifdef Win32
+        PDFcleanup(6, pd);
+        error(_("file = \"|cmd\" is not implemented in this version"));
+        return FALSE;
+#else
+        strncpy(pd->cmd, pd->filename + 1, PATH_MAX);
+        char *tmp = R_tmpnam("Rpdf", R_TempDir);
+        strncpy(pd->filename, tmp, PATH_MAX);
+        free(tmp);
+        errno = 0;
+        pd->pipefp = R_popen(pd->cmd, "w");
+        if (!pd->pipefp || errno != 0)
+        {
+            PDFcleanup(6, pd);
+            error(_("cannot open 'pdf' pipe to '%s'"), pd->cmd);
+            return FALSE;
+        }
+        pd->open_type = 1;
+        if (!pd->onefile)
+        {
+            pd->onefile = TRUE;
+            warning(_("file = \"|cmd\" implies 'onefile = TRUE'"));
+        }
+#endif
+    }
+    else
+        pd->open_type = 0;
     snprintf(buf, 512, pd->filename, pd->fileno + 1); /* file 1 to start */
+    /* NB: this must be binary to get tell positions and line endings right,
+       as well as allowing binary streams */
     pd->mainfp = R_fopen(R_ExpandFileName(buf), "wb");
     if (!pd->mainfp)
     {
