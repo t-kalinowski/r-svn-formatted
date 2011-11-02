@@ -7326,6 +7326,7 @@ static void PDF_endfile(PDFDesc *pd)
     rewind(pd->pdffp);
     fprintf(pd->pdffp, "%%PDF-%i.%i\n", pd->versionMajor, pd->versionMinor);
     fclose(pd->pdffp);
+#ifndef Win32
     if (pd->open_type == 1)
     {
         char buf[APPENDBUFSIZE];
@@ -7341,6 +7342,7 @@ static void PDF_endfile(PDFDesc *pd)
         pclose(pd->pipefp);
         unlink(pd->filename);
     }
+#endif
 }
 
 static Rboolean PDF_Open(pDevDesc dd, PDFDesc *pd)
