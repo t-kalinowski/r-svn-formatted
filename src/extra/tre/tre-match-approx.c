@@ -506,7 +506,7 @@ reg_errcode_t tre_tnfa_run_approx(const tre_tnfa_t *tnfa, const void *string, in
 
                 /* Pop the first item off the deque. */
                 reach_p = *deque_start;
-                id = reach_p - reach_next;
+                id = (int)(reach_p - reach_next);
                 depth = reach_p->depth;
 
                 /* Compute cost at current depth. */
