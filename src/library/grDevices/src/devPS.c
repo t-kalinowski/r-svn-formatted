@@ -3290,8 +3290,8 @@ Rboolean PSDeviceDriver(pDevDesc dd, const char *file, const char *paper, const 
     strcpy(pd->filename, file);
     strcpy(pd->papername, paper);
     strncpy(pd->title, title, 1024);
-    if (streql(pd->colormodel, "grey"))
-        strcpy("gray", colormodel);
+    if (streql(colormodel, "grey"))
+        strcpy(pd->colormodel, "grey");
     else
         strncpy(pd->colormodel, colormodel, 30);
     pd->useKern = (useKern != 0);
@@ -6092,8 +6092,8 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
     strcpy(pd->papername, paper);
     strncpy(pd->title, title, 1024);
     memset(pd->fontUsed, 0, 100 * sizeof(Rboolean));
-    if (streql(pd->colormodel, "grey"))
-        strcpy("gray", colormodel);
+    if (streql(colormodel, "grey"))
+        strcpy(pd->colormodel, "gray");
     else
         strncpy(pd->colormodel, colormodel, 30);
     pd->dingbats = (dingbats != 0);
