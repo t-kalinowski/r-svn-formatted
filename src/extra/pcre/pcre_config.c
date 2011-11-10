@@ -6,7 +6,7 @@
 and semantics are as close as possible to those of the Perl 5 language.
 
                        Written by Philip Hazel
-           Copyright (c) 1997-2009 University of Cambridge
+           Copyright (c) 1997-2011 University of Cambridge
 
 -----------------------------------------------------------------------------
 Redistribution and use in source and binary forms, with or without
@@ -73,6 +73,14 @@ PCRE_EXP_DEFN int PCRE_CALL_CONVENTION pcre_config(int what, void *where)
 
     case PCRE_CONFIG_UNICODE_PROPERTIES:
 #ifdef SUPPORT_UCP
+        *((int *)where) = 1;
+#else
+        *((int *)where) = 0;
+#endif
+        break;
+
+    case PCRE_CONFIG_JIT:
+#ifdef SUPPORT_JIT
         *((int *)where) = 1;
 #else
         *((int *)where) = 0;

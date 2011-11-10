@@ -1565,6 +1565,7 @@ static int find_fixedlength(uschar *code, BOOL utf8, BOOL atend, compile_data *c
         case OP_CBRA:
         case OP_BRA:
         case OP_ONCE:
+        case OP_ONCE_NC:
         case OP_COND:
             d = find_fixedlength(cc + ((op == OP_CBRA) ? 2 : 0), utf8, atend, cd);
             if (d < 0)
@@ -1838,7 +1839,7 @@ const uschar *_pcre_find_bracket(const uschar *code, BOOL utf8, int number)
                 break;
 
             case OP_THEN_ARG:
-                code += code[1 + LINK_SIZE];
+                code += code[1];
                 break;
             }
 
@@ -1961,7 +1962,7 @@ static const uschar *find_recurse(const uschar *code, BOOL utf8)
                 break;
 
             case OP_THEN_ARG:
-                code += code[1 + LINK_SIZE];
+                code += code[1];
                 break;
             }
 
@@ -2127,7 +2128,8 @@ static BOOL could_be_empty_branch(const uschar *code, const uschar *endcode, BOO
 
         /* For other groups, scan the branches. */
 
-        if (c == OP_BRA || c == OP_BRAPOS || c == OP_CBRA || c == OP_CBRAPOS || c == OP_ONCE || c == OP_COND)
+        if (c == OP_BRA || c == OP_BRAPOS || c == OP_CBRA || c == OP_CBRAPOS || c == OP_ONCE || c == OP_ONCE_NC ||
+            c == OP_COND)
         {
             BOOL empty_branch;
             if (GET(code, 1) == 0)
@@ -2305,7 +2307,7 @@ static BOOL could_be_empty_branch(const uschar *code, const uschar *endcode, BOO
             break;
 
         case OP_THEN_ARG:
-            code += code[1 + LINK_SIZE];
+            code += code[1];
             break;
 
             /* None of the remaining opcodes are required to match a character. */
@@ -3170,7 +3172,6 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
     uschar utf8_char[6];
 #else
     BOOL utf8 = FALSE;
-    uschar *utf8_char = NULL;
 #endif
 
 #ifdef PCRE_DEBUG
@@ -3222,6 +3223,7 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
         int subfirstbyte;
         int terminator;
         int mclength;
+        int tempbracount;
         uschar mcbuffer[8];
 
         /* Get next byte in the pattern */
@@ -4975,9 +4977,10 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
                     uschar *ketcode = code - 1 - LINK_SIZE;
                     uschar *bracode = ketcode - GET(ketcode, 1);
 
-                    if (*bracode == OP_ONCE && possessive_quantifier)
+                    if ((*bracode == OP_ONCE || *bracode == OP_ONCE_NC) && possessive_quantifier)
                         *bracode = OP_BRA;
-                    if (*bracode == OP_ONCE)
+
+                    if (*bracode == OP_ONCE || *bracode == OP_ONCE_NC)
                         *ketcode = OP_KETRMAX + repeat_type;
                     else
                     {
@@ -5224,6 +5227,10 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
                                 PUT2INC(code, 0, oc->number);
                             }
                             *code++ = (cd->assert_depth > 0) ? OP_ASSERT_ACCEPT : OP_ACCEPT;
+
+                            /* Do not set firstbyte after *ACCEPT */
+                            if (firstbyte == REQ_UNSET)
+                                firstbyte = REQ_NONE;
                         }
 
                         /* Handle other cases with/without an argument */
@@ -5237,10 +5244,7 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
                             }
                             *code = verbs[i].op;
                             if (*code++ == OP_THEN)
-                            {
-                                PUT(code, 0, code - bcptr->current_branch - 1);
-                                code += LINK_SIZE;
-                            }
+                                cd->external_flags |= PCRE_HASTHEN;
                         }
 
                         else
@@ -5252,10 +5256,7 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
                             }
                             *code = verbs[i].op_arg;
                             if (*code++ == OP_THEN_ARG)
-                            {
-                                PUT(code, 0, code - bcptr->current_branch - 1);
-                                code += LINK_SIZE;
-                            }
+                                cd->external_flags |= PCRE_HASTHEN;
                             *code++ = arglen;
                             memcpy(code, arg, arglen);
                             code += arglen;
@@ -6104,6 +6105,7 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
             *code = bravalue;
             tempcode = code;
             tempreqvary = cd->req_varyopt; /* Save value before bracket */
+            tempbracount = cd->bracount;   /* Save value before bracket */
             length_prevgroup = 0;          /* Initialize for pre-compile phase */
 
             if (!compile_regex(newoptions,   /* The complete new option state */
@@ -6123,15 +6125,20 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
                                ))
                 goto FAILED;
 
+            /* If this was an atomic group and there are no capturing groups within it,
+            generate OP_ONCE_NC instead of OP_ONCE. */
+
+            if (bravalue == OP_ONCE && cd->bracount <= tempbracount)
+                *code = OP_ONCE_NC;
+
             if (bravalue >= OP_ASSERT && bravalue <= OP_ASSERTBACK_NOT)
                 cd->assert_depth -= 1;
 
             /* At the end of compiling, code is still pointing to the start of the
-            group, while tempcode has been updated to point past the end of the group
-            and any option resetting that may follow it. The pattern pointer (ptr)
-            is on the bracket. */
+            group, while tempcode has been updated to point past the end of the group.
+            The pattern pointer (ptr) is on the bracket.
 
-            /* If this is a conditional bracket, check that there are no more than
+            If this is a conditional bracket, check that there are no more than
             two branches in the group, or just one if it's a DEFINE group. We do this
             in the real compile phase, not in the pre-pass, where the whole group may
             not be available. */
@@ -6544,7 +6551,7 @@ static BOOL compile_branch(int *optionsptr, uschar **codeptr, const uschar **ptr
                     firstbyte = reqbyte = REQ_NONE;
             }
 
-            /* firstbyte was previously set; we can set reqbyte only the length is
+            /* firstbyte was previously set; we can set reqbyte only if the length is
             1 or the matching is caseful. */
 
             else
@@ -6928,7 +6935,7 @@ static BOOL is_anchored(register const uschar *code, unsigned int bracket_map, u
 
         /* Other brackets */
 
-        else if (op == OP_ASSERT || op == OP_ONCE || op == OP_COND)
+        else if (op == OP_ASSERT || op == OP_ONCE || op == OP_ONCE_NC || op == OP_COND)
         {
             if (!is_anchored(scode, bracket_map, backref_map))
                 return FALSE;
@@ -7032,7 +7039,7 @@ static BOOL is_startline(const uschar *code, unsigned int bracket_map, unsigned 
 
         /* Other brackets */
 
-        else if (op == OP_ASSERT || op == OP_ONCE)
+        else if (op == OP_ASSERT || op == OP_ONCE || op == OP_ONCE_NC)
         {
             if (!is_startline(scode, bracket_map, backref_map))
                 return FALSE;
@@ -7101,6 +7108,7 @@ static int find_firstassertedchar(const uschar *code, BOOL inassert)
         case OP_SCBRAPOS:
         case OP_ASSERT:
         case OP_ONCE:
+        case OP_ONCE_NC:
         case OP_COND:
             if ((d = find_firstassertedchar(scode, op == OP_ASSERT)) < 0)
                 return -1;
@@ -7534,7 +7542,7 @@ PCRE_EXP_DEFN pcre *PCRE_CALL_CONVENTION pcre_compile2(const char *pattern, int 
     re->flags = cd->external_flags;
 
     if (cd->had_accept)
-        reqbyte = -1; /* Must disable after (*ACCEPT) */
+        reqbyte = REQ_NONE; /* Must disable after (*ACCEPT) */
 
     /* If not reached end of pattern on success, there's an excess bracket. */
 

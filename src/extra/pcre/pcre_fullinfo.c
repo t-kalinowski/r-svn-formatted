@@ -6,7 +6,7 @@
 and semantics are as close as possible to those of the Perl 5 language.
 
                        Written by Philip Hazel
-           Copyright (c) 1997-2009 University of Cambridge
+           Copyright (c) 1997-2011 University of Cambridge
 
 -----------------------------------------------------------------------------
 Redistribution and use in source and binary forms, with or without
@@ -123,6 +123,11 @@ PCRE_EXP_DEFN int PCRE_CALL_CONVENTION pcre_fullinfo(const pcre *argument_re, co
 
     case PCRE_INFO_MINLENGTH:
         *((int *)where) = (study != NULL && (study->flags & PCRE_STUDY_MINLEN) != 0) ? study->minlength : -1;
+        break;
+
+    case PCRE_INFO_JIT:
+        *((int *)where) = extra_data != NULL && (extra_data->flags & PCRE_EXTRA_EXECUTABLE_JIT) != 0 &&
+                          extra_data->executable_jit != NULL;
         break;
 
     case PCRE_INFO_LASTLITERAL:
