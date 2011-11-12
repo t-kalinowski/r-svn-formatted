@@ -3084,7 +3084,6 @@ double GEExpressionHeight(SEXP expr, pGEcontext gc, pGEDevDesc dd)
 void GEExpressionMetric(SEXP expr, const pGEcontext gc, double *ascent, double *descent, double *width, pGEDevDesc dd)
 {
     BBOX bbox;
-    double height;
 
     /*
      * Build a "drawing context" for the current expression
@@ -3106,7 +3105,6 @@ void GEExpressionMetric(SEXP expr, const pGEcontext gc, double *ascent, double *
 
     SetFont(PlainFont, gc);
     bbox = RenderElement(expr, 0, &mc, gc, dd);
-    height = bboxHeight(bbox) + bboxDepth(bbox);
     /* NOTE that we do fabs() here in case the device
      * draws top-to-bottom (like an X11 window).
      * This is so that these calculations match those
