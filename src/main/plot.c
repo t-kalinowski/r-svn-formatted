@@ -286,7 +286,6 @@ static SEXP FixupCex(SEXP cex, double dflt)
                     REAL(ans)[i] = NA_REAL;
             }
         else if (isInteger(cex) || isLogical(cex))
-
             for (i = 0; i < n; i++)
             {
                 c = INTEGER(cex)[i];
@@ -294,6 +293,8 @@ static SEXP FixupCex(SEXP cex, double dflt)
                     c = NA_REAL;
                 REAL(ans)[i] = c;
             }
+        else
+            error(_("invalid '%s' value"), "cex");
     }
     return ans;
 }
