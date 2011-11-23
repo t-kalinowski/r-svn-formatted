@@ -70,6 +70,10 @@
 #define I (__extension__ 1.0iF)
 #endif
 
+/*
+   Note: this could use the proposed C1x CMPLX() macro.
+   As could mycpow, z_tan and some of the substitutes.
+ */
 static R_INLINE double complex toC99(Rcomplex *x)
 {
 #if __GNUC__
@@ -152,6 +156,7 @@ static R_INLINE double complex R_cpow_n(double complex X, int k)
 
   3) PPC Mac OS X crashes on powers of 0+0i (at least under Rosetta).
   Really 0i^-1 should by Inf+NaNi, but getting that portably seems too hard.
+  (C1x's CMPLX will eventually be possible.)
 */
 
 static double complex mycpow(double complex X, double complex Y)
