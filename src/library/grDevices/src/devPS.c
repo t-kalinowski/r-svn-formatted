@@ -7422,12 +7422,12 @@ static void PDF_endpage(PDFDesc *pd)
         Bytef *buf2 = Calloc(outlen, Bytef);
         size_t res = fread(buf, 1, len, pd->pdffp);
         if (res < len)
-            error("internal error in PDF_endpage");
+            error("internal read error in PDF_endpage");
         fclose(pd->pdffp);
         pd->pdffp = pd->mainfp;
         int res2 = compress(buf2, &outlen, buf, len);
         if (res2 != Z_OK)
-            error("internal error %d in PDF_endpage", res2);
+            error("internal compression error %d in PDF_endpage", res2);
         fprintf(pd->pdffp, "%d 0 obj\n<<\n/Length %d /Filter /FlateDecode\n>>\nstream\n", pd->nobjs, (int)outlen);
         size_t nwrite = fwrite(buf2, 1, outlen, pd->pdffp);
         if (nwrite != outlen)
