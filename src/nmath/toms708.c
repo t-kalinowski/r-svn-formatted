@@ -389,6 +389,7 @@ L140:
     if (*w < DBL_MIN && log_p)
     { /* do not believe it; try bpser() : */
         /*revert: */ b0 += n;
+        /* which is only valid if b0 <= 1 || b0*x0 <= 0.7 */
         goto L100;
     }
     if (x0 <= 0.7)
@@ -696,7 +697,12 @@ static double bpser(double a, double b, double x, double eps, int log_p)
     } while (fabs(w) > tol);
 
     if (log_p)
-        ans += log1p(a * sum);
+    {
+        if (a * sum > -1.0)
+            ans += log1p(a * sum);
+        else
+            ans = ML_NEGINF;
+    }
     else
         ans *= a * sum + 1.0;
     return ans;
