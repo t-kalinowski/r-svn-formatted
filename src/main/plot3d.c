@@ -1631,19 +1631,30 @@ static void FindCutPoints(double low, double high, double x1, double y1, double 
             z[*npt] = z1;
             ++*npt;
         }
-        else
+        else if (z1 == R_PosInf)
         {
+            x[*npt] = x2;
+            y[*npt] = y1;
+            z[*npt] = z2;
+            ++*npt;
+        }
+        else
+        { /* z1 >= high, z2 in range */
             c = (z1 - high) / (z1 - z2);
             x[*npt] = x1 + c * (x2 - x1);
             y[*npt] = y1;
             z[*npt] = z1 + c * (z2 - z1);
             ++*npt;
         }
-        if (z2 > low)
+        if (z2 == R_NegInf)
         {
+            x[*npt] = x1;
+            y[*npt] = y1;
+            z[*npt] = z1;
+            ++*npt;
         }
-        else
-        {
+        else if (z2 <= low)
+        { /* and z1 in range */
             c = (z2 - low) / (z2 - z1);
             x[*npt] = x2 - c * (x2 - x1);
             y[*npt] = y1;
@@ -1662,8 +1673,16 @@ static void FindCutPoints(double low, double high, double x1, double y1, double 
             z[*npt] = z1;
             ++*npt;
         }
-        else
+        else if (z1 == R_NegInf)
         {
+            x[*npt] = x2;
+            y[*npt] = y1;
+            z[*npt] = z2;
+            ;
+            ++*npt;
+        }
+        else
+        { /* and z2 in range */
             c = (z1 - low) / (z1 - z2);
             x[*npt] = x1 + c * (x2 - x1);
             y[*npt] = y1;
@@ -1680,8 +1699,15 @@ static void FindCutPoints(double low, double high, double x1, double y1, double 
             ++*npt;
 #endif
         }
-        else
+        else if (z2 == R_PosInf)
         {
+            x[*npt] = x1;
+            y[*npt] = y1;
+            z[*npt] = z1;
+            ++*npt;
+        }
+        else
+        { /* z2 high, z1 in range */
             c = (z2 - high) / (z2 - z1);
             x[*npt] = x2 - c * (x2 - x1);
             y[*npt] = y1;
