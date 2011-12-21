@@ -8118,7 +8118,7 @@ static void PDFSimpleText(double x, double y, const char *str, double rot, doubl
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
     int size = (int)floor(gc->cex * gc->ps + 0.5);
     int face = gc->fontface;
-    double a, b, rot1;
+    double a, b, bm, rot1;
 
     if (!R_VIS(gc->col))
         return;
@@ -8131,15 +8131,19 @@ static void PDFSimpleText(double x, double y, const char *str, double rot, doubl
     rot1 = rot * DEG2RAD;
     a = size * cos(rot1);
     b = size * sin(rot1);
+    bm = -b;
     /* avoid printing -0.00 on rotated text */
     if (fabs(a) < 0.01)
         a = 0.0;
     if (fabs(b) < 0.01)
+    {
         b = 0.0;
+        bm = 0.0;
+    }
     if (!pd->inText)
         texton(pd);
     PDF_SetFill(gc->col, dd);
-    fprintf(pd->pdffp, "/F%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm ", font, a, b, -b, a, x, y);
+    fprintf(pd->pdffp, "/F%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm ", font, a, b, -bm, a, x, y);
     if (pd->useKern && isType1Font(gc->fontfamily, PDFFonts, pd->defaultFont))
     {
         PDFWriteT1KerningString(pd->pdffp, str, PDFmetricInfo(gc->fontfamily, face, pd), gc);
@@ -8160,7 +8164,7 @@ static void PDF_Text0(double x, double y, const char *str, int enc, double rot, 
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
     int size = (int)floor(gc->cex * gc->ps + 0.5);
     int face = gc->fontface;
-    double a, b, rot1;
+    double a, b, bm, rot1;
     char *buff;
     const char *str1;
 
@@ -8183,11 +8187,15 @@ static void PDF_Text0(double x, double y, const char *str, int enc, double rot, 
     rot1 = rot * DEG2RAD;
     a = size * cos(rot1);
     b = size * sin(rot1);
+    bm = -b;
     /* avoid printing -0.00 on rotated text */
     if (fabs(a) < 0.01)
         a = 0.0;
     if (fabs(b) < 0.01)
+    {
         b = 0.0;
+        bm = 0.0;
+    }
     if (!pd->inText)
         texton(pd);
 
@@ -8223,7 +8231,7 @@ static void PDF_Text0(double x, double y, const char *str, int enc, double rot, 
         {
             PDF_SetFill(gc->col, dd);
             fprintf(pd->pdffp, "/F%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm ", PDFfontNumber(gc->fontfamily, face, pd),
-                    a, b, -b, a, x, y);
+                    a, b, bm, a, x, y);
 
             fprintf(pd->pdffp, "<");
             p = (unsigned char *)str;
@@ -8269,7 +8277,7 @@ static void PDF_Text0(double x, double y, const char *str, int enc, double rot, 
                 unsigned char *p;
                 PDF_SetFill(gc->col, dd);
                 fprintf(pd->pdffp, "/F%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm <",
-                        PDFfontNumber(gc->fontfamily, face, pd), a, b, -b, a, x, y);
+                        PDFfontNumber(gc->fontfamily, face, pd), a, b, bm, a, x, y);
                 for (i = 0, p = buf; i < nb - o_len; i++)
                     fprintf(pd->pdffp, "%02x", *p++);
                 fprintf(pd->pdffp, "> Tj\n");
@@ -8284,7 +8292,7 @@ static void PDF_Text0(double x, double y, const char *str, int enc, double rot, 
     }
 
     PDF_SetFill(gc->col, dd);
-    fprintf(pd->pdffp, "/F%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm ", PDFfontNumber(gc->fontfamily, face, pd), a, b, -b,
+    fprintf(pd->pdffp, "/F%d 1 Tf %.2f %.2f %.2f %.2f %.2f %.2f Tm ", PDFfontNumber(gc->fontfamily, face, pd), a, b, bm,
             a, x, y);
     if ((enc == CE_UTF8 || mbcslocale) && !strIsASCII(str) && face < 5)
     {
