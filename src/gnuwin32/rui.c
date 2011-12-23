@@ -1181,7 +1181,7 @@ int setupui(void)
 #ifdef WIN64
             "RGui (64-bit)",
 #else
-            "RGui",
+            "RGui (32-bit)",
 #endif
             MDIsize, StandardWindow | Menubar | Workspace);
         setclose(RFrame, closeconsole);
@@ -1199,7 +1199,7 @@ int setupui(void)
         if (!(RConsole = newconsole("R Console (64-bit)", flags)))
             return 0;
 #else
-        if (!(RConsole = newconsole("R Console", flags)))
+        if (!(RConsole = newconsole("R Console (32-bit)", flags)))
             return 0;
 #endif
         TRACERUI("Console done");
