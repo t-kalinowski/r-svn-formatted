@@ -597,6 +597,7 @@ SEXP attribute_hidden do_fileremove(SEXP call, SEXP op, SEXP args, SEXP rho)
 #endif
 
 #ifdef Win32
+/* Mingw-w64 defines this to be 0x0502 */
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0500 /* for CreateHardLink */
 #endif
@@ -613,7 +614,7 @@ const char *formatError(DWORD res); /* extra.c */
 
 /* the Win32 stuff here is not ready for release:
 
-   (i) It needs Windows >= XP
+   (i) It needs Windows >= Vista
    (ii) unlink() would need to be taught about symlinks, especially for dirs.
    (iii) It matters where 'from' is a file or a dir, and we could only
    know if it exists already.
@@ -662,7 +663,7 @@ SEXP attribute_hidden do_filesymlink(SEXP call, SEXP op, SEXP args, SEXP rho)
             wchar_t *from, *to;
             from = filenameToWchar(STRING_ELT(f1, i % n1), TRUE);
             to = filenameToWchar(STRING_ELT(f2, i % n2), TRUE);
-            LOGICAL(ans)[i] = pCSL(to, from, 0x0) != 0;
+            LOGICAL(ans)[i] = pCSL(to, from, 0x0) != 0; // 0x0 = file
             if (!LOGICAL(ans)[i])
                 warning(_("cannot symlink '%ls' to '%ls', reason '%s'"), from, to, formatError(GetLastError()));
 #else
@@ -946,6 +947,7 @@ SEXP attribute_hidden do_fileinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
 #ifdef Win32
             _wstati64(wfn, &sb)
 #else
+            /* Target not link */
             stat(efn, &sb)
 #endif
                 == 0)
@@ -1479,6 +1481,16 @@ static int R_unlink(wchar_t *name, int recursive, int force)
         struct _stati64 sb;
         int n, ans = 0;
 
+        /* Need to use GetFileInformationByHandle to see if this is a
+           junction or symlink.  Something like
+           BY_HANDLE_FILE_INFORMATION info;
+           // or FILE_FLAG_OPEN_REPARSE_POINT
+           handle = CreateFileW(name, 0, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+           // check result
+           GetFileInformationByHandle(handle, &info);
+           CloseHandle(handle);
+           info.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT;
+        */
         _wstati64(name, &sb);
         if ((sb.st_mode & S_IFDIR) > 0)
         { /* a directory */
@@ -1554,7 +1566,7 @@ static int R_unlink(const char *name, int recursive, int force)
     /* We cannot use R_FileExists here since it is false for broken
        symbolic links
        if (!R_FileExists(name)) return 0; */
-    res = stat(name, &sb);
+    res = lstat(name, &sb); /* better to be lstat */
     if (!res && force)
         chmod(name, sb.st_mode | S_IWUSR);
 
@@ -1578,7 +1590,7 @@ static int R_unlink(const char *name, int recursive, int force)
                         snprintf(p, PATH_MAX, "%s%s", name, de->d_name);
                     else
                         snprintf(p, PATH_MAX, "%s%s%s", name, R_FileSep, de->d_name);
-                    stat(p, &sb);
+                    lstat(p, &sb);
                     if ((sb.st_mode & S_IFDIR) > 0)
                     { /* a directory */
                         if (force)
@@ -2565,6 +2577,7 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
 #endif
     /* REprintf("from: %s, name: %s, to: %s\n", from, name, to); */
     snprintf(this, PATH_MAX, "%s%s", from, name);
+    /* Here we want the target not the link */
     stat(this, &sb);
     if ((sb.st_mode & S_IFDIR) > 0)
     { /* a directory */
