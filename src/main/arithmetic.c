@@ -269,15 +269,15 @@ double R_pow_di(double x, int n)
         return x;
     if (n == NA_INTEGER)
         return NA_REAL;
+
     if (n != 0)
     {
         if (!R_FINITE(x))
             return R_POW(x, (double)n);
-        if (n < 0)
-        {
+
+        Rboolean is_neg = (n < 0);
+        if (is_neg)
             n = -n;
-            x = 1 / x;
-        }
         for (;;)
         {
             if (n & 01)
@@ -287,6 +287,8 @@ double R_pow_di(double x, int n)
             else
                 break;
         }
+        if (is_neg)
+            xn = 1. / xn;
     }
     return xn;
 }
