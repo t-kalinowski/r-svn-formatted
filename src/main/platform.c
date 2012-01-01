@@ -3045,6 +3045,7 @@ SEXP attribute_hidden do_mkjunction(SEXP call, SEXP op, SEXP args, SEXP rho)
     DWORD dwBytes;
     const BOOL bOK = DeviceIoControl(hd, FSCTL_SET_REPARSE_POINT, &rdb, 8 /* header */ + rdb.ReparseDataLength, NULL, 0,
                                      &dwBytes, 0);
+    CloseHandle(hd);
     if (!bOK)
         warning("cannot set reparse point '%ls', reason '%s'", to, formatError(GetLastError()));
     return ScalarLogical(bOK != 0);
