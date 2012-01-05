@@ -2657,10 +2657,11 @@ static SEXP R_set_class(SEXP obj, SEXP value, SEXP call)
     }
     if (TYPEOF(value) != STRSXP)
     {
-        /* Beware: assumes value is protected, which it is
-           in the only use below */
-        PROTECT(value = coerceVector(duplicate(value), STRSXP));
-        nProtect++;
+        SEXP dup;
+        /* assumes value is protected, which it is in R_do_set_class */
+        PROTECT(dup = duplicate(value));
+        PROTECT(value = coerceVector(dup, STRSXP));
+        nProtect += 2;
     }
     if (length(value) > 1)
     {
