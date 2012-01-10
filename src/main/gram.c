@@ -3625,7 +3625,7 @@ attribute_hidden SEXP R_Parse1Buffer(IoBuffer *buffer, int gencode, ParseStatus 
     {
         if (ParseState.didAttach)
         {
-            int buflen = buffer->read_offset;
+            int buflen = R_IoBufferReadOffset(buffer);
             char buf[buflen + 1];
             SEXP class;
             R_IoBufferReadReset(buffer);
