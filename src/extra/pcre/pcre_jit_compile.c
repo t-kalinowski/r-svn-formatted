@@ -52,7 +52,10 @@ POSSIBILITY OF SUCH DAMAGE.
 we just include it. This way we don't need to touch the build
 system files. */
 
+#define SLJIT_MALLOC(size) (pcre_malloc)(size)
+#define SLJIT_FREE(ptr) (pcre_free)(ptr)
 #define SLJIT_CONFIG_AUTO 1
+#define SLJIT_CONFIG_STATIC 1
 #define SLJIT_VERBOSE 0
 #define SLJIT_DEBUG 0
 
@@ -165,6 +168,7 @@ typedef struct executable_function
     void *executable_func;
     pcre_jit_callback callback;
     void *userdata;
+    sljit_uw executable_size;
 } executable_function;
 
 typedef struct jump_list
@@ -292,6 +296,9 @@ typedef struct compiler_common
     int bsr_nltype;
     int endonly;
     sljit_w ctypes;
+    sljit_uw name_table;
+    sljit_w name_count;
+    sljit_w name_entry_size;
     struct sljit_label *acceptlabel;
     stub_list *stubs;
     recurse_entry *entries;
@@ -566,6 +573,9 @@ static uschar *next_opcode(compiler_common *common, uschar *cc)
     case OP_REF:
     case OP_REFI:
     case OP_CREF:
+    case OP_NCREF:
+    case OP_RREF:
+    case OP_NRREF:
     case OP_CLOSE:
         cc += 3;
         return cc;
@@ -2002,7 +2012,7 @@ static void check_wordboundary(compiler_common *common)
     struct sljit_jump *jump;
 #endif
 
-    SLJIT_ASSERT(ctype_word == 0x10);
+    SLJIT_COMPILE_ASSERT(ctype_word == 0x10, ctype_word_must_be_16);
 
     sljit_emit_fast_enter(compiler, SLJIT_MEM1(SLJIT_LOCALS_REG), LOCALS0, 1, 5, 5, common->localsize);
     /* Get type of the previous char, and put it to LOCALS1. */
@@ -3839,6 +3849,125 @@ static uschar *compile_assert_hotpath(compiler_common *common, uschar *cc, asser
     return cc + 1 + LINK_SIZE;
 }
 
+static sljit_w SLJIT_CALL do_searchovector(sljit_w refno, sljit_w *locals, uschar *name_table)
+{
+    int condition = FALSE;
+    uschar *slotA = name_table;
+    uschar *slotB;
+    sljit_w name_count = locals[LOCALS0 / sizeof(sljit_w)];
+    sljit_w name_entry_size = locals[LOCALS1 / sizeof(sljit_w)];
+    sljit_w no_capture;
+    int i;
+
+    locals += OVECTOR_START / sizeof(sljit_w);
+    no_capture = locals[1];
+
+    for (i = 0; i < name_count; i++)
+    {
+        if (GET2(slotA, 0) == refno)
+            break;
+        slotA += name_entry_size;
+    }
+
+    if (i < name_count)
+    {
+        /* Found a name for the number - there can be only one; duplicate names
+        for different numbers are allowed, but not vice versa. First scan down
+        for duplicates. */
+
+        slotB = slotA;
+        while (slotB > name_table)
+        {
+            slotB -= name_entry_size;
+            if (strcmp((char *)slotA + 2, (char *)slotB + 2) == 0)
+            {
+                condition = locals[GET2(slotB, 0) << 1] != no_capture;
+                if (condition)
+                    break;
+            }
+            else
+                break;
+        }
+
+        /* Scan up for duplicates */
+        if (!condition)
+        {
+            slotB = slotA;
+            for (i++; i < name_count; i++)
+            {
+                slotB += name_entry_size;
+                if (strcmp((char *)slotA + 2, (char *)slotB + 2) == 0)
+                {
+                    condition = locals[GET2(slotB, 0) << 1] != no_capture;
+                    if (condition)
+                        break;
+                }
+                else
+                    break;
+            }
+        }
+    }
+    return condition;
+}
+
+static sljit_w SLJIT_CALL do_searchgroups(sljit_w recno, sljit_w *locals, uschar *name_table)
+{
+    int condition = FALSE;
+    uschar *slotA = name_table;
+    uschar *slotB;
+    sljit_w name_count = locals[LOCALS0 / sizeof(sljit_w)];
+    sljit_w name_entry_size = locals[LOCALS1 / sizeof(sljit_w)];
+    sljit_w group_num = locals[POSSESSIVE0 / sizeof(sljit_w)];
+    int i;
+
+    for (i = 0; i < name_count; i++)
+    {
+        if (GET2(slotA, 0) == recno)
+            break;
+        slotA += name_entry_size;
+    }
+
+    if (i < name_count)
+    {
+        /* Found a name for the number - there can be only one; duplicate
+        names for different numbers are allowed, but not vice versa. First
+        scan down for duplicates. */
+
+        slotB = slotA;
+        while (slotB > name_table)
+        {
+            slotB -= name_entry_size;
+            if (strcmp((char *)slotA + 2, (char *)slotB + 2) == 0)
+            {
+                condition = GET2(slotB, 0) == group_num;
+                if (condition)
+                    break;
+            }
+            else
+                break;
+        }
+
+        /* Scan up for duplicates */
+        if (!condition)
+        {
+            slotB = slotA;
+            for (i++; i < name_count; i++)
+            {
+                slotB += name_entry_size;
+                if (strcmp((char *)slotA + 2, (char *)slotB + 2) == 0)
+                {
+                    condition = GET2(slotB, 0) == group_num;
+                    if (condition)
+                        break;
+                }
+                else
+                    break;
+            }
+        }
+    }
+    return condition;
+}
+
 /*
   Handling bracketed expressions is probably the most complex part.
 
@@ -3923,6 +4052,8 @@ static uschar *compile_bracket_hotpath(compiler_common *common, uschar *cc, fall
 
     opcode = *cc;
     ccbegin = cc;
+    hotpath = ccbegin + 1 + LINK_SIZE;
+
     if ((opcode == OP_COND || opcode == OP_SCOND) && cc[1 + LINK_SIZE] == OP_DEF)
     {
         /* Drop this bracket_fallback. */
@@ -3934,7 +4065,23 @@ static uschar *compile_bracket_hotpath(compiler_common *common, uschar *cc, fall
     SLJIT_ASSERT(ket == OP_KET || ket == OP_KETRMAX || ket == OP_KETRMIN);
     SLJIT_ASSERT(!((bra == OP_BRAZERO && ket == OP_KETRMIN) || (bra == OP_BRAMINZERO && ket == OP_KETRMAX)));
     cc += GET(cc, 1);
-    has_alternatives = *cc == OP_ALT || opcode == OP_COND || opcode == OP_SCOND;
+
+    has_alternatives = *cc == OP_ALT;
+    if (SLJIT_UNLIKELY(opcode == OP_COND) || SLJIT_UNLIKELY(opcode == OP_SCOND))
+    {
+        has_alternatives = (*hotpath == OP_RREF) ? FALSE : TRUE;
+        if (*hotpath == OP_NRREF)
+        {
+            stacksize = GET2(hotpath, 1);
+            if (common->currententry == NULL || stacksize == RREF_ANY)
+                has_alternatives = FALSE;
+            else if (common->currententry->start == 0)
+                has_alternatives = stacksize != 0;
+            else
+                has_alternatives = stacksize != GET2(common->start, common->currententry->start + 1 + LINK_SIZE);
+        }
+    }
+
     if (SLJIT_UNLIKELY(opcode == OP_COND) && (*cc == OP_KETRMAX || *cc == OP_KETRMIN))
         opcode = OP_SCOND;
     if (SLJIT_UNLIKELY(opcode == OP_ONCE_NC))
@@ -3947,6 +4094,7 @@ static uschar *compile_bracket_hotpath(compiler_common *common, uschar *cc, fall
         localptr = OVECTOR_PRIV(offset);
         offset <<= 1;
         FALLBACK_AS(bracket_fallback)->localptr = localptr;
+        hotpath += 2;
     }
     else if (opcode == OP_ONCE || opcode == OP_SBRA || opcode == OP_SCOND)
     {
@@ -4105,21 +4253,91 @@ static uschar *compile_bracket_hotpath(compiler_common *common, uschar *cc, fall
     }
 
     /* Generating code for the first alternative. */
-    hotpath = ccbegin + 1 + LINK_SIZE;
-    if (offset != 0)
-        hotpath += 2;
     if (opcode == OP_COND || opcode == OP_SCOND)
     {
         if (*hotpath == OP_CREF)
         {
+            SLJIT_ASSERT(has_alternatives);
             add_jump(compiler, &(FALLBACK_AS(bracket_fallback)->u.condfailed),
-                     CMP(SLJIT_C_EQUAL, SLJIT_MEM1(SLJIT_LOCALS_REG), OVECTOR((GET2(hotpath, 1) << 1)),
+                     CMP(SLJIT_C_EQUAL, SLJIT_MEM1(SLJIT_LOCALS_REG), OVECTOR(GET2(hotpath, 1) << 1),
                          SLJIT_MEM1(SLJIT_LOCALS_REG), OVECTOR(1)));
             hotpath += 3;
         }
+        else if (*hotpath == OP_NCREF)
+        {
+            SLJIT_ASSERT(has_alternatives);
+            stacksize = GET2(hotpath, 1);
+            jump = CMP(SLJIT_C_NOT_EQUAL, SLJIT_MEM1(SLJIT_LOCALS_REG), OVECTOR(stacksize << 1),
+                       SLJIT_MEM1(SLJIT_LOCALS_REG), OVECTOR(1));
+
+            OP1(SLJIT_MOV, SLJIT_MEM1(SLJIT_LOCALS_REG), POSSESSIVE1, STACK_TOP, 0);
+            OP1(SLJIT_MOV, SLJIT_MEM1(SLJIT_LOCALS_REG), LOCALS0, SLJIT_IMM, common->name_count);
+            OP1(SLJIT_MOV, SLJIT_MEM1(SLJIT_LOCALS_REG), LOCALS1, SLJIT_IMM, common->name_entry_size);
+            OP1(SLJIT_MOV, SLJIT_TEMPORARY_REG1, 0, SLJIT_IMM, stacksize);
+            OP1(SLJIT_MOV, SLJIT_TEMPORARY_REG2, 0, SLJIT_LOCALS_REG, 0);
+            OP1(SLJIT_MOV, SLJIT_TEMPORARY_REG3, 0, SLJIT_IMM, common->name_table);
+            sljit_emit_ijump(compiler, SLJIT_CALL3, SLJIT_IMM, SLJIT_FUNC_OFFSET(do_searchovector));
+            OP1(SLJIT_MOV, STACK_TOP, 0, SLJIT_MEM1(SLJIT_LOCALS_REG), POSSESSIVE1);
+            add_jump(compiler, &(FALLBACK_AS(bracket_fallback)->u.condfailed),
+                     CMP(SLJIT_C_EQUAL, SLJIT_TEMPORARY_REG1, 0, SLJIT_IMM, 0));
+
+            JUMPHERE(jump);
+            hotpath += 3;
+        }
+        else if (*hotpath == OP_RREF || *hotpath == OP_NRREF)
+        {
+            /* Never has other case. */
+            FALLBACK_AS(bracket_fallback)->u.condfailed = NULL;
+
+            stacksize = GET2(hotpath, 1);
+            if (common->currententry == NULL)
+                stacksize = 0;
+            else if (stacksize == RREF_ANY)
+                stacksize = 1;
+            else if (common->currententry->start == 0)
+                stacksize = stacksize == 0;
+            else
+                stacksize = stacksize == GET2(common->start, common->currententry->start + 1 + LINK_SIZE);
+
+            if (*hotpath == OP_RREF || stacksize || common->currententry == NULL)
+            {
+                SLJIT_ASSERT(!has_alternatives);
+                if (stacksize != 0)
+                    hotpath += 3;
+                else
+                {
+                    if (*cc == OP_ALT)
+                    {
+                        hotpath = cc + 1 + LINK_SIZE;
+                        cc += GET(cc, 1);
+                    }
+                    else
+                        hotpath = cc;
+                }
+            }
+            else
+            {
+                SLJIT_ASSERT(has_alternatives);
+
+                stacksize = GET2(hotpath, 1);
+                OP1(SLJIT_MOV, SLJIT_MEM1(SLJIT_LOCALS_REG), POSSESSIVE1, STACK_TOP, 0);
+                OP1(SLJIT_MOV, SLJIT_MEM1(SLJIT_LOCALS_REG), LOCALS0, SLJIT_IMM, common->name_count);
+                OP1(SLJIT_MOV, SLJIT_MEM1(SLJIT_LOCALS_REG), LOCALS1, SLJIT_IMM, common->name_entry_size);
+                OP1(SLJIT_MOV, SLJIT_MEM1(SLJIT_LOCALS_REG), POSSESSIVE0, SLJIT_IMM,
+                    GET2(common->start, common->currententry->start + 1 + LINK_SIZE));
+                OP1(SLJIT_MOV, SLJIT_TEMPORARY_REG1, 0, SLJIT_IMM, stacksize);
+                OP1(SLJIT_MOV, SLJIT_TEMPORARY_REG2, 0, SLJIT_LOCALS_REG, 0);
+                OP1(SLJIT_MOV, SLJIT_TEMPORARY_REG3, 0, SLJIT_IMM, common->name_table);
+                sljit_emit_ijump(compiler, SLJIT_CALL3, SLJIT_IMM, SLJIT_FUNC_OFFSET(do_searchgroups));
+                OP1(SLJIT_MOV, STACK_TOP, 0, SLJIT_MEM1(SLJIT_LOCALS_REG), POSSESSIVE1);
+                add_jump(compiler, &(FALLBACK_AS(bracket_fallback)->u.condfailed),
+                         CMP(SLJIT_C_EQUAL, SLJIT_TEMPORARY_REG1, 0, SLJIT_IMM, 0));
+                hotpath += 3;
+            }
+        }
         else
         {
-            SLJIT_ASSERT(*hotpath >= OP_ASSERT && *hotpath <= OP_ASSERTBACK_NOT);
+            SLJIT_ASSERT(has_alternatives && *hotpath >= OP_ASSERT && *hotpath <= OP_ASSERTBACK_NOT);
             /* Similar code as PUSH_FALLBACK macro. */
             assert = sljit_alloc_memory(compiler, sizeof(assert_fallback));
             if (SLJIT_UNLIKELY(sljit_get_compiler_error(compiler)))
@@ -5293,6 +5511,7 @@ static void compile_bracket_fallbackpath(compiler_common *common, struct fallbac
     uschar bra = OP_BRA;
     uschar ket;
     assert_fallback *assert;
+    BOOL has_alternatives;
     struct sljit_jump *brazero = NULL;
     struct sljit_jump *once = NULL;
     struct sljit_jump *cond = NULL;
@@ -5308,6 +5527,10 @@ static void compile_bracket_fallbackpath(compiler_common *common, struct fallbac
     ccbegin = cc;
     ket = *(bracketend(ccbegin) - 1 - LINK_SIZE);
     cc += GET(cc, 1);
+    has_alternatives = *cc == OP_ALT;
+    if (SLJIT_UNLIKELY(opcode == OP_COND) || SLJIT_UNLIKELY(opcode == OP_SCOND))
+        has_alternatives = (ccbegin[1 + LINK_SIZE] >= OP_ASSERT && ccbegin[1 + LINK_SIZE] <= OP_ASSERTBACK_NOT) ||
+                           CURRENT_AS(bracket_fallback)->u.condfailed != NULL;
     if (opcode == OP_CBRA || opcode == OP_SCBRA)
         offset = (GET2(ccbegin, 1 + LINK_SIZE)) << 1;
     if (SLJIT_UNLIKELY(opcode == OP_COND) && (*cc == OP_KETRMAX || *cc == OP_KETRMIN))
@@ -5359,7 +5582,7 @@ static void compile_bracket_fallbackpath(compiler_common *common, struct fallbac
         brazero = CMP(SLJIT_C_NOT_EQUAL, TMP1, 0, SLJIT_IMM, 0);
     }
 
-    if (opcode == OP_ONCE)
+    if (SLJIT_UNLIKELY(opcode == OP_ONCE))
     {
         if (CURRENT_AS(bracket_fallback)->u.framesize >= 0)
         {
@@ -5367,6 +5590,22 @@ static void compile_bracket_fallbackpath(compiler_common *common, struct fallbac
             add_jump(compiler, &common->revertframes, JUMP(SLJIT_FAST_CALL));
         }
         once = JUMP(SLJIT_JUMP);
+    }
+    else if (SLJIT_UNLIKELY(opcode == OP_COND) || SLJIT_UNLIKELY(opcode == OP_SCOND))
+    {
+        if (has_alternatives)
+        {
+            /* Always exactly one alternative. */
+            OP1(SLJIT_MOV, TMP1, 0, SLJIT_MEM1(STACK_TOP), STACK(0));
+            free_stack(common, 1);
+
+            jumplistitem = sljit_alloc_memory(compiler, sizeof(jump_list));
+            if (SLJIT_UNLIKELY(!jumplistitem))
+                return;
+            jumplist = jumplistitem;
+            jumplistitem->next = NULL;
+            jumplistitem->jump = CMP(SLJIT_C_EQUAL, TMP1, 0, SLJIT_IMM, 1);
+        }
     }
     else if (*cc == OP_ALT)
     {
@@ -5398,29 +5637,17 @@ static void compile_bracket_fallbackpath(compiler_common *common, struct fallbac
 
         cc = ccbegin + GET(ccbegin, 1);
     }
-    else if (opcode == OP_COND || opcode == OP_SCOND)
-    {
-        /* Always one. */
-        OP1(SLJIT_MOV, TMP1, 0, SLJIT_MEM1(STACK_TOP), STACK(0));
-        free_stack(common, 1);
-
-        jumplistitem = sljit_alloc_memory(compiler, sizeof(jump_list));
-        if (SLJIT_UNLIKELY(!jumplistitem))
-            return;
-        jumplist = jumplistitem;
-        jumplistitem->next = NULL;
-        jumplistitem->jump = CMP(SLJIT_C_EQUAL, TMP1, 0, SLJIT_IMM, 1);
-    }
 
     COMPILE_FALLBACKPATH(current->top);
     if (current->topfallbacks)
         set_jumps(current->topfallbacks, LABEL());
 
-    if (opcode == OP_COND || opcode == OP_SCOND)
+    if (SLJIT_UNLIKELY(opcode == OP_COND) || SLJIT_UNLIKELY(opcode == OP_SCOND))
     {
         /* Conditional block always has at most one alternative. */
         if (ccbegin[1 + LINK_SIZE] >= OP_ASSERT && ccbegin[1 + LINK_SIZE] <= OP_ASSERTBACK_NOT)
         {
+            SLJIT_ASSERT(has_alternatives);
             assert = CURRENT_AS(bracket_fallback)->u.assert;
             if (assert->framesize >= 0 &&
                 (ccbegin[1 + LINK_SIZE] == OP_ASSERT || ccbegin[1 + LINK_SIZE] == OP_ASSERTBACK))
@@ -5433,14 +5660,17 @@ static void compile_bracket_fallbackpath(compiler_common *common, struct fallbac
             cond = JUMP(SLJIT_JUMP);
             set_jumps(CURRENT_AS(bracket_fallback)->u.assert->condfailed, LABEL());
         }
-        else
+        else if (CURRENT_AS(bracket_fallback)->u.condfailed != NULL)
         {
+            SLJIT_ASSERT(has_alternatives);
             cond = JUMP(SLJIT_JUMP);
             set_jumps(CURRENT_AS(bracket_fallback)->u.condfailed, LABEL());
         }
+        else
+            SLJIT_ASSERT(!has_alternatives);
     }
 
-    if (*cc == OP_ALT || opcode == OP_COND || opcode == OP_SCOND)
+    if (has_alternatives)
     {
         count = 1;
         do
@@ -5550,8 +5780,9 @@ static void compile_bracket_fallbackpath(compiler_common *common, struct fallbac
         {
             SLJIT_ASSERT(opcode == OP_COND || opcode == OP_SCOND);
             assert = CURRENT_AS(bracket_fallback)->u.assert;
-            if (assert->framesize >= 0 &&
-                (ccbegin[1 + LINK_SIZE] == OP_ASSERT_NOT || ccbegin[1 + LINK_SIZE] == OP_ASSERTBACK_NOT))
+            if ((ccbegin[1 + LINK_SIZE] == OP_ASSERT_NOT || ccbegin[1 + LINK_SIZE] == OP_ASSERTBACK_NOT) &&
+                assert->framesize >= 0)
+
             {
                 OP1(SLJIT_MOV, STACK_TOP, 0, SLJIT_MEM1(SLJIT_LOCALS_REG), assert->localptr);
                 add_jump(compiler, &common->revertframes, JUMP(SLJIT_FAST_CALL));
@@ -5950,11 +6181,12 @@ void _pcre_jit_compile(const real_pcre *re, pcre_extra *extra)
     fallback_common rootfallback;
     compiler_common common_data;
     compiler_common *common = &common_data;
-    const unsigned char *tables = re->tables;
+    const uschar *tables = re->tables;
     pcre_study_data *study;
     uschar *ccend;
     executable_function *function;
     void *executable_func;
+    sljit_uw executable_size;
     struct sljit_label *leave;
     struct sljit_label *mainloop = NULL;
     struct sljit_label *empty_match_found;
@@ -6031,6 +6263,9 @@ void _pcre_jit_compile(const real_pcre *re, pcre_extra *extra)
     }
     common->endonly = (re->options & PCRE_DOLLAR_ENDONLY) != 0;
     common->ctypes = (sljit_w)(tables + ctypes_offset);
+    common->name_table = (sljit_w)re + re->name_table_offset;
+    common->name_count = re->name_count;
+    common->name_entry_size = re->name_entry_size;
     common->acceptlabel = NULL;
     common->stubs = NULL;
     common->entries = NULL;
@@ -6301,6 +6536,7 @@ void _pcre_jit_compile(const real_pcre *re, pcre_extra *extra)
 
     SLJIT_FREE(common->localptrs);
     executable_func = sljit_generate_code(compiler);
+    executable_size = sljit_get_generated_code_size(compiler);
     sljit_free_compiler(compiler);
     if (executable_func == NULL)
         return;
@@ -6315,6 +6551,7 @@ void _pcre_jit_compile(const real_pcre *re, pcre_extra *extra)
     }
 
     function->executable_func = executable_func;
+    function->executable_size = executable_size;
     function->callback = NULL;
     function->userdata = NULL;
     extra->executable_jit = function;
@@ -6398,6 +6635,11 @@ void _pcre_jit_free(void *executable_func)
     executable_function *function = (executable_function *)executable_func;
     sljit_free_code(function->executable_func);
     SLJIT_FREE(function);
+}
+
+int _pcre_jit_get_size(void *executable_func)
+{
+    return ((executable_function *)executable_func)->executable_size;
 }
 
 PCRE_EXP_DECL pcre_jit_stack *pcre_jit_stack_alloc(int startsize, int maxsize)

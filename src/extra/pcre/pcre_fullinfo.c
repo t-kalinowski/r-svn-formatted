@@ -99,6 +99,18 @@ PCRE_EXP_DEFN int PCRE_CALL_CONVENTION pcre_fullinfo(const pcre *argument_re, co
         *((size_t *)where) = (study == NULL) ? 0 : study->size;
         break;
 
+    case PCRE_INFO_JITSIZE:
+#ifdef SUPPORT_JIT
+        *((size_t *)where) = (extra_data != NULL && (extra_data->flags & PCRE_EXTRA_EXECUTABLE_JIT) != 0 &&
+                              extra_data->executable_jit != NULL)
+                                 ? _pcre_jit_get_size(extra_data->executable_jit)
+                                 : 0;
+#else
+        *((size_t *)where) = 0;
+#endif
+
+        break;
+
     case PCRE_INFO_CAPTURECOUNT:
         *((int *)where) = re->top_bracket;
         break;
