@@ -560,11 +560,10 @@ static void InString(R_inpstream_t stream, char *buf, int length)
 
 static void OutFormat(R_outpstream_t stream)
 {
-    if (stream->type == R_pstream_binary_format)
-    {
+    /*    if (stream->type == R_pstream_binary_format) {
         warning(_("binary format is deprecated; using xdr instead"));
         stream->type = R_pstream_xdr_format;
-    }
+        } */
     switch (stream->type)
     {
     case R_pstream_ascii_format:
@@ -2154,7 +2153,7 @@ static void InitBConOutPStream(R_outpstream_t stream, bconbuf_t bb, Rconnection 
 }
 
 /* only for use by serialize(), with binary write to a socket connection */
-SEXP attribute_hidden R_serializeb(SEXP object, SEXP icon, SEXP Sversion, SEXP fun)
+SEXP attribute_hidden R_serializeb(SEXP object, SEXP icon, SEXP xdr, SEXP Sversion, SEXP fun)
 {
     struct R_outpstream_st out;
     SEXP (*hook)(SEXP, SEXP);
@@ -2171,7 +2170,8 @@ SEXP attribute_hidden R_serializeb(SEXP object, SEXP icon, SEXP Sversion, SEXP f
 
     hook = fun != R_NilValue ? CallHook : NULL;
 
-    InitBConOutPStream(&out, &bbs, con, R_pstream_xdr_format, version, hook, fun);
+    InitBConOutPStream(&out, &bbs, con, asLogical(xdr) ? R_pstream_xdr_format : R_pstream_binary_format, version, hook,
+                       fun);
     R_Serialize(object, &out);
     flush_bcon_buffer(&bbs);
     return R_NilValue;
@@ -2311,7 +2311,10 @@ SEXP attribute_hidden R_serialize(SEXP object, SEXP icon, SEXP ascii, SEXP Svers
 
     hook = fun != R_NilValue ? CallHook : NULL;
 
-    if (asLogical(ascii))
+    int asc = asLogical(ascii);
+    if (asc == NA_LOGICAL)
+        type = R_pstream_binary_format;
+    else if (asc)
         type = R_pstream_ascii_format;
     else
         type = R_pstream_xdr_format; /**** binary or ascii if no XDR? */
