@@ -490,8 +490,9 @@ static struct
     {10079, "maciceland"},
     {10079, "mac-is"},
     {10079, "macis"},
-    {10081, "x-mac-turkish"},                        /* Turkish (Mac) */
-    {10081, "macturkish"} {10082, "x-mac-croatian"}, /* Croatian (Mac) */
+    {10081, "x-mac-turkish"}, /* Turkish (Mac) */
+    {10081, "macturkish"},
+    {10082, "x-mac-croatian"}, /* Croatian (Mac) */
     {10082, "maccroatian"},
     {20000, "x-Chinese_CNS"},   /* CNS Taiwan; Chinese Traditional (CNS) */
     {20001, "x-cp20001"},       /* TCA Taiwan */
