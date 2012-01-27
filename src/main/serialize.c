@@ -162,12 +162,12 @@ static void WriteBC(SEXP s, SEXP ref_table, R_outpstream_t stream);
 static SEXP ReadBC(SEXP ref_table, R_inpstream_t stream);
 #endif
 
-static Rboolean R_XDREncodeDoubleVector(double *d, void *buf, int len);
-static Rboolean R_XDRDecodeDoubleVector(void *input, double *output, int len);
-static Rboolean R_XDREncodeComplexVector(Rcomplex *c, void *buf, int len);
-static Rboolean R_XDRDecodeComplexVector(void *input, Rcomplex *output, int len);
-static Rboolean R_XDREncodeIntegerVector(int *i, void *buf, int len);
-static Rboolean R_XDRDecodeIntegerVector(void *input, int *output, int len);
+static Rboolean R_EncodeDoubleVector(double *d, void *buf, int len);
+static Rboolean R_DecodeDoubleVector(void *input, double *output, int len);
+static Rboolean R_EncodeComplexVector(Rcomplex *c, void *buf, int len);
+static Rboolean R_DecodeComplexVector(void *input, Rcomplex *output, int len);
+static Rboolean R_EncodeIntegerVector(int *i, void *buf, int len);
+static Rboolean R_DecodeIntegerVector(void *input, int *output, int len);
 
 /*
  * Constants
@@ -894,38 +894,27 @@ static void OutStringVec(R_outpstream_t stream, SEXP s, SEXP ref_table)
 #define INTEGER_ELT(x, __i__) INTEGER(x)[__i__]
 #define REAL_ELT(x, __i__) REAL(x)[__i__]
 #define COMPLEX_ELT(x, __i__) COMPLEX(x)[__i__]
-#define RAW_ELT(x, __i__) RAW(x)[__i__]
 
-/* This is wasteful of memory since it converts the whole vector
-   at once.  It would be better to convert in sections */
+#define CHUNK_SIZE 8096
 #define OutVec(NAME, CAPNAME, XDR, TYPE)                                                                               \
     static R_INLINE void Out##NAME##Vec(R_outpstream_t stream, SEXP s, int length)                                     \
     {                                                                                                                  \
         OutInteger(stream, length);                                                                                    \
         switch (stream->type)                                                                                          \
         {                                                                                                              \
-        case R_pstream_xdr_format:                                                                                     \
-            if (length > (8096 / sizeof(TYPE)))                                                                        \
+        case R_pstream_xdr_format: {                                                                                   \
+            static char buf[CHUNK_SIZE * sizeof(TYPE)];                                                                \
+            int done, this;                                                                                            \
+            for (done = 0; done < length; done += this)                                                                \
             {                                                                                                          \
-                char *buf = Calloc(sizeof(TYPE) * length, char);                                                       \
-                if (R_XDREncode##XDR##Vector(CAPNAME(s), buf, length))                                                 \
-                {                                                                                                      \
-                    stream->OutBytes(stream, buf, sizeof(TYPE) * length);                                              \
-                    Free(buf);                                                                                         \
-                }                                                                                                      \
+                this = imin2(CHUNK_SIZE, length - done);                                                               \
+                if (R_Encode##XDR##Vector(CAPNAME(s) + done, buf, this))                                               \
+                    stream->OutBytes(stream, buf, sizeof(TYPE) * this);                                                \
                 else                                                                                                   \
-                {                                                                                                      \
-                    Free(buf);                                                                                         \
                     error(_("XDR write failed"));                                                                      \
-                }                                                                                                      \
-            }                                                                                                          \
-            else                                                                                                       \
-            {                                                                                                          \
-                char buf[8096];                                                                                        \
-                R_XDREncode##XDR##Vector(CAPNAME(s), buf, length);                                                     \
-                stream->OutBytes(stream, buf, sizeof(TYPE) * length);                                                  \
             }                                                                                                          \
             break;                                                                                                     \
+        }                                                                                                              \
         case R_pstream_binary_format:                                                                                  \
             stream->OutBytes(stream, CAPNAME(s), sizeof(TYPE) * length);                                               \
             break;                                                                                                     \
@@ -948,7 +937,7 @@ OutVec(Integer, INTEGER, Integer, int) OutVec(Real, REAL, Double, double) OutVec
         break;
     default:
         for (int cnt = 0; cnt < length; ++cnt)
-            OutByte(stream, RAW_ELT(s, cnt));
+            OutByte(stream, RAW(s)[cnt]);
     }
 }
 
@@ -1387,35 +1376,24 @@ static SEXP InStringVec(R_inpstream_t stream, SEXP ref_table)
     return s;
 }
 
-/* This is wasteful of memory since it converts the whole vector
-   at once.  It would be better to convert in sections */
+/* static buffer to reuse the same storage */
 #define InVec(NAME, CAPNAME, XDR, TYPE)                                                                                \
     static R_INLINE void In##NAME##Vec(R_inpstream_t stream, SEXP obj, int length)                                     \
     {                                                                                                                  \
         switch (stream->type)                                                                                          \
         {                                                                                                              \
-        case R_pstream_xdr_format:                                                                                     \
-            if (length > (8096 / sizeof(TYPE)))                                                                        \
+        case R_pstream_xdr_format: {                                                                                   \
+            static char buf[CHUNK_SIZE * sizeof(TYPE)];                                                                \
+            int done, this;                                                                                            \
+            for (done = 0; done < length; done += this)                                                                \
             {                                                                                                          \
-                char *buf = Calloc(sizeof(TYPE) * length, char);                                                       \
-                stream->InBytes(stream, buf, sizeof(TYPE) * length);                                                   \
-                if (R_XDRDecode##XDR##Vector(buf, CAPNAME(obj), length))                                               \
-                {                                                                                                      \
-                    Free(buf);                                                                                         \
-                }                                                                                                      \
-                else                                                                                                   \
-                {                                                                                                      \
-                    Free(buf);                                                                                         \
+                this = imin2(CHUNK_SIZE, length - done);                                                               \
+                stream->InBytes(stream, buf, sizeof(TYPE) * this);                                                     \
+                if (!R_Decode##XDR##Vector(buf, CAPNAME(obj) + done, this))                                            \
                     error(_("XDR read failed"));                                                                       \
-                }                                                                                                      \
-            }                                                                                                          \
-            else                                                                                                       \
-            {                                                                                                          \
-                char buf[8096];                                                                                        \
-                stream->InBytes(stream, buf, sizeof(TYPE) * length);                                                   \
-                R_XDRDecode##XDR##Vector(buf, CAPNAME(obj), length);                                                   \
             }                                                                                                          \
             break;                                                                                                     \
+        }                                                                                                              \
         case R_pstream_binary_format:                                                                                  \
             stream->InBytes(stream, CAPNAME(obj), sizeof(TYPE) * length);                                              \
             break;                                                                                                     \
@@ -2771,7 +2749,7 @@ SEXP attribute_hidden do_lazyLoadDBfetch(SEXP call, SEXP op, SEXP args, SEXP env
 #include <rpc/types.h>
 #include <rpc/xdr.h>
 
-static Rboolean R_XDREncodeDoubleVector(double *d, void *buf, int len)
+static R_INLINE Rboolean R_EncodeDoubleVector(double *d, void *buf, int len)
 {
     XDR xdrs;
     Rboolean success = TRUE;
@@ -2783,7 +2761,7 @@ static Rboolean R_XDREncodeDoubleVector(double *d, void *buf, int len)
     return success;
 }
 
-static Rboolean R_XDRDecodeDoubleVector(void *input, double *output, int len)
+static R_INLINE Rboolean R_DecodeDoubleVector(void *input, double *output, int len)
 {
     XDR xdrs;
     Rboolean success = TRUE;
@@ -2797,7 +2775,7 @@ static Rboolean R_XDRDecodeDoubleVector(void *input, double *output, int len)
         error(_("XDR read failed"));
 }
 
-static Rboolean R_XDREncodeComplexVector(Rcomplex *c, void *buf, int len)
+static R_INLINE Rboolean R_EncodeComplexVector(Rcomplex *c, void *buf, int len)
 {
     XDR xdrs;
     Rboolean success = TRUE;
@@ -2813,7 +2791,7 @@ static Rboolean R_XDREncodeComplexVector(Rcomplex *c, void *buf, int len)
     return success;
 }
 
-static Rboolean R_XDRDecodeComplexVector(void *input, Rcomplex *output, int len)
+static R_INLINE Rboolean R_DecodeComplexVector(void *input, Rcomplex *output, int len)
 {
     XDR xdrs;
     Rboolean success = TRUE;
@@ -2829,7 +2807,7 @@ static Rboolean R_XDRDecodeComplexVector(void *input, Rcomplex *output, int len)
     return success;
 }
 
-static Rboolean R_XDREncodeIntegerVector(int *i, void *buf, int len)
+static R_INLINE Rboolean R_EncodeIntegerVector(int *i, void *buf, int len)
 {
     XDR xdrs;
     Rboolean success = TRUE;
@@ -2841,7 +2819,7 @@ static Rboolean R_XDREncodeIntegerVector(int *i, void *buf, int len)
     return success;
 }
 
-static Rboolean R_XDRDecodeIntegerVector(void *input, int *output, int len)
+static R_INLINE Rboolean R_DecodeIntegerVector(void *input, int *output, int len)
 {
     XDR xdrs;
     Rboolean success = TRUE;
