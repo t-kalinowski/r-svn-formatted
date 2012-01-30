@@ -7703,7 +7703,8 @@ static void PDF_Circle(double x, double y, double r, const pGEcontext gc, pDevDe
     PDF_checkOffline();
 
     if (r <= 0.0)
-        return; /* since PR#14797 use 0-sized pch=0 */
+        return; /* since PR#14797 use 0-sized pch=1, but now
+       GECircle omits such circles */
 
     code = 2 * (R_VIS(gc->fill)) + (R_VIS(gc->col));
     if (code)
