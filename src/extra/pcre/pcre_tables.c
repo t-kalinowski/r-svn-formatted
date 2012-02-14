@@ -6,7 +6,7 @@
 and semantics are as close as possible to those of the Perl 5 language.
 
                        Written by Philip Hazel
-           Copyright (c) 1997-2009 University of Cambridge
+           Copyright (c) 1997-2012 University of Cambridge
 
 -----------------------------------------------------------------------------
 Redistribution and use in source and binary forms, with or without
@@ -37,6 +37,8 @@ POSSIBILITY OF SUCH DAMAGE.
 -----------------------------------------------------------------------------
 */
 
+#ifndef PCRE_INCLUDED
+
 /* This module contains some fixed tables that are used by more than one of the
 PCRE code modules. The tables are also #included by the pcretest program, which
 uses macros to change their names from _pcre_xxx to xxxx, thereby avoiding name
@@ -48,10 +50,12 @@ clashes with the library. */
 
 #include "pcre_internal.h"
 
+#endif /* PCRE_INCLUDED */
+
 /* Table of sizes for the fixed-length opcodes. It's defined in a macro so that
 the definition is next to the definition of the opcodes in pcre_internal.h. */
 
-const uschar _pcre_OP_lengths[] = {OP_LENGTHS};
+const pcre_uint8 PRIV(OP_lengths)[] = {OP_LENGTHS};
 
 /*************************************************
  *           Tables for UTF-8 support             *
@@ -60,39 +64,34 @@ const uschar _pcre_OP_lengths[] = {OP_LENGTHS};
 /* These are the breakpoints for different numbers of bytes in a UTF-8
 character. */
 
-#ifdef SUPPORT_UTF8
+#if (defined SUPPORT_UTF && defined COMPILE_PCRE8) || (defined PCRE_INCLUDED && defined SUPPORT_PCRE16)
 
-const int _pcre_utf8_table1[] = {0x7f, 0x7ff, 0xffff, 0x1fffff, 0x3ffffff, 0x7fffffff};
+/* These tables are also required by pcretest in 16 bit mode. */
 
-const int _pcre_utf8_table1_size = sizeof(_pcre_utf8_table1) / sizeof(int);
+const int PRIV(utf8_table1)[] = {0x7f, 0x7ff, 0xffff, 0x1fffff, 0x3ffffff, 0x7fffffff};
+
+const int PRIV(utf8_table1_size) = sizeof(PRIV(utf8_table1)) / sizeof(int);
 
 /* These are the indicator bits and the mask for the data bits to set in the
 first byte of a character, indexed by the number of additional bytes. */
 
-const int _pcre_utf8_table2[] = {0, 0xc0, 0xe0, 0xf0, 0xf8, 0xfc};
-const int _pcre_utf8_table3[] = {0xff, 0x1f, 0x0f, 0x07, 0x03, 0x01};
+const int PRIV(utf8_table2)[] = {0, 0xc0, 0xe0, 0xf0, 0xf8, 0xfc};
+const int PRIV(utf8_table3)[] = {0xff, 0x1f, 0x0f, 0x07, 0x03, 0x01};
 
 /* Table of the number of extra bytes, indexed by the first byte masked with
 0x3f. The highest number for a valid UTF-8 first byte is in fact 0x3d. */
 
-const uschar _pcre_utf8_table4[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-                                    2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5};
+const pcre_uint8 PRIV(utf8_table4)[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                        2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5};
 
-#ifdef SUPPORT_JIT
-/* Full table of the number of extra bytes when the
-character code is greater or equal than 0xc0.
-See _pcre_utf8_table4 above. */
+#endif /* (SUPPORT_UTF && COMPILE_PCRE8) || (PCRE_INCLUDED && SUPPORT_PCRE16)*/
 
-const uschar _pcre_utf8_char_sizes[] = {
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4,
-};
-#endif
+#ifdef SUPPORT_UTF
 
 /* Table to translate from particular type value to the general value. */
 
-const int _pcre_ucp_gentype[] = {
+const int PRIV(ucp_gentype)[] = {
     ucp_C, ucp_C, ucp_C, ucp_C, ucp_C, /* Cc, Cf, Cn, Co, Cs */
     ucp_L, ucp_L, ucp_L, ucp_L, ucp_L, /* Ll, Lu, Lm, Lo, Lt */
     ucp_M, ucp_M, ucp_M,               /* Mc, Me, Mn */
@@ -104,13 +103,13 @@ const int _pcre_ucp_gentype[] = {
 };
 
 #ifdef SUPPORT_JIT
-/* This table reverses _pcre_ucp_gentype. We can save the cost
+/* This table reverses PRIV(ucp_gentype). We can save the cost
 of a memory load. */
 
-const int _pcre_ucp_typerange[] = {
+const int PRIV(ucp_typerange)[] = {
     ucp_Cc, ucp_Cs, ucp_Ll, ucp_Lu, ucp_Mc, ucp_Mn, ucp_Nd, ucp_No, ucp_Pc, ucp_Ps, ucp_Sc, ucp_So, ucp_Zl, ucp_Zs,
 };
-#endif
+#endif /* SUPPORT_JIT */
 
 /* The pcre_utt[] table below translates Unicode property names into type and
 code values. It is searched by binary chop, so must be in collating sequence of
@@ -279,39 +278,28 @@ strings to make sure that UTF-8 support works on EBCDIC platforms. */
 #define STRING_Zp0 STR_Z STR_p "\0"
 #define STRING_Zs0 STR_Z STR_s "\0"
 
-const char _pcre_utt_names[] = STRING_Any0 STRING_Arabic0 STRING_Armenian0 STRING_Avestan0 STRING_Balinese0 STRING_Bamum0
-    STRING_Batak0 STRING_Bengali0 STRING_Bopomofo0 STRING_Brahmi0 STRING_Braille0 STRING_Buginese0 STRING_Buhid0 STRING_C0
-        STRING_Canadian_Aboriginal0 STRING_Carian0 STRING_Cc0 STRING_Cf0 STRING_Cham0 STRING_Cherokee0 STRING_Cn0
-            STRING_Co0 STRING_Common0 STRING_Coptic0 STRING_Cs0 STRING_Cuneiform0 STRING_Cypriot0 STRING_Cyrillic0
-                STRING_Deseret0 STRING_Devanagari0 STRING_Egyptian_Hieroglyphs0 STRING_Ethiopic0 STRING_Georgian0
-                    STRING_Glagolitic0 STRING_Gothic0 STRING_Greek0 STRING_Gujarati0 STRING_Gurmukhi0 STRING_Han0
-                        STRING_Hangul0 STRING_Hanunoo0 STRING_Hebrew0 STRING_Hiragana0 STRING_Imperial_Aramaic0
-                            STRING_Inherited0 STRING_Inscriptional_Pahlavi0 STRING_Inscriptional_Parthian0
-                                STRING_Javanese0 STRING_Kaithi0 STRING_Kannada0 STRING_Katakana0 STRING_Kayah_Li0
-                                    STRING_Kharoshthi0 STRING_Khmer0 STRING_L0 STRING_L_AMPERSAND0 STRING_Lao0 STRING_Latin0
-                                        STRING_Lepcha0 STRING_Limbu0 STRING_Linear_B0 STRING_Lisu0 STRING_Ll0 STRING_Lm0 STRING_Lo0 STRING_Lt0
-                                            STRING_Lu0 STRING_Lycian0 STRING_Lydian0 STRING_M0 STRING_Malayalam0 STRING_Mandaic0
-                                                STRING_Mc0 STRING_Me0 STRING_Meetei_Mayek0 STRING_Mn0 STRING_Mongolian0 STRING_Myanmar0
-                                                    STRING_N0 STRING_Nd0 STRING_New_Tai_Lue0 STRING_Nko0 STRING_Nl0 STRING_No0
-                                                        STRING_Ogham0 STRING_Ol_Chiki0 STRING_Old_Italic0 STRING_Old_Persian0 STRING_Old_South_Arabian0
-                                                            STRING_Old_Turkic0 STRING_Oriya0 STRING_Osmanya0 STRING_P0 STRING_Pc0 STRING_Pd0
-                                                                STRING_Pe0 STRING_Pf0 STRING_Phags_Pa0 STRING_Phoenician0 STRING_Pi0
-                                                                    STRING_Po0 STRING_Ps0 STRING_Rejang0 STRING_Runic0 STRING_S0 STRING_Samaritan0
-                                                                        STRING_Saurashtra0 STRING_Sc0 STRING_Shavian0 STRING_Sinhala0
-                                                                            STRING_Sk0 STRING_Sm0 STRING_So0 STRING_Sundanese0 STRING_Syloti_Nagri0
-                                                                                STRING_Syriac0 STRING_Tagalog0 STRING_Tagbanwa0
-                                                                                    STRING_Tai_Le0 STRING_Tai_Tham0
-                                                                                        STRING_Tai_Viet0 STRING_Tamil0 STRING_Telugu0 STRING_Thaana0
-                                                                                            STRING_Thai0 STRING_Tibetan0 STRING_Tifinagh0
-                                                                                                STRING_Ugaritic0 STRING_Vai0 STRING_Xan0
-                                                                                                    STRING_Xps0
-                                                                                                        STRING_Xsp0
-                                                                                                            STRING_Xwd0
-                                                                                                                STRING_Yi0 STRING_Z0
-                                                                                                                    STRING_Zl0 STRING_Zp0
-                                                                                                                        STRING_Zs0;
+const char PRIV(utt_names)[] = STRING_Any0 STRING_Arabic0 STRING_Armenian0 STRING_Avestan0 STRING_Balinese0
+    STRING_Bamum0 STRING_Batak0 STRING_Bengali0 STRING_Bopomofo0 STRING_Brahmi0 STRING_Braille0 STRING_Buginese0
+    STRING_Buhid0 STRING_C0 STRING_Canadian_Aboriginal0 STRING_Carian0 STRING_Cc0 STRING_Cf0 STRING_Cham0
+    STRING_Cherokee0 STRING_Cn0 STRING_Co0 STRING_Common0 STRING_Coptic0 STRING_Cs0 STRING_Cuneiform0 STRING_Cypriot0
+    STRING_Cyrillic0 STRING_Deseret0 STRING_Devanagari0 STRING_Egyptian_Hieroglyphs0 STRING_Ethiopic0 STRING_Georgian0
+    STRING_Glagolitic0 STRING_Gothic0 STRING_Greek0 STRING_Gujarati0 STRING_Gurmukhi0 STRING_Han0 STRING_Hangul0
+    STRING_Hanunoo0 STRING_Hebrew0 STRING_Hiragana0 STRING_Imperial_Aramaic0 STRING_Inherited0
+    STRING_Inscriptional_Pahlavi0 STRING_Inscriptional_Parthian0 STRING_Javanese0 STRING_Kaithi0 STRING_Kannada0
+    STRING_Katakana0 STRING_Kayah_Li0 STRING_Kharoshthi0 STRING_Khmer0 STRING_L0 STRING_L_AMPERSAND0 STRING_Lao0
+    STRING_Latin0 STRING_Lepcha0 STRING_Limbu0 STRING_Linear_B0 STRING_Lisu0 STRING_Ll0 STRING_Lm0 STRING_Lo0 STRING_Lt0
+    STRING_Lu0 STRING_Lycian0 STRING_Lydian0 STRING_M0 STRING_Malayalam0 STRING_Mandaic0 STRING_Mc0 STRING_Me0
+    STRING_Meetei_Mayek0 STRING_Mn0 STRING_Mongolian0 STRING_Myanmar0 STRING_N0 STRING_Nd0 STRING_New_Tai_Lue0
+    STRING_Nko0 STRING_Nl0 STRING_No0 STRING_Ogham0 STRING_Ol_Chiki0 STRING_Old_Italic0 STRING_Old_Persian0
+    STRING_Old_South_Arabian0 STRING_Old_Turkic0 STRING_Oriya0 STRING_Osmanya0 STRING_P0 STRING_Pc0 STRING_Pd0
+    STRING_Pe0 STRING_Pf0 STRING_Phags_Pa0 STRING_Phoenician0 STRING_Pi0 STRING_Po0 STRING_Ps0 STRING_Rejang0
+    STRING_Runic0 STRING_S0 STRING_Samaritan0 STRING_Saurashtra0 STRING_Sc0 STRING_Shavian0 STRING_Sinhala0 STRING_Sk0
+    STRING_Sm0 STRING_So0 STRING_Sundanese0 STRING_Syloti_Nagri0 STRING_Syriac0 STRING_Tagalog0 STRING_Tagbanwa0
+    STRING_Tai_Le0 STRING_Tai_Tham0 STRING_Tai_Viet0 STRING_Tamil0 STRING_Telugu0 STRING_Thaana0 STRING_Thai0
+    STRING_Tibetan0 STRING_Tifinagh0 STRING_Ugaritic0 STRING_Vai0 STRING_Xan0 STRING_Xps0 STRING_Xsp0 STRING_Xwd0
+    STRING_Yi0 STRING_Z0 STRING_Zl0 STRING_Zp0 STRING_Zs0;
 
-const ucp_type_table _pcre_utt[] = {{0, PT_ANY, 0},
+const ucp_type_table PRIV(utt)[] = {{0, PT_ANY, 0},
                                     {4, PT_SC, ucp_Arabic},
                                     {11, PT_SC, ucp_Armenian},
                                     {20, PT_SC, ucp_Avestan},
@@ -450,8 +438,8 @@ const ucp_type_table _pcre_utt[] = {{0, PT_ANY, 0},
                                     {958, PT_PC, ucp_Zp},
                                     {961, PT_PC, ucp_Zs}};
 
-const int _pcre_utt_size = sizeof(_pcre_utt) / sizeof(ucp_type_table);
+const int PRIV(utt_size) = sizeof(PRIV(utt)) / sizeof(ucp_type_table);
 
-#endif /* SUPPORT_UTF8 */
+#endif /* SUPPORT_UTF */
 
 /* End of pcre_tables.c */

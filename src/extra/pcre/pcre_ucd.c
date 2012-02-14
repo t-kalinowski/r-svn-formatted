@@ -18,20 +18,20 @@
 /* Instead, just supply small dummy tables. */
 
 #ifndef SUPPORT_UCP
-const ucd_record _pcre_ucd_records[] = {{0, 0, 0}};
-const uschar _pcre_ucd_stage1[] = {0};
-const pcre_uint16 _pcre_ucd_stage2[] = {0};
+const ucd_record PRIV(ucd_records)[] = {{0, 0, 0}};
+const pcre_uint8 PRIV(ucd_stage1)[] = {0};
+const pcre_uint16 PRIV(ucd_stage2)[] = {0};
 #else
 
 /* When recompiling tables with a new Unicode version,
 please check types in the structure definition from pcre_internal.h:
 typedef struct {
-uschar property_0;
-uschar property_1;
+pcre_uint8 property_0;
+pcre_uint8 property_1;
 pcre_int32 property_2;
 } ucd_record; */
 
-const ucd_record _pcre_ucd_records[] = {
+const ucd_record PRIV(ucd_records)[] = {
     /* 4320 bytes, record size 8 */
     {
         9,
@@ -2735,7 +2735,7 @@ const ucd_record _pcre_ucd_records[] = {
     }, /* 539 */
 };
 
-const uschar _pcre_ucd_stage1[] = {
+const pcre_uint8 PRIV(ucd_stage1)[] = {
     /* 8704 bytes */
     0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   10,  11,  12,  13,  14,  15,  /* U+0000 */
     16,  17,  18,  19,  20,  21,  22,  23,  24,  25,  26,  27,  28,  29,  30,  31,  /* U+0800 */
@@ -3283,7 +3283,7 @@ const uschar _pcre_ucd_stage1[] = {
     114, 114, 114, 114, 114, 114, 114, 114, 114, 114, 114, 114, 114, 114, 114, 184, /* U+10F800 */
 };
 
-const pcre_uint16 _pcre_ucd_stage2[] = {
+const pcre_uint16 PRIV(ucd_stage2)[] = {
     /* 47360 bytes, block = 128 */
     /* block 0 */
     0,
