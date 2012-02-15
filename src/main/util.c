@@ -1401,7 +1401,7 @@ Rboolean utf8Valid(const char *str)
     int errp;
     return (_pcre_valid_utf(str, (int)strlen(str), &errp) == 0);
 }
-#elif PCRE_MAJOR > 8 || PCRE_MINOR >= 13
+#elif PCRE_MINOR >= 13
 extern int _pcre_valid_utf8(const char *string, int length, int *erroroffset);
 
 Rboolean utf8Valid(const char *str)
