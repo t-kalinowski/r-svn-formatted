@@ -150,7 +150,7 @@ void attribute_hidden parseError(SEXP call, int linenum)
         case 0:
             error(_("%s%d:%d: %s"), filename, linenum, R_ParseErrorCol, R_ParseErrorMsg);
             break;
-        case 1:
+        case 1: // clang says 'use of '%n' is discouraged'
             sprintf(buffer, "%d: %n", R_ParseContextLine, &width);
             error(_("%s%d:%d: %s\n%d: %s\n%*s"), filename, linenum, R_ParseErrorCol, R_ParseErrorMsg,
                   R_ParseContextLine, CHAR(STRING_ELT(context, 0)), width + R_ParseErrorCol, "^");
