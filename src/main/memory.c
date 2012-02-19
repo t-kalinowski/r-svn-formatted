@@ -3721,6 +3721,10 @@ void attribute_hidden(SET_UTF8)(SEXP x)
 {
     SET_UTF8(x);
 }
+void attribute_hidden(SET_ASCII)(SEXP x)
+{
+    SET_ASCII(x);
+}
 int attribute_hidden(ENC_KNOWN)(SEXP x)
 {
     return ENC_KNOWN(x);
