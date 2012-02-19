@@ -962,10 +962,15 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         SET_VECTOR_ELT(x, i, coerceVector(VECTOR_ELT(x, i), i > 0 ? INTSXP : REALSXP));
     }
     if (n > 0)
+    {
+        for (i = 0; i < 9; i++)
+            if (nlen[i] == 0)
+                error(_("zero length component in non-empty POSIXlt structure"));
+    }
+    if (n > 0)
         N = (m > n) ? m : n;
     else
         N = 0;
-
     PROTECT(ans = allocVector(STRSXP, N));
     for (i = 0; i < N; i++)
     {
