@@ -893,7 +893,7 @@ const char *translateChar(SEXP x)
         return ans;
     if (latin1locale && IS_LATIN1(x))
         return ans;
-    if (strIsASCII(CHAR(x)))
+    if (IS_ASCII(x))
         return ans;
 
     if (IS_LATIN1(x))
@@ -1030,7 +1030,7 @@ const char *translateCharUTF8(SEXP x)
         return ans;
     if (IS_UTF8(x))
         return ans;
-    if (strIsASCII(CHAR(x)))
+    if (IS_ASCII(x))
         return ans;
     if (IS_BYTES(x))
         error(_("translating strings with \"bytes\" encoding is not allowed"));

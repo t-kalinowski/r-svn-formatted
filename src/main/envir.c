@@ -3625,17 +3625,6 @@ static void R_StringHash_resize(unsigned int newsize)
    the global CHARSXP cache, R_StringHash, it is returned.  Otherwise,
    a new CHARSXP is created, added to the cache and then returned. */
 
-static Rboolean IsASCII(const char *str, int len)
-{
-    const char *p = str;
-    int i;
-
-    for (i = 0; i < len; i++)
-        if ((unsigned int)*p++ > 0x7F)
-            return FALSE;
-    return TRUE;
-}
-
 /* Because allocCharsxp allocates len+1 bytes and zeros the last,
    this will always zero-terminate */
 SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
@@ -3643,7 +3632,7 @@ SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
     SEXP cval, chain;
     unsigned int hashcode;
     int need_enc;
-    Rboolean embedNul = FALSE;
+    Rboolean embedNul = FALSE, is_ascii = TRUE;
 
     switch (enc)
     {
@@ -3658,11 +3647,12 @@ SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
         error(_("unknown encoding: %d"), enc);
     }
     for (int slen = 0; slen < len; slen++)
+    {
+        if ((unsigned int)name[slen] > 127)
+            is_ascii = FALSE;
         if (!name[slen])
-        {
             embedNul = TRUE;
-            break;
-        }
+    }
     if (embedNul)
     {
         SEXP c;
@@ -3685,10 +3675,12 @@ SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
         default:
             break;
         }
+        if (is_ascii)
+            SET_ASCII(c);
         error(_("embedded nul in string: '%s'"), EncodeString(c, 0, 0, Rprt_adj_none));
     }
 
-    if (enc && IsASCII(name, len))
+    if (enc && is_ascii)
         enc = CE_NATIVE;
     switch (enc)
     {
@@ -3745,6 +3737,8 @@ SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
         default:
             error("unknown encoding mask: %d", enc);
         }
+        if (is_ascii)
+            SET_ASCII(cval);
         SET_CACHED(cval); /* Mark it */
         /* add the new value to the cache */
         chain = VECTOR_ELT(R_StringHash, hashcode);

@@ -936,10 +936,10 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (!useBytes)
     {
-        Rboolean onlyASCII = strIsASCII(CHAR(STRING_ELT(pat, 0)));
+        Rboolean onlyASCII = IS_ASCII(STRING_ELT(pat, 0));
         if (onlyASCII)
             for (i = 0; i < n; i++)
-                if (!strIsASCII(CHAR(STRING_ELT(text, i))))
+                if (!IS_ASCII(STRING_ELT(text, i)))
                 {
                     onlyASCII = FALSE;
                     break;
@@ -1847,10 +1847,10 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (!useBytes)
     {
-        Rboolean onlyASCII = strIsASCII(CHAR(STRING_ELT(pat, 0)));
+        Rboolean onlyASCII = IS_ASCII(STRING_ELT(pat, 0));
         if (onlyASCII)
             for (i = 0; i < n; i++)
-                if (!strIsASCII(CHAR(STRING_ELT(text, i))))
+                if (!IS_ASCII(STRING_ELT(text, i)))
                 {
                     onlyASCII = FALSE;
                     break;
@@ -2789,10 +2789,10 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     n = LENGTH(text);
     if (!useBytes)
     {
-        Rboolean onlyASCII = strIsASCII(CHAR(STRING_ELT(pat, 0)));
+        Rboolean onlyASCII = IS_ASCII(STRING_ELT(pat, 0));
         if (onlyASCII)
             for (i = 0; i < n; i++)
-                if (!strIsASCII(CHAR(STRING_ELT(text, i))))
+                if (!IS_ASCII(STRING_ELT(text, i)))
                 {
                     onlyASCII = FALSE;
                     break;
@@ -3162,14 +3162,14 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (!useBytes)
     {
-        useWC = !strIsASCII(CHAR(STRING_ELT(pat, 0)));
+        useWC = !IS_ASCII(STRING_ELT(pat, 0));
         if (!useWC)
         {
             for (i = 0; i < n; i++)
             {
                 if (STRING_ELT(vec, i) == NA_STRING)
                     continue;
-                if (!strIsASCII(CHAR(STRING_ELT(vec, i))))
+                if (!IS_ASCII(STRING_ELT(vec, i)))
                 {
                     useWC = TRUE;
                     break;

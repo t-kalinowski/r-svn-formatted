@@ -263,7 +263,7 @@ SEXP attribute_hidden do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
            non-ASCII elements have known encoding.
         */
         for (i = 0; i < length(text); i++)
-            if (!ENC_KNOWN(STRING_ELT(text, i)) && !strIsASCII(CHAR(STRING_ELT(text, i))))
+            if (!ENC_KNOWN(STRING_ELT(text, i)) && !IS_ASCII(STRING_ELT(text, i)))
             {
                 allKnown = FALSE;
                 break;
