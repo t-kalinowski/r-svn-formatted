@@ -148,14 +148,11 @@ static SEXP duplicate1(SEXP s)
     case SPECIALSXP:
     case BUILTINSXP:
     case EXTPTRSXP:
-#ifdef BYTECODE
     case BCODESXP:
-#endif
     case WEAKREFSXP:
         return s;
     case CLOSXP:
         PROTECT(s);
-#ifdef BYTECODE
         if (R_jit_enabled > 1 && TYPEOF(BODY(s)) != BCODESXP)
         {
             int old_enabled = R_jit_enabled;
@@ -165,7 +162,6 @@ static SEXP duplicate1(SEXP s)
             SET_BODY(s, BODY(new_s));
             R_jit_enabled = old_enabled;
         }
-#endif
         PROTECT(t = allocSExp(CLOSXP));
         SET_FORMALS(t, FORMALS(s));
         SET_BODY(t, BODY(s));

@@ -1571,13 +1571,8 @@ again:
 
     FORWARD_NODE(R_VStack); /* R_alloc stack */
 
-#ifdef BYTECODE
-    {
-        SEXP *sp;
-        for (sp = R_BCNodeStackBase; sp < R_BCNodeStackTop; sp++)
-            FORWARD_NODE(*sp);
-    }
-#endif
+    for (SEXP *sp = R_BCNodeStackBase; sp < R_BCNodeStackTop; sp++)
+        FORWARD_NODE(*sp);
 
     /* main processing loop */
     PROCESS_NODES();
@@ -2029,7 +2024,6 @@ void attribute_hidden InitMemory()
     TAG(R_NilValue) = R_NilValue;
     ATTRIB(R_NilValue) = R_NilValue;
 
-#ifdef BYTECODE
     R_BCNodeStackBase = (SEXP *)malloc(R_BCNODESTACKSIZE * sizeof(SEXP));
     if (R_BCNodeStackBase == NULL)
         R_Suicide("couldn't allocate node stack");
@@ -2044,7 +2038,7 @@ void attribute_hidden InitMemory()
     R_BCIntStackTop = R_BCIntStackBase;
     R_BCIntStackEnd = R_BCIntStackBase + R_BCINTSTACKSIZE;
 #endif
-#endif
+
     R_weak_refs = R_NilValue;
 
     R_HandlerStack = R_RestartStack = R_NilValue;

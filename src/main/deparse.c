@@ -1290,12 +1290,10 @@ static void deparse2buff(SEXP s, LocalParseData *d)
         print2buff(tpb, d);
     }
     break;
-#ifdef BYTECODE
     case BCODESXP:
         d->sourceable = FALSE;
         print2buff("<bytecode>", d);
         break;
-#endif
     case WEAKREFSXP:
         d->sourceable = FALSE;
         print2buff("<weak reference>", d);

@@ -203,10 +203,8 @@ static void PrintLanguageEtc(SEXP s, Rboolean useSource, Rboolean isClosure)
         Rprintf("%s\n", CHAR(STRING_ELT(t, i))); /* translated */
     if (isClosure)
     {
-#ifdef BYTECODE
         if (isByteCode(BODY(s)))
             Rprintf("<bytecode: %p>\n", BODY(s));
-#endif
         t = CLOENV(s);
         if (t != R_GlobalEnv)
             Rprintf("%s\n", EncodeEnvironment(t));
@@ -862,11 +860,9 @@ void attribute_hidden PrintValueRec(SEXP s, SEXP env)
     case EXTPTRSXP:
         Rprintf("<pointer: %p>\n", R_ExternalPtrAddr(s));
         break;
-#ifdef BYTECODE
     case BCODESXP:
         Rprintf("<bytecode: %p>\n", s);
         break;
-#endif
     case WEAKREFSXP:
         Rprintf("<weak reference>\n");
         break;
