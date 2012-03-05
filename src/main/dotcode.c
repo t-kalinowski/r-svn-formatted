@@ -283,11 +283,10 @@ static Rboolean checkNativeType(int targetType, int actualType)
 }
 
 static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort, const char *name, R_toCConverter **converter,
-                        int targetType, char *encname)
+                        int targetType, char *encname, int named)
 {
     Rbyte *rawptr;
     int *iptr;
-    float *sptr;
     double *rptr;
     char **cptr, *fptr;
     Rcomplex *zptr;
@@ -332,7 +331,7 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort, const cha
     case RAWSXP:
         n = LENGTH(s);
         rawptr = RAW(s);
-        if (dup)
+        if (dup && named)
         {
             rawptr = (Rbyte *)R_alloc(n, sizeof(Rbyte));
             for (i = 0; i < n; i++)
@@ -348,7 +347,7 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort, const cha
             for (i = 0; i < n; i++)
                 if (iptr[i] == NA_INTEGER)
                     error(_("NAs in foreign function call (arg %d)"), narg);
-        if (dup)
+        if (dup && named)
         {
             iptr = (int *)R_alloc(n, sizeof(int));
             for (i = 0; i < n; i++)
@@ -363,11 +362,12 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort, const cha
             for (i = 0; i < n; i++)
                 if (!R_FINITE(rptr[i]))
                     error(_("NA/NaN/Inf in foreign function call (arg %d)"), narg);
-        if (dup)
+        int isSingle = asLogical(getAttrib(s, CSingSymbol)) == 1;
+        if (isSingle || (dup && named))
         {
-            if (asLogical(getAttrib(s, CSingSymbol)) == 1)
+            if (isSingle)
             {
-                sptr = (float *)R_alloc(n, sizeof(float));
+                float *sptr = (float *)R_alloc(n, sizeof(float));
                 for (i = 0; i < n; i++)
                     sptr[i] = (float)REAL(s)[i];
                 return (void *)sptr;
@@ -390,7 +390,7 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort, const cha
             for (i = 0; i < n; i++)
                 if (!R_FINITE(zptr[i].r) || !R_FINITE(zptr[i].i))
                     error(_("complex NA/NaN/Inf in foreign function call (arg %d)"), narg);
-        if (dup)
+        if (dup && named)
         {
             zptr = (Rcomplex *)R_alloc(n, sizeof(Rcomplex));
             for (i = 0; i < n; i++)
@@ -465,9 +465,7 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort, const cha
         n = length(s);
         lptr = (SEXP *)R_alloc(n, sizeof(SEXP));
         for (i = 0; i < n; i++)
-        {
             lptr[i] = VECTOR_ELT(s, i);
-        }
         return (void *)lptr;
         break;
     case LISTSXP:
@@ -1547,8 +1545,10 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                dup, etc. */
             errorcall(call, _("Wrong type for argument %d in call to %s"), nargs + 1, symName);
         }
+        /* We don't need to duplicate if NAMED = 0, but we may need
+           to convert */
         cargs[nargs] = RObjToCPtr(CAR(pargs), naok, dup, nargs + 1, which, symName, argConverters + nargs,
-                                  checkTypes ? checkTypes[nargs] : 0, encname);
+                                  checkTypes ? checkTypes[nargs] : 0, encname, NAMED(CAR(pargs)));
 #ifdef R_MEMORY_PROFILING
         if (RTRACE(CAR(pargs)) && dup)
             memtrace_report(CAR(pargs), cargs[nargs]);
@@ -2128,7 +2128,7 @@ void call_R(char *func, long nargs, void **arguments, char **modes, long *length
     case CPLXSXP:
     case STRSXP:
         if (nres > 0)
-            results[0] = (char *)RObjToCPtr(s, 1, 1, 0, 0, (const char *)NULL, NULL, 0, "");
+            results[0] = (char *)RObjToCPtr(s, 1, 1, 0, 0, (const char *)NULL, NULL, 0, "", NAMED(s));
         break;
     case VECSXP:
         n = length(s);
@@ -2136,7 +2136,8 @@ void call_R(char *func, long nargs, void **arguments, char **modes, long *length
             n = nres;
         for (i = 0; i < n; i++)
         {
-            results[i] = (char *)RObjToCPtr(VECTOR_ELT(s, i), 1, 1, 0, 0, (const char *)NULL, NULL, 0, "");
+            results[i] = (char *)RObjToCPtr(VECTOR_ELT(s, i), 1, 1, 0, 0, (const char *)NULL, NULL, 0, "",
+                                            NAMED(VECTOR_ELT(s, i)));
         }
         break;
     case LISTSXP:
@@ -2145,7 +2146,7 @@ void call_R(char *func, long nargs, void **arguments, char **modes, long *length
             n = nres;
         for (i = 0; i < n; i++)
         {
-            results[i] = (char *)RObjToCPtr(s, 1, 1, 0, 0, (const char *)NULL, NULL, 0, "");
+            results[i] = (char *)RObjToCPtr(s, 1, 1, 0, 0, (const char *)NULL, NULL, 0, "", NAMED(s));
             s = CDR(s);
         }
         break;
