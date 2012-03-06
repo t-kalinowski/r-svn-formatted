@@ -366,13 +366,11 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort, const cha
         }
         else if (dup)
         {
-            double *rptr = (double *)R_alloc(n, sizeof(double));
+            rptr = (double *)R_alloc(n, sizeof(double));
             for (int i = 0; i < n; i++)
                 rptr[i] = REAL(s)[i];
-            return (void *)rptr;
         }
-        else
-            return (void *)rptr;
+        return (void *)rptr;
         break;
     case CPLXSXP:
         n = LENGTH(s);
@@ -465,11 +463,8 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort, const cha
             return (void *)s;
         n = length(s);
         char **cptr = (char **)R_alloc(n, sizeof(char *));
-        for (int i = 0; i < n; i++)
-        {
+        for (int i = 0; i < n; i++, s = CDR(s))
             cptr[i] = (char *)s;
-            s = CDR(s);
-        }
         return (void *)cptr;
         break;
     default:
@@ -487,7 +482,7 @@ static SEXP CPtrToRObj(void *p, SEXP arg, int Fort, R_NativePrimitiveArgType typ
     double *rptr;
     char **cptr, buf[256];
     Rcomplex *zptr;
-    SEXP *lptr, CSingSymbol = install("Csingle");
+    SEXP *lptr;
     int i;
     SEXP s, t;
 
@@ -599,11 +594,8 @@ static SEXP CPtrToRObj(void *p, SEXP arg, int Fort, R_NativePrimitiveArgType typ
     case LISTSXP:
         PROTECT(t = s = allocList(n));
         lptr = (SEXP *)p;
-        for (i = 0; i < n; i++)
-        {
+        for (i = 0; i < n; i++, t = CDR(t))
             SETCAR(t, lptr[i]);
-            t = CDR(t);
-        }
         UNPROTECT(1);
     default:
         s = (SEXP)p;
