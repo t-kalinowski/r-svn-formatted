@@ -314,6 +314,10 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort, const cha
 
         if (targetType != SINGLESXP)
         {
+            /* Cannot be called if DUP = FALSE, so only needs to live
+               until copied later in this function.
+               But R_alloc allocates, so missed protection < R 2.15.0.
+            */
             PROTECT(s = coerceVector(s, targetType));
             nprotect++;
         }
@@ -675,7 +679,7 @@ static SEXP pkgtrim(SEXP args, DllReference *dll)
 
 static SEXP enctrim(SEXP args)
 {
-    SEXP s, ss, sx;
+    SEXP s, ss;
 
     for (s = args; s != R_NilValue;)
     {
@@ -685,13 +689,11 @@ static SEXP enctrim(SEXP args)
            and remove it */
         if (ss == R_NilValue && TAG(s) == EncSymbol)
         {
-            sx = CAR(s);
             warning("ENCODING is defunct and will be ignored");
             return R_NilValue;
         }
         if (TAG(ss) == EncSymbol)
         {
-            sx = CAR(ss);
             warning("ENCODING is defunct and will be ignored");
             SETCDR(s, CDR(ss));
         }
@@ -739,8 +741,8 @@ SEXP attribute_hidden do_isloaded(SEXP call, SEXP op, SEXP args, SEXP env)
     return ScalarLogical(val);
 }
 
-/*   Call dynamically loaded "internal" functions */
-/*   code by Jean Meloche <jean@stat.ubc.ca> */
+/*   Call dynamically loaded "internal" functions
+     code by Jean Meloche <jean@stat.ubc.ca> */
 
 typedef SEXP (*R_ExternalRoutine)(SEXP);
 
@@ -754,7 +756,7 @@ SEXP attribute_hidden do_External(SEXP call, SEXP op, SEXP args, SEXP env)
     char buf[MaxSymbolBytes];
 
     if (length(args) < 1)
-        errorcall(call, _("'name' is missing"));
+        errorcall(call, _("'.NAME' is missing"));
     check1arg(args, call, "name");
     args = resolveNativeRoutine(args, &ofun, &symbol, buf, NULL, NULL, NULL, call);
     fun = (R_ExternalRoutine)ofun;
@@ -797,7 +799,7 @@ SEXP attribute_hidden do_dotcall(SEXP call, SEXP op, SEXP args, SEXP env)
     char buf[MaxSymbolBytes];
 
     if (length(args) < 1)
-        errorcall(call, _("'name' is missing"));
+        errorcall(call, _("'.NAME' is missing"));
     check1arg(args, call, "name");
     args = resolveNativeRoutine(args, &ofun, &symbol, buf, NULL, NULL, NULL, call);
     args = CDR(args);
@@ -1397,7 +1399,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
     char symName[MaxSymbolBytes];
 
     if (length(args) < 1)
-        errorcall(call, _("'name' is missing"));
+        errorcall(call, _("'.NAME' is missing"));
     check1arg(args, call, "name");
     if (NaokSymbol == NULL || DupSymbol == NULL || PkgSymbol == NULL)
     {
