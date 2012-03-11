@@ -509,15 +509,14 @@ static SEXP CPtrToRObj(void *p, SEXP arg, int Fort, R_NativePrimitiveArgType typ
             UNPROTECT(1);
         }
         break;
-        /* read-only, so simply copy the input as for other non-atomic types
-       case VECSXP:
-       {
-       PROTECT(s = allocVector(VECSXP, n));
-       SEXP *lptr = (SEXP*) p;
-       for (int i = 0 ; i < n ; i++) SET_VECTOR_ELT(s, i, lptr[i]);
-       UNPROTECT(1);
-       break;
-        } */
+    case VECSXP: {
+        PROTECT(s = allocVector(VECSXP, n));
+        SEXP *lptr = (SEXP *)p;
+        for (int i = 0; i < n; i++)
+            SET_VECTOR_ELT(s, i, lptr[i]);
+        UNPROTECT(1);
+        break;
+    }
     default:
         s = (SEXP)p;
     }
