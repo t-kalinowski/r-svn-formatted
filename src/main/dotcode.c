@@ -309,7 +309,7 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort, const cha
         {
             error(_("explicit request not to duplicate arguments in call to '%s', but argument %d is of the wrong type "
                     "(%d != %d)"),
-                  name, narg + 1, targetType, TYPEOF(s));
+                  name, narg, targetType, TYPEOF(s));
         }
 
         if (targetType != SINGLESXP)
@@ -1938,6 +1938,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
     return (ans);
 }
 
+#ifndef NO_CALL_R
 static const struct
 {
     const char *name;
@@ -2120,3 +2121,4 @@ void call_S(char *func, long nargs, void **arguments, char **modes, long *length
 {
     call_R(func, nargs, arguments, modes, lengths, names, nres, results);
 }
+#endif
