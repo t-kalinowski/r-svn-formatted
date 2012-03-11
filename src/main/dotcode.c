@@ -19,11 +19,6 @@
  *  http://www.r-project.org/Licenses/
  */
 
-/* <UTF8-FIXME>
-   Need to convert character strings to and from 8-bit.
-   Check other uses.
- */
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -1386,7 +1381,7 @@ static DL_FUNC R_FindNativeSymbolFromDLL(char *name, DllReference *dll, R_Regist
 SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     void **cargs;
-    int dup, havenames, naok, nargs, which;
+    int dup, havenames, naok, nargs, Fort;
     DL_FUNC ofun = NULL;
     VarFun fun = NULL;
     SEXP ans, pargs, s;
@@ -1412,8 +1407,8 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
     if (CSingSymbol == NULL)
         CSingSymbol = install("Csingle");
     vmax = vmaxget();
-    which = PRIMVAL(op);
-    if (which)
+    Fort = PRIMVAL(op);
+    if (Fort)
         symbol.type = R_FORTRAN_SYM;
 
     args = enctrim(args);
@@ -1450,7 +1445,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                dup, etc. */
             errorcall(call, _("Wrong type for argument %d in call to %s"), nargs + 1, symName);
         }
-        cargs[nargs] = RObjToCPtr(CAR(pargs), naok, dup, nargs + 1, which, symName, argConverters + nargs,
+        cargs[nargs] = RObjToCPtr(CAR(pargs), naok, dup, nargs + 1, Fort, symName, argConverters + nargs,
                                   checkTypes ? checkTypes[nargs] : 0);
 #ifdef R_MEMORY_PROFILING
         if (RTRACE(CAR(pargs)) && dup)
@@ -1889,7 +1884,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             else
             {
-                PROTECT(s = CPtrToRObj(cargs[nargs], CAR(pargs), which,
+                PROTECT(s = CPtrToRObj(cargs[nargs], CAR(pargs), Fort,
                                        checkTypes ? checkTypes[nargs] : TYPEOF(CAR(pargs))));
 #if R_MEMORY_PROFILING
                 if (RTRACE(CAR(pargs)))
