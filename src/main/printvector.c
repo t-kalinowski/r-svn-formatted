@@ -213,7 +213,7 @@ void printVector(SEXP x, int indx, int quote)
             break;
         }
         if (n_pr < n)
-            Rprintf(" [ reached getOption(\"max.print\") -- omitted %d entries ]]\n", n - n_pr);
+            Rprintf(" [ reached getOption(\"max.print\") -- omitted %d entries ]\n", n - n_pr);
     }
     else
 #define PRINT_V_0                                                                                                      \
@@ -370,7 +370,7 @@ static void printNamedLogicalVector(int *x, int n, SEXP *names)
             break;
         }
         if (n_pr < n)
-            Rprintf(" [ reached getOption(\"max.print\") -- omitted %d entries ]]\n", n - n_pr);
+            Rprintf(" [ reached getOption(\"max.print\") -- omitted %d entries ]\n", n - n_pr);
     }
     else
     {
