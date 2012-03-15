@@ -143,7 +143,7 @@ static drawing _d;
 #define SHOW                                                                                                           \
     if (xd->kind == SCREEN)                                                                                            \
     {                                                                                                                  \
-        gbitblt(xd->gawin, xd->bm, pt(0, 0), getrect(xd->bm));                                                         \
+        drawbits(xd);                                                                                                  \
         GALastUpdate = GetTickCount();                                                                                 \
     }
 #define SH                                                                                                             \
@@ -199,11 +199,17 @@ static UINT_PTR TimerNo = 0;
 static gadesc *GA_xd;
 static DWORD GALastUpdate = 0;
 
+static void drawbits(gadesc *xd)
+{
+    if (xd)
+        gbitblt(xd->gawin, xd->bm, pt(0, 0), getrect(xd->bm));
+}
+
 static VOID CALLBACK GA_timer_proc(HWND hwnd, UINT message, UINT_PTR tid, DWORD time)
 {
     if ((message != WM_TIMER) || tid != TimerNo || !GA_xd)
         return;
-    gbitblt(GA_xd->gawin, GA_xd->bm, pt(0, 0), getrect(GA_xd->bm));
+    drawbits(GA_xd);
     GALastUpdate = time;
 }
 
@@ -214,7 +220,7 @@ static void GA_Timer(gadesc *xd)
         KillTimer(0, TimerNo);
     if (now > GALastUpdate + xd->timesince)
     {
-        gbitblt(xd->gawin, xd->bm, pt(0, 0), getrect(xd->bm));
+        drawbits(xd);
         GALastUpdate = now;
     }
     else
@@ -237,14 +243,14 @@ static int GA_holdflush(pDevDesc dd, int level)
     {
         GA_xd = xd;
         gsetcursor(xd->gawin, ArrowCursor);
-        gbitblt(GA_xd->gawin, GA_xd->bm, pt(0, 0), getrect(GA_xd->bm));
+        drawbits(GA_xd);
         GALastUpdate = GetTickCount();
     }
     if (old == 0 && xd->holdlevel > 0)
     {
         if (TimerNo != 0)
             KillTimer(0, TimerNo);
-        gbitblt(xd->gawin, xd->bm, pt(0, 0), getrect(xd->bm));
+        drawbits(xd);
         GA_xd = NULL;
         gsetcursor(xd->gawin, WatchCursor);
     }
@@ -2484,6 +2490,9 @@ static void GA_Activate(pDevDesc dd)
     }
     strcat(t, " (ACTIVE)");
     settext(xd->gawin, t);
+    if (xd != GA_xd)
+        drawbits(GA_xd);
+    GA_xd = xd;
 }
 
 /********************************************************/
@@ -2529,7 +2538,7 @@ static void GA_Deactivate(pDevDesc dd)
         {                                                                                                              \
             gcopyalpha(xd->bm, xd->bm2, r, R_ALPHA(col));                                                              \
             if (!xd->buffered)                                                                                         \
-                gbitblt(xd->gawin, xd->bm, pt(0, 0), getrect(xd->bm));                                                 \
+                drawbits(xd);                                                                                          \
         }                                                                                                              \
     }
 
@@ -3093,7 +3102,7 @@ static void doRaster(unsigned int *raster, int x, int y, int w, int h, double ro
         gsetcliprect(xd->bm, xd->clip);
         gcopyalpha2(xd->bm, img, dr);
         if (!xd->buffered)
-            gbitblt(xd->gawin, xd->bm, pt(0, 0), getrect(xd->bm));
+            drawbits(xd);
     }
 
     /* Tidy up */
