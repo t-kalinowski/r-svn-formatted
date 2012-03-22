@@ -1265,7 +1265,7 @@ SEXP attribute_hidden do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (!isSymbol(sym))
         errorcall(call, _("non-symbol loop variable"));
 
-    if (R_jit_enabled > 2)
+    if (R_jit_enabled > 2 && !R_PendingPromises)
     {
         R_compileAndExecute(call, rho);
         return R_NilValue;
@@ -1387,7 +1387,7 @@ SEXP attribute_hidden do_while(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
 
-    if (R_jit_enabled > 2)
+    if (R_jit_enabled > 2 && !R_PendingPromises)
     {
         R_compileAndExecute(call, rho);
         return R_NilValue;
@@ -1420,7 +1420,7 @@ SEXP attribute_hidden do_repeat(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
 
-    if (R_jit_enabled > 2)
+    if (R_jit_enabled > 2 && !R_PendingPromises)
     {
         R_compileAndExecute(call, rho);
         return R_NilValue;
