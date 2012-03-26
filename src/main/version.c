@@ -123,6 +123,12 @@ void attribute_hidden PrintVersionString(char *s)
         sprintf(s, "R version %s.%s %s (%s-%s-%s r%s)", R_MAJOR, R_MINOR, R_STATUS, R_YEAR, R_MONTH, R_DAY,
                 R_SVN_REVISION);
     }
+    if (strlen(R_NICK) != 0)
+    {
+        char nick[64];
+        sprintf(nick, " -- \"%s\"", R_NICK);
+        strcat(s, nick);
+    }
 }
 
 void attribute_hidden PrintVersion_part_1(char *s)
