@@ -1505,7 +1505,7 @@ static R_INLINE void InRealVec(R_inpstream_t stream, SEXP obj, int length)
         for (done = 0; done < length; done += this)
         {
             this = min2(CHUNK_SIZE, length - done);
-            stream->InBytes(stream, REAL(obj), sizeof(double) * this);
+            stream->InBytes(stream, REAL(obj) + done, sizeof(double) * this);
         }
         break;
     }
