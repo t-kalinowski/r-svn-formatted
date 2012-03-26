@@ -327,8 +327,7 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort, const cha
         if (dup)
         {
             rawptr = (Rbyte *)R_alloc(n, sizeof(Rbyte));
-            for (int i = 0; i < n; i++)
-                rawptr[i] = RAW(s)[i];
+            memcpy(rawptr, RAW(s), n * sizeof(Rbyte));
         }
         ans = (void *)rawptr;
         break;
@@ -343,8 +342,7 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort, const cha
         if (dup)
         {
             iptr = (int *)R_alloc(n, sizeof(int));
-            for (int i = 0; i < n; i++)
-                iptr[i] = INTEGER(s)[i];
+            memcpy(iptr, INTEGER(s), n * sizeof(int));
         }
         ans = (void *)iptr;
         break;
@@ -365,8 +363,7 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort, const cha
         else if (dup)
         {
             rptr = (double *)R_alloc(n, sizeof(double));
-            for (int i = 0; i < n; i++)
-                rptr[i] = REAL(s)[i];
+            memcpy(rptr, REAL(s), n * sizeof(double));
             ans = (void *)rptr;
         }
         else
@@ -382,8 +379,8 @@ static void *RObjToCPtr(SEXP s, int naok, int dup, int narg, int Fort, const cha
         if (dup)
         {
             zptr = (Rcomplex *)R_alloc(n, sizeof(Rcomplex));
-            for (int i = 0; i < n; i++)
-                zptr[i] = COMPLEX(s)[i];
+            memcpy(zptr, COMPLEX(s), n * sizeof(Rcomplex));
+            // for (int i = 0 ; i < n ; i++) zptr[i] = COMPLEX(s)[i];
         }
         ans = (void *)zptr;
         break;
@@ -461,9 +458,7 @@ static SEXP CPtrToRObj(void *p, SEXP arg, int Fort, R_NativePrimitiveArgType typ
     {
     case RAWSXP:
         s = allocVector(type, n);
-        Rbyte *rawptr = (Rbyte *)p;
-        for (int i = 0; i < n; i++)
-            RAW(s)[i] = rawptr[i];
+        memcpy(RAW(s), p, n * sizeof(Rbyte));
         break;
     case LGLSXP: {
         s = allocVector(type, n);
@@ -477,9 +472,7 @@ static SEXP CPtrToRObj(void *p, SEXP arg, int Fort, R_NativePrimitiveArgType typ
     }
     case INTSXP: {
         s = allocVector(type, n);
-        int *iptr = (int *)p;
-        for (int i = 0; i < n; i++)
-            INTEGER(s)[i] = iptr[i];
+        memcpy(INTEGER(s), p, n * sizeof(int));
         break;
     }
     case REALSXP:
@@ -492,17 +485,11 @@ static SEXP CPtrToRObj(void *p, SEXP arg, int Fort, R_NativePrimitiveArgType typ
                 REAL(s)[i] = (double)sptr[i];
         }
         else
-        {
-            double *rptr = (double *)p;
-            for (int i = 0; i < n; i++)
-                REAL(s)[i] = rptr[i];
-        }
+            memcpy(REAL(s), p, n * sizeof(double));
         break;
     case CPLXSXP:
         s = allocVector(type, n);
-        Rcomplex *zptr = (Rcomplex *)p;
-        for (int i = 0; i < n; i++)
-            COMPLEX(s)[i] = zptr[i];
+        memcpy(COMPLEX(s), p, n * sizeof(Rcomplex));
         break;
     case STRSXP:
         if (Fort)
