@@ -1127,8 +1127,6 @@ static DL_FUNC R_FindNativeSymbolFromDLL(char *name, DllReference *dll, R_Regist
    of two functions.
 
    RecordLinkage and locfit pass lists.
-
-   Quite a few packages pass NULL, mainly in error.
 */
 SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -1219,14 +1217,14 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                erroneous ones, but then we would also want to avoid
                the conversions.  Also, in the future, we may just
                attempt to coerce the value to the appropriate
-               type. This is why we pass the checkTypes[na] value
-               to RObjToCPtr(). We just have to sort out the ability
-               to return the correct value which is complicated by
-               dup, etc. */
+               type. */
             errorcall(call, _("Wrong type for argument %d in call to %s"), na + 1, symName);
         }
         int n, nprotect = 0, targetType = checkTypes ? checkTypes[na] : 0;
         s = CAR(pa);
+        /* start with return value a copy of the inputs, as that is
+           what is needed for DUP = FALSE and for non-atomic-vector inputs */
+        SET_VECTOR_ELT(ans, na, s);
 
 #ifdef SUPPORT_CONVERTERS
         /* We could simplify this code, but we have no known examples */
@@ -1247,7 +1245,10 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
 
             ans = Rf_convertToC(s, &info, &success, converter);
             if (success)
-                cargs[na] = ans; // and should skip the rest
+            {
+                cargs[na] = ans;
+                continue;
+            }
         }
 #endif
 
@@ -1393,6 +1394,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
             if (t == LISTSXP)
                 warning(_("pairlists are passed as SEXP as from R 2.15.0"));
             cargs[na] = (void *)s;
+            continue;
         }
         }
         if (nprotect)
@@ -1400,20 +1402,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
 
 #ifdef R_MEMORY_PROFILING
         if (RTRACE(CAR(pa)) && dup)
-            switch (TYPEOF(s))
-            {
-            case RAWSXP:
-            case LGLSXP:
-            case INTSXP:
-            case REALSXP:
-            case CPLXSXP:
-            case STRSXP:
-            case VECSXP:
-                memtrace_report(CAR(pa), cargs[na]);
-                break;
-            default:
-                break;
-            }
+            memtrace_report(s, cargs[na]);
 #endif
     }
 
@@ -1833,7 +1822,8 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             if (argStyles && argStyles[na] == R_ARG_IN)
             {
-                PROTECT(s = R_NilValue);
+                SET_VECTOR_ELT(ans, na, R_NilValue);
+                continue;
 #ifdef SUPPORT_CONVERTERS
             }
             else if (argConverters[na])
@@ -1842,10 +1832,13 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                 {
                     info.argIndex = na;
                     s = argConverters[na]->reverse(cargs[na], CAR(pa), &info, argConverters[na]);
+                    PROTECT(s);
                 }
                 else
-                    s = R_NilValue; /* Presumably input-only */
-                PROTECT(s);
+                {
+                    SET_VECTOR_ELT(ans, na, R_NilValue);
+                    continue;
+                }
 #endif
             }
             else
@@ -1915,40 +1908,22 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                 default:
                     /* Everything else is read-only,
                        so we just return the original arg */
-                    s = arg;
+                    continue;
                 }
                 PROTECT(s);
 
 #if R_MEMORY_PROFILING
-                if (RTRACE(CAR(pa)))
+                if (RTRACE(arg))
                 {
-                    switch (type)
-                    {
-                    case RAWSXP:
-                    case LGLSXP:
-                    case INTSXP:
-                    case REALSXP:
-                    case SINGLESXP:
-                    case CPLXSXP:
-                    case STRSXP:
-                        memtrace_report(cargs[na], s);
-                        SET_RTRACE(s, 1);
-                        break;
-                    default:
-                        break;
-                    }
+                    memtrace_report(cargs[na], s);
+                    SET_RTRACE(s, 1);
                 }
 #endif
-                DUPLICATE_ATTRIB(s, CAR(pa));
+                DUPLICATE_ATTRIB(s, arg);
             }
             SET_VECTOR_ELT(ans, na, s);
             UNPROTECT(1);
         }
-    }
-    else
-    { /* DUP = FALSE, copy over args */
-        for (na = 0, pa = args; pa != R_NilValue; pa = CDR(pa), na++)
-            SET_VECTOR_ELT(ans, na, CAR(pa));
     }
     UNPROTECT(1);
     vmaxset(vmax);
