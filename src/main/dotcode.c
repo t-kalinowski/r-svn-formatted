@@ -1272,12 +1272,15 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
             }
         }
 
-        switch (TYPEOF(s))
+        /*   We do not need to copy if the inputs have NAMED = 0 */
+
+        SEXPTYPE t = TYPEOF(s);
+        switch (t)
         {
         case RAWSXP:
             n = LENGTH(s);
             Rbyte *rawptr = RAW(s);
-            if (dup)
+            if (dup && NAMED(s))
             {
                 rawptr = (Rbyte *)R_alloc(n, sizeof(Rbyte));
                 memcpy(rawptr, RAW(s), n * sizeof(Rbyte));
@@ -1292,7 +1295,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                 for (int i = 0; i < n; i++)
                     if (iptr[i] == NA_INTEGER)
                         error(_("NAs in foreign function call (arg %d)"), na + 1);
-            if (dup)
+            if (dup && NAMED(s))
             {
                 iptr = (int *)R_alloc(n, sizeof(int));
                 memcpy(iptr, INTEGER(s), n * sizeof(int));
@@ -1313,7 +1316,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                     sptr[i] = (float)REAL(s)[i];
                 cargs[na] = (void *)sptr;
             }
-            else if (dup)
+            else if (dup && NAMED(s))
             {
                 rptr = (double *)R_alloc(n, sizeof(double));
                 memcpy(rptr, REAL(s), n * sizeof(double));
@@ -1329,7 +1332,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                 for (int i = 0; i < n; i++)
                     if (!R_FINITE(zptr[i].r) || !R_FINITE(zptr[i].i))
                         error(_("complex NA/NaN/Inf in foreign function call (arg %d)"), na + 1);
-            if (dup)
+            if (dup && NAMED(s))
             {
                 zptr = (Rcomplex *)R_alloc(n, sizeof(Rcomplex));
                 memcpy(zptr, COMPLEX(s), n * sizeof(Rcomplex));
@@ -1364,13 +1367,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
         case VECSXP:
             if (Fort)
                 error(_("invalid mode to pass to Fortran (arg %d)"), na + 1);
-            if (!dup)
-                error(_("lists must be duplicated in .C"));
-            n = length(s);
-            SEXP *lptr = (SEXP *)R_alloc(n, sizeof(SEXP));
-            for (int i = 0; i < n; i++)
-                lptr[i] = VECTOR_ELT(s, i);
-            cargs[na] = (void *)lptr;
+            cargs[na] = (void *)DATAPTR(s);
             break;
         case CLOSXP:
         case BUILTINSXP:
@@ -1380,14 +1377,12 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                 error(_("invalid mode (%s) to pass to Fortran (arg %d)"), type2char(TYPEOF(s)), na + 1);
             cargs[na] = (void *)s;
             break;
-        case NILSXP: {
-            error(_("invalid mode (%s) to pass to C or Fortran (arg %d)"), type2char(TYPEOF(s)), na + 1);
+        case NILSXP:
+            error(_("invalid mode (%s) to pass to C or Fortran (arg %d)"), type2char(t), na + 1);
             cargs[na] = (void *)s; /* -Wall */
-        }
-        break;
-        default: {
+            break;
+        default:
             /* Includes pairlists from R 2.15.0 */
-            SEXPTYPE t = TYPEOF(s);
             if (Fort)
                 error(_("invalid mode (%s) to pass to Fortran (arg %d)"), type2char(t), na + 1);
             warning("passing an object of type '%s' to .C (arg %d) is deprecated", type2char(t), na + 1);
@@ -1396,13 +1391,12 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
             cargs[na] = (void *)s;
             continue;
         }
-        }
         if (nprotect)
             UNPROTECT(nprotect);
 
 #ifdef R_MEMORY_PROFILING
         if (RTRACE(CAR(pa)) && dup)
-            memtrace_report(s, cargs[na]);
+            memtrace_report(CAR(pa), cargs[na]);
 #endif
     }
 
@@ -1906,8 +1900,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                     }
                     break;
                 default:
-                    /* Everything else is read-only,
-                       so we just return the original arg */
+                    /* We just return the original arg */
                     continue;
                 }
                 PROTECT(s);
