@@ -1302,6 +1302,13 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                 memcpy(RAW(ss), RAW(s), n * sizeof(Rbyte));
                 SET_VECTOR_ELT(ans, na, ss);
                 cargs[na] = (void *)RAW(ss);
+#ifdef R_MEMORY_PROFILING
+                if (RTRACE(s))
+                {
+                    memtrace_report(s, ss);
+                    SET_TRACE(ss, 1);
+                }
+#endif
             }
             else
                 cargs[na] = (void *)RAW(s);
@@ -1328,6 +1335,13 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                 memcpy(INTEGER(ss), INTEGER(s), n * sizeof(int));
                 SET_VECTOR_ELT(ans, na, ss);
                 cargs[na] = (void *)INTEGER(ss);
+#ifdef R_MEMORY_PROFILING
+                if (RTRACE(s))
+                {
+                    memtrace_report(s, ss);
+                    SET_TRACE(ss, 1);
+                }
+#endif
             }
             else
                 cargs[na] = (void *)iptr;
@@ -1345,6 +1359,10 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                 for (int i = 0; i < n; i++)
                     sptr[i] = (float)REAL(s)[i];
                 cargs[na] = (void *)sptr;
+#ifdef R_MEMORY_PROFILING
+                if (RTRACE(s))
+                    memtrace_report(s, sptr);
+#endif
             }
             else if (copy && dup)
             {
@@ -1360,6 +1378,13 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                 memcpy(REAL(ss), REAL(s), n * sizeof(double));
                 SET_VECTOR_ELT(ans, na, ss);
                 cargs[na] = (void *)REAL(ss);
+#ifdef R_MEMORY_PROFILING
+                if (RTRACE(s))
+                {
+                    memtrace_report(s, ss);
+                    SET_TRACE(ss, 1);
+                }
+#endif
             }
             else
                 cargs[na] = (void *)rptr;
@@ -1385,6 +1410,13 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                 memcpy(COMPLEX(ss), COMPLEX(s), n * sizeof(Rcomplex));
                 SET_VECTOR_ELT(ans, na, ss);
                 cargs[na] = (void *)COMPLEX(ss);
+#ifdef R_MEMORY_PROFILING
+                if (RTRACE(s))
+                {
+                    memtrace_report(s, ss);
+                    SET_TRACE(ss, 1);
+                }
+#endif
             }
             else
                 cargs[na] = (void *)zptr;
@@ -1412,6 +1444,10 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                     strcpy(cptr[i], ss);
                 }
                 cargs[na] = (void *)cptr;
+#ifdef R_MEMORY_PROFILING
+                if (RTRACE(s))
+                    memtrace_report(s, cargs[na]);
+#endif
             }
             break;
         case VECSXP:
@@ -1452,12 +1488,6 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         if (nprotect)
             UNPROTECT(nprotect);
-
-/* We will not be tracing unnamed args */
-#ifdef R_MEMORY_PROFILING
-        if (RTRACE(CAR(pa)) && dup)
-            memtrace_report(CAR(pa), cargs[na]);
-#endif
     }
 
     switch (nargs)
@@ -1923,6 +1953,13 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                             if (*--ptr != FILL)
                                 error("array under-run in %s(\"%s\") in %s argument %d\n", Fort ? ".Fortran" : ".C",
                                       symName, type2char(type), na + 1);
+#if R_MEMORY_PROFILING
+                        if (RTRACE(arg))
+                        {
+                            memtrace_report(p, s);
+                            SET_RTRACE(s, 1);
+                        }
+#endif
                     }
                     break;
                 case INTSXP:
@@ -1941,6 +1978,13 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                             if (*--ptr != FILL)
                                 error("array under-run in %s(\"%s\") in %s argument %d\n", Fort ? ".Fortran" : ".C",
                                       symName, type2char(type), na + 1);
+#if R_MEMORY_PROFILING
+                        if (RTRACE(arg))
+                        {
+                            memtrace_report(p, s);
+                            SET_RTRACE(s, 1);
+                        }
+#endif
                     }
                     break;
                 case LGLSXP:
@@ -1964,6 +2008,13 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                             if (*--ptr != FILL)
                                 error("array under-run in %s(\"%s\") in %s argument %d\n", Fort ? ".Fortran" : ".C",
                                       symName, type2char(type), na + 1);
+#if R_MEMORY_PROFILING
+                        if (RTRACE(arg))
+                        {
+                            memtrace_report(p, s);
+                            SET_RTRACE(s, 1);
+                        }
+#endif
                     }
                     else
                     {
@@ -1985,6 +2036,13 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                             float *sptr = (float *)p;
                             for (int i = 0; i < n; i++)
                                 REAL(s)[i] = (double)sptr[i];
+#if R_MEMORY_PROFILING
+                            if (RTRACE(arg))
+                            {
+                                memtrace_report(p, s);
+                                SET_RTRACE(s, 1);
+                            }
+#endif
                         }
                         else
                         {
@@ -2000,6 +2058,13 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                                 if (*--ptr != FILL)
                                     error("array under-run in %s(\"%s\") in %s argument %d\n", Fort ? ".Fortran" : ".C",
                                           symName, type2char(type), na + 1);
+#if R_MEMORY_PROFILING
+                            if (RTRACE(arg))
+                            {
+                                memtrace_report(p, s);
+                                SET_RTRACE(s, 1);
+                            }
+#endif
                         }
                     }
                     else
@@ -2029,6 +2094,13 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                             if (*--ptr != FILL)
                                 error("array under-run in %s(\"%s\") in %s argument %d\n", Fort ? ".Fortran" : ".C",
                                       symName, type2char(type), na + 1);
+#if R_MEMORY_PROFILING
+                        if (RTRACE(arg))
+                        {
+                            memtrace_report(p, s);
+                            SET_RTRACE(s, 1);
+                        }
+#endif
                     }
                     break;
                 case STRSXP:
@@ -2048,6 +2120,13 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                         char **cptr = (char **)p;
                         for (int i = 0; i < n; i++)
                             SET_STRING_ELT(s, i, mkChar(cptr[i]));
+#if R_MEMORY_PROFILING
+                        if (RTRACE(arg))
+                        {
+                            memtrace_report(p, s);
+                            SET_RTRACE(s, 1);
+                        }
+#endif
                         UNPROTECT(1);
                     }
                     break;
@@ -2059,13 +2138,6 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                     PROTECT(s);
                     DUPLICATE_ATTRIB(s, arg);
                     SET_VECTOR_ELT(ans, na, s);
-#if R_MEMORY_PROFILING
-                    if (RTRACE(arg))
-                    {
-                        memtrace_report(p, s);
-                        SET_RTRACE(s, 1);
-                    }
-#endif
                     UNPROTECT(1);
                 }
             }
