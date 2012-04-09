@@ -1306,7 +1306,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                 if (RTRACE(s))
                 {
                     memtrace_report(s, ss);
-                    SET_TRACE(ss, 1);
+                    SET_RTRACE(ss, 1);
                 }
 #endif
             }
@@ -1339,7 +1339,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                 if (RTRACE(s))
                 {
                     memtrace_report(s, ss);
-                    SET_TRACE(ss, 1);
+                    SET_RTRACE(ss, 1);
                 }
 #endif
             }
@@ -1382,7 +1382,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                 if (RTRACE(s))
                 {
                     memtrace_report(s, ss);
-                    SET_TRACE(ss, 1);
+                    SET_RTRACE(ss, 1);
                 }
 #endif
             }
@@ -1414,7 +1414,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                 if (RTRACE(s))
                 {
                     memtrace_report(s, ss);
-                    SET_TRACE(ss, 1);
+                    SET_RTRACE(ss, 1);
                 }
 #endif
             }
