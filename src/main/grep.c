@@ -2916,7 +2916,8 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (PRIMVAL(op) == 0)
     { /* regexpr */
-        SEXP matchlen, capture_start = R_NilValue, capturelen = R_NilValue;
+        SEXP matchlen, capture_start, capturelen;
+        int *is, *il;
         PROTECT(ans = allocVector(INTSXP, n));
         /* Protect in case install("match.length") allocates */
         PROTECT(matchlen = allocVector(INTSXP, n));
@@ -2939,8 +2940,11 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
             setAttrib(ans, install("capture.length"), capturelen);
             setAttrib(ans, install("capture.names"), capture_names);
             UNPROTECT(3);
+            is = INTEGER(capture_start);
+            il = INTEGER(capturelen);
         }
-
+        else
+            is = il = NULL; /* not actually used */
         vmax = vmaxget();
         for (i = 0; i < n; i++)
         {
@@ -2996,8 +3000,7 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
                     if (rc >= 0)
                     {
                         extract_match_and_groups(use_UTF8, ovector, capture_count, INTEGER(ans) + i,
-                                                 INTEGER(matchlen) + i, INTEGER(capture_start) + i,
-                                                 INTEGER(capturelen) + i, s, n);
+                                                 INTEGER(matchlen) + i, is + i, il + i, s, n);
                     }
                     else
                     {
@@ -3005,7 +3008,7 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
                         for (int cn = 0; cn < capture_count; cn++)
                         {
                             int ind = i + cn * n;
-                            INTEGER(capture_start)[ind] = INTEGER(capturelen)[ind] = -1;
+                            is[ind] = il[ind] = -1;
                         }
                     }
                 }
