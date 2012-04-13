@@ -2448,6 +2448,8 @@ static void GA_Close(pDevDesc dd)
     }
     else if ((xd->kind == PNG) || (xd->kind == JPEG) || (xd->kind == BMP) || (xd->kind == TIFF))
     {
+        if (xd->kind == TIFF)
+            xd->npage++;
         SaveAsBitmap(dd, xd->res_dpi);
     }
     del(xd->font);
@@ -3807,7 +3809,7 @@ static void SaveAsBitmap(pDevDesc dd, int res)
             else if (xd->kind == TIFF)
             {
                 char buf[600];
-                snprintf(buf, 600, xd->filename, xd->npage);
+                snprintf(buf, 600, xd->filename, xd->npage - 1);
                 R_SaveAsTIFF(data, xd->windowWidth, xd->windowHeight, privategetpixel2, 0, buf, res, xd->quality);
             }
             else
