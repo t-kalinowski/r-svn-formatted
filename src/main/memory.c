@@ -2,7 +2,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998--2011  The R Development Core Team.
+ *  Copyright (C) 1998--2012  The R Development Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -2078,7 +2078,11 @@ char *R_alloc(size_t nelem, int eltsize)
     if (dsize > 0)
     { /* precaution against integer overflow */
         SEXP s;
-#if SIZEOF_SIZE_T > 4
+#ifdef LONG_VECTOR_SUPPORT
+        /* Must be 64-bit platform, so calculation is done as 64-bit.
+           Eventually should worry about the 2^63-1 limit */
+        s = allocVector(RAWSXP, size + 1);
+#elif SIZEOF_SIZE_T > 4
         /* In this case by allocating larger units we can get up to
            size(double) * (2^31 - 1) bytes, approx 16Gb */
         if (dsize < R_LEN_T_MAX)
