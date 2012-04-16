@@ -387,11 +387,11 @@ SEXP attribute_hidden do_rep_int(SEXP call, SEXP op, SEXP args, SEXP rho)
    rep(1:3,,8) matches length.out */
 
 /* This is a primitive SPECIALSXP with internal argument matching */
-/* FIXME: allow long vectors */
 SEXP attribute_hidden do_rep(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, x, ap, times = R_NilValue /* -Wall */, ind;
-    int i, lx, len = NA_INTEGER, each = 1, nt, nprotect = 4;
+    int each = 1, nprotect = 4;
+    R_xlen_t i, lx, len = NA_INTEGER, nt;
 
     if (DispatchOrEval(call, op, "rep", args, rho, &ans, 0, 0))
         return (ans);
@@ -412,11 +412,21 @@ SEXP attribute_hidden do_rep(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(args = matchArgs(ap, args, call));
 
     x = CAR(args);
-    lx = length(x);
+    lx = xlength(x);
 
-    len = asInteger(CADDR(args));
-    if (len != NA_INTEGER && len < 0)
-        errorcall(call, _("invalid '%s' argument"), "length.out");
+    double slen = asReal(CADDR(args));
+    if (R_FINITE(slen))
+    {
+        if (slen < 0)
+            errorcall(call, _("invalid '%s' argument"), "length.out");
+        len = slen;
+    }
+    else
+    {
+        len = asInteger(CADDR(args));
+        if (len != NA_INTEGER && len < 0)
+            errorcall(call, _("invalid '%s' argument"), "length.out");
+    }
     if (length(CADDR(args)) != 1)
         warningcall(call, _("first element used of '%s' argument"), "length.out");
 
@@ -443,18 +453,18 @@ SEXP attribute_hidden do_rep(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else
     {
-        int it, sum = 0;
+        R_xlen_t sum = 0;
         if (CADR(args) == R_MissingArg)
             PROTECT(times = ScalarInteger(1));
         else
             PROTECT(times = coerceVector(CADR(args), INTSXP));
         nprotect++;
-        nt = LENGTH(times);
+        nt = XLENGTH(times);
         if (nt != 1 && nt != lx * each)
             errorcall(call, _("invalid '%s' argument"), "times");
         if (nt == 1)
         {
-            it = INTEGER(times)[0];
+            int it = INTEGER(times)[0];
             if (it == NA_INTEGER || it < 0)
                 errorcall(call, _("invalid '%s' argument"), "times");
             len = lx * it * each;
@@ -463,7 +473,7 @@ SEXP attribute_hidden do_rep(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             for (i = 0; i < nt; i++)
             {
-                it = INTEGER(times)[i];
+                int it = INTEGER(times)[i];
                 if (it == NA_INTEGER || it < 0)
                     errorcall(call, _("invalid '%s' argument"), "times");
                 sum += it;
@@ -479,10 +489,10 @@ SEXP attribute_hidden do_rep(SEXP call, SEXP op, SEXP args, SEXP rho)
             INTEGER(ind)[i] = 1 + ((i / each) % lx);
     else
     {
-        int j, k, k2, k3;
+        R_xlen_t j, k, k2, k3;
         for (i = 0, k = 0, k2 = 0; i < lx; i++)
         {
-            int sum = 0;
+            R_xlen_t sum = 0;
             for (j = 0; j < each; j++)
                 sum += INTEGER(times)[k++];
             for (k3 = 0; k3 < sum; k3++)
@@ -522,8 +532,9 @@ done:
 SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans = R_NilValue /* -Wall */, ap, tmp, from, to, by, len, along;
-    int i, nargs = length(args), lf, lout = NA_INTEGER;
+    int nargs = length(args), lf;
     Rboolean One = nargs == 1;
+    R_xlen_t i, lout = NA_INTEGER;
 
     if (DispatchOrEval(call, op, "seq", args, rho, &ans, 0, 1))
         return (ans);
@@ -570,7 +581,7 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     if (along != R_MissingArg)
     {
-        lout = LENGTH(along);
+        lout = XLENGTH(along);
         if (One)
         {
             ans = lout ? seq_colon(1.0, (double)lout, call) : allocVector(INTSXP, 0);
@@ -584,7 +595,7 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
             errorcall(call, _("'length.out' must be a non-negative number"));
         if (length(len) != 1)
             warningcall(call, _("first element used of '%s' argument"), "length.out");
-        lout = (int)ceil(rout);
+        lout = (R_xlen_t)ceil(rout);
     }
 
     if (lout == NA_INTEGER)
@@ -605,7 +616,7 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (length(by) != 1)
                 error("'by' must be of length 1");
             double del = rto - rfrom, n, dd;
-            int nn;
+            R_xlen_t nn;
             if (!R_FINITE(rfrom))
                 errorcall(call, _("'from' must be finite"));
             if (!R_FINITE(rto))
@@ -633,7 +644,11 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
                 ans = from;
                 goto done;
             }
+#ifdef LONG_VECTOR_SUPPORT
+            if (n > 100 * (double)INT_MAX)
+#else
             if (n > (double)INT_MAX)
+#endif
                 errorcall(call, _("'by' argument is much too small"));
             if (n < -FEPS)
                 errorcall(call, _("wrong sign in 'by' argument"));
@@ -644,7 +659,7 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
                    reduced below 1/INT_MAX this is the same as the
                    next, so this is future-proofing against longer integers.
                 */
-                nn = (int)n;
+                nn = (R_xlen_t)n;
                 /* seq.default gives integer result from
                    from + (0:n)*by
                 */

@@ -647,12 +647,12 @@ static R_INLINE R_xlen_t scalarIndex(SEXP s)
         switch (TYPEOF(s))
         {
         case REALSXP:
-            if (LENGTH(s) == 1 && !ISNAN(REAL(s)[0]))
+            if (XLENGTH(s) == 1 && !ISNAN(REAL(s)[0]))
                 return REAL(s)[0]; /* implicit conversion */
             else
                 return -1;
         case INTSXP:
-            if (LENGTH(s) == 1 && INTEGER(s)[0] != NA_INTEGER)
+            if (XLENGTH(s) == 1 && INTEGER(s)[0] != NA_INTEGER)
                 return INTEGER(s)[0];
             else
                 return -1;
