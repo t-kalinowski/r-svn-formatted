@@ -97,7 +97,7 @@ SEXP attribute_hidden do_delayed(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP attribute_hidden do_makelazy(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP names, values, val, expr, eenv, aenv, expr0;
-    int i;
+    R_xlen_t i;
 
     checkArity(op, args);
     names = CAR(args);
@@ -116,7 +116,7 @@ SEXP attribute_hidden do_makelazy(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (!isEnvironment(aenv))
         error(_("invalid '%s' argument"), "assign.env");
 
-    for (i = 0; i < LENGTH(names); i++)
+    for (i = 0; i < XLENGTH(names); i++)
     {
         SEXP name = install(CHAR(STRING_ELT(names, i)));
         PROTECT(val = eval(VECTOR_ELT(values, i), eenv));

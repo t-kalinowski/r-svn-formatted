@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996, 1997  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998--2011	    The R Core Team.
+ *  Copyright (C) 1998--2012	    The R Core Team.
  *  Copyright (C) 2003-4	    The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -379,7 +379,8 @@ SEXP attribute_hidden do_arith(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP attribute_hidden R_binary(SEXP call, SEXP op, SEXP x, SEXP y)
 {
     SEXP klass, dims, tsp, xnames, ynames, val;
-    int mismatch = 0, nx, ny, xarray, yarray, xts, yts, xS4 = 0, yS4 = 0;
+    R_xlen_t nx, ny, mismatch = 0;
+    int xarray, yarray, xts, yts, xS4 = 0, yS4 = 0;
     int xattr, yattr;
     SEXP lcall = call;
     PROTECT_INDEX xpi, ypi;
@@ -392,7 +393,7 @@ SEXP attribute_hidden R_binary(SEXP call, SEXP op, SEXP x, SEXP y)
     FIXUP_NULL_AND_CHECK_TYPES(x, xpi);
     FIXUP_NULL_AND_CHECK_TYPES(y, ypi);
 
-    nx = LENGTH(x);
+    nx = XLENGTH(x);
     if (ATTRIB(x) != R_NilValue)
     {
         xattr = TRUE;
@@ -402,7 +403,7 @@ SEXP attribute_hidden R_binary(SEXP call, SEXP op, SEXP x, SEXP y)
     }
     else
         xarray = xts = xattr = FALSE;
-    ny = LENGTH(y);
+    ny = XLENGTH(y);
     if (ATTRIB(y) != R_NilValue)
     {
         yattr = TRUE;
@@ -574,9 +575,9 @@ SEXP attribute_hidden R_binary(SEXP call, SEXP op, SEXP x, SEXP y)
     }
     else
     {
-        if (length(val) == length(xnames))
+        if (xlength(val) == xlength(xnames))
             setAttrib(val, R_NamesSymbol, xnames);
-        else if (length(val) == length(ynames))
+        else if (xlength(val) == xlength(ynames))
             setAttrib(val, R_NamesSymbol, ynames);
     }
 
@@ -614,7 +615,7 @@ SEXP attribute_hidden R_unary(SEXP call, SEXP op, SEXP s1)
 
 static SEXP integer_unary(ARITHOP_TYPE code, SEXP s1, SEXP call)
 {
-    int i, n, x;
+    R_xlen_t i, n, x;
     SEXP ans;
 
     switch (code)
@@ -624,7 +625,7 @@ static SEXP integer_unary(ARITHOP_TYPE code, SEXP s1, SEXP call)
     case MINUSOP:
         ans = duplicate(s1);
         SET_TYPEOF(ans, INTSXP);
-        n = LENGTH(s1);
+        n = XLENGTH(s1);
         for (i = 0; i < n; i++)
         {
             x = INTEGER(s1)[i];
@@ -639,7 +640,7 @@ static SEXP integer_unary(ARITHOP_TYPE code, SEXP s1, SEXP call)
 
 static SEXP real_unary(ARITHOP_TYPE code, SEXP s1, SEXP lcall)
 {
-    int i, n;
+    R_xlen_t i, n;
     SEXP ans;
 
     switch (code)
@@ -648,7 +649,7 @@ static SEXP real_unary(ARITHOP_TYPE code, SEXP s1, SEXP lcall)
         return s1;
     case MINUSOP:
         ans = duplicate(s1);
-        n = LENGTH(s1);
+        n = XLENGTH(s1);
         for (i = 0; i < n; i++)
             REAL(ans)[i] = -REAL(s1)[i];
         return ans;
@@ -701,13 +702,13 @@ static SEXP real_unary(ARITHOP_TYPE code, SEXP s1, SEXP lcall)
 
 static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
 {
-    int i, i1, i2, n, n1, n2;
+    R_xlen_t i, i1, i2, n, n1, n2;
     int x1, x2;
     SEXP ans;
     Rboolean naflag = FALSE;
 
-    n1 = LENGTH(s1);
-    n2 = LENGTH(s2);
+    n1 = XLENGTH(s1);
+    n2 = XLENGTH(s2);
     /* S4-compatibility change: if n1 or n2 is 0, result is of length 0 */
     if (n1 == 0 || n2 == 0)
         n = 0;
@@ -892,12 +893,12 @@ static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
 
 static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
 {
-    int i, i1, i2, n, n1, n2;
+    R_xlen_t i, i1, i2, n, n1, n2;
     SEXP ans;
 
     /* Note: "s1" and "s2" are protected above. */
-    n1 = LENGTH(s1);
-    n2 = LENGTH(s2);
+    n1 = XLENGTH(s1);
+    n2 = XLENGTH(s2);
 
     /* S4-compatibility change: if n1 or n2 is 0, result is of length 0 */
     if (n1 == 0 || n2 == 0)
@@ -1191,13 +1192,13 @@ static SEXP math1(SEXP sa, double (*f)(double), SEXP lcall)
 {
     SEXP sy;
     double *y, *a;
-    int i, n;
+    R_xlen_t i, n;
     int naflag;
 
     if (!isNumeric(sa))
         errorcall(lcall, R_MSG_NONNUM_MATH);
 
-    n = length(sa);
+    n = xlength(sa);
     /* coercion can lose the object bit */
     PROTECT(sa = coerceVector(sa, REALSXP));
     PROTECT(sy = allocVector(REALSXP, n));
@@ -1343,7 +1344,7 @@ SEXP attribute_hidden do_abs(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         /* integer or logical ==> return integer,
            factor was covered by Math.factor. */
-        int i, n = length(x);
+        R_xlen_t i, n = xlength(x);
         PROTECT(s = allocVector(INTSXP, n));
         /* Note: relying on INTEGER(.) === LOGICAL(.) : */
         for (i = 0; i < n; i++)
@@ -1351,7 +1352,7 @@ SEXP attribute_hidden do_abs(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     else if (TYPEOF(x) == REALSXP)
     {
-        int i, n = length(x);
+        R_xlen_t i, n = xlength(x);
         PROTECT(s = allocVector(REALSXP, n));
         for (i = 0; i < n; i++)
             REAL(s)[i] = fabs(REAL(x)[i]);
@@ -1378,7 +1379,7 @@ SEXP attribute_hidden do_abs(SEXP call, SEXP op, SEXP args, SEXP env)
 static SEXP math2(SEXP sa, SEXP sb, double (*f)(double, double), SEXP lcall)
 {
     SEXP sy;
-    int i, ia, ib, n, na, nb;
+    R_xlen_t i, ia, ib, n, na, nb;
     double ai, bi, *a, *b, *y;
     int naflag;
 
@@ -1388,8 +1389,8 @@ static SEXP math2(SEXP sa, SEXP sb, double (*f)(double, double), SEXP lcall)
         /* for 0-length a we want the attributes of a, not those of b
            as no recycling will occur */
 #define SETUP_Math2                                                                                                    \
-    na = LENGTH(sa);                                                                                                   \
-    nb = LENGTH(sb);                                                                                                   \
+    na = XLENGTH(sa);                                                                                                  \
+    nb = XLENGTH(sb);                                                                                                  \
     if ((na == 0) || (nb == 0))                                                                                        \
     {                                                                                                                  \
         PROTECT(sy = allocVector(REALSXP, 0));                                                                         \
@@ -1854,9 +1855,9 @@ SEXP attribute_hidden do_log(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isNumeric(sa) || !isNumeric(sb) || !isNumeric(sc))                                                            \
         errorcall(lcall, R_MSG_NONNUM_MATH);                                                                           \
                                                                                                                        \
-    na = LENGTH(sa);                                                                                                   \
-    nb = LENGTH(sb);                                                                                                   \
-    nc = LENGTH(sc);                                                                                                   \
+    na = XLENGTH(sa);                                                                                                  \
+    nb = XLENGTH(sb);                                                                                                  \
+    nc = XLENGTH(sc);                                                                                                  \
     if ((na == 0) || (nb == 0) || (nc == 0))                                                                           \
         return (allocVector(REALSXP, 0));                                                                              \
     n = na;                                                                                                            \
@@ -1889,7 +1890,7 @@ SEXP attribute_hidden do_log(SEXP call, SEXP op, SEXP args, SEXP env)
 static SEXP math3_1(SEXP sa, SEXP sb, SEXP sc, SEXP sI, double (*f)(double, double, double, int), SEXP lcall)
 {
     SEXP sy;
-    int i, ia, ib, ic, n, na, nb, nc;
+    R_xlen_t i, ia, ib, ic, n, na, nb, nc;
     double ai, bi, ci, *a, *b, *c, *y;
     int i_1;
     int naflag;
@@ -1931,7 +1932,7 @@ static SEXP math3_2(SEXP sa, SEXP sb, SEXP sc, SEXP sI, SEXP sJ, double (*f)(dou
                     SEXP lcall)
 {
     SEXP sy;
-    int i, ia, ib, ic, n, na, nb, nc;
+    R_xlen_t i, ia, ib, ic, n, na, nb, nc;
     double ai, bi, ci, *a, *b, *c, *y;
     int i_1, i_2;
     int naflag;
@@ -1973,7 +1974,7 @@ static SEXP math3_2(SEXP sa, SEXP sb, SEXP sc, SEXP sI, SEXP sJ, double (*f)(dou
 static SEXP math3B(SEXP sa, SEXP sb, SEXP sc, double (*f)(double, double, double, double *), SEXP lcall)
 {
     SEXP sy;
-    int i, ia, ib, ic, n, na, nb, nc;
+    R_xlen_t i, ia, ib, ic, n, na, nb, nc;
     double ai, bi, ci, *a, *b, *c, *y;
     int naflag;
     double amax, *work;
@@ -2166,7 +2167,7 @@ SEXP attribute_hidden do_math3(SEXP call, SEXP op, SEXP args, SEXP env)
 static SEXP math4(SEXP sa, SEXP sb, SEXP sc, SEXP sd, double (*f)(double, double, double, double), SEXP lcall)
 {
     SEXP sy;
-    int i, ia, ib, ic, id, n, na, nb, nc, nd;
+    R_xlen_t i, ia, ib, ic, id, n, na, nb, nc, nd;
     double ai, bi, ci, di, *a, *b, *c, *d, *y;
     int naflag;
 
@@ -2174,10 +2175,10 @@ static SEXP math4(SEXP sa, SEXP sb, SEXP sc, SEXP sd, double (*f)(double, double
     if (!isNumeric(sa) || !isNumeric(sb) || !isNumeric(sc) || !isNumeric(sd))                                          \
         errorcall(lcall, R_MSG_NONNUM_MATH);                                                                           \
                                                                                                                        \
-    na = LENGTH(sa);                                                                                                   \
-    nb = LENGTH(sb);                                                                                                   \
-    nc = LENGTH(sc);                                                                                                   \
-    nd = LENGTH(sd);                                                                                                   \
+    na = XLENGTH(sa);                                                                                                  \
+    nb = XLENGTH(sb);                                                                                                  \
+    nc = XLENGTH(sc);                                                                                                  \
+    nd = XLENGTH(sd);                                                                                                  \
     if ((na == 0) || (nb == 0) || (nc == 0) || (nd == 0))                                                              \
         return (allocVector(REALSXP, 0));                                                                              \
     n = na;                                                                                                            \
@@ -2238,7 +2239,7 @@ static SEXP math4_1(SEXP sa, SEXP sb, SEXP sc, SEXP sd, SEXP sI, double (*f)(dou
                     SEXP lcall)
 {
     SEXP sy;
-    int i, ia, ib, ic, id, n, na, nb, nc, nd;
+    R_xlen_t i, ia, ib, ic, id, n, na, nb, nc, nd;
     double ai, bi, ci, di, *a, *b, *c, *d, *y;
     int i_1;
     int naflag;
@@ -2267,7 +2268,7 @@ static SEXP math4_2(SEXP sa, SEXP sb, SEXP sc, SEXP sd, SEXP sI, SEXP sJ,
                     double (*f)(double, double, double, double, int, int), SEXP lcall)
 {
     SEXP sy;
-    int i, ia, ib, ic, id, n, na, nb, nc, nd;
+    R_xlen_t i, ia, ib, ic, id, n, na, nb, nc, nd;
     double ai, bi, ci, di, *a, *b, *c, *d, *y;
     int i_1, i_2;
     int naflag;
@@ -2362,18 +2363,18 @@ SEXP attribute_hidden do_math4(SEXP call, SEXP op, SEXP args, SEXP env)
 static SEXP math5(SEXP sa, SEXP sb, SEXP sc, SEXP sd, SEXP se, double (*f)())
 {
     SEXP sy;
-    int i, ia, ib, ic, id, ie, n, na, nb, nc, nd, ne;
+    R_xlen_t i, ia, ib, ic, id, ie, n, na, nb, nc, nd, ne;
     double ai, bi, ci, di, ei, *a, *b, *c, *d, *e, *y;
 
 #define SETUP_Math5                                                                                                    \
     if (!isNumeric(sa) || !isNumeric(sb) || !isNumeric(sc) || !isNumeric(sd) || !isNumeric(se))                        \
         errorcall(lcall, R_MSG_NONNUM_MATH);                                                                           \
                                                                                                                        \
-    na = LENGTH(sa);                                                                                                   \
-    nb = LENGTH(sb);                                                                                                   \
-    nc = LENGTH(sc);                                                                                                   \
-    nd = LENGTH(sd);                                                                                                   \
-    ne = LENGTH(se);                                                                                                   \
+    na = XLENGTH(sa);                                                                                                  \
+    nb = XLENGTH(sb);                                                                                                  \
+    nc = XLENGTH(sc);                                                                                                  \
+    nd = XLENGTH(sd);                                                                                                  \
+    ne = XLENGTH(se);                                                                                                  \
     if ((na == 0) || (nb == 0) || (nc == 0) || (nd == 0) || (ne == 0))                                                 \
         return (allocVector(REALSXP, 0));                                                                              \
     n = na;                                                                                                            \

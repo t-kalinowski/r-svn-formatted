@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1997-2009  The R Core Team
+ *  Copyright (C) 1997-2012  The R Core Team
  *  Copyright (C) 2003	     The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -103,7 +103,7 @@ SEXP attribute_hidden do_hsv(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP c, h, s, v, a;
     double hh, ss, vv, aa, r = 0., g = 0., b = 0.; /* -Wall */
-    int i, max, nh, ns, nv, na;
+    R_xlen_t i, max, nh, ns, nv, na;
 
     checkArity(op, args);
 
@@ -116,10 +116,10 @@ SEXP attribute_hidden do_hsv(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(a = coerceVector(CAR(args), REALSXP));
     args = CDR(args);
 
-    nh = LENGTH(h);
-    ns = LENGTH(s);
-    nv = LENGTH(v);
-    na = LENGTH(a);
+    nh = XLENGTH(h);
+    ns = XLENGTH(s);
+    nv = XLENGTH(v);
+    na = XLENGTH(a);
     if (nh <= 0 || ns <= 0 || nv <= 0 || na <= 0)
     {
         UNPROTECT(4);
@@ -248,7 +248,7 @@ SEXP attribute_hidden do_hcl(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP h, c, l, a, ans;
     double H, C, L, A, r, g, b;
-    int nh, nc, nl, na, max, i;
+    R_xlen_t nh, nc, nl, na, max, i;
     int ir, ig, ib;
     int fixup;
 
@@ -263,10 +263,10 @@ SEXP attribute_hidden do_hcl(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(a = coerceVector(CAR(args), REALSXP));
     args = CDR(args);
     fixup = asLogical(CAR(args));
-    nh = LENGTH(h);
-    nc = LENGTH(c);
-    nl = LENGTH(l);
-    na = LENGTH(a);
+    nh = XLENGTH(h);
+    nc = XLENGTH(c);
+    nl = XLENGTH(l);
+    na = XLENGTH(a);
     if (nh <= 0 || nc <= 0 || nl <= 0 || na <= 0)
     {
         UNPROTECT(4);
@@ -306,7 +306,8 @@ SEXP attribute_hidden do_hcl(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP attribute_hidden do_rgb(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP c, r, g, b, a, nam;
-    int OP, i, l_max, nr, ng, nb, na;
+    int OP;
+    R_xlen_t i, l_max, nr, ng, nb, na;
     Rboolean max_1 = FALSE;
     double mV = 0.0; /* -Wall */
 
@@ -338,10 +339,10 @@ SEXP attribute_hidden do_rgb(SEXP call, SEXP op, SEXP args, SEXP env)
         max_1 = (mV == 1.);
     }
 
-    nr = LENGTH(r);
-    ng = LENGTH(g);
-    nb = LENGTH(b);
-    na = LENGTH(a);
+    nr = XLENGTH(r);
+    ng = XLENGTH(g);
+    nb = XLENGTH(b);
+    na = XLENGTH(a);
     if (nr <= 0 || ng <= 0 || nb <= 0 || na <= 0)
     {
         UNPROTECT(4);
@@ -416,7 +417,7 @@ SEXP attribute_hidden do_col2RGB(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP colors, ans, names, dmns;
     double col, bg;
     unsigned int icol;
-    int n, i, i4;
+    R_xlen_t n, i, i4;
 
     checkArity(op, args);
     colors = CAR(args);
@@ -428,7 +429,7 @@ SEXP attribute_hidden do_col2RGB(SEXP call, SEXP op, SEXP args, SEXP env)
         if (TYPEOF(colors) != INTSXP)
             error(_("invalid '%s' value"), "col");
     }
-    n = LENGTH(colors);
+    n = XLENGTH(colors);
 
     /* First set up the output matrix */
     PROTECT(ans = allocMatrix(INTSXP, 4, n));

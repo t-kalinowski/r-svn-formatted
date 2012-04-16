@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2010  The R Core Team
+ *  Copyright (C) 1997--2012  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Pulic License as published by
@@ -94,7 +94,7 @@ static R_StringBuffer cbuff = {NULL, 0, MAXELTSIZE};
 SEXP attribute_hidden do_nzchar(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, ans;
-    int i, len;
+    R_xlen_t i, len;
 
     checkArity(op, args);
     check1arg(args, call, "x");
@@ -104,7 +104,7 @@ SEXP attribute_hidden do_nzchar(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(x = coerceVector(CAR(args), STRSXP));
     if (!isString(x))
         error(_("'%s' requires a character vector"), "nzchar()");
-    len = LENGTH(x);
+    len = XLENGTH(x);
     PROTECT(ans = allocVector(LGLSXP, len));
     for (i = 0; i < len; i++)
         LOGICAL(ans)[i] = LENGTH(STRING_ELT(x, i)) > 0;
@@ -115,7 +115,8 @@ SEXP attribute_hidden do_nzchar(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP attribute_hidden do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP d, s, x, stype;
-    int i, len, allowNA;
+    R_xlen_t i, len;
+    int allowNA;
     size_t ntype;
     int nc;
     const char *type;
@@ -129,7 +130,7 @@ SEXP attribute_hidden do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(x = coerceVector(CAR(args), STRSXP));
     if (!isString(x))
         error(_("'%s' requires a character vector"), "nchar()");
-    len = LENGTH(x);
+    len = XLENGTH(x);
     stype = CADR(args);
     if (!isString(stype) || LENGTH(stype) != 1)
         error(_("invalid '%s' argument"), "type");
@@ -286,7 +287,8 @@ static void substr(char *buf, const char *str, int ienc, int sa, int so)
 SEXP attribute_hidden do_substr(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s, x, sa, so, el;
-    int i, len, start, stop, k, l;
+    R_xlen_t i, len;
+    int start, stop, k, l;
     size_t slen;
     cetype_t ienc;
     const char *ss;
@@ -301,7 +303,7 @@ SEXP attribute_hidden do_substr(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (!isString(x))
         error(_("extracting substrings from a non-character object"));
-    len = LENGTH(x);
+    len = XLENGTH(x);
     PROTECT(s = allocVector(STRSXP, len));
     if (len > 0)
     {
@@ -401,7 +403,8 @@ static void substrset(char *buf, const char *const str, cetype_t ienc, int sa, i
 SEXP attribute_hidden do_substrgets(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s, x, sa, so, value, el, v_el;
-    int i, len, start, stop, k, l, v;
+    R_xlen_t i, len;
+    int start, stop, k, l, v;
     size_t slen;
     cetype_t ienc, venc;
     const char *ss, *v_ss;
@@ -611,7 +614,8 @@ donesc:
 SEXP attribute_hidden do_abbrev(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, ans;
-    int i, len, minlen;
+    R_xlen_t i, len;
+    int minlen;
     Rboolean warn = FALSE;
     const char *s;
     const void *vmax;
@@ -621,7 +625,7 @@ SEXP attribute_hidden do_abbrev(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (!isString(x))
         error(_("the first argument must be a character vector"));
-    len = length(x);
+    len = XLENGTH(x);
 
     PROTECT(ans = allocVector(STRSXP, len));
     minlen = asInteger(CADR(args));
@@ -651,7 +655,8 @@ SEXP attribute_hidden do_abbrev(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP attribute_hidden do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP arg, ans;
-    int i, l, n, allow_;
+    R_xlen_t i, n;
+    int l, allow_;
     char *p, *tmp = NULL, *cbuf;
     const char *This;
     Rboolean need_prefix;
@@ -661,7 +666,7 @@ SEXP attribute_hidden do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
     arg = CAR(args);
     if (!isString(arg))
         error(_("non-character names"));
-    n = length(arg);
+    n = XLENGTH(arg);
     allow_ = asLogical(CADR(args));
     if (allow_ == NA_LOGICAL)
         error(_("invalid '%s' value"), "allow_");
@@ -780,7 +785,8 @@ SEXP attribute_hidden do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP attribute_hidden do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, y;
-    int i, n, ul;
+    R_xlen_t i, n;
+    int ul;
     char *p;
     SEXP el;
     cetype_t ienc;
@@ -794,7 +800,7 @@ SEXP attribute_hidden do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
     /* coercion is done in wrapper */
     if (!isString(x))
         error(_("non-character argument"));
-    n = LENGTH(x);
+    n = XLENGTH(x);
     PROTECT(y = allocVector(STRSXP, n));
 #if defined(Win32) || defined(__STDC_ISO_10646__) || defined(__APPLE_CC__)
     /* utf8towcs is really to UCS-4/2 */
@@ -1175,7 +1181,7 @@ static R_INLINE int xtable_key_comp(const void *a, const void *b)
 SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP old, _new, x, y;
-    int i, n;
+    R_xlen_t i, n;
     char *cbuf;
     SEXP el;
     cetype_t ienc;
@@ -1188,7 +1194,7 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
     _new = CAR(args);
     args = CDR(args);
     x = CAR(args);
-    n = LENGTH(x);
+    n = XLENGTH(x);
     if (!isString(old) || length(old) < 1 || STRING_ELT(old, 0) == NA_STRING)
         error(_("invalid '%s' argument"), "old");
     if (length(old) > 1)
@@ -1444,7 +1450,8 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP attribute_hidden do_strtrim(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s, x, width;
-    int i, len, nw, w, nc;
+    R_xlen_t i, len;
+    int nw, w, nc;
     const char *This;
     char *buf;
     const char *p;
@@ -1458,7 +1465,7 @@ SEXP attribute_hidden do_strtrim(SEXP call, SEXP op, SEXP args, SEXP env)
     /* as.character happens at R level now */
     if (!isString(x = CAR(args)))
         error(_("strtrim() requires a character vector"));
-    len = LENGTH(x);
+    len = XLENGTH(x);
     PROTECT(width = coerceVector(CADR(args), INTSXP));
     nw = LENGTH(width);
     if (!nw || (nw < len && len % nw))
@@ -1532,7 +1539,8 @@ static int strtoi(SEXP s, int base)
 SEXP attribute_hidden do_strtoi(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, x, b;
-    int i, n, base;
+    R_xlen_t i, n;
+    int base;
 
     checkArity(op, args);
 
