@@ -56,11 +56,11 @@ SEXP GetColNames(SEXP dimnames)
         return R_NilValue;
 }
 
-/* Package matrix uses this .Internal with 5 args: should have 7 */
 SEXP attribute_hidden do_matrix(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP vals, ans, snr, snc, dimnames;
-    int nr = 1, nc = 1, byrow, lendat, miss_nr, miss_nc;
+    int nr = 1, nc = 1, byrow, miss_nr, miss_nc;
+    R_xlen_t lendat;
 
     checkArity(op, args);
     vals = CAR(args);
@@ -80,7 +80,7 @@ SEXP attribute_hidden do_matrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     default:
         error(_("'data' must be of a vector type"));
     }
-    lendat = length(vals);
+    lendat = XLENGTH(vals);
     snr = CAR(args);
     args = CDR(args);
     snc = CAR(args);
@@ -124,7 +124,8 @@ SEXP attribute_hidden do_matrix(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (lendat > 0)
     {
-        if (lendat > 1 && (nr * nc) % lendat != 0)
+        R_xlen_t nrc = (R_xlen_t)nr * nc;
+        if (lendat > 1 && nrc % lendat != 0)
         {
             if (((lendat > nr) && (lendat / nr) * nr != lendat) || ((lendat < nr) && (nr / lendat) * lendat != nr))
                 warning(_("data length [%d] is not a sub-multiple or multiple of the number of rows [%d]"), lendat, nr);
@@ -132,14 +133,16 @@ SEXP attribute_hidden do_matrix(SEXP call, SEXP op, SEXP args, SEXP rho)
                 warning(_("data length [%d] is not a sub-multiple or multiple of the number of columns [%d]"), lendat,
                         nc);
         }
-        else if ((lendat > 1) && (nr * nc == 0))
+        else if ((lendat > 1) && (nrc == 0))
         {
             warning(_("data length exceeds size of matrix"));
         }
     }
 
+#ifndef LONG_VECTOR_SUPPORT
     if ((double)nr * (double)nc > INT_MAX)
         error(_("too many elements specified"));
+#endif
 
     PROTECT(ans = allocMatrix(TYPEOF(vals), nr, nc));
     if (lendat)
@@ -152,27 +155,28 @@ SEXP attribute_hidden do_matrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     else if (isVector(vals))
     { /* fill with NAs */
         int i, j;
+        R_xlen_t NR = nr;
         switch (TYPEOF(vals))
         {
         case STRSXP:
             for (i = 0; i < nr; i++)
                 for (j = 0; j < nc; j++)
-                    SET_STRING_ELT(ans, i + j * nr, NA_STRING);
+                    SET_STRING_ELT(ans, i + j * NR, NA_STRING);
             break;
         case LGLSXP:
             for (i = 0; i < nr; i++)
                 for (j = 0; j < nc; j++)
-                    LOGICAL(ans)[i + j * nr] = NA_LOGICAL;
+                    LOGICAL(ans)[i + j * NR] = NA_LOGICAL;
             break;
         case INTSXP:
             for (i = 0; i < nr; i++)
                 for (j = 0; j < nc; j++)
-                    INTEGER(ans)[i + j * nr] = NA_INTEGER;
+                    INTEGER(ans)[i + j * NR] = NA_INTEGER;
             break;
         case REALSXP:
             for (i = 0; i < nr; i++)
                 for (j = 0; j < nc; j++)
-                    REAL(ans)[i + j * nr] = NA_REAL;
+                    REAL(ans)[i + j * NR] = NA_REAL;
             break;
         case CPLXSXP: {
             Rcomplex na_cmplx;
@@ -180,13 +184,13 @@ SEXP attribute_hidden do_matrix(SEXP call, SEXP op, SEXP args, SEXP rho)
             na_cmplx.i = 0;
             for (i = 0; i < nr; i++)
                 for (j = 0; j < nc; j++)
-                    COMPLEX(ans)[i + j * nr] = na_cmplx;
+                    COMPLEX(ans)[i + j * NR] = na_cmplx;
         }
         break;
         case RAWSXP:
             for (i = 0; i < nr; i++)
                 for (j = 0; j < nc; j++)
-                    RAW(ans)[i + j * nr] = 0;
+                    RAW(ans)[i + j * NR] = 0;
             break;
         default:
             /* don't fill with anything */
@@ -202,13 +206,15 @@ SEXP attribute_hidden do_matrix(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP allocMatrix(SEXPTYPE mode, int nrow, int ncol)
 {
     SEXP s, t;
-    int n;
+    R_xlen_t n;
 
     if (nrow < 0 || ncol < 0)
         error(_("negative extents to matrix"));
+#ifndef LONG_VECTOR_SUPPORT
     if ((double)nrow * (double)ncol > INT_MAX)
         error(_("allocMatrix: too many elements specified"));
-    n = nrow * ncol;
+#endif
+    n = ((R_xlen_t)nrow) * ncol;
     PROTECT(s = allocVector(mode, n));
     PROTECT(t = allocVector(INTSXP, 2));
     INTEGER(t)[0] = nrow;
@@ -231,13 +237,15 @@ SEXP allocMatrix(SEXPTYPE mode, int nrow, int ncol)
 SEXP alloc3DArray(SEXPTYPE mode, int nrow, int ncol, int nface)
 {
     SEXP s, t;
-    int n;
+    R_xlen_t n;
 
     if (nrow < 0 || ncol < 0 || nface < 0)
         error(_("negative extents to 3D array"));
+#ifndef LONG_VECTOR_SUPPORT
     if ((double)nrow * (double)ncol * (double)nface > INT_MAX)
         error(_("alloc3Darray: too many elements specified"));
-    n = nrow * ncol * nface;
+#endif
+    n = ((R_xlen_t)nrow) * ncol * nface;
     PROTECT(s = allocVector(mode, n));
     PROTECT(t = allocVector(INTSXP, 3));
     INTEGER(t)[0] = nrow;
@@ -251,15 +259,18 @@ SEXP alloc3DArray(SEXPTYPE mode, int nrow, int ncol, int nface)
 SEXP allocArray(SEXPTYPE mode, SEXP dims)
 {
     SEXP array;
-    int i, n;
+    int i;
+    R_xlen_t n;
     double dn;
 
     dn = n = 1;
     for (i = 0; i < LENGTH(dims); i++)
     {
         dn *= INTEGER(dims)[i];
+#ifndef LONG_VECTOR_SUPPORT
         if (dn > INT_MAX)
             error(_("allocArray: too many elements specified by 'dims'"));
+#endif
         n *= INTEGER(dims)[i];
     }
 
@@ -314,7 +325,7 @@ SEXP DropDims(SEXP x)
          */
         if (dimnames != R_NilValue)
         {
-            if (LENGTH(x) != 1)
+            if (XLENGTH(x) != 1)
             {
                 for (i = 0; i < LENGTH(dims); i++)
                 {
@@ -460,6 +471,7 @@ SEXP attribute_hidden do_rowscols(SEXP call, SEXP op, SEXP args, SEXP rho)
     int i, j, nr, nc;
 
     checkArity(op, args);
+    /* This is the dimensions vector */
     x = CAR(args);
     if (!isInteger(x) || LENGTH(x) != 2)
         error(_("a matrix-like object is required as argument to 'row/col'"));
@@ -469,17 +481,18 @@ SEXP attribute_hidden do_rowscols(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     ans = allocMatrix(INTSXP, nr, nc);
 
+    R_xlen_t NR = nr;
     switch (PRIMVAL(op))
     {
     case 1:
         for (i = 0; i < nr; i++)
             for (j = 0; j < nc; j++)
-                INTEGER(ans)[i + j * nr] = i + 1;
+                INTEGER(ans)[i + j * NR] = i + 1;
         break;
     case 2:
         for (i = 0; i < nr; i++)
             for (j = 0; j < nc; j++)
-                INTEGER(ans)[i + j * nr] = j + 1;
+                INTEGER(ans)[i + j * NR] = j + 1;
         break;
     }
     return ans;
@@ -1022,7 +1035,8 @@ SEXP attribute_hidden do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP attribute_hidden do_transpose(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP a, r, dims, dimnames, dimnamesnames = R_NilValue, ndimnamesnames, rnames, cnames;
-    int i, ldim, len = 0, ncol = 0, nrow = 0;
+    int ldim, ncol = 0, nrow = 0;
+    R_xlen_t len = 0;
 
     checkArity(op, args);
     a = CAR(args);
@@ -1036,13 +1050,13 @@ SEXP attribute_hidden do_transpose(SEXP call, SEXP op, SEXP args, SEXP rho)
         switch (ldim)
         {
         case 0:
-            nrow = len = length(a);
+            nrow = len = LENGTH(a);
             ncol = 1;
             rnames = getAttrib(a, R_NamesSymbol);
             dimnames = rnames; /* for isNull() below*/
             break;
         case 1:
-            nrow = len = length(a);
+            nrow = len = LENGTH(a);
             ncol = 1;
             dimnames = getAttrib(a, R_DimNamesSymbol);
             if (dimnames != R_NilValue)
@@ -1054,7 +1068,7 @@ SEXP attribute_hidden do_transpose(SEXP call, SEXP op, SEXP args, SEXP rho)
         case 2:
             ncol = ncols(a);
             nrow = nrows(a);
-            len = length(a);
+            len = XLENGTH(a);
             dimnames = getAttrib(a, R_DimNamesSymbol);
             if (dimnames != R_NilValue)
             {
@@ -1070,7 +1084,7 @@ SEXP attribute_hidden do_transpose(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
         goto not_matrix;
     PROTECT(r = allocVector(TYPEOF(a), len));
-    int j, l_1 = len - 1;
+    R_xlen_t i, j, l_1 = len - 1;
     switch (TYPEOF(a))
     {
     case LGLSXP:

@@ -412,7 +412,7 @@ static void checkNames(SEXP x, SEXP s)
     {
         if (!isVector(s) && !isList(s))
             error(_("invalid type (%s) for 'names': must be vector"), type2char(TYPEOF(s)));
-        if (length(x) != length(s))
+        if (xlength(x) != xlength(s))
             error(_("'names' attribute [%d] must be the same length as the vector [%d]"), length(s), length(x));
     }
     else if (IS_S4_OBJECT(x))
@@ -1128,7 +1128,8 @@ SEXP attribute_hidden do_dimgets(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP dimgets(SEXP vec, SEXP val)
 {
-    int len, ndim, i, total;
+    int i, ndim;
+    R_xlen_t len, total;
     PROTECT(vec);
     PROTECT(val);
     if ((!isVector(vec) && !isList(vec)))
@@ -1140,7 +1141,7 @@ SEXP dimgets(SEXP vec, SEXP val)
     UNPROTECT(1);
     PROTECT(val);
 
-    len = length(vec);
+    len = xlength(vec);
     ndim = length(val);
     if (ndim == 0)
         error(_("length-0 dimension vector is invalid"));
@@ -1155,7 +1156,12 @@ SEXP dimgets(SEXP vec, SEXP val)
         total *= INTEGER(val)[i];
     }
     if (total != len)
-        error(_("dims [product %d] do not match the length of object [%d]"), total, len);
+    {
+        if (total > INT_MAX || len > INT_MAX)
+            error(_("dims do not match the length of object"), total, len);
+        else
+            error(_("dims [product %d] do not match the length of object [%d]"), total, len);
+    }
     removeAttrib(vec, R_DimNamesSymbol);
     installAttrib(vec, R_DimSymbol, val);
     UNPROTECT(2);
