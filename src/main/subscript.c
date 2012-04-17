@@ -692,8 +692,6 @@ static SEXP realSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, int *stretch, SEXP c
     return R_NilValue;
 }
 
-typedef SEXP (*StringEltGetter)(SEXP x, int i);
-
 /* This uses a couple of horrible hacks in conjunction with
  * VectorAssign (in subassign.c).  If subscripting is used for
  * assignment, it is possible to extend a vector by supplying new
@@ -709,15 +707,14 @@ typedef SEXP (*StringEltGetter)(SEXP x, int i);
  * large, then it will be too slow unless ns is very small.
  */
 
-static SEXP stringSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, SEXP names, StringEltGetter strg, int *stretch,
-                            Rboolean in, SEXP call)
+static SEXP stringSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, SEXP names, int *stretch, SEXP call)
 {
     SEXP indx, indexnames;
     R_xlen_t i, j, nnames, extra;
     int sub;
     int canstretch = *stretch;
     /* product may overflow, so check factors as well. */
-    Rboolean usehashing = in && (((ns > 1000 && nx) || (nx > 1000 && ns)) || (ns * nx > 15 * nx + ns));
+    Rboolean usehashing = (((ns > 1000 && nx) || (nx > 1000 && ns)) || (ns * nx > 15 * nx + ns));
 
     PROTECT(s);
     PROTECT(names);
@@ -755,11 +752,7 @@ static SEXP stringSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, SEXP names, String
             {
                 for (j = 0; j < nnames; j++)
                 {
-                    SEXP names_j = strg(names, j);
-                    if (!in && TYPEOF(names_j) != CHARSXP)
-                    {
-                        ECALL(call, _("character vector element does not have type CHARSXP"));
-                    }
+                    SEXP names_j = STRING_ELT(names, j);
                     if (NonNullStringMatch(STRING_ELT(s, i), names_j))
                     {
                         sub = j + 1;
@@ -815,10 +808,7 @@ static SEXP stringSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, SEXP names, String
     x is the array to be subscripted.
 */
 
-typedef SEXP AttrGetter(SEXP x, SEXP data);
-
-static SEXP int_arraySubscript(int dim, SEXP s, SEXP dims, AttrGetter dng, StringEltGetter strg, SEXP x, Rboolean in,
-                               SEXP call)
+static SEXP int_arraySubscript(int dim, SEXP s, SEXP dims, SEXP x, SEXP call)
 {
     int nd, ns, stretch = 0;
     SEXP dnames, tmp;
@@ -840,13 +830,13 @@ static SEXP int_arraySubscript(int dim, SEXP s, SEXP dims, AttrGetter dng, Strin
         UNPROTECT(1);
         return tmp;
     case STRSXP:
-        dnames = dng(x, R_DimNamesSymbol);
+        dnames = getAttrib(x, R_DimNamesSymbol);
         if (dnames == R_NilValue)
         {
             ECALL(call, _("no 'dimnames' attribute for array"));
         }
         dnames = VECTOR_ELT(dnames, dim);
-        return stringSubscript(s, ns, nd, dnames, strg, &stretch, in, call);
+        return stringSubscript(s, ns, nd, dnames, &stretch, call);
     case SYMSXP:
         if (s == R_MissingArg)
             return nullSubscript(nd);
@@ -859,11 +849,13 @@ static SEXP int_arraySubscript(int dim, SEXP s, SEXP dims, AttrGetter dng, Strin
     return R_NilValue;
 }
 
-/* This is used by packages arules and cba. Seems dangerous as the
-   typedef is not exported */
+/* This is used by packages arules, cba, proxy and seriation. */
+typedef SEXP AttrGetter(SEXP x, SEXP data);
+typedef SEXP (*StringEltGetter)(SEXP x, int i);
+
 SEXP arraySubscript(int dim, SEXP s, SEXP dims, AttrGetter dng, StringEltGetter strg, SEXP x)
 {
-    return int_arraySubscript(dim, s, dims, dng, strg, x, TRUE, R_NilValue);
+    return int_arraySubscript(dim, s, dims, x, R_NilValue);
 }
 
 /* Subscript creation.  The first thing we do is check to see */
@@ -874,6 +866,8 @@ SEXP arraySubscript(int dim, SEXP s, SEXP dims, AttrGetter dng, StringEltGetter 
    otherwise, stretch returns the new required length for x
 */
 
+static SEXP vectorSubscript(R_xlen_t nx, SEXP s, int *stretch, SEXP x, SEXP call);
+
 SEXP attribute_hidden makeSubscript(SEXP x, SEXP s, int *stretch, SEXP call)
 {
     SEXP ans;
@@ -881,7 +875,7 @@ SEXP attribute_hidden makeSubscript(SEXP x, SEXP s, int *stretch, SEXP call)
     ans = R_NilValue;
     if (isVector(x) || isList(x) || isLanguage(x))
     {
-        ans = vectorSubscript(xlength(x), s, stretch, getAttrib, (STRING_ELT), x, call);
+        ans = vectorSubscript(xlength(x), s, stretch, x, call);
     }
     else
     {
@@ -891,13 +885,10 @@ SEXP attribute_hidden makeSubscript(SEXP x, SEXP s, int *stretch, SEXP call)
 }
 
 /* nx is the length of the object being subscripted,
-   s is the R subscript value,
-   dng gets a given attrib for x, which is the object we are
-   subsetting,
+   s is the R subscript value.
 */
 
-static SEXP int_vectorSubscript(R_xlen_t nx, SEXP s, int *stretch, AttrGetter dng, StringEltGetter strg, SEXP x,
-                                Rboolean in, SEXP call)
+static SEXP vectorSubscript(R_xlen_t nx, SEXP s, int *stretch, SEXP x, SEXP call)
 {
     SEXP ans = R_NilValue;
 
@@ -932,9 +923,9 @@ static SEXP int_vectorSubscript(R_xlen_t nx, SEXP s, int *stretch, AttrGetter dn
         ans = realSubscript(s, ns, nx, stretch, call);
         break;
     case STRSXP: {
-        SEXP names = dng(x, R_NamesSymbol);
+        SEXP names = getAttrib(x, R_NamesSymbol);
         /* *stretch = 0; */
-        ans = stringSubscript(s, ns, nx, names, strg, stretch, in, call);
+        ans = stringSubscript(s, ns, nx, names, stretch, call);
     }
     break;
     case SYMSXP:
@@ -952,10 +943,4 @@ static SEXP int_vectorSubscript(R_xlen_t nx, SEXP s, int *stretch, AttrGetter dn
     }
     UNPROTECT(1);
     return ans;
-}
-
-SEXP attribute_hidden vectorSubscript(int nx, SEXP s, int *stretch, AttrGetter dng, StringEltGetter strg, SEXP x,
-                                      SEXP call)
-{
-    return int_vectorSubscript(nx, s, stretch, dng, strg, x, TRUE, call);
 }
