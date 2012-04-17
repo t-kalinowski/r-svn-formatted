@@ -442,6 +442,32 @@ static SEXP DeleteListElements(SEXP x, SEXP which)
     return xnew;
 }
 
+#ifdef LONG_VECTOR_SUPPORT
+static R_INLINE R_xlen_t gi(SEXP indx, R_xlen_t i)
+{
+    if (TYPEOF(indx) == REALSXP)
+    {
+        double d = REAL(indx)[i];
+        return R_FINITE(d) ? (R_xlen_t)d : NA_INTEGER;
+    }
+    else
+        return INTEGER(indx)[i];
+}
+#else
+static R_INLINE int gi(SEXP indx, R_xlen_t i)
+{
+    if (TYPEOF(indx) == REALSXP)
+    {
+        double d = REAL(indx)[i];
+        if (!R_FINITE(d) || d < -INT_MAX || d > INT_MAX)
+            return NA_INTEGER;
+        return (int)d;
+    }
+    else
+        return INTEGER(indx)[i];
+}
+#endif
+
 static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 {
     SEXP dim, indx, newnames;
@@ -480,7 +506,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
     n = xlength(indx);
     if (xlength(y) > 1)
         for (i = 0; i < n; i++)
-            if (INTEGER(indx)[i] == NA_INTEGER)
+            if (gi(indx, i) == NA_INTEGER)
                 error(_("NAs are not allowed in subscripted assignments"));
 
     /* Here we make sure that the LHS has */
@@ -532,7 +558,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 
         for (i = 0; i < n; i++)
         {
-            ii = INTEGER(indx)[i];
+            ii = gi(indx, i);
             if (ii == NA_INTEGER)
                 continue;
             ii = ii - 1;
@@ -545,7 +571,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 
         for (i = 0; i < n; i++)
         {
-            ii = INTEGER(indx)[i];
+            ii = gi(indx, i);
             if (ii == NA_INTEGER)
                 continue;
             ii = ii - 1;
@@ -563,7 +589,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 
         for (i = 0; i < n; i++)
         {
-            ii = INTEGER(indx)[i];
+            ii = gi(indx, i);
             if (ii == NA_INTEGER)
                 continue;
             ii = ii - 1;
@@ -576,7 +602,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 
         for (i = 0; i < n; i++)
         {
-            ii = INTEGER(indx)[i];
+            ii = gi(indx, i);
             if (ii == NA_INTEGER)
                 continue;
             ii = ii - 1;
@@ -598,7 +624,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 
         for (i = 0; i < n; i++)
         {
-            ii = INTEGER(indx)[i];
+            ii = gi(indx, i);
             if (ii == NA_INTEGER)
                 continue;
             ii = ii - 1;
@@ -623,7 +649,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 
         for (i = 0; i < n; i++)
         {
-            ii = INTEGER(indx)[i];
+            ii = gi(indx, i);
             if (ii == NA_INTEGER)
                 continue;
             ii = ii - 1;
@@ -643,7 +669,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 
         for (i = 0; i < n; i++)
         {
-            ii = INTEGER(indx)[i];
+            ii = gi(indx, i);
             if (ii == NA_INTEGER)
                 continue;
             ii = ii - 1;
@@ -667,7 +693,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 
         for (i = 0; i < n; i++)
         {
-            ii = INTEGER(indx)[i];
+            ii = gi(indx, i);
             if (ii == NA_INTEGER)
                 continue;
             ii = ii - 1;
@@ -688,7 +714,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 
         for (i = 0; i < n; i++)
         {
-            ii = INTEGER(indx)[i];
+            ii = gi(indx, i);
             if (ii == NA_INTEGER)
                 continue;
             ii = ii - 1;
@@ -708,7 +734,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 
         for (i = 0; i < n; i++)
         {
-            ii = INTEGER(indx)[i];
+            ii = gi(indx, i);
             if (ii == NA_INTEGER)
                 continue;
             ii = ii - 1;
@@ -732,7 +758,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
             {
                 if (VECTOR_ELT(newnames, i) != R_NilValue)
                 {
-                    ii = INTEGER(indx)[i];
+                    ii = gi(indx, i);
                     if (ii == NA_INTEGER)
                         continue;
                     ii = ii - 1;
@@ -749,7 +775,7 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
             {
                 if (VECTOR_ELT(newnames, i) != R_NilValue)
                 {
-                    ii = INTEGER(indx)[i];
+                    ii = gi(indx, i);
                     if (ii == NA_INTEGER)
                         continue;
                     ii = ii - 1;
@@ -1305,7 +1331,7 @@ static SEXP GetOneIndex(SEXP sub, int ind)
 /* This is only used for [[<-, so only adding one element */
 static SEXP SimpleListAssign(SEXP call, SEXP x, SEXP s, SEXP y, int ind)
 {
-    SEXP indx, xi, yi, sub = CAR(s);
+    SEXP indx, sub = CAR(s);
     int ii, n, nx, stretch = 1;
 
     if (length(s) > 1)
@@ -1323,7 +1349,7 @@ static SEXP SimpleListAssign(SEXP call, SEXP x, SEXP s, SEXP y, int ind)
     if (stretch)
     {
         SEXP t = CAR(s);
-        yi = allocList(stretch - nx);
+        SEXP yi = allocList(stretch - nx);
         /* This is general enough for only usage */
         if (isString(t) && length(t) == stretch - nx)
         {
@@ -1340,11 +1366,11 @@ static SEXP SimpleListAssign(SEXP call, SEXP x, SEXP s, SEXP y, int ind)
 
     if (n == 1)
     {
-        ii = INTEGER(indx)[0];
+        ii = asInteger(indx);
         if (ii != NA_INTEGER)
         {
             ii = ii - 1;
-            xi = nthcdr(x, ii % nx);
+            SEXP xi = nthcdr(x, ii % nx);
             SETCAR(xi, y);
         }
     }
@@ -1368,11 +1394,23 @@ static SEXP listRemove(SEXP x, SEXP s, int ind)
     indx = (int *)R_alloc(nx, sizeof(int));
     for (i = 0; i < nx; i++)
         indx[i] = 1;
-    for (i = 0; i < ns; i++)
+    if (TYPEOF(s) == REALSXP)
     {
-        ii = INTEGER(s)[i];
-        if (ii != NA_INTEGER)
-            indx[ii - 1] = 0;
+        for (i = 0; i < ns; i++)
+        {
+            double di = REAL(s)[i];
+            if (R_FINITE(di))
+                indx[(R_xlen_t)di - 1] = 0;
+        }
+    }
+    else
+    {
+        for (i = 0; i < ns; i++)
+        {
+            ii = INTEGER(s)[i];
+            if (ii != NA_INTEGER)
+                indx[ii - 1] = 0;
+        }
     }
     PROTECT(a = CONS(R_NilValue, R_NilValue));
     px = x;
@@ -1653,7 +1691,8 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
         return (S4 ? xOrig : x);
     }
 
-    /* new case in 1.7.0, one vector index for a list, more general as of 2.10.0 */
+    /* new case in 1.7.0, one vector index for a list,
+       more general as of 2.10.0 */
     if (nsubs == 1)
     {
         thesub = CAR(subs);
