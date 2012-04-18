@@ -669,10 +669,10 @@ SEXP bitwiseNot(SEXP a)
     return ans;
 }
 
-// FIXME replace fmax2
+#define mymax(x, y) ((x >= y) ? x : y)
 SEXP bitwiseAnd(SEXP a, SEXP b)
 {
-    R_xlen_t i, m = XLENGTH(a), n = XLENGTH(b), mn = (m && n) ? fmax2(m, n) : 0;
+    R_xlen_t i, m = XLENGTH(a), n = XLENGTH(b), mn = (m && n) ? mymax(m, n) : 0;
     SEXP ans = allocVector(INTSXP, mn);
     for (i = 0; i < mn; i++)
         INTEGER(ans)[i] = INTEGER(a)[i % m] & INTEGER(b)[i % n];
@@ -681,7 +681,7 @@ SEXP bitwiseAnd(SEXP a, SEXP b)
 
 SEXP bitwiseOr(SEXP a, SEXP b)
 {
-    R_xlen_t i, m = XLENGTH(a), n = XLENGTH(b), mn = (m && n) ? fmax2(m, n) : 0;
+    R_xlen_t i, m = XLENGTH(a), n = XLENGTH(b), mn = (m && n) ? mymax(m, n) : 0;
     SEXP ans = allocVector(INTSXP, mn);
     for (i = 0; i < mn; i++)
         INTEGER(ans)[i] = INTEGER(a)[i % m] | INTEGER(b)[i % n];
@@ -690,7 +690,7 @@ SEXP bitwiseOr(SEXP a, SEXP b)
 
 SEXP bitwiseXor(SEXP a, SEXP b)
 {
-    R_xlen_t i, m = XLENGTH(a), n = XLENGTH(b), mn = (m && n) ? fmax2(m, n) : 0;
+    R_xlen_t i, m = XLENGTH(a), n = XLENGTH(b), mn = (m && n) ? mymax(m, n) : 0;
     SEXP ans = allocVector(INTSXP, mn);
     for (i = 0; i < mn; i++)
         INTEGER(ans)[i] = INTEGER(a)[i % m] ^ INTEGER(b)[i % n];

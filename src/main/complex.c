@@ -655,9 +655,9 @@ static double complex z_atanh(double complex z)
     return -I * z_atan(z * I);
 }
 
-static Rboolean cmath1(double complex (*f)(double complex), Rcomplex *x, Rcomplex *y, int n)
+static Rboolean cmath1(double complex (*f)(double complex), Rcomplex *x, Rcomplex *y, R_xlen_t n)
 {
-    int i;
+    R_xlen_t i;
     Rboolean naflag = FALSE;
     for (i = 0; i < n; i++)
     {
