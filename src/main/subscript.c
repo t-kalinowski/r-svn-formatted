@@ -302,7 +302,7 @@ SEXP attribute_hidden vectorIndex(SEXP x, SEXP thesub, int start, int stop, int 
             else
                 errorcall(call, _("attempt to select more than one element"));
         }
-        offset = get1index(thesub, getAttrib(x, R_NamesSymbol), length(x), pok, i, call);
+        offset = get1index(thesub, getAttrib(x, R_NamesSymbol), length(x), pok, i, call); // must be less than len
         if (offset < 0 || offset >= length(x))
             errorcall(call, _("no such index at level %d\n"), i + 1);
         if (isPairList(x))
@@ -424,7 +424,7 @@ SEXP attribute_hidden strmat2intmat(SEXP s, SEXP dnamelist, SEXP call)
 
 static SEXP nullSubscript(int n)
 {
-    int i;
+    intt i;
     SEXP indx;
     indx = allocVector(INTSXP, n);
     for (i = 0; i < n; i++)
@@ -432,6 +432,7 @@ static SEXP nullSubscript(int n)
     return indx;
 }
 
+// FIXME stretch needs to be R_xlen_t
 static SEXP logicalSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, int *stretch, SEXP call)
 {
     R_xlen_t count, i, nmax;
@@ -704,8 +705,7 @@ static SEXP realSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, int *stretch, SEXP c
 static SEXP stringSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, SEXP names, int *stretch, SEXP call)
 {
     SEXP indx, indexnames;
-    R_xlen_t i, j, nnames, extra;
-    int sub;
+    R_xlen_t i, j, nnames, extra, sub;
     int canstretch = *stretch;
     /* product may overflow, so check factors as well. */
     Rboolean usehashing = (((ns > 1000 && nx) || (nx > 1000 && ns)) || (ns * nx > 15 * nx + ns));
@@ -926,6 +926,8 @@ static SEXP vectorSubscript(R_xlen_t nx, SEXP s, int *stretch, SEXP x, SEXP call
         *stretch = 0;
         if (s == R_MissingArg)
         {
+            /* FIXME: check that this is not a long vector
+               or use doubles */
             ans = nullSubscript(nx);
             break;
         }

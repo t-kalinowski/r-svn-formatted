@@ -1041,7 +1041,7 @@ SEXP attribute_hidden do_subset2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (isPairList(x))
     {
-        ans = CAR(nthcdr(x, offset));
+        ans = CAR(nthcdr(x, offset)); // FIXME
         if (named_x > NAMED(ans))
             SET_NAMED(ans, named_x);
     }
@@ -1233,8 +1233,8 @@ SEXP attribute_hidden R_subset3_dflt(SEXP x, SEXP input, SEXP call)
     }
     else if (isVectorList(x))
     {
-        R_xlen_t i, n;
-        int havematch, imatch = -1;
+        R_xlen_t i, n, imatch = -1;
+        int havematch;
         nlist = getAttrib(x, R_NamesSymbol);
         UNPROTECT(2);
         n = xlength(nlist);
