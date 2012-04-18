@@ -2686,7 +2686,7 @@ static SEXP R_set_class(SEXP obj, SEXP value, SEXP call)
         SEXPTYPE valueType;
         valueString = CHAR(asChar(value)); /* ASCII */
         whichType = class2type(valueString);
-        valueType = (whichType == -1) ? -1 : classTable[whichType].sexp;
+        valueType = (whichType == -1) ? (SEXPTYPE)-1 : classTable[whichType].sexp;
         PROTECT(cur_class = R_data_class(obj, FALSE));
         nProtect++;
         /*  assigning type as a class deletes an explicit class attribute. */

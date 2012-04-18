@@ -1160,7 +1160,7 @@ single UTF8 chars (up to 3 bytes) */
                 return offset;
             offset++;
         }
-        return -1;
+        return (R_size_t)-1;
     }
     case 2: {
         n--;
@@ -1170,7 +1170,7 @@ single UTF8 chars (up to 3 bytes) */
                 return offset;
             offset++;
         }
-        return -1;
+        return (R_size_t)-1;
     }
     case 3: {
         n -= 2;
@@ -1180,7 +1180,7 @@ single UTF8 chars (up to 3 bytes) */
                 return offset;
             offset++;
         }
-        return -1;
+        return (R_size_t)-1;
     }
     default: {
         R_size_t ncmp = LENGTH(pat);
