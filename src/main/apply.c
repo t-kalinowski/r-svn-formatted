@@ -40,6 +40,7 @@ SEXP attribute_hidden do_lapply(SEXP call, SEXP op, SEXP args, SEXP rho)
     n = xlength(XX);
     if (n == NA_INTEGER)
         error(_("invalid length"));
+    Rboolean realIndx = n > INT_MAX;
 
     PROTECT(ans = allocVector(VECSXP, n));
     names = getAttrib(XX, R_NamesSymbol);
@@ -59,7 +60,7 @@ SEXP attribute_hidden do_lapply(SEXP call, SEXP op, SEXP args, SEXP rho)
            protection of its args internally), but not both of them,
            since the computation of one may destroy the other */
 
-        PROTECT(ind = allocVector(INTSXP, 1));
+        PROTECT(ind = allocVector(realIndx ? REALSXP : INTSXP, 1));
         if (isVectorAtomic(XX))
             PROTECT(tmp = LCONS(R_Bracket2Symbol, LCONS(XX, LCONS(ind, R_NilValue))));
         else
@@ -68,8 +69,10 @@ SEXP attribute_hidden do_lapply(SEXP call, SEXP op, SEXP args, SEXP rho)
 
         for (i = 0; i < n; i++)
         {
-            // FIXME, need to use double
-            INTEGER(ind)[0] = i + 1;
+            if (realIndx)
+                REAL(ind)[0] = (double)(i + 1);
+            else
+                INTEGER(ind)[0] = (int)(i + 1);
             tmp = eval(R_fcall, rho);
             if (NAMED(tmp))
                 tmp = duplicate(tmp);
@@ -88,7 +91,8 @@ SEXP attribute_hidden do_lapply(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP attribute_hidden do_vapply(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP R_fcall, ans, names = R_NilValue, rowNames = R_NilValue, X, XX, FUN, value, dim_v;
-    R_xlen_t i, n, commonLen;
+    R_xlen_t i, n;
+    int commonLen;
     int useNames, rnk_v = -1; // = array_rank(value) := length(dim(value))
     Rboolean array_value;
     SEXPTYPE commonType;
@@ -108,8 +112,11 @@ SEXP attribute_hidden do_vapply(SEXP call, SEXP op, SEXP args, SEXP rho)
     n = xlength(XX);
     if (n == NA_INTEGER)
         error(_("invalid length"));
+    Rboolean realIndx = n > INT_MAX;
 
-    commonLen = xlength(value);
+    commonLen = length(value);
+    if (commonLen > 1 && n > INT_MAX)
+        error(_("long vectors are not supported for matrix/array results"));
     commonType = TYPEOF(value);
     dim_v = getAttrib(value, R_DimSymbol);
     array_value = (TYPEOF(dim_v) == INTSXP && LENGTH(dim_v) >= 1) ? TRUE : FALSE;
@@ -146,19 +153,15 @@ SEXP attribute_hidden do_vapply(SEXP call, SEXP op, SEXP args, SEXP rho)
 
         for (i = 0; i < n; i++)
         {
-            int j;
             SEXPTYPE tmpType;
-            INTEGER(ind)[0] = i + 1; // FIXME
+            if (realIndx)
+                REAL(ind)[0] = (double)(i + 1);
+            else
+                INTEGER(ind)[0] = (int)(i + 1);
             tmp = eval(R_fcall, rho);
-#ifdef LONG_VECTOR_SUPPORT
-            if (xlength(tmp) != commonLen)
-                error(_("values must be length %ld,\n but FUN(X[[%ld]]) result is length %ld"), commonLen, i + 1,
-                      xlength(tmp));
-#else
             if (length(tmp) != commonLen)
                 error(_("values must be length %d,\n but FUN(X[[%d]]) result is length %d"), commonLen, i + 1,
                       length(tmp));
-#endif
             tmpType = TYPEOF(tmp);
             if (tmpType != commonType)
             {
@@ -183,7 +186,7 @@ SEXP attribute_hidden do_vapply(SEXP call, SEXP op, SEXP args, SEXP rho)
             /* Take row names from the first result only */
             if (i == 0 && useNames && isNull(rowNames))
                 REPROTECT(rowNames = getAttrib(tmp, array_value ? R_DimNamesSymbol : R_NamesSymbol), index);
-            for (j = 0; j < commonLen; j++)
+            for (int j = 0; j < commonLen; j++)
             {
                 switch (commonType)
                 {
@@ -225,8 +228,8 @@ SEXP attribute_hidden do_vapply(SEXP call, SEXP op, SEXP args, SEXP rho)
             for (int j = 0; j < rnk_v; j++)
                 INTEGER(dim)[j] = INTEGER(dim_v)[j];
         else
-            INTEGER(dim)[0] = commonLen; // FIXME
-        INTEGER(dim)[rnk_v] = n;         // FIXME
+            INTEGER(dim)[0] = commonLen;
+        INTEGER(dim)[rnk_v] = (int)n; // checked above
         setAttrib(ans, R_DimSymbol, dim);
         UNPROTECT(1);
     }
