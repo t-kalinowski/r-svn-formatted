@@ -36,9 +36,9 @@
 /* remove leading and trailing space */
 static char *rmspace(char *s)
 {
-    size_t i;
+    int i;
 
-    for (i = strlen(s) - 1; i >= 0 && isspace((int)s[i]); i--)
+    for (i = (int)strlen(s) - 1; i >= 0 && isspace((int)s[i]); i--)
         s[i] = '\0';
     for (i = 0; isspace((int)s[i]); i++)
         ;

@@ -58,7 +58,7 @@ static R_INLINE int imin2(int x, int y)
 #define MAX_STRINGS 10000
 
 static unsigned char ConsoleBuf[CONSOLE_BUFFER_SIZE + 1], *ConsoleBufp;
-static size_t ConsoleBufCnt;
+static int ConsoleBufCnt;
 static char ConsolePrompt[CONSOLE_PROMPT_SIZE];
 
 typedef struct
