@@ -604,7 +604,6 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, x = CAR(args), si;
     void *obj;
-    int j, nout;
     const char *inbuf;
     char *outbuf;
     const char *sub;
@@ -757,6 +756,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
                 else
                 {
+                    size_t j;
                     if (outb < strlen(sub))
                     {
                         R_AllocStringBuffer(2 * cbuff.bufsize, &cbuff);
@@ -775,7 +775,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 if (res != -1 && inb == 0)
                 {
-                    nout = cbuff.bufsize - 1 - outb;
+                    size_t nout = cbuff.bufsize - 1 - outb;
                     SEXP el = allocVector(RAWSXP, nout);
                     memcpy(RAW(el), cbuff.data, nout);
                     SET_VECTOR_ELT(ans, i, el);
@@ -787,7 +787,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
                 {
                     cetype_t ienc = CE_NATIVE;
 
-                    nout = cbuff.bufsize - 1 - outb;
+                    size_t nout = cbuff.bufsize - 1 - outb;
                     if (mark)
                     {
                         if (isLatin1)
@@ -956,7 +956,7 @@ next_char:
         {
             /* if starting in UTF-8, use \uxxxx */
             /* This must be the first byte */
-            int clen;
+            size_t clen;
             wchar_t wc;
             clen = utf8toucs(&wc, inbuf);
             if (clen > 0 && inb >= clen)
@@ -1216,7 +1216,7 @@ const char *reEnc(const char *x, cetype_t ce_in, cetype_t ce_out, int subst)
     {
         if (ce_out == CE_UTF8)
         {
-            int nc = 3 * strlen(x) + 1; /* all in BMP */
+            size_t nc = 3 * strlen(x) + 1; /* all in BMP */
             p = R_alloc(nc, 1);
             Rf_AdobeSymbol2utf8(p, x, nc);
             return p;
@@ -1598,7 +1598,6 @@ extern char *mkdtemp(char *template);
 void attribute_hidden InitTempDir()
 {
     char *tmp, *tm, tmp1[PATH_MAX + 11], *p;
-    int len;
 #ifdef Win32
     char tmp2[PATH_MAX];
     int hasspace = 0;
@@ -1665,7 +1664,7 @@ void attribute_hidden InitTempDir()
 #endif
     }
 
-    len = strlen(tmp) + 1;
+    size_t len = strlen(tmp) + 1;
     p = (char *)malloc(len);
     if (!p)
         R_Suicide(_("cannot allocate R_TempDir"));

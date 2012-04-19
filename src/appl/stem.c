@@ -123,9 +123,9 @@ static Rboolean stem_leaf(double *x, int n, double scale, int width, double atom
     do
     {
         if (lo < 0)
-            stem_print(hi, lo, ndigits);
+            stem_print((int)hi, (int)lo, ndigits);
         else
-            stem_print(lo, hi, ndigits);
+            stem_print((int)lo, (int)hi, ndigits);
         j = 0;
         do
         {

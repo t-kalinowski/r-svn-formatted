@@ -112,13 +112,13 @@ R_xlen_t attribute_hidden OneIndex(SEXP x, SEXP s, int len, int partial, SEXP *n
             /* Try for partial match */
             if (partial && indx < 0)
             {
-                len = strlen(translateChar(STRING_ELT(s, pos)));
+                size_t l = strlen(translateChar(STRING_ELT(s, pos)));
                 for (i = 0; i < nx; i++)
                 {
                     const char *tmp = translateChar(STRING_ELT(names, i));
                     if (!tmp[0])
                         continue;
-                    if (!strncmp(tmp, translateChar(STRING_ELT(s, pos)), len))
+                    if (!strncmp(tmp, translateChar(STRING_ELT(s, pos)), l))
                     {
                         if (indx == -1)
                             indx = i;
@@ -198,7 +198,7 @@ R_xlen_t attribute_hidden get1index(SEXP s, SEXP names, R_xlen_t len, int pok, i
     case INTSXP: {
         int i = INTEGER(s)[pos];
         if (i != NA_INTEGER)
-            indx = integerOneIndex(i, len, call);
+            indx = integerOneIndex(i, (int)len, call);
         break;
     }
     case REALSXP: {

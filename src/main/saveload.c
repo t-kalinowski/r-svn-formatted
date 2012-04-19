@@ -1230,7 +1230,7 @@ static SEXP InCHARSXP(FILE *fp, InputRoutines *m, SaveLoadData *d)
 {
     SEXP s;
     char *tmp;
-    int len;
+    size_t len;
 
     /* FIXME: rather than use strlen, use actual length of string when
      * sized strings get implemented in R's save/load code.  */
@@ -1457,9 +1457,9 @@ static int InIntegerAscii(FILE *fp, SaveLoadData *unused)
 
 static void OutStringAscii(FILE *fp, const char *x, SaveLoadData *unused)
 {
-    int i, nbytes;
+    size_t i, nbytes;
     nbytes = strlen(x);
-    fprintf(fp, "%d ", nbytes);
+    fprintf(fp, "%d ", (int)nbytes);
     for (i = 0; i < nbytes; i++)
     {
         switch (x[i])
@@ -1931,7 +1931,8 @@ static void R_WriteMagic(FILE *fp, int number)
 static int R_ReadMagic(FILE *fp)
 {
     unsigned char buf[6];
-    int d1, d2, d3, d4, count;
+    int d1, d2, d3, d4;
+    size_t count;
 
     count = fread((char *)buf, sizeof(char), 5, fp);
     if (count != 5)
@@ -2469,7 +2470,7 @@ SEXP attribute_hidden do_saveToConn(SEXP call, SEXP op, SEXP args, SEXP env)
         Rconn_printf(con, "%s", magic);
     else
     {
-        int len = strlen(magic);
+        size_t len = strlen(magic);
         if (len != con->write(magic, 1, len, con))
             error(_("error writing to connection"));
     }
@@ -2513,7 +2514,7 @@ SEXP attribute_hidden do_loadFromConn2(SEXP call, SEXP op, SEXP args, SEXP env)
     Rconnection con;
     SEXP aenv, res = R_NilValue;
     unsigned char buf[6];
-    int count;
+    size_t count;
     Rboolean wasopen;
     RCNTXT cntxt;
 

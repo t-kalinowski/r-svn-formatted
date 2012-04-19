@@ -68,7 +68,7 @@ static Rboolean isum(int *x, R_xlen_t n, int *value, Rboolean narm, SEXP call)
         *value = NA_INTEGER;
     }
     else
-        *value = s;
+        *value = (int)s;
 
     return (updated);
 }
@@ -88,7 +88,7 @@ static Rboolean rsum(double *x, R_xlen_t n, double *value, Rboolean narm)
             s += x[i];
         }
     }
-    *value = s;
+    *value = (double)s;
 
     return (updated);
 }
@@ -109,8 +109,8 @@ static Rboolean csum(Rcomplex *x, R_xlen_t n, Rcomplex *value, Rboolean narm)
             si += x[i].i;
         }
     }
-    value->r = sr;
-    value->i = si;
+    value->r = (double)sr;
+    value->i = (double)si;
 
     return (updated);
 }
@@ -337,7 +337,7 @@ static Rboolean rprod(double *x, R_xlen_t n, double *value, Rboolean narm)
             s *= x[i];
         }
     }
-    *value = s;
+    *value = (double)s;
 
     return (updated);
 }
@@ -361,8 +361,8 @@ static Rboolean cprod(Rcomplex *x, R_xlen_t n, Rcomplex *value, Rboolean narm)
             si = tr * x[i].i + ti * x[i].r;
         }
     }
-    value->r = sr;
-    value->i = si;
+    value->r = (double)sr;
+    value->i = (double)si;
 
     return (updated);
 }
@@ -420,7 +420,6 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
     double tmp = 0.0, s;
     Rcomplex z, ztmp, zcum = {0.0, 0.0} /* -Wall */;
     int itmp = 0, icum = 0, int_a, real_a, empty, warn = 0 /* dummy */;
-    short iop;
     SEXPTYPE ans_type; /* only INTEGER, REAL, COMPLEX or STRSXP here */
 
     Rboolean narm;
@@ -448,7 +447,7 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
                 s += INTEGER(x)[i];
             }
-            REAL(ans)[0] = s / n;
+            REAL(ans)[0] = (double)s / n;
             break;
         case REALSXP:
             PROTECT(ans = allocVector(REALSXP, 1));
@@ -461,7 +460,7 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                     t += (REAL(x)[i] - s);
                 s += t / n;
             }
-            REAL(ans)[0] = s;
+            REAL(ans)[0] = (double)s;
             break;
         case CPLXSXP:
             PROTECT(ans = allocVector(CPLXSXP, 1));
@@ -482,8 +481,8 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                 s += t / n;
                 si += ti / n;
             }
-            COMPLEX(ans)[0].r = s;
-            COMPLEX(ans)[0].i = si;
+            COMPLEX(ans)[0].r = (double)s;
+            COMPLEX(ans)[0].i = (double)si;
             break;
         default:
             error(R_MSG_type, type2char(TYPEOF(x)));
@@ -513,7 +512,7 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
     updated = 0;
     empty = 1; /*- =1: only zero-length arguments, or NA with na.rm=T */
 
-    iop = PRIMVAL(op);
+    int iop = PRIMVAL(op);
     switch (iop)
     {
     case 0: /* sum */

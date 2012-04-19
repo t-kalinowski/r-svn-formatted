@@ -121,7 +121,7 @@
         else if (!kendall)                                                                                             \
             sum /= n1;                                                                                                 \
                                                                                                                        \
-        ANS(i, j) = sum;                                                                                               \
+        ANS(i, j) = (double)sum;                                                                                       \
     }                                                                                                                  \
     else                                                                                                               \
         ANS(i, j) = NA_REAL

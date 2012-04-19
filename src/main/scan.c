@@ -58,7 +58,7 @@ static R_INLINE int imin2(int x, int y)
 #define MAX_STRINGS 10000
 
 static unsigned char ConsoleBuf[CONSOLE_BUFFER_SIZE + 1], *ConsoleBufp;
-static int ConsoleBufCnt;
+static size_t ConsoleBufCnt;
 static char ConsolePrompt[CONSOLE_PROMPT_SIZE];
 
 typedef struct
@@ -164,7 +164,7 @@ static int Strtoi(const char *nptr, int base)
         res = NA_INTEGER;
     if (errno == ERANGE)
         res = NA_INTEGER;
-    return (res);
+    return (int)res;
 }
 
 static double Strtod(const char *nptr, char **endptr, Rboolean NA, LocalData *d)
@@ -2172,11 +2172,13 @@ SEXP attribute_hidden do_writetable(SEXP call, SEXP op, SEXP args, SEXP rho)
                 {
                     if (!isNull(levels[j]))
                     {
-                        /* We cannot assume factors have integer levels */
+                        /* We do not assume factors have integer levels,
+                           although they should. */
                         if (TYPEOF(xj) == INTSXP)
                             tmp = EncodeElement2(levels[j], INTEGER(xj)[i] - 1, quote_col[j], qmethod, &strBuf, cdec);
                         else if (TYPEOF(xj) == REALSXP)
-                            tmp = EncodeElement2(levels[j], REAL(xj)[i] - 1, quote_col[j], qmethod, &strBuf, cdec);
+                            tmp =
+                                EncodeElement2(levels[j], (int)(REAL(xj)[i] - 1), quote_col[j], qmethod, &strBuf, cdec);
                         else
                             error("column %s claims to be a factor but does not have numeric codes", j + 1);
                     }

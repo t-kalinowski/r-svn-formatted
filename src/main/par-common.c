@@ -67,28 +67,28 @@ else if (streql(what, "cex.main"))
     lengthCheck(what, value, 1, call);
     x = asReal(value);
     posRealCheck(x, what);
-    R_DEV__(cexmain) = x;
+    R_DEV__(cexmain) = (float)x;
 }
 else if (streql(what, "cex.lab"))
 {
     lengthCheck(what, value, 1, call);
     x = asReal(value);
     posRealCheck(x, what);
-    R_DEV__(cexlab) = x;
+    R_DEV__(cexlab) = (float)x;
 }
 else if (streql(what, "cex.sub"))
 {
     lengthCheck(what, value, 1, call);
     x = asReal(value);
     posRealCheck(x, what);
-    R_DEV__(cexsub) = x;
+    R_DEV__(cexsub) = (float)x;
 }
 else if (streql(what, "cex.axis"))
 {
     lengthCheck(what, value, 1, call);
     x = asReal(value);
     posRealCheck(x, what);
-    R_DEV__(cexaxis) = x;
+    R_DEV__(cexaxis) = (float)x;
 }
 else if (streql(what, "col"))
 {
@@ -266,10 +266,11 @@ else if (streql(what, "pch"))
 }
 else if (streql(what, "smo"))
 {
+    /* FIXME: not real */
     lengthCheck(what, value, 1, call);
     x = asReal(value);
     nonnegRealCheck(x, what);
-    R_DEV__(smo) = x;
+    R_DEV__(smo) = (int)x;
 }
 else if (streql(what, "srt"))
 {
