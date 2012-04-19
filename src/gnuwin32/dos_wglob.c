@@ -206,8 +206,8 @@ int dos_wglob(const wchar_t *pattern, int flags, int (*errfunc)(const wchar_t *,
     if (patnext == pattern && bufend - bufnext > 2 && pattern[0] == BG_SEP2 && pattern[1] == BG_SEP2 &&
         pattern[2] != BG_SEP2)
     {
-        *bufnext += pattern[0];
-        *bufnext += pattern[1];
+        *bufnext++ = pattern[0];
+        *bufnext++ = pattern[1];
         patnext += 2;
     }
 #endif
