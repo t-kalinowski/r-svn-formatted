@@ -347,9 +347,9 @@ static SEXP rep1(SEXP s, SEXP ncopy)
             SET_STRING_ELT(a, i, STRING_ELT(s, i % ns));
         break;
     case LISTSXP: {
-        int i = 0;
+        int i = 0, nss = ns;
         for (t = a; t != R_NilValue; t = CDR(t), i++)
-            SETCAR(t, duplicate(CAR(nthcdr(s, (i % ns)))));
+            SETCAR(t, duplicate(CAR(nthcdr(s, (i % nss)))));
     }
     break;
     case VECSXP:

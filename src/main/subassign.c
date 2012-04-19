@@ -87,10 +87,6 @@
 #include "Defn.h"
 #include <R_ext/RS.h> /* for test of S4 objects */
 
-#if 0
-static SEXP gcall;
-#endif
-
 /* EnlargeVector() takes a vector "x" and changes its length to "newlen".
    This allows to assign values "past the end" of the vector or list.
    Note that, unlike S, we only extend as much as is necessary.
@@ -195,7 +191,7 @@ static SEXP embedInVector(SEXP v)
    This does not coerce when assigning into a list.
 */
 
-static int SubassignTypeFix(SEXP *x, SEXP *y, int stretch, int level, SEXP call)
+static int SubassignTypeFix(SEXP *x, SEXP *y, R_xlen_t stretch, int level, SEXP call)
 {
     /* A rather pointless optimization, but level 2 used to be handled
        differently */
@@ -472,7 +468,8 @@ static SEXP VectorAssign(SEXP call, SEXP x, SEXP s, SEXP y)
 {
     SEXP dim, indx, newnames;
     R_xlen_t i, ii, n, nx, ny;
-    int iy, stretch, which;
+    int iy, which;
+    R_xlen_t stretch;
     double ry;
 
     if (isNull(x) && isNull(y))
@@ -1334,7 +1331,8 @@ static SEXP GetOneIndex(SEXP sub, int ind)
 static SEXP SimpleListAssign(SEXP call, SEXP x, SEXP s, SEXP y, int ind)
 {
     SEXP indx, sub = CAR(s);
-    int ii, n, nx, stretch = 1;
+    int ii, n, nx;
+    R_xlen_t stretch = 1;
 
     if (length(s) > 1)
         error(_("invalid number of subscripts to list assign"));
@@ -1385,7 +1383,8 @@ static SEXP SimpleListAssign(SEXP call, SEXP x, SEXP s, SEXP y, int ind)
 static SEXP listRemove(SEXP x, SEXP s, int ind)
 {
     SEXP a, pa, px;
-    int i, ii, *indx, ns, nx, stretch = 0;
+    int i, ii, *indx, ns, nx;
+    R_xlen_t stretch = 0;
     const void *vmax;
 
     vmax = vmaxget();
@@ -1636,8 +1635,8 @@ SEXP attribute_hidden do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP dims, indx, names, newname, subs, x, xtop, xup, y, thesub = R_NilValue, xOrig = R_NilValue;
-    int i, ndims, nsubs, stretch, which, len = 0 /* -Wall */;
-    R_xlen_t offset, off = -1; /* -Wall */
+    int i, ndims, nsubs, which, len = 0 /* -Wall */;
+    R_xlen_t stretch, offset, off = -1; /* -Wall */
     Rboolean S4, recursed = FALSE;
 
     PROTECT(args);
@@ -1721,7 +1720,7 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
             error(_("[[ ]] with missing subscript"));
         if (nsubs == 1)
         {
-            offset = OneIndex(x, thesub, length(x), 0, &newname, recursed ? len - 1 : -1, R_NilValue);
+            offset = OneIndex(x, thesub, xlength(x), 0, &newname, recursed ? len - 1 : -1, R_NilValue);
             if (isVectorList(x) && isNull(y))
             {
                 x = DeleteOneVectorListItem(x, offset);
@@ -1734,7 +1733,7 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
             }
             if (offset < 0)
                 error(_("[[ ]] subscript out of bounds"));
-            if (offset >= LENGTH(x))
+            if (offset >= XLENGTH(x))
                 stretch = offset + 1;
         }
         else
@@ -1746,8 +1745,8 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
             for (i = 0; i < ndims; i++)
             {
                 INTEGER(indx)
-                [i] = get1index(CAR(subs), isNull(names) ? R_NilValue : VECTOR_ELT(names, i), INTEGER(dims)[i],
-                                /*partial ok*/ FALSE, -1, call);
+                [i] = (int)get1index(CAR(subs), isNull(names) ? R_NilValue : VECTOR_ELT(names, i), INTEGER(dims)[i],
+                                     /*partial ok*/ FALSE, -1, call);
                 subs = CDR(subs);
                 if (INTEGER(indx)[i] < 0 || INTEGER(indx)[i] >= INTEGER(dims)[i])
                     error(_("[[ ]] subscript out of bounds"));
@@ -1940,8 +1939,8 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
             for (i = 0; i < ndims; i++)
             {
                 INTEGER(indx)
-                [i] = get1index(CAR(subs), CAR(names), INTEGER(dims)[i],
-                                /*partial ok*/ FALSE, -1, call);
+                [i] = (int)get1index(CAR(subs), CAR(names), INTEGER(dims)[i],
+                                     /*partial ok*/ FALSE, -1, call);
                 subs = CDR(subs);
                 if (INTEGER(indx)[i] < 0 || INTEGER(indx)[i] >= INTEGER(dims)[i])
                     error(_("[[ ]] subscript (%d) out of bounds"), i + 1);

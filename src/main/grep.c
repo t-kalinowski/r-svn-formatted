@@ -3021,7 +3021,7 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
                     {
                         extract_match_and_groups(use_UTF8, ovector, capture_count,
                                                  // don't use this for large i
-                                                 INTEGER(ans) + i, INTEGER(matchlen) + i, is + i, il + i, s, n);
+                                                 INTEGER(ans) + i, INTEGER(matchlen) + i, is + i, il + i, s, (int)n);
                     }
                     else
                     {

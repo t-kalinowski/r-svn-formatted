@@ -845,8 +845,7 @@ static int listgreater(int i, int j, SEXP key, Rboolean nalast, Rboolean decreas
         }                                                                                                              \
     }
 
-#define NI 16
-static const int sincs[NI] = {1073790977, 268460033, 67121153, 16783361, 4197377, 1050113, 262913, 65921,
+static const int sincs[16] = {1073790977, 268460033, 67121153, 16783361, 4197377, 1050113, 262913, 65921,
                               16577,      4193,      1073,     281,      77,      23,      8,      1};
 
 // Needs indx set to  0:(n-1)  initially :
@@ -858,7 +857,7 @@ static void orderVector(int *indx, int n, SEXP key, Rboolean nalast, Rboolean de
 
     for (t = 0; sincs[t] > n; t++)
         ;
-    for (h = sincs[t]; t < NI; h = sincs[++t])
+    for (h = sincs[t]; t < 16; h = sincs[++t])
         for (i = h; i < n; i++)
         {
             itmp = indx[i];
@@ -880,7 +879,7 @@ static void orderVector(int *indx, int n, SEXP key, Rboolean nalast, Rboolean de
             indx[t] = t; /* indx[] <- 0:(n-1) */                                                                       \
         for (t = 0; sincs[t] > n; t++)                                                                                 \
             ;                                                                                                          \
-        for (int h = sincs[t]; t < NI; h = sincs[++t])                                                                 \
+        for (int h = sincs[t]; t < 16; h = sincs[++t])                                                                 \
             for (int i = h; i < n; i++)                                                                                \
             {                                                                                                          \
                 int itmp = indx[i], j = i;                                                                             \
@@ -905,7 +904,7 @@ ORD_2_BODY(R_order2dbl_int, double, int, dblint2greater)
 ORD_2_BODY(R_order2int_dbl, int, double, intdbl2greater)
 
 #define sort2_with_index                                                                                               \
-    for (h = sincs[t]; t < NI; h = sincs[++t])                                                                         \
+    for (h = sincs[t]; t < 16; h = sincs[++t])                                                                         \
         for (i = lo + h; i <= hi; i++)                                                                                 \
         {                                                                                                              \
             itmp = indx[i];                                                                                            \

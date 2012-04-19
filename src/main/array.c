@@ -545,7 +545,7 @@ static void matprod(double *x, int nrx, int ncx, double *y, int nry, int ncy, do
                     sum = 0.0;
                     for (j = 0; j < ncx; j++)
                         sum += x[i + j * NRX] * y[j + k * NRY];
-                    z[i + k * nrx] = sum;
+                    z[i + k * nrx] = (double)sum;
                 }
         }
         else
@@ -1523,7 +1523,7 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
             }
             if (OP == 1)
                 sum /= cnt;
-            REAL(ans)[j] = sum;
+            REAL(ans)[j] = (double)sum;
         }
     }
 
@@ -1576,7 +1576,7 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
                 }
             }
             for (i = 0; i < n; i++)
-                REAL(ans)[i] = rans[i];
+                REAL(ans)[i] = (double)rans[i];
             if (n > 10000)
                 Free(rans);
             UNPROTECT(1);
@@ -1621,7 +1621,7 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
             }
             if (OP == 3)
                 sum /= cnt; /* gives NaN for cnt = 0 */
-            REAL(ans)[i] = sum;
+            REAL(ans)[i] = (double)sum;
         }
     }
 

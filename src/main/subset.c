@@ -152,7 +152,8 @@ static SEXP ExtractSubset(SEXP x, SEXP result, SEXP indx, SEXP call)
 static SEXP VectorSubset(SEXP x, SEXP s, SEXP call)
 {
     R_xlen_t n;
-    int mode, stretch = 1;
+    int mode;
+    R_xlen_t stretch = 1;
     SEXP indx, result, attrib, nattrib;
 
     if (s == R_MissingArg)
@@ -997,9 +998,8 @@ SEXP attribute_hidden do_subset2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (len > 1)
             x = vectorIndex(x, thesub, 0, len - 1, pok, call);
 
-        // FIXME, long vector
-        offset = get1index(thesub, getAttrib(x, R_NamesSymbol), length(x), pok, len > 1 ? len - 1 : -1, call);
-        if (offset < 0 || offset >= length(x))
+        offset = get1index(thesub, getAttrib(x, R_NamesSymbol), xlength(x), pok, len > 1 ? len - 1 : -1, call);
+        if (offset < 0 || offset >= xlength(x))
         {
             /* a bold attempt to get the same behaviour for $ and [[ */
             if (offset < 0 && (isNewList(x) || isExpression(x) || isList(x) || isLanguage(x)))
@@ -1026,8 +1026,8 @@ SEXP attribute_hidden do_subset2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
         for (i = 0; i < nsubs; i++)
         {
             INTEGER(indx)
-            [i] =
-                get1index(CAR(subs), (i < ndn) ? VECTOR_ELT(dimnames, i) : R_NilValue, INTEGER(indx)[i], pok, -1, call);
+            [i] = (int)get1index(CAR(subs), (i < ndn) ? VECTOR_ELT(dimnames, i) : R_NilValue, INTEGER(indx)[i], pok, -1,
+                                 call);
             subs = CDR(subs);
             if (INTEGER(indx)[i] < 0 || INTEGER(indx)[i] >= INTEGER(dims)[i])
                 errorcall(call, R_MSG_subs_o_b);
@@ -1041,7 +1041,9 @@ SEXP attribute_hidden do_subset2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (isPairList(x))
     {
-        ans = CAR(nthcdr(x, offset)); // FIXME
+        if (offset > INT_MAX)
+            error("invalid subscript for pairlist");
+        ans = CAR(nthcdr(x, (int)offset));
         if (named_x > NAMED(ans))
             SET_NAMED(ans, named_x);
     }
