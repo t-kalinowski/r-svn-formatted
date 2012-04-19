@@ -423,7 +423,8 @@ static int R_AppendFile(SEXP file1, SEXP file2)
 {
     FILE *fp1, *fp2;
     char buf[APPENDBUFSIZE];
-    int nchar, status = 0;
+    size_t nchar;
+    int status = 0;
     if ((fp1 = RC_fopen(file1, "ab", TRUE)) == NULL)
     {
         return 0;
@@ -962,9 +963,12 @@ SEXP attribute_hidden do_fileinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
 #if defined STAT_TIMESPEC
             /* POSIX 2008 changed this to a struct timespec st_mtim etc
                Not all OSes (e.g. Darwin) agree on this. */
-            REAL(mtime)[i] = (double)STAT_TIMESPEC(sb, st_mtim).tv_sec + 1e-9 * STAT_TIMESPEC(sb, st_mtim).tv_nsec;
-            REAL(ctime)[i] = (double)STAT_TIMESPEC(sb, st_ctim).tv_sec + 1e-9 * STAT_TIMESPEC(sb, st_ctim).tv_nsec;
-            REAL(atime)[i] = (double)STAT_TIMESPEC(sb, st_atim).tv_sec + 1e-9 * STAT_TIMESPEC(sb, st_atim).tv_nsec;
+            REAL(mtime)
+            [i] = (double)STAT_TIMESPEC(sb, st_mtim).tv_sec + 1e-9 * (double)STAT_TIMESPEC(sb, st_mtim).tv_nsec;
+            REAL(ctime)
+            [i] = (double)STAT_TIMESPEC(sb, st_ctim).tv_sec + 1e-9 * (double)STAT_TIMESPEC(sb, st_ctim).tv_nsec;
+            REAL(atime)
+            [i] = (double)STAT_TIMESPEC(sb, st_atim).tv_sec + 1e-9 * (double)STAT_TIMESPEC(sb, st_atim).tv_nsec;
 #else
             /* FIXME: there are higher-resolution ways to do this on Windows */
             REAL(mtime)[i] = (double)sb.st_mtime;

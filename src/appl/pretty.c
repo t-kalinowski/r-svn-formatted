@@ -177,7 +177,7 @@ double R_pretty0(double *lo, double *up, int *ndiv, int min_n, double shrink_sml
     while (nu * unit < *up - rounding_eps * unit)
         nu++;
 
-    k = .5 + nu - ns;
+    k = (int)(0.5 + nu - ns);
     if (k < min_n)
     {
         /* ensure that	nu - ns	 == min_n */

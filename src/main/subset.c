@@ -1094,7 +1094,7 @@ enum pmatch
    Tags are always in the native charset.
  */
 /* Returns: */
-static enum pmatch pstrmatch(SEXP target, SEXP input, int slen)
+static enum pmatch pstrmatch(SEXP target, SEXP input, size_t slen)
 {
     const char *st = "";
 

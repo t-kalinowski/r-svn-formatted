@@ -311,7 +311,7 @@ static SEXP AllocTerm(void)
 static void SetBit(SEXP term, int whichBit, int value)
 {
     int word, offset;
-    word = (whichBit - 1) / WORDSIZE;
+    word = (int)((whichBit - 1) / WORDSIZE);
     offset = (WORDSIZE - whichBit) % WORDSIZE;
     if (value)
         ((unsigned *)INTEGER(term))[word] |= ((unsigned)1 << offset);
@@ -325,7 +325,7 @@ static void SetBit(SEXP term, int whichBit, int value)
 static int GetBit(SEXP term, int whichBit)
 {
     unsigned int word, offset;
-    word = (whichBit - 1) / WORDSIZE;
+    word = (int)((whichBit - 1) / WORDSIZE);
     offset = (WORDSIZE - whichBit) % WORDSIZE;
     return ((((unsigned *)INTEGER(term))[word]) >> offset) & 1;
 }
@@ -853,7 +853,7 @@ SEXP attribute_hidden do_termsform(SEXP call, SEXP op, SEXP args, SEXP rho)
     a = CDR(a);
 
     nvar = length(varlist) - 1;
-    nwords = (nvar - 1) / WORDSIZE + 1;
+    nwords = (int)((nvar - 1) / WORDSIZE + 1);
 
     /* Step 2: Recode the model terms in binary form */
     /* and at the same time, expand the model formula. */
@@ -1013,7 +1013,7 @@ SEXP attribute_hidden do_termsform(SEXP call, SEXP op, SEXP args, SEXP rho)
             {
                 if (l > 0)
                     l += 1;
-                l += strlen(CHAR(STRING_ELT(varnames, i - 1)));
+                l += (int)strlen(CHAR(STRING_ELT(varnames, i - 1)));
             }
         }
         char cbuf[l + 1];
@@ -1052,7 +1052,7 @@ SEXP attribute_hidden do_termsform(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             const char *ss = translateChar(STRING_ELT(specials, j));
             SET_TAG(t, install(ss));
-            n = strlen(ss);
+            n = (int)strlen(ss);
             SETCAR(t, allocVector(INTSXP, 0));
             k = 0;
             for (l = 0; l < nvar; l++)
@@ -1917,12 +1917,12 @@ alldone:;
         }
         if (dk > INT_MAX)
             error(_("term %d would require %.0g columns"), j + 1, dk);
-        INTEGER(count)[j] = dk;
+        INTEGER(count)[j] = (int)dk;
         dnc = dnc + dk;
     }
     if (dnc > INT_MAX)
         error(_("matrix would require %.0g columns"), dnc);
-    nc = dnc;
+    nc = (int)dnc;
 
     /* Record which columns of the design matrix are associated */
     /* with which model terms. */

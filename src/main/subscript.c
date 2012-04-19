@@ -474,13 +474,23 @@ SEXP attribute_hidden strmat2intmat(SEXP s, SEXP dnamelist, SEXP call)
     return si;
 }
 
-static SEXP nullSubscript(int n)
+static SEXP nullSubscript(R_xlen_t n)
 {
-    int i;
     SEXP indx;
-    indx = allocVector(INTSXP, n);
-    for (i = 0; i < n; i++)
-        INTEGER(indx)[i] = i + 1;
+#ifdef LONG_VECTOR_SUPPORT
+    if (n > INT_MAX)
+    {
+        indx = allocVector(REALSXP, n);
+        for (R_xlen_t i = 0; i < n; i++)
+            REAL(indx)[i] = (double)(i + 1);
+    }
+    else
+#endif
+    {
+        indx = allocVector(INTSXP, n);
+        for (int i = 0; i < n; i++)
+            INTEGER(indx)[i] = i + 1;
+    }
     return indx;
 }
 
@@ -489,7 +499,7 @@ static SEXP logicalSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch
     R_xlen_t count, i, nmax;
     int canstretch;
     SEXP indx;
-    canstretch = *stretch;
+    canstretch = *stretch > 0;
     if (!canstretch && ns > nx)
     {
         ECALL(call, _("(subscript) logical subscript too long"));
@@ -502,7 +512,7 @@ static SEXP logicalSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch
     if (nmax > INT_MAX)
     {
         count = 0;
-        for (i = 0; i < nmax; i++)
+        for (R_xlen_t i = 0; i < nmax; i++)
             if (LOGICAL(s)[i % ns])
                 count++;
         indx = allocVector(INTSXP, count);
@@ -513,7 +523,7 @@ static SEXP logicalSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch
                 if (LOGICAL(s)[i % ns] == NA_LOGICAL)
                     REAL(indx)[count++] = NA_REAL;
                 else
-                    REAL(indx)[count++] = i + 1;
+                    REAL(indx)[count++] = (double)(i + 1);
             }
         return indx;
     }
@@ -532,7 +542,7 @@ static SEXP logicalSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch
             else if (i >= INT_MAX)
                 error("logical subscript selected >= INT_MAX");
             else
-                INTEGER(indx)[count++] = i + 1;
+                INTEGER(indx)[count++] = (int)(i + 1);
         }
     return indx;
 }
@@ -580,7 +590,7 @@ static SEXP integerSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch
     R_xlen_t i;
     int ii, min, max, canstretch;
     Rboolean isna = FALSE;
-    canstretch = *stretch;
+    canstretch = *stretch > 0;
     *stretch = 0;
     min = 0;
     max = 0;
@@ -626,7 +636,7 @@ static SEXP realSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch, S
     int canstretch;
     double ii, min, max;
     Rboolean isna = FALSE;
-    canstretch = *stretch;
+    canstretch = *stretch > 0;
     *stretch = 0;
     min = 0;
     max = 0;
@@ -674,7 +684,7 @@ static SEXP realSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch, S
                 dx = REAL(s)[i];
                 if (R_FINITE(dx) && dx != 0 && -dx <= nx)
                 {
-                    ix = -dx - 1;
+                    ix = (int)(-dx - 1);
                     LOGICAL(indx)[ix] = 0;
                 }
             }
@@ -717,7 +727,7 @@ static SEXP realSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch, S
                 if (!R_FINITE(ds))
                     ia = NA_INTEGER;
                 else
-                    ia = ds;
+                    ia = (int)ds;
                 if (ia != 0)
                     INTEGER(indx)[cnt++] = ia;
             }
@@ -727,7 +737,7 @@ static SEXP realSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch, S
             indx = allocVector(REALSXP, cnt);
             for (i = 0, cnt = 0; i < ns; i++)
             {
-                R_xlen_t ia = REAL(s)[i];
+                R_xlen_t ia = (R_xlen_t)REAL(s)[i];
                 if (ia != 0)
                     REAL(indx)[cnt++] = REAL(s)[i];
             }
@@ -756,7 +766,7 @@ static SEXP stringSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, SEXP names, R_xlen
 {
     SEXP indx, indexnames;
     R_xlen_t i, j, nnames, extra, sub;
-    int canstretch = *stretch;
+    int canstretch = *stretch > 0;
     /* product may overflow, so check factors as well. */
     Rboolean usehashing = (((ns > 1000 && nx) || (nx > 1000 && ns)) || (ns * nx > 15 * nx + ns));
 
@@ -805,7 +815,7 @@ static SEXP stringSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, SEXP names, R_xlen
                     }
                 }
             }
-            INTEGER(indx)[i] = sub;
+            INTEGER(indx)[i] = (int)sub;
         }
     }
 
@@ -832,7 +842,7 @@ static SEXP stringSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, SEXP names, R_xlen
             sub = extra;
             SET_VECTOR_ELT(indexnames, i, STRING_ELT(s, i));
         }
-        INTEGER(indx)[i] = sub;
+        INTEGER(indx)[i] = (int)sub;
     }
     /* We return the new names as the names attribute of the returned
        subscript vector. */
@@ -976,8 +986,6 @@ static SEXP vectorSubscript(R_xlen_t nx, SEXP s, R_xlen_t *stretch, SEXP x, SEXP
         *stretch = 0;
         if (s == R_MissingArg)
         {
-            /* FIXME: check that this is not a long vector
-               or use doubles */
             ans = nullSubscript(nx);
             break;
         }

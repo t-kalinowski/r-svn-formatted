@@ -795,7 +795,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
                         else if (isUTF8)
                             ienc = CE_UTF8;
                     }
-                    SET_STRING_ELT(ans, i, mkCharLenCE(cbuff.data, nout, ienc));
+                    SET_STRING_ELT(ans, i, mkCharLenCE(cbuff.data, (int)nout, ienc));
                 }
                 else
                     SET_STRING_ELT(ans, i, NA_STRING);
