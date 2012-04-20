@@ -888,7 +888,7 @@ SEXP attribute_hidden do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
                 xi = CallocCharBuf(strlen(CHAR(STRING_ELT(x, i))));
                 strcpy(xi, translateChar(STRING_ELT(x, i)));
                 for (p = xi; *p != '\0'; p++)
-                    *p = ul ? toupper(*p) : tolower(*p);
+                    *p = ul ? (char)toupper(*p) : (char)tolower(*p);
                 SET_STRING_ELT(y, i, markKnown(xi, STRING_ELT(x, i)));
                 Free(xi);
             }
@@ -1385,7 +1385,7 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
         struct tr_spec *trs_new, **trs_new_ptr;
 
         for (unsigned int ii = 0; ii <= UCHAR_MAX; ii++)
-            xtable[ii] = ii;
+            xtable[ii] = (unsigned char)ii;
 
         /* Initialize the old and new tr_spec lists. */
         trs_old = Calloc(1, struct tr_spec);
