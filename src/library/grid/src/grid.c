@@ -3138,7 +3138,7 @@ SEXP L_points(SEXP x, SEXP y, SEXP pch, SEXP size)
                 }
                 else if (isReal(pch))
                 {
-                    ipch = R_FINITE(REAL(pch)[i % npch]) ? REAL(pch)[i % npch] : NA_INTEGER;
+                    ipch = R_FINITE(REAL(pch)[i % npch]) ? (int)REAL(pch)[i % npch] : NA_INTEGER;
                 }
                 else
                     error(_("invalid plotting symbol"));
