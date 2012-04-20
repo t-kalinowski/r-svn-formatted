@@ -455,7 +455,7 @@ static R_INLINE int gi(SEXP indx, R_xlen_t i)
     if (TYPEOF(indx) == REALSXP)
     {
         double d = REAL(indx)[i];
-        if (!R_FINITE(d) || d < -INT_MAX || d > INT_MAX)
+        if (!R_FINITE(d) || d < -R_SHORT_LEN_MAX || d > R_SHORT_LEN_MAX)
             return NA_INTEGER;
         return (int)d;
     }

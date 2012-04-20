@@ -324,7 +324,7 @@ SEXP attribute_hidden vectorIndex(SEXP x, SEXP thesub, int start, int stop, int 
             errorcall(call, _("no such index at level %d\n"), i + 1);
         if (isPairList(x))
         {
-            if (offset > INT_MAX)
+            if (offset > R_SHORT_LEN_MAX)
                 error("invalid subscript for pairlist");
             x = CAR(nthcdr(x, (int)offset));
         }
@@ -361,7 +361,7 @@ SEXP attribute_hidden mat2indsub(SEXP dims, SEXP s, SEXP call)
     R_len_t len = 1;
     for (j = 0; j < LENGTH(dims); j++)
         len *= INTEGER(dims)[j];
-    lvec = len > INT_MAX;
+    lvec = len > R_SHORT_LEN_MAX;
 
     if (lvec)
     {
@@ -494,7 +494,7 @@ static SEXP nullSubscript(R_xlen_t n)
 {
     SEXP indx;
 #ifdef LONG_VECTOR_SUPPORT
-    if (n > INT_MAX)
+    if (n > R_SHORT_LEN_MAX)
     {
         indx = allocVector(REALSXP, n);
         for (R_xlen_t i = 0; i < n; i++)
@@ -525,7 +525,7 @@ static SEXP logicalSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch
     if (ns == 0)
         return (allocVector(INTSXP, 0));
 #ifdef LONG_VECTOR_SUPPORT
-    if (nmax > INT_MAX)
+    if (nmax > R_SHORT_LEN_MAX)
     {
         count = 0;
         for (R_xlen_t i = 0; i < nmax; i++)
@@ -555,8 +555,8 @@ static SEXP logicalSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch
         {
             if (LOGICAL(s)[i % ns] == NA_LOGICAL)
                 INTEGER(indx)[count++] = NA_INTEGER;
-            else if (i >= INT_MAX)
-                error("logical subscript selected >= INT_MAX");
+            else if (i >= R_SHORT_LEN_MAX)
+                error("logical subscript selected >= R_SHORT_LEN_MAX");
             else
                 INTEGER(indx)[count++] = (int)(i + 1);
         }
@@ -672,7 +672,7 @@ static SEXP realSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch, S
     if (max > nx)
     {
 #ifndef LONG_VECTOR_SUPPORT
-        if (max > INT_MAX)
+        if (max > R_SHORT_LEN_MAX)
         {
             ECALL(call, _("subscript too large for 32-bit R"));
         }
@@ -726,7 +726,7 @@ static SEXP realSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch, S
             double ds = REAL(s)[i];
             if (!R_FINITE(ds))
             {
-                if (ds > INT_MAX)
+                if (ds > R_SHORT_LEN_MAX)
                     int_ok = FALSE;
                 cnt++;
             }
@@ -895,7 +895,7 @@ attribute_hidden SEXP int_arraySubscript(int dim, SEXP s, SEXP dims, SEXP x, SEX
     case INTSXP:
         return integerSubscript(s, ns, nd, &stretch, call);
     case REALSXP:
-        /* We don't yet allow subscripts > INT_MAX */
+        /* We don't yet allow subscripts > R_SHORT_LEN_MAX */
         PROTECT(tmp = coerceVector(s, INTSXP));
         tmp = integerSubscript(tmp, ns, nd, &stretch, call);
         UNPROTECT(1);
