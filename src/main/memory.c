@@ -2566,6 +2566,8 @@ SEXP allocVector(SEXPTYPE type, R_xlen_t length)
                 R_ReportAllocation(hdrsize + size * sizeof(VECREC));
 #endif
             }
+            else
+                s = NULL; /* suppress warning */
             if (!success)
             {
                 double dsize = (double)size * sizeof(VECREC) / 1024.0;
