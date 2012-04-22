@@ -1136,7 +1136,7 @@ static DL_FUNC R_FindNativeSymbolFromDLL(char *name, DllReference *dll, R_Regist
 
 SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    void **cargs;
+    void **cargs, **cargs0 = NULL /* -Wall */;
     int dup, naok, na, nargs, Fort;
     Rboolean havenames, copy = R_CBoundsCheck; /* options(CboundsCheck) */
     DL_FUNC ofun = NULL;
@@ -1435,6 +1435,24 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                 strcpy(fptr, ss);
                 cargs[na] = (void *)fptr;
             }
+            else if (copy)
+            {
+                char **cptr = (char **)R_alloc(n, sizeof(char *));
+                for (R_xlen_t i = 0; i < n; i++)
+                {
+                    const char *ss = translateChar(STRING_ELT(s, i));
+                    int n = strlen(ss) + 1 + 2 * NG;
+                    char *ptr = (char *)R_alloc(n, sizeof(char));
+                    memset(ptr, FILL, n);
+                    cptr[i] = ptr + NG;
+                    strcpy(cptr[i], ss);
+                }
+                cargs[na] = (void *)cptr;
+#ifdef R_MEMORY_PROFILING
+                if (RTRACE(s))
+                    memtrace_report(s, cargs[na]);
+#endif
+            }
             else
             {
                 char **cptr = (char **)R_alloc(n, sizeof(char *));
@@ -1492,6 +1510,11 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         if (nprotect)
             UNPROTECT(nprotect);
+    }
+    if (copy)
+    {
+        cargs0 = (void **)R_alloc(nargs, sizeof(void *));
+        memcpy(cargs0, cargs, nargs * sizeof(void *));
     }
 
     switch (nargs)
@@ -2116,6 +2139,38 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                         buf[255] = '\0';
                         PROTECT(s = allocVector(type, 1));
                         SET_STRING_ELT(s, 0, mkChar(buf));
+                        UNPROTECT(1);
+                    }
+                    else if (copy)
+                    {
+                        SEXP ss = arg;
+                        PROTECT(s = allocVector(type, n));
+                        char **cptr = (char **)p, **cptr0 = (char **)cargs0[na];
+                        for (R_xlen_t i = 0; i < n; i++)
+                        {
+                            unsigned char *ptr = (unsigned char *)cptr[i];
+                            SET_STRING_ELT(s, i, mkChar(cptr[i]));
+                            if (cptr[i] == cptr0[i])
+                            {
+                                for (int i = 0; i < NG; i++)
+                                    if (*--ptr != FILL)
+                                        error("array under-run in .Cs(\"%s\") in character argument %d, element %d\n",
+                                              symName, na + 1, i + 1);
+                                ptr = (unsigned char *)cptr[i];
+                                ptr += strlen(translateChar(STRING_ELT(ss, i))) + 1;
+                                for (int i = 0; i < NG; i++)
+                                    if (*ptr++ != FILL)
+                                        error("array over-run in .Cs(\"%s\") in character argument %d, element %d\n",
+                                              symName, na + 1, i + 1);
+                            }
+                        }
+#if R_MEMORY_PROFILING
+                        if (RTRACE(arg))
+                        {
+                            memtrace_report(p, s);
+                            SET_RTRACE(s, 1);
+                        }
+#endif
                         UNPROTECT(1);
                     }
                     else
