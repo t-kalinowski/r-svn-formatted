@@ -1212,6 +1212,8 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
 
     /* Convert the arguments for use in foreign function calls. */
     cargs = (void **)R_alloc(nargs, sizeof(void *));
+    if (copy)
+        cargs0 = (void **)R_alloc(nargs, sizeof(void *));
     for (na = 0, pa = args; pa != R_NilValue; pa = CDR(pa), na++)
     {
         if (checkTypes && !comparePrimitiveTypes(checkTypes[na], CAR(pa), dup))
@@ -1437,17 +1439,18 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             else if (copy)
             {
-                char **cptr = (char **)R_alloc(n, sizeof(char *));
+                char **cptr = (char **)R_alloc(n, sizeof(char *)), **cptr0 = (char **)R_alloc(n, sizeof(char *));
                 for (R_xlen_t i = 0; i < n; i++)
                 {
                     const char *ss = translateChar(STRING_ELT(s, i));
                     int n = strlen(ss) + 1 + 2 * NG;
                     char *ptr = (char *)R_alloc(n, sizeof(char));
                     memset(ptr, FILL, n);
-                    cptr[i] = ptr + NG;
+                    cptr[i] = cptr0[i] = ptr + NG;
                     strcpy(cptr[i], ss);
                 }
                 cargs[na] = (void *)cptr;
+                cargs0[na] = (void *)cptr0;
 #ifdef R_MEMORY_PROFILING
                 if (RTRACE(s))
                     memtrace_report(s, cargs[na]);
@@ -1510,11 +1513,6 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         if (nprotect)
             UNPROTECT(nprotect);
-    }
-    if (copy)
-    {
-        cargs0 = (void **)R_alloc(nargs, sizeof(void *));
-        memcpy(cargs0, cargs, nargs * sizeof(void *));
     }
 
     switch (nargs)
@@ -2154,13 +2152,13 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                             {
                                 for (int i = 0; i < NG; i++)
                                     if (*--ptr != FILL)
-                                        error("array under-run in .Cs(\"%s\") in character argument %d, element %d\n",
+                                        error("array under-run in .C(\"%s\") in character argument %d, element %d\n",
                                               symName, na + 1, i + 1);
                                 ptr = (unsigned char *)cptr[i];
                                 ptr += strlen(translateChar(STRING_ELT(ss, i))) + 1;
                                 for (int i = 0; i < NG; i++)
                                     if (*ptr++ != FILL)
-                                        error("array over-run in .Cs(\"%s\") in character argument %d, element %d\n",
+                                        error("array over-run in .C(\"%s\") in character argument %d, element %d\n",
                                               symName, na + 1, i + 1);
                             }
                         }
