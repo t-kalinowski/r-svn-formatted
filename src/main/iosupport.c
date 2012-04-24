@@ -201,7 +201,7 @@ int attribute_hidden R_TextBufferInit(TextBuffer *txtb, SEXP text)
         {
             if (STRING_ELT(text, i) != R_NilValue)
             {
-                k = strlen(translateChar(STRING_ELT(text, i)));
+                k = (int)strlen(translateChar(STRING_ELT(text, i)));
                 if (k > l)
                     l = k;
             }

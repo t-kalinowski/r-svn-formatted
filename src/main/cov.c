@@ -113,7 +113,7 @@
                     ysd /= n1;                                                                                         \
                     sum /= n1;                                                                                         \
                 }                                                                                                      \
-                sum /= (sqrt(xsd) * sqrt(ysd));                                                                        \
+                sum /= (sqrtl(xsd) * sqrtl(ysd));                                                                      \
                 if (sum > 1.)                                                                                          \
                     sum = 1.;                                                                                          \
             }                                                                                                          \
@@ -211,7 +211,7 @@ static void cov_pairwise2(int n, int ncx, int ncy, double *x, double *y, double 
                     sum += (xx[k] - tmp);                                                                              \
             tmp = tmp + sum / nobs;                                                                                    \
         }                                                                                                              \
-        _X_##m[i] = tmp;                                                                                               \
+        _X_##m[i] = (double)tmp;                                                                                       \
     }
 
 /* This uses two passes for better accuracy */
@@ -236,7 +236,7 @@ static void cov_pairwise2(int n, int ncx, int ncy, double *x, double *y, double 
                 tmp = tmp + sum / n;                                                                                   \
             }                                                                                                          \
         }                                                                                                              \
-        _X_##m[i] = tmp;                                                                                               \
+        _X_##m[i] = (double)tmp;                                                                                       \
     }
 
 static void cov_complete1(int n, int ncx, double *x, double *xm, int *ind, double *ans, Rboolean *sd_0, Rboolean cor,
@@ -264,7 +264,7 @@ static void cov_complete1(int n, int ncx, double *x, double *xm, int *ind, doubl
                 for (k = 0; k < n; k++)
                     if (ind[k] != 0)
                         sum += (xx[k] - xxm) * (yy[k] - yym);
-                ANS(j, i) = ANS(i, j) = sum / n1;
+                ANS(j, i) = ANS(i, j) = (double)(sum / n1);
             }
         }
         else
@@ -278,7 +278,7 @@ static void cov_complete1(int n, int ncx, double *x, double *xm, int *ind, doubl
                         for (n1 = 0; n1 < n; n1++)
                             if (ind[n1] != 0)
                                 sum += sign(xx[k] - xx[n1]) * sign(yy[k] - yy[n1]);
-                ANS(j, i) = ANS(i, j) = sum;
+                ANS(j, i) = ANS(i, j) = (double)sum;
             }
         }
     }
@@ -301,7 +301,7 @@ static void cov_complete1(int n, int ncx, double *x, double *xm, int *ind, doubl
                     sum = ANS(i, j) / (xm[i] * xm[j]);
                     if (sum > 1.)
                         sum = 1.;
-                    ANS(j, i) = ANS(i, j) = sum;
+                    ANS(j, i) = ANS(i, j) = (double)sum;
                 }
             }
             ANS(i, i) = 1.0;
@@ -346,7 +346,7 @@ static void cov_na_1(int n, int ncx, double *x, double *xm, int *has_na, double 
                         sum = 0.;
                         for (k = 0; k < n; k++)
                             sum += (xx[k] - xxm) * (yy[k] - yym);
-                        ANS(j, i) = ANS(i, j) = sum / n1;
+                        ANS(j, i) = ANS(i, j) = (double)(sum / n1);
                     }
             }
             else
@@ -363,7 +363,7 @@ static void cov_na_1(int n, int ncx, double *x, double *xm, int *has_na, double 
                         for (k = 0; k < n; k++)
                             for (n1 = 0; n1 < n; n1++)
                                 sum += sign(xx[k] - xx[n1]) * sign(yy[k] - yy[n1]);
-                        ANS(j, i) = ANS(i, j) = sum;
+                        ANS(j, i) = ANS(i, j) = (double)sum;
                     }
             }
         }
@@ -389,7 +389,7 @@ static void cov_na_1(int n, int ncx, double *x, double *xm, int *has_na, double 
                         sum = ANS(i, j) / (xm[i] * xm[j]);
                         if (sum > 1.)
                             sum = 1.;
-                        ANS(j, i) = ANS(i, j) = sum;
+                        ANS(j, i) = ANS(i, j) = (double)sum;
                     }
                 }
             ANS(i, i) = 1.0;
@@ -422,7 +422,7 @@ static void cov_complete2(int n, int ncx, int ncy, double *x, double *y, double 
                 for (k = 0; k < n; k++)
                     if (ind[k] != 0)
                         sum += (xx[k] - xxm) * (yy[k] - yym);
-                ANS(i, j) = sum / n1;
+                ANS(i, j) = (double)(sum / n1);
             }
         }
         else
@@ -436,7 +436,7 @@ static void cov_complete2(int n, int ncx, int ncy, double *x, double *y, double 
                         for (n1 = 0; n1 < n; n1++)
                             if (ind[n1] != 0)
                                 sum += sign(xx[k] - xx[n1]) * sign(yy[k] - yy[n1]);
-                ANS(i, j) = sum;
+                ANS(i, j) = (double)sum;
             }
         }
     }
@@ -465,7 +465,7 @@ static void cov_complete2(int n, int ncx, int ncy, double *x, double *y, double 
                         if (ind[n1] != 0 && xx[k] != xx[n1])                                                           \
                             sum++; /* = sign(. - .)^2 */                                                               \
         }                                                                                                              \
-        _X_##m[i] = sqrt(sum);                                                                                         \
+        _X_##m[i] = (double)sqrtl(sum);                                                                                \
     }
 
         COV_SDEV(x); /* -> xm[.] */
@@ -525,7 +525,7 @@ static void cov_na_2(int n, int ncx, int ncy, double *x, double *y, double *xm, 
                         sum = 0.;
                         for (k = 0; k < n; k++)
                             sum += (xx[k] - xxm) * (yy[k] - yym);
-                        ANS(i, j) = sum / n1;
+                        ANS(i, j) = (double)(sum / n1);
                     }
             }
             else
@@ -542,7 +542,7 @@ static void cov_na_2(int n, int ncx, int ncy, double *x, double *y, double *xm, 
                         for (k = 0; k < n; k++)
                             for (n1 = 0; n1 < n; n1++)
                                 sum += sign(xx[k] - xx[n1]) * sign(yy[k] - yy[n1]);
-                        ANS(i, j) = sum;
+                        ANS(i, j) = (double)sum;
                     }
             }
         }
@@ -571,7 +571,7 @@ static void cov_na_2(int n, int ncx, int ncy, double *x, double *y, double *xm, 
                         if (xx[k] != xx[n1])                                                                           \
                             sum++; /* = sign(. - .)^2 */                                                               \
             }                                                                                                          \
-            _X_##m[i] = sqrt(sum);                                                                                     \
+            _X_##m[i] = (double)sqrtl(sum);                                                                            \
         }
 
         COV_SDEV(x); /* -> xm[.] */

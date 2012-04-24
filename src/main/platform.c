@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998--2011 The R Core Team
+ *  Copyright (C) 1998--2012 The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1379,7 +1379,7 @@ SEXP attribute_hidden do_fileexists(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
 #ifdef Win32
             /* Package XML sends arbitrarily long strings to file.exists! */
-            int len = strlen(CHAR(STRING_ELT(file, i)));
+            size_t len = strlen(CHAR(STRING_ELT(file, i)));
             if (len > MAX_PATH)
                 LOGICAL(ans)[i] = FALSE;
             else
@@ -1588,7 +1588,7 @@ void R_CleanTempDir(void)
 {
     if (Sys_TempDir)
     {
-        int n = strlen(Sys_TempDir);
+        size_t n = strlen(Sys_TempDir);
         /* Windows cannot delete the current working directory */
         SetCurrentDirectory(R_HomeDir());
         wchar_t w[2 * (n + 1)];
@@ -2363,7 +2363,7 @@ SEXP attribute_hidden do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
         while ((p = Rf_strchr(p + 1, '/')))
         {
             *p = '\0';
-            res = mkdir(dir, mode);
+            res = mkdir(dir, (mode_t)mode);
             /* Solaris 10 returns ENOSYS on automount, PR#13834
                EROFS is allowed by POSIX, so we skip that too */
             serrno = errno;
@@ -2372,7 +2372,7 @@ SEXP attribute_hidden do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
             *p = '/';
         }
     }
-    res = mkdir(dir, mode);
+    res = mkdir(dir, (mode_t)mode);
     serrno = errno;
     if (show && res && serrno == EEXIST)
         warning(_("'%s' already exists"), dir);
@@ -2610,7 +2610,7 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
 
 #ifdef HAVE_UMASK
     int um = umask(0);
-    umask(um);
+    umask((mode_t)um);
     mask = 0777 & ~um;
 #else
     mask = 0777;
@@ -2654,7 +2654,7 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
             warning(_("problem reading directory %s: %s"), this, strerror(errno));
             nfail++; /* we were unable to read a dir */
         }
-        chmod(dest, perms ? (sb.st_mode & mask) : mask);
+        chmod(dest, (mode_t)(perms ? (sb.st_mode & mask) : mask));
     }
     else
     { /* a file */
@@ -2790,7 +2790,8 @@ SEXP attribute_hidden do_syschmod(SEXP call, SEXP op, SEXP args, SEXP env)
 {
 #ifdef HAVE_CHMOD
     SEXP paths, smode, ans;
-    int i, m, n, *modes, mode, res, um = 0;
+    int i, m, n, *modes, res;
+    mode_t um = 0;
 
     checkArity(op, args);
     paths = CAR(args);
@@ -2812,7 +2813,7 @@ SEXP attribute_hidden do_syschmod(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(ans = allocVector(LGLSXP, n));
     for (i = 0; i < n; i++)
     {
-        mode = modes[i % m];
+        mode_t mode = (mode_t)modes[i % m];
         if (mode == NA_INTEGER)
             mode = 0777;
 #ifdef HAVE_UMASK
@@ -2874,7 +2875,7 @@ SEXP attribute_hidden do_sysumask(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     else
     {
-        res = umask(mode);
+        res = umask((mode_t)mode);
         R_Visible = FALSE;
     }
 #else
@@ -2928,8 +2929,8 @@ SEXP attribute_hidden do_Cstack_info(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(ans = allocVector(INTSXP, 4));
     PROTECT(nms = allocVector(STRSXP, 4));
     /* FIXME: could be out of range */
-    INTEGER(ans)[0] = (R_CStackLimit == -1) ? NA_INTEGER : R_CStackLimit;
-    INTEGER(ans)[1] = (R_CStackLimit == -1) ? NA_INTEGER : R_CStackDir * (R_CStackStart - (uintptr_t)&ans);
+    INTEGER(ans)[0] = (R_CStackLimit == -1) ? NA_INTEGER : (int)R_CStackLimit;
+    INTEGER(ans)[1] = (R_CStackLimit == -1) ? NA_INTEGER : (int)(R_CStackDir * (R_CStackStart - (uintptr_t)&ans));
     INTEGER(ans)[2] = R_CStackDir;
     INTEGER(ans)[3] = R_EvalDepth;
     SET_STRING_ELT(nms, 0, mkChar("size"));
