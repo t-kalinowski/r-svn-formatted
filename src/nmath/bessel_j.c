@@ -448,7 +448,7 @@ static void J_bessel(double *x, double *alpha, long *nb, double *b, long *ncalc)
                         p = plast * tover;
                         --n;
                         en -= 2.;
-                        nend = imin2(*nb, n); // FIXME, should be for longs
+                        nend = imin2(*nb, n);
                         for (l = nstart; l <= nend; ++l)
                         {
                             pold = psavel;
@@ -623,6 +623,6 @@ static void J_bessel(double *x, double *alpha, long *nb, double *b, long *ncalc)
     {
         /* Error return -- X, NB, or ALPHA is out of range : */
         b[1] = 0.;
-        *ncalc = imin2(*nb, 0) - 1; // FIXME, should be for longs
+        *ncalc = imin2(*nb, 0) - 1;
     }
 }

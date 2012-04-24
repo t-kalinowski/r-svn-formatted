@@ -84,7 +84,7 @@ void R_CheckStack(void)
            so temporarily raise the limit.
          */
         RCNTXT cntxt;
-        uintptr_t stacklimit = R_CStackLimit;
+        unsigned int stacklimit = R_CStackLimit;
         R_CStackLimit += 0.05 * R_CStackLimit;
         begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_BaseEnv, R_BaseEnv, R_NilValue, R_NilValue);
         cntxt.cend = &reset_stack_limit;
@@ -269,7 +269,7 @@ static void reset_inWarning(void *data)
 
 static int wd(const char *buf)
 {
-    int nc = (int)mbstowcs(NULL, buf, 0), nw;
+    int nc = mbstowcs(NULL, buf, 0), nw;
     if (nc > 0 && nc < 2000)
     {
         wchar_t wc[2000];
@@ -358,6 +358,8 @@ static void vwarningcall_dflt(SEXP call, const char *format, va_list ap)
     }
     else if (w == 0)
     { /* collect them */
+        char *tr;
+        int nc;
         if (!R_CollectWarnings)
             setupwarnings();
         if (R_CollectWarnings < R_nwarnings)
@@ -368,9 +370,9 @@ static void vwarningcall_dflt(SEXP call, const char *format, va_list ap)
                 strcat(buf, " [... truncated]");
             if (R_ShowWarnCalls && call != R_NilValue)
             {
-                char *tr = R_ConciseTraceback(call, 0);
-                size_t nc = strlen(tr);
-                if (nc && nc + (int)strlen(buf) + 8 < BUFSIZE)
+                tr = R_ConciseTraceback(call, 0);
+                nc = strlen(tr);
+                if (nc && nc + strlen(buf) + 8 < BUFSIZE)
                 {
                     strcat(buf, "\nCalls: ");
                     strcat(buf, tr);
@@ -478,7 +480,7 @@ void PrintWarnings(void)
             }
             else
             {
-                size_t msgline1 = strlen(msg);
+                int msgline1 = strlen(msg);
                 char *p = strchr(msg, '\n');
                 if (p)
                     msgline1 = (int)(p - msg);
@@ -517,7 +519,7 @@ void PrintWarnings(void)
                 }
                 else
                 {
-                    size_t msgline1 = strlen(msg);
+                    int msgline1 = strlen(msg);
                     char *p = strchr(msg, '\n');
                     if (p)
                         msgline1 = (int)(p - msg);
@@ -579,7 +581,7 @@ static void verrorcall_dflt(SEXP call, const char *format, va_list ap)
     RCNTXT cntxt;
     const char *dcall;
     char *p, *tr;
-    int oldInError;
+    int oldInError, nc;
 
     if (inError)
     {
@@ -614,7 +616,7 @@ static void verrorcall_dflt(SEXP call, const char *format, va_list ap)
     {
         char tmp[BUFSIZE];
         char *head = _("Error in "), *mid = " : ", *tail = "\n  ";
-        size_t len = strlen(head) + strlen(mid) + strlen(tail);
+        int len = strlen(head) + strlen(mid) + strlen(tail);
 
         Rvsnprintf(tmp, min(BUFSIZE, R_WarnLength) - strlen(head), format, ap);
         dcall = CHAR(STRING_ELT(deparse1s(call), 0));
@@ -638,7 +640,7 @@ static void verrorcall_dflt(SEXP call, const char *format, va_list ap)
             }
             else
             {
-                size_t msgline1 = strlen(tmp);
+                int msgline1 = strlen(tmp);
                 char *p = strchr(tmp, '\n');
                 if (p)
                     msgline1 = (int)(p - tmp);
@@ -667,7 +669,7 @@ static void verrorcall_dflt(SEXP call, const char *format, va_list ap)
     if (R_ShowErrorCalls && call != R_NilValue)
     { /* assume we want to avoid deparse */
         tr = R_ConciseTraceback(call, 0);
-        size_t nc = strlen(tr);
+        nc = strlen(tr);
         if (nc && nc + strlen(errbuf) + 8 < BUFSIZE)
         {
             strcat(errbuf, "Calls: ");
@@ -1392,8 +1394,7 @@ static char *R_ConciseTraceback(SEXP call, int skip)
 {
     static char buf[560];
     RCNTXT *c;
-    size_t nl;
-    int ncalls = 0;
+    int nl, ncalls = 0;
     Rboolean too_many = FALSE;
     const char *top = "" /* -Wall */;
 

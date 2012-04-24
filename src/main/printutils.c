@@ -91,7 +91,7 @@ R_size_t R_Decode2Long(char *p, int *ierr)
             *ierr = 4;
             return (v);
         }
-        return (R_size_t)(Giga * v);
+        return (Giga * v);
     }
     else if (p[0] == 'M')
     {
@@ -965,7 +965,7 @@ void Rcons_vprintf(const char *format, va_list arg)
         }
     }
 #endif /* HAVE_VASPRINTF */
-    R_WriteConsole(p, (int)strlen(p));
+    R_WriteConsole(p, strlen(p));
     if (usedRalloc)
         vmaxset(vmax);
     if (usedVasprintf)
@@ -1044,7 +1044,7 @@ void REvprintf(const char *format, va_list arg)
 
         vsnprintf(buf, BUFSIZE, format, arg);
         buf[BUFSIZE - 1] = '\0';
-        R_WriteConsoleEx(buf, (int)strlen(buf), 1);
+        R_WriteConsoleEx(buf, strlen(buf), 1);
     }
 }
 

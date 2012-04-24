@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2012  The R Core Team
+ *  Copyright (C) 1997--2011  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -315,7 +315,7 @@ static char *AsciiInString(FILE *fp, SaveLoadData *d)
                 break;
             }
         }
-        *bufp++ = (char)c;
+        *bufp++ = c;
     }
     *bufp = '\0';
     return d->buffer.data;
@@ -395,7 +395,7 @@ static Rcomplex XdrInComplex(FILE *fp, SaveLoadData *d)
 static char *XdrInString(FILE *fp, SaveLoadData *d)
 {
     char *bufp = d->buffer.data;
-    if (!xdr_string(&d->xdrs, &bufp, (unsigned int)d->buffer.bufsize))
+    if (!xdr_string(&d->xdrs, &bufp, d->buffer.bufsize))
     {
         xdr_destroy(&d->xdrs);
         error(_("a S read error occurred"));
@@ -447,7 +447,7 @@ static char *BinaryInString(FILE *fp, SaveLoadData *d)
     char *bufp = d->buffer.data;
     do
     {
-        *bufp = (char)R_fgetc(fp);
+        *bufp = R_fgetc(fp);
     } while (*bufp++);
     return d->buffer.data;
 }
@@ -1594,15 +1594,15 @@ static char *InStringAscii(FILE *fp, SaveLoadData *unused)
                     c = fgetc(fp);
                     j++;
                 }
-                buf[i] = (char)d;
+                buf[i] = d;
                 ungetc(c, fp);
                 break;
             default:
-                buf[i] = (char)c;
+                buf[i] = c;
             }
         }
         else
-            buf[i] = (char)c;
+            buf[i] = c;
     }
     buf[i] = '\0';
     return buf;
@@ -1796,7 +1796,7 @@ static int InIntegerXdr(FILE *fp, SaveLoadData *d)
 
 static void OutStringXdr(FILE *fp, const char *s, SaveLoadData *d)
 {
-    unsigned int n = (unsigned int)strlen(s);
+    unsigned int n = strlen(s);
     char *t = CallocCharBuf(n);
     bool_t res;
     /* This copy may not be needed, will xdr_bytes ever modify 2nd arg? */

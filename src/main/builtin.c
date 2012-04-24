@@ -530,7 +530,7 @@ SEXP attribute_hidden do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
     int ifile;
     Rconnection con;
     int append;
-    int i, iobj, n, nobjs, pwidth, width, sepw, lablen, ntot, nlsep, nlines;
+    int i, iobj, n, nobjs, pwidth, w, width, sepw, lablen, ntot, nlsep, nlines;
     char buf[512];
     const char *p = "";
 
@@ -653,7 +653,7 @@ SEXP attribute_hidden do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
                 errorcall(call, _("argument %d (type '%s') cannot be handled by 'cat'"), 1 + iobj,
                           type2char(TYPEOF(s)));
             /* FIXME : cat(...) should handle ANYTHING */
-            size_t w = strlen(p);
+            w = (int)strlen(p);
             cat_sepwidth(sepr, &sepw, ntot);
             if ((iobj > 0) && (width + w + sepw > pwidth))
             {

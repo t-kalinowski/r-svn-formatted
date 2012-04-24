@@ -343,7 +343,7 @@ static size_t inttomb(char *s, const int wc)
         *b-- = 0x80 | (cvalue & 0x3f);
         cvalue >>= 6;
     }
-    *b = (char)(utf8_table2[i] | cvalue);
+    *b = utf8_table2[i] | cvalue;
     return i + 1;
 }
 

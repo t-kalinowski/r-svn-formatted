@@ -36,9 +36,9 @@
 /* remove leading and trailing space */
 static char *rmspace(char *s)
 {
-    ssize_t i; // to be safe
+    int i;
 
-    for (i = strlen(s) - 1; i >= 0 && isspace((int)s[i]); i--)
+    for (i = (int)strlen(s) - 1; i >= 0 && isspace((int)s[i]); i--)
         s[i] = '\0';
     for (i = 0; isspace((int)s[i]); i++)
         ;
@@ -111,6 +111,7 @@ static char *findterm(char *s)
 {
     char *p, *q, *r2, *ss = s;
     static char ans[BUF_SIZE];
+    size_t nans;
 
     if (!strlen(s))
         return "";
@@ -125,7 +126,7 @@ static char *findterm(char *s)
         if (!q)
             break;
         /* copy over leading part */
-        size_t nans = strlen(ans);
+        nans = strlen(ans);
         strncat(ans, s, (size_t)(p - s));
         ans[nans + p - s] = '\0';
         char r[q - p + 2];

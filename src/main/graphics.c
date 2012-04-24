@@ -1460,8 +1460,8 @@ static void layoutRegions(double widths[], double heights[], double cmWidth, dou
         someCmRegions(widths, heights, cmWidth, cmHeight, dd);
 }
 
-static void subRegion(double *left, double *right, double *bottom, double *top, int mincol, int maxcol, int minrow,
-                      int maxrow, double widths[], double heights[], pGEDevDesc dd)
+static void subRegion(double *left, double *right, double *bottom, double *top, double mincol, double maxcol,
+                      double minrow, double maxrow, double widths[], double heights[], pGEDevDesc dd)
 {
     double totalWidth = sumRegions(widths, 0, gpptr(dd)->numcols - 1);
     double totalHeight = sumRegions(heights, 0, gpptr(dd)->numrows - 1);
