@@ -358,7 +358,7 @@ static void InWord(R_inpstream_t stream, char *buf, int size)
     } while (isspace(c));
     while (!isspace(c) && i < size)
     {
-        buf[i++] = c;
+        buf[i++] = (char)c;
         c = stream->InChar(stream);
     }
     if (i == size)
@@ -534,15 +534,15 @@ static void InString(R_inpstream_t stream, char *buf, int length)
                             c = GetChar(&iss);
                             j++;
                         }
-                        buf[i] = d;
+                        buf[i] = (char)d;
                         UngetChar(&iss, c);
                         break;
                     default:
-                        buf[i] = c;
+                        buf[i] = (char)c;
                     }
                 }
                 else
-                    buf[i] = c;
+                    buf[i] = (char)c;
             }
         }
     }
@@ -868,7 +868,7 @@ static void WriteLENGTH(R_outpstream_t stream, SEXP s)
         OutInteger(stream, -1);
         R_xlen_t len = XLENGTH(s);
         OutInteger(stream, len / 4294967296L);
-        OutInteger(stream, len % 4294967296L);
+        OutInteger(stream, (int)(len % 4294967296L));
     }
     else
         OutInteger(stream, LENGTH(s));
@@ -912,12 +912,12 @@ static R_INLINE void OutIntegerVec(R_outpstream_t stream, SEXP s, R_xlen_t lengt
         for (done = 0; done < length; done += this)
         {
             this = min2(CHUNK_SIZE, length - done);
-            xdrmem_create(&xdrs, buf, this * sizeof(int), XDR_ENCODE);
+            xdrmem_create(&xdrs, buf, (int)(this * sizeof(int)), XDR_ENCODE);
             for (int cnt = 0; cnt < this; cnt++)
                 if (!xdr_int(&xdrs, INTEGER(s) + done + cnt))
                     error(_("XDR write failed"));
             xdr_destroy(&xdrs);
-            stream->OutBytes(stream, buf, sizeof(int) * this);
+            stream->OutBytes(stream, buf, (int)(sizeof(int) * this));
         }
         break;
     }
@@ -927,12 +927,12 @@ static R_INLINE void OutIntegerVec(R_outpstream_t stream, SEXP s, R_xlen_t lengt
         for (done = 0; done < length; done += this)
         {
             this = min2(CHUNK_SIZE, length - done);
-            stream->OutBytes(stream, INTEGER(s) + done, sizeof(int) * this);
+            stream->OutBytes(stream, INTEGER(s) + done, (int)(sizeof(int) * this));
         }
         break;
     }
     default:
-        for (int cnt = 0; cnt < length; cnt++)
+        for (R_xlen_t cnt = 0; cnt < length; cnt++)
             OutInteger(stream, INTEGER(s)[cnt]);
     }
 }
@@ -948,12 +948,12 @@ static R_INLINE void OutRealVec(R_outpstream_t stream, SEXP s, R_xlen_t length)
         for (done = 0; done < length; done += this)
         {
             this = min2(CHUNK_SIZE, length - done);
-            xdrmem_create(&xdrs, buf, this * sizeof(double), XDR_ENCODE);
+            xdrmem_create(&xdrs, buf, (int)(this * sizeof(double)), XDR_ENCODE);
             for (int cnt = 0; cnt < this; cnt++)
                 if (!xdr_double(&xdrs, REAL(s) + done + cnt))
                     error(_("XDR write failed"));
             xdr_destroy(&xdrs);
-            stream->OutBytes(stream, buf, sizeof(double) * this);
+            stream->OutBytes(stream, buf, (int)(sizeof(double) * this));
         }
         break;
     }
@@ -962,12 +962,12 @@ static R_INLINE void OutRealVec(R_outpstream_t stream, SEXP s, R_xlen_t length)
         for (done = 0; done < length; done += this)
         {
             this = min2(CHUNK_SIZE, length - done);
-            stream->OutBytes(stream, REAL(s) + done, sizeof(double) * this);
+            stream->OutBytes(stream, REAL(s) + done, (int)(sizeof(double) * this));
         }
         break;
     }
     default:
-        for (int cnt = 0; cnt < length; cnt++)
+        for (R_xlen_t cnt = 0; cnt < length; cnt++)
             OutReal(stream, REAL(s)[cnt]);
     }
 }
@@ -984,13 +984,13 @@ static R_INLINE void OutComplexVec(R_outpstream_t stream, SEXP s, R_xlen_t lengt
         for (done = 0; done < length; done += this)
         {
             this = min2(CHUNK_SIZE, length - done);
-            xdrmem_create(&xdrs, buf, this * sizeof(Rcomplex), XDR_ENCODE);
+            xdrmem_create(&xdrs, buf, (int)(this * sizeof(Rcomplex)), XDR_ENCODE);
             for (int cnt = 0; cnt < this; cnt++)
             {
                 if (!xdr_double(&xdrs, &(c[done + cnt].r)) || !xdr_double(&xdrs, &(c[done + cnt].i)))
                     error(_("XDR write failed"));
             }
-            stream->OutBytes(stream, buf, sizeof(Rcomplex) * this);
+            stream->OutBytes(stream, buf, (int)(sizeof(Rcomplex) * this));
             xdr_destroy(&xdrs);
         }
         break;
@@ -1000,7 +1000,7 @@ static R_INLINE void OutComplexVec(R_outpstream_t stream, SEXP s, R_xlen_t lengt
         for (done = 0; done < length; done += this)
         {
             this = min2(CHUNK_SIZE, length - done);
-            stream->OutBytes(stream, COMPLEX(s) + done, sizeof(Rcomplex) * this);
+            stream->OutBytes(stream, COMPLEX(s) + done, (int)(sizeof(Rcomplex) * this));
         }
         break;
     }
@@ -1475,8 +1475,8 @@ static R_INLINE void InIntegerVec(R_inpstream_t stream, SEXP obj, R_xlen_t lengt
         for (done = 0; done < length; done += this)
         {
             this = min2(CHUNK_SIZE, length - done);
-            stream->InBytes(stream, buf, sizeof(int) * this);
-            xdrmem_create(&xdrs, buf, this * sizeof(int), XDR_DECODE);
+            stream->InBytes(stream, buf, (int)(sizeof(int) * this));
+            xdrmem_create(&xdrs, buf, (int)(this * sizeof(int)), XDR_DECODE);
             for (int cnt = 0; cnt < this; cnt++)
                 if (!xdr_int(&xdrs, INTEGER(obj) + done + cnt))
                     error(_("XDR read failed"));
@@ -1489,7 +1489,7 @@ static R_INLINE void InIntegerVec(R_inpstream_t stream, SEXP obj, R_xlen_t lengt
         for (done = 0; done < length; done += this)
         {
             this = min2(CHUNK_SIZE, length - done);
-            stream->InBytes(stream, INTEGER(obj) + done, sizeof(int) * this);
+            stream->InBytes(stream, INTEGER(obj) + done, (int)(sizeof(int) * this));
         }
         break;
     }
@@ -1510,8 +1510,8 @@ static R_INLINE void InRealVec(R_inpstream_t stream, SEXP obj, R_xlen_t length)
         for (done = 0; done < length; done += this)
         {
             this = min2(CHUNK_SIZE, length - done);
-            stream->InBytes(stream, buf, sizeof(double) * this);
-            xdrmem_create(&xdrs, buf, this * sizeof(double), XDR_DECODE);
+            stream->InBytes(stream, buf, (int)(sizeof(double) * this));
+            xdrmem_create(&xdrs, buf, (int)(this * sizeof(double)), XDR_DECODE);
             for (R_xlen_t cnt = 0; cnt < this; cnt++)
                 if (!xdr_double(&xdrs, REAL(obj) + done + cnt))
                     error(_("XDR read failed"));
@@ -1524,7 +1524,7 @@ static R_INLINE void InRealVec(R_inpstream_t stream, SEXP obj, R_xlen_t length)
         for (done = 0; done < length; done += this)
         {
             this = min2(CHUNK_SIZE, length - done);
-            stream->InBytes(stream, REAL(obj) + done, sizeof(double) * this);
+            stream->InBytes(stream, REAL(obj) + done, (int)(sizeof(double) * this));
         }
         break;
     }
@@ -1546,8 +1546,8 @@ static R_INLINE void InComplexVec(R_inpstream_t stream, SEXP obj, R_xlen_t lengt
         for (done = 0; done < length; done += this)
         {
             this = min2(CHUNK_SIZE, length - done);
-            stream->InBytes(stream, buf, sizeof(Rcomplex) * this);
-            xdrmem_create(&xdrs, buf, this * sizeof(Rcomplex), XDR_DECODE);
+            stream->InBytes(stream, buf, (int)(sizeof(Rcomplex) * this));
+            xdrmem_create(&xdrs, buf, (int)(this * sizeof(Rcomplex)), XDR_DECODE);
             for (R_xlen_t cnt = 0; cnt < this; cnt++)
             {
                 if (!xdr_double(&xdrs, &(output[done + cnt].r)) || !xdr_double(&xdrs, &(output[done + cnt].i)))
@@ -1562,7 +1562,7 @@ static R_INLINE void InComplexVec(R_inpstream_t stream, SEXP obj, R_xlen_t lengt
         for (done = 0; done < length; done += this)
         {
             this = min2(CHUNK_SIZE, length - done);
-            stream->InBytes(stream, COMPLEX(obj) + done, sizeof(Rcomplex) * this);
+            stream->InBytes(stream, COMPLEX(obj) + done, (int)(sizeof(Rcomplex) * this));
         }
         break;
     }
@@ -2100,7 +2100,7 @@ static void InBytesConn(R_inpstream_t stream, void *buf, int length)
         int i;
         char *p = buf;
         for (i = 0; i < length; i++)
-            p[i] = Rconn_fgetc(con);
+            p[i] = (char)Rconn_fgetc(con);
     }
     else
     {
@@ -2372,7 +2372,7 @@ static void OutCharBB(R_outpstream_t stream, int c)
     bconbuf_t bb = stream->data;
     if (bb->count >= BCONBUFSIZ)
         flush_bcon_buffer(bb);
-    bb->buf[bb->count++] = c;
+    bb->buf[bb->count++] = (char)c;
 }
 
 static void OutBytesBB(R_outpstream_t stream, void *buf, int length)
@@ -2438,13 +2438,14 @@ static void resize_buffer(membuf_t mb, R_size_t needed)
 {
     /* This used to allocate double 'needed', but that was problematic for
        large buffers */
+    /* FIXME: no longer limited */
     /* we need to store the result in a RAWSXP so limited to INT_MAX */
     if (needed > INT_MAX)
         error(_("serialization is too large to store in a raw vector"));
     if (needed < 10000000) /* ca 10MB */
         needed = (1 + 2 * needed / INCR) * INCR;
     if (needed < 1000000000) /* ca 1GB */
-        needed = (1 + 1.2 * needed / INCR) * INCR;
+        needed = (int)((1 + 1.2 * needed / INCR) * INCR);
     else if (needed < INT_MAX - INCR)
         needed = (1 + needed / INCR) * INCR;
     unsigned char *tmp = realloc(mb->buf, needed);
@@ -2464,7 +2465,7 @@ static void OutCharMem(R_outpstream_t stream, int c)
     membuf_t mb = stream->data;
     if (mb->count >= mb->size)
         resize_buffer(mb, mb->count + 1);
-    mb->buf[mb->count++] = c;
+    mb->buf[mb->count++] = (char)c;
 }
 
 static void OutBytesMem(R_outpstream_t stream, void *buf, int length)
@@ -2711,7 +2712,8 @@ SEXP attribute_hidden R_lazyLoadDBflush(SEXP file)
 static SEXP readRawFromFile(SEXP file, SEXP key)
 {
     FILE *fp;
-    int offset, len, in, i, icache = -1, filelen;
+    int offset, len, in, i, icache = -1;
+    long filelen;
     SEXP val;
     const char *cfile = CHAR(STRING_ELT(file, 0));
 
