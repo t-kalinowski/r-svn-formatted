@@ -401,7 +401,7 @@ static SEXP R_HashResize(SEXP table)
     /* hash_grow = HASHSIZE(table); */
 
     /* Allocate the new hash table */
-    new_table = R_NewHashTable(HASHSIZE(table) * HASHTABLEGROWTHRATE);
+    new_table = R_NewHashTable((int)(HASHSIZE(table) * HASHTABLEGROWTHRATE));
     for (counter = 0; counter < length(table); counter++)
     {
         chain = VECTOR_ELT(table, counter);
@@ -1239,7 +1239,7 @@ static int ddVal(SEXP symbol)
     if (!strncmp(buf, "..", 2) && strlen(buf) > 2)
     {
         buf += 2;
-        rval = strtol(buf, &endp, 10);
+        rval = (int)strtol(buf, &endp, 10);
         if (*endp != '\0')
             return 0;
         else
@@ -3248,7 +3248,7 @@ Rboolean R_IsPackageEnv(SEXP rho)
     {
         SEXP name = getAttrib(rho, R_NameSymbol);
         char *packprefix = "package:";
-        int pplen = strlen(packprefix);
+        size_t pplen = strlen(packprefix);
         if (isString(name) && length(name) > 0 && !strncmp(packprefix, CHAR(STRING_ELT(name, 0)), pplen)) /* ASCII */
             return TRUE;
         else
@@ -3264,7 +3264,7 @@ SEXP R_PackageEnvName(SEXP rho)
     {
         SEXP name = getAttrib(rho, R_NameSymbol);
         char *packprefix = "package:";
-        int pplen = strlen(packprefix);
+        size_t pplen = strlen(packprefix);
         if (isString(name) && length(name) > 0 && !strncmp(packprefix, CHAR(STRING_ELT(name, 0)), pplen)) /* ASCII */
             return name;
         else
@@ -3508,7 +3508,10 @@ SEXP attribute_hidden do_envprofile(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP mkCharCE(const char *name, cetype_t enc)
 {
-    return mkCharLenCE(name, strlen(name), enc);
+    size_t len = strlen(name);
+    if (len > INT_MAX)
+        error("R character strings are limited to 2^31-1 bytes");
+    return mkCharLenCE(name, (int)len, enc);
 }
 
 /* no longer used in R but docuented in 2.7.x */
@@ -3519,7 +3522,10 @@ SEXP mkCharLen(const char *name, int len)
 
 SEXP mkChar(const char *name)
 {
-    return mkCharLenCE(name, strlen(name), CE_NATIVE);
+    size_t len = strlen(name);
+    if (len > INT_MAX)
+        error("R character strings are limited to 2^31-1 bytes");
+    return mkCharLenCE(name, (int)len, CE_NATIVE);
 }
 
 /* Global CHARSXP cache and code for char-based hash tables */
@@ -3625,8 +3631,6 @@ static void R_StringHash_resize(unsigned int newsize)
    the global CHARSXP cache, R_StringHash, it is returned.  Otherwise,
    a new CHARSXP is created, added to the cache and then returned. */
 
-/* Because allocCharsxp allocates len+1 bytes and zeros the last,
-   this will always zero-terminate */
 SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
 {
     SEXP cval, chain;
@@ -3755,6 +3759,7 @@ SEXP mkCharLenCE(const char *name, int len, cetype_t enc)
         /* resize the hash table if necessary with the new entry still
            protected.
            Maximum possible power of two is 2^30 for a VECSXP.
+           FIXME: this has changed with long vectors.
         */
         if (R_HashSizeCheck(R_StringHash) && char_hash_size < 1073741824 /* 2^30 */)
             R_StringHash_resize(char_hash_size * 2);
