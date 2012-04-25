@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2011  The R Core Team
+ *  Copyright (C) 1997--2012  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -315,7 +315,7 @@ static char *AsciiInString(FILE *fp, SaveLoadData *d)
                 break;
             }
         }
-        *bufp++ = c;
+        *bufp++ = (char)c;
     }
     *bufp = '\0';
     return d->buffer.data;
@@ -395,7 +395,7 @@ static Rcomplex XdrInComplex(FILE *fp, SaveLoadData *d)
 static char *XdrInString(FILE *fp, SaveLoadData *d)
 {
     char *bufp = d->buffer.data;
-    if (!xdr_string(&d->xdrs, &bufp, d->buffer.bufsize))
+    if (!xdr_string(&d->xdrs, &bufp, (unsigned int)d->buffer.bufsize))
     {
         xdr_destroy(&d->xdrs);
         error(_("a S read error occurred"));
@@ -447,7 +447,7 @@ static char *BinaryInString(FILE *fp, SaveLoadData *d)
     char *bufp = d->buffer.data;
     do
     {
-        *bufp = R_fgetc(fp);
+        *bufp = (char)R_fgetc(fp);
     } while (*bufp++);
     return d->buffer.data;
 }
@@ -1594,15 +1594,15 @@ static char *InStringAscii(FILE *fp, SaveLoadData *unused)
                     c = fgetc(fp);
                     j++;
                 }
-                buf[i] = d;
+                buf[i] = (char)d;
                 ungetc(c, fp);
                 break;
             default:
-                buf[i] = c;
+                buf[i] = (char)c;
             }
         }
         else
-            buf[i] = c;
+            buf[i] = (char)c;
     }
     buf[i] = '\0';
     return buf;
@@ -1796,7 +1796,7 @@ static int InIntegerXdr(FILE *fp, SaveLoadData *d)
 
 static void OutStringXdr(FILE *fp, const char *s, SaveLoadData *d)
 {
-    unsigned int n = strlen(s);
+    unsigned int n = (unsigned int)strlen(s);
     char *t = CallocCharBuf(n);
     bool_t res;
     /* This copy may not be needed, will xdr_bytes ever modify 2nd arg? */
@@ -1917,10 +1917,10 @@ static void R_WriteMagic(FILE *fp, int number)
         strcpy((char *)buf, "RDX2");
         break;
     default:
-        buf[0] = (char)((number / 1000) % 10 + '0');
-        buf[1] = (char)((number / 100) % 10 + '0');
-        buf[2] = (char)((number / 10) % 10 + '0');
-        buf[3] = (char)(number % 10 + '0');
+        buf[0] = (number / 1000) % 10 + '0';
+        buf[1] = (number / 100) % 10 + '0';
+        buf[2] = (number / 10) % 10 + '0';
+        buf[3] = number % 10 + '0';
     }
     buf[4] = '\n';
     res = fwrite((char *)buf, sizeof(char), 5, fp);

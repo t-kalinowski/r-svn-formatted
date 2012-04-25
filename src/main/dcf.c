@@ -138,7 +138,7 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
                 if (lastm >= 0)
                 {
-                    need = strlen(CHAR(STRING_ELT(retval, lastm + nwhat * k))) + 2;
+                    need = (int)strlen(CHAR(STRING_ELT(retval, lastm + nwhat * k))) + 2;
                     if (tre_regexecb(&eblankline, line, 0, NULL, 0) == 0)
                     {
                         is_eblankline = TRUE;
@@ -157,7 +157,7 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                         {
                             offset = 0;
                         }
-                        need += strlen(line + offset);
+                        need += (int)strlen(line + offset);
                     }
                     if (buflen < need)
                     {
@@ -184,7 +184,7 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                 {
                     for (m = 0; m < nwhat; m++)
                     {
-                        whatlen = strlen(CHAR(STRING_ELT(what, m)));
+                        whatlen = (int)strlen(CHAR(STRING_ELT(what, m)));
                         if (strlen(line) > whatlen && line[whatlen] == ':' &&
                             strncmp(CHAR(STRING_ELT(what, m)), line, whatlen) == 0)
                         {
@@ -247,7 +247,7 @@ SEXP attribute_hidden do_readDCF(SEXP call, SEXP op, SEXP args, SEXP env)
                              regmatch[0].rm_eo
                            bytes?
                         */
-                        need = strlen(line + regmatch[0].rm_eo);
+                        need = (int)strlen(line + regmatch[0].rm_eo);
                         if (buflen < need)
                         {
                             char *tmp = (char *)realloc(buf, need);

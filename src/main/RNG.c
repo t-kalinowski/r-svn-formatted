@@ -160,7 +160,7 @@ double unif_rand(void)
         II(2) = (int)p1;
 
         p2 = a21 * (unsigned int)II(5) - a23n * (unsigned int)II(3);
-        k = p2 / m2;
+        k = (int)(p2 / m2);
         p2 -= k * m2;
         if (p2 < 0.0)
             p2 += m2;
