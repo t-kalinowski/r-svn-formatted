@@ -92,8 +92,8 @@ static double wprob(double w, double rr, double cc)
     const static double aleg[ihalf] = {0.047175336386511827194615961485, 0.106939325995318430960254718194,
                                        0.160078328543346226334652529543, 0.203167426723065921749064455810,
                                        0.233492536538354808760849898925, 0.249147045813402785000562436043};
-    double a, ac, pr_w, b, binc, blb, c, cc1, pminus, pplus, qexpo, qsqz, rinsum, wi, wincr, xx;
-    long double bub, einsum, elsum;
+    double a, ac, pr_w, b, binc, c, cc1, pminus, pplus, qexpo, qsqz, rinsum, wi, wincr, xx;
+    long double blb, bub, einsum, elsum;
     int j, jj;
 
     qsqz = w * 0.5;
@@ -189,7 +189,7 @@ static double wprob(double w, double rr, double cc)
     }
 
     /* if pr_w ^ rr < 9e-14, then return 0 */
-    pr_w = einsum + pr_w;
+    pr_w += einsum;
     if (pr_w <= exp(C1 / rr))
         return 0.;
 

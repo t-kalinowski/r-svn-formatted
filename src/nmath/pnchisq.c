@@ -138,7 +138,7 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta, double err
 #endif
 
     if (f2 * DBL_EPSILON > 0.125 && /* very large f and x ~= f: probably needs */
-        fabs(t = x2 - f2) <         /* another algorithm anyway */
+        fabsl(t = x2 - f2) <        /* another algorithm anyway */
             sqrt(DBL_EPSILON) * f2)
     {
         /* evade cancellation error */
@@ -166,7 +166,8 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta, double err
             return lower_tail ? 1. : 0.; /* FIXME: We could be more accurate than 0. */
         }                                /* else */
         l_x = log(x);
-        ans = term = t = 0.;
+        ans = term = 0.;
+        t = 0;
     }
     else
     {
@@ -174,7 +175,7 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta, double err
 #ifdef DEBUG_pnch
         REprintf(", t=exp(lt)= %g\n", t);
 #endif
-        ans = term = v * t;
+        ans = term = (double)(v * t);
     }
 
     for (n = 1, f_2n = f + 2., f_x_2n += 2.;; n++, f_2n += 2, f_x_2n += 2)
@@ -192,7 +193,7 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta, double err
         {
             /* find the error bound and check for convergence */
 
-            bound = t * x / f_x_2n;
+            bound = (double)(t * x / f_x_2n);
 #ifdef DEBUG_pnch
             REprintf("\n L10: n=%d; term= %g; bound= %g", n, term, bound);
 #endif
@@ -248,7 +249,7 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta, double err
         }
         if (!lamSml && !tSml)
         {
-            term = v * t;
+            term = (double)(v * t);
             ans += term;
         }
 
