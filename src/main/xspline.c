@@ -205,12 +205,12 @@ static void point_computing(double *A_blend, double *px, double *py, double *x, 
     *y = EQN_NUMERATOR(py) / (weights_sum);
 }
 
-static float step_computing(int k, double *px, double *py, double s1, double s2, float precision, pGEDevDesc dd)
+static double step_computing(int k, double *px, double *py, double s1, double s2, double precision, pGEDevDesc dd)
 {
     double A_blend[4];
     double xstart, ystart, xend, yend, xmid, ymid, xlength, ylength;
     double start_to_end_dist, devWidth, devHeight, devDiag, number_of_steps;
-    float step, angle_cos, scal_prod, xv1, xv2, yv1, yv2, sides_length_prod;
+    double step, angle_cos, scal_prod, xv1, xv2, yv1, yv2, sides_length_prod;
 
     /* This function computes the step used to draw the segment (p1, p2)
        (xv1, yv1) : coordinates of the vector from middle to origin
@@ -338,7 +338,7 @@ static float step_computing(int k, double *px, double *py, double s1, double s2,
     return (step);
 }
 
-static void spline_segment_computing(float step, int k, double *px, double *py, double s1, double s2, pGEDevDesc dd)
+static void spline_segment_computing(double step, int k, double *px, double *py, double s1, double s2, pGEDevDesc dd)
 {
     double A_blend[4];
     double t;
@@ -393,7 +393,7 @@ static void spline_segment_computing(float step, int k, double *px, double *py, 
  * WITHOUT end control points repeated
  * (i.e., can't just connect to last control point)
  */
-static void spline_last_segment_computing(float step, int k, double *px, double *py, double s1, double s2,
+static void spline_last_segment_computing(double step, int k, double *px, double *py, double s1, double s2,
                                           pGEDevDesc dd)
 {
     double A_blend[4];
@@ -461,11 +461,11 @@ static void spline_last_segment_computing(float step, int k, double *px, double 
     step = step_computing(K, PX, PY, S1, S2, PREC, dd);                                                                \
     spline_segment_computing(step, K, PX, PY, S1, S2, dd)
 
-static Rboolean compute_open_spline(int n, double *x, double *y, double *s, Rboolean repEnds, float precision,
+static Rboolean compute_open_spline(int n, double *x, double *y, double *s, Rboolean repEnds, double precision,
                                     pGEDevDesc dd)
 {
     int k;
-    float step = 0.0 /* -Wall */;
+    double step = 0.0 /* -Wall */;
     double px[4];
     double py[4];
     double ps[4] = {0., 0., 0., 0.};
@@ -529,10 +529,10 @@ static Rboolean compute_open_spline(int n, double *x, double *y, double *s, Rboo
     return TRUE;
 }
 
-static Rboolean compute_closed_spline(int n, double *x, double *y, double *s, float precision, pGEDevDesc dd)
+static Rboolean compute_closed_spline(int n, double *x, double *y, double *s, double precision, pGEDevDesc dd)
 {
     int k;
-    float step;
+    double step;
     double px[4];
     double py[4];
     double ps[4];

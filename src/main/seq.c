@@ -105,7 +105,7 @@ static SEXP seq_colon(double n1, double n2, SEXP call)
         errorcall(call, _("result would be too long a vector"));
 #endif
 
-    n = r + 1 + FLT_EPSILON;
+    n = (R_xlen_t)(r + 1 + FLT_EPSILON);
 
     in1 = (int)(n1);
     useInt = (n1 == in1);
@@ -298,7 +298,7 @@ static SEXP rep1(SEXP s, SEXP ncopy)
     double snc = asReal(ncopy);
     if (!R_FINITE(snc) || snc < 0)
         error(_("invalid '%s' value"), "times");
-    nc = snc;
+    nc = (R_xlen_t)snc;
 #else
     if ((nc = asInteger(ncopy)) == NA_INTEGER || nc < 0) /* nc = 0 ok */
         error(_("invalid '%s' value"), "times");
@@ -428,7 +428,7 @@ SEXP attribute_hidden do_rep(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         if (slen < 0)
             errorcall(call, _("invalid '%s' argument"), "length.out");
-        len = slen;
+        len = (R_xlen_t)slen;
     }
     else
     {

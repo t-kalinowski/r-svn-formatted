@@ -40,8 +40,8 @@ else if (streql(what, "bty"))
     lengthCheck(what, value, 1, call);
     if (!isString(value))
         par_error(what);
-    ix = CHAR(STRING_ELT(value, 0))[0];
-    switch (ix)
+    cx = CHAR(STRING_ELT(value, 0))[0];
+    switch (cx)
     {
     case 'o':
     case 'O':
@@ -55,7 +55,7 @@ else if (streql(what, "bty"))
     case 'u':
     case 'U':
     case 'n':
-        R_DEV__(bty) = ix;
+        R_DEV__(bty) = cx;
         break;
     default:
         par_error(what);
@@ -321,9 +321,9 @@ else if (streql(what, "xaxs"))
 {
     if (!isString(value) || LENGTH(value) < 1)
         par_error(what);
-    ix = CHAR(STRING_ELT(value, 0))[0];
-    if (ix == 's' || ix == 'e' || ix == 'i' || ix == 'r' || ix == 'd')
-        R_DEV__(xaxs) = ix;
+    cx = CHAR(STRING_ELT(value, 0))[0];
+    if (cx == 's' || cx == 'e' || cx == 'i' || cx == 'r' || cx == 'd')
+        R_DEV__(xaxs) = cx;
     else
         par_error(what);
 }
@@ -331,9 +331,9 @@ else if (streql(what, "xaxt"))
 {
     if (!isString(value) || LENGTH(value) < 1)
         par_error(what);
-    ix = CHAR(STRING_ELT(value, 0))[0];
-    if (ix == 's' || ix == 'l' || ix == 't' || ix == 'n')
-        R_DEV__(xaxt) = ix;
+    cx = CHAR(STRING_ELT(value, 0))[0];
+    if (cx == 's' || cx == 'l' || cx == 't' || cx == 'n')
+        R_DEV__(xaxt) = cx;
     else
         par_error(what);
 }
@@ -364,9 +364,9 @@ else if (streql(what, "yaxs"))
 {
     if (!isString(value) || LENGTH(value) < 1)
         par_error(what);
-    ix = CHAR(STRING_ELT(value, 0))[0];
-    if (ix == 's' || ix == 'e' || ix == 'i' || ix == 'r' || ix == 'd')
-        R_DEV__(yaxs) = ix;
+    cx = CHAR(STRING_ELT(value, 0))[0];
+    if (cx == 's' || cx == 'e' || cx == 'i' || cx == 'r' || cx == 'd')
+        R_DEV__(yaxs) = cx;
     else
         par_error(what);
 }
@@ -374,9 +374,9 @@ else if (streql(what, "yaxt"))
 {
     if (!isString(value) || LENGTH(value) < 1)
         par_error(what);
-    ix = CHAR(STRING_ELT(value, 0))[0];
-    if (ix == 's' || ix == 'l' || ix == 't' || ix == 'n')
-        R_DEV__(yaxt) = ix;
+    cx = CHAR(STRING_ELT(value, 0))[0];
+    if (cx == 's' || cx == 'l' || cx == 't' || cx == 'n')
+        R_DEV__(yaxt) = cx;
     else
         par_error(what);
 }

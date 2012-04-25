@@ -212,7 +212,7 @@ static int mbcs_get_next(int c, wchar_t *wc)
                 error(_("EOF whilst reading MBCS char at line %d"), ParseState.xxlineno);
         }
         s[clen] = '\0'; /* x86 Solaris requires this */
-        res = mbrtowc(wc, s, clen, NULL);
+        res = (int)mbrtowc(wc, s, clen, NULL);
         if (res == -1)
             error(_("invalid multibyte character in parser at line %d"), ParseState.xxlineno);
     }
@@ -222,7 +222,7 @@ static int mbcs_get_next(int c, wchar_t *wc)
         while (clen <= MB_CUR_MAX)
         {
             mbs_init(&mb_st);
-            res = mbrtowc(wc, s, clen, &mb_st);
+            res = (int)mbrtowc(wc, s, clen, &mb_st);
             if (res >= 0)
                 break;
             if (res == -1)

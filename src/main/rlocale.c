@@ -118,7 +118,7 @@ int Ri18n_wcwidth(wchar_t c)
     {
         strncpy(lc_str, setlocale(LC_CTYPE, NULL), sizeof(lc_str));
         for (i = 0, j = (int)strlen(lc_str); i < j && i < sizeof(lc_str); i++)
-            lc_str[i] = toupper(lc_str[i]);
+            lc_str[i] = (char)toupper(lc_str[i]);
         for (i = 0; i < (sizeof(cjk_locale_name) / sizeof(cjk_locale_name_t)); i++)
         {
             if (0 == strncmp(cjk_locale_name[i].name, lc_str, strlen(cjk_locale_name[i].name)))

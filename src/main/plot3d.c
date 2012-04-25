@@ -1416,9 +1416,9 @@ SEXP attribute_hidden do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP oargs, c, x, y, z, vfont, col, rawcol, lty, lwd, labels;
     int i, j, nx, ny, nc, ncol, nlty, nlwd;
-    int ltysave, lwdsave, fontsave = 1 /* -Wall */;
+    int ltysave, fontsave = 1 /* -Wall */;
     rcolor colsave;
-    double cexsave;
+    double cexsave, lwdsave;
     double atom, zmin, zmax;
     const void *vmax, *vmax0;
     char familysave[201];
@@ -1477,7 +1477,7 @@ SEXP attribute_hidden do_contour(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         strncpy(familysave, gpptr(dd)->family, 201);
         strncpy(gpptr(dd)->family, "Her ", 201);
-        gpptr(dd)->family[3] = INTEGER(vfont)[0];
+        gpptr(dd)->family[3] = (char)INTEGER(vfont)[0];
         fontsave = gpptr(dd)->font;
         gpptr(dd)->font = INTEGER(vfont)[1];
     }
@@ -2098,9 +2098,9 @@ static void DrawFacets(double *z, double *x, double *y, int nx, int ny, int *ind
             newcol = col[icol];
             if (DoLighting)
             {
-                r = shade * R_RED(newcol);
-                g = shade * R_GREEN(newcol);
-                b = shade * R_BLUE(newcol);
+                r = (int)(shade * R_RED(newcol));
+                g = (int)(shade * R_GREEN(newcol));
+                b = (int)(shade * R_BLUE(newcol));
                 newcol = R_RGB(r, g, b);
             }
             GPolygon(nv, xx, yy, USER, newcol, border, dd);

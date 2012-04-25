@@ -100,7 +100,7 @@ R_size_t R_Decode2Long(char *p, int *ierr)
             *ierr = 1;
             return (v);
         }
-        return (Mega * v);
+        return (R_size_t)(Mega * v);
     }
     else if (p[0] == 'K')
     {
@@ -355,7 +355,7 @@ attribute_hidden int Rstrwid(const char *str, int slen, cetype_t ienc, int quote
             mbs_init(&mb_st);
         for (i = 0; i < slen; i++)
         {
-            res = (ienc == CE_UTF8) ? utf8toucs(&wc, p) : mbrtowc(&wc, p, MB_CUR_MAX, NULL);
+            res = (ienc == CE_UTF8) ? (int)utf8toucs(&wc, p) : (int)mbrtowc(&wc, p, MB_CUR_MAX, NULL);
             if (res >= 0)
             {
                 k = wc;
@@ -504,7 +504,7 @@ const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
     if (s == NA_STRING)
     {
         p = quote ? CHAR(R_print.na_string) : CHAR(R_print.na_string_noquote);
-        cnt = i = quote ? strlen(CHAR(R_print.na_string)) : strlen(CHAR(R_print.na_string_noquote));
+        cnt = i = (int)(quote ? strlen(CHAR(R_print.na_string)) : strlen(CHAR(R_print.na_string_noquote)));
         quote = 0;
     }
     else
@@ -541,7 +541,7 @@ const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
             if (IS_BYTES(s))
             {
                 p = CHAR(s);
-                cnt = strlen(p);
+                cnt = (int)strlen(p);
                 const char *q;
                 char *pp = R_alloc(4 * cnt + 1, 1), *qq = pp, buf[5];
                 for (q = p; *q; q++)
@@ -575,7 +575,7 @@ const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
                 }
                 else
                 {
-                    cnt = strlen(p);
+                    cnt = (int)strlen(p);
                     i = Rstrwid(p, cnt, CE_NATIVE, quote);
                 }
             }
@@ -604,7 +604,7 @@ const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
         b -= b0;
     }
     if (quote)
-        *q++ = quote;
+        *q++ = (char)quote;
     if (mbcslocale || ienc == CE_UTF8)
     {
         int j, res;
@@ -625,7 +625,7 @@ const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
 #endif
         for (i = 0; i < cnt; i++)
         {
-            res = (ienc == CE_UTF8) ? utf8toucs(&wc, p) : mbrtowc(&wc, p, MB_CUR_MAX, NULL);
+            res = (int)((ienc == CE_UTF8) ? utf8toucs(&wc, p) : mbrtowc(&wc, p, MB_CUR_MAX, NULL));
             if (res >= 0)
             { /* res = 0 is a terminator */
                 k = wc;
@@ -725,7 +725,8 @@ const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
                         else
 #endif
                             snprintf(buf, 11, "\\u%04x", k);
-                        memcpy(q, buf, j = strlen(buf));
+                        j = (int)strlen(buf);
+                        memcpy(q, buf, j);
                         q += j;
                         p += res;
                     }
@@ -843,7 +844,7 @@ const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
     }
 #endif
     if (quote)
-        *q++ = quote;
+        *q++ = (char)quote;
     if (b > 0 && justify != Rprt_adj_right)
     {
         for (i = 0; i < b; i++)
