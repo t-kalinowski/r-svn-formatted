@@ -526,6 +526,6 @@ static void Y_bessel(double *x, double *alpha, long *nb, double *by, long *ncalc
     else
     {
         by[0] = 0.;
-        *ncalc = imin2(*nb, 0) - 1;
+        *ncalc = imin2(*nb, 0) - 1; // FIXME, should be for longs
     }
 }
