@@ -94,7 +94,7 @@ attribute_hidden unsigned short *_controlify(pGEDevDesc dd, const unsigned char 
     /* PAUL MURRELL
        replace _plot_xmalloc with R_alloc
     */
-    dest = (unsigned short *)R_alloc(1, (6 * strlen((char *)src) + 1) * sizeof(unsigned short));
+    dest = (unsigned short *)R_alloc(6 * strlen((char *)src) + 1, sizeof(unsigned short));
 
     /* PAUL MURRELL
        only for Hershey fonts so removed switch ...

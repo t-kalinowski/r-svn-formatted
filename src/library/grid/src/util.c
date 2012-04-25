@@ -143,7 +143,7 @@ int linesIntersect(double x1, double x2, double x3, double x4, double y1, double
         if ((ua > 0 && ua < 1) && (ub > 0 && ub < 1))
             result = 1;
     }
-    return result;
+    return (int)result;
 }
 
 int edgesIntersect(double x1, double x2, double y1, double y2, LRect r)

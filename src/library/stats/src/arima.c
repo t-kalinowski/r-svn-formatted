@@ -393,7 +393,7 @@ SEXP KalmanSmooth(SEXP sy, SEXP sZ, SEXP sa, SEXP sP, SEXP sT, SEXP sV, SEXP sh,
 SEXP KalmanFore(SEXP nahead, SEXP sZ, SEXP sa0, SEXP sP0, SEXP sT, SEXP sV, SEXP sh, SEXP fast)
 {
     SEXP res, forecasts, se;
-    int n = asReal(nahead), p = LENGTH(sa0);
+    int n = asInteger(nahead), p = LENGTH(sa0);
     double *Z = REAL(sZ), *a = REAL(sa0), *P = REAL(sP0), *T = REAL(sT), *V = REAL(sV), h = asReal(sh);
     int i, j, k, l;
     double fc, tmp, *mm, *anew, *Pnew;
@@ -915,10 +915,10 @@ SEXP TSconv(SEXP a, SEXP b)
 
 /* based on code from AS154 */
 
-static void inclu2(int np, double *xnext, double *xrow, double ynext, double *d, double *rbar, double *thetab)
+static void inclu2(size_t np, double *xnext, double *xrow, double ynext, double *d, double *rbar, double *thetab)
 {
     double cbar, sbar, di, xi, xk, rbthis, dpi;
-    int i, k, ithisr;
+    size_t i, k, ithisr;
 
     /*   This subroutine updates d, rbar, thetab by the inclusion
          of xnext and ynext. */
@@ -964,10 +964,10 @@ SEXP getQ0(SEXP sPhi, SEXP sTheta)
     double *P, *xnext, *xrow, *rbar, *thetab;
     /* NB: nrbar could overflow */
     int r = max(p, q + 1);
-    size_t np = r * (r + 1) / 2, nrbar = np * (np - 1) / 2;
-    int indi, indj, indn;
+    size_t np = r * (r + 1) / 2, nrbar = np * (np - 1) / 2, npr, npr1;
+    size_t indi, indj, indn;
     double phii, phij, ynext, bi, vi, vj;
-    int i, j, ithisr, ind, npr, ind1, ind2, npr1, im, jm;
+    size_t i, j, ithisr, ind, ind1, ind2, im, jm;
 
     /* This is the limit using an int index.  We could use
        size_t and get more on a 64-bit system,

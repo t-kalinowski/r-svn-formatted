@@ -208,7 +208,7 @@ static void md5_process_bytes(const void *buffer, size_t len, struct md5_ctx *ct
     if (len > 0)
     {
         memcpy(ctx->buffer, buffer, len);
-        ctx->buflen = len;
+        ctx->buflen = (md5_uint32)len;
     }
 }
 
