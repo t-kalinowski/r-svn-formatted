@@ -91,7 +91,7 @@ R_size_t R_Decode2Long(char *p, int *ierr)
             *ierr = 4;
             return (v);
         }
-        return (R_size_t)(Giga * v);
+        return (R_size_t)Giga * v;
     }
     else if (p[0] == 'M')
     {
@@ -100,7 +100,7 @@ R_size_t R_Decode2Long(char *p, int *ierr)
             *ierr = 1;
             return (v);
         }
-        return (R_size_t)(Mega * v);
+        return (R_size_t)Mega * v;
     }
     else if (p[0] == 'K')
     {

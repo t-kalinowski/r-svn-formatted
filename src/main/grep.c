@@ -1144,7 +1144,7 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
             j = 0;
             for (i = 0; i < n; i++)
                 if (invert ^ LOGICAL(ind)[i])
-                    REAL(ans)[j++] = i + 1;
+                    REAL(ans)[j++] = (double)(i + 1);
         }
         else
 #endif
@@ -2044,7 +2044,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     {
                         nr++;
                         ss += sst + patlen;
-                        slen -= sst + patlen;
+                        slen -= (int)(sst + patlen);
                     } while ((sst = fgrep_one_bytes(spat, ss, slen, useBytes, use_UTF8)) >= 0);
                 }
                 else
@@ -2057,7 +2057,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     strncpy(u, s, st);
                     u += st;
                     s += st + patlen;
-                    slen -= st + patlen;
+                    slen -= (int)(st + patlen);
                     strncpy(u, srep, replen);
                     u += replen;
                 } while (global && (st = fgrep_one_bytes(spat, s, slen, useBytes, use_UTF8)) >= 0);
@@ -2085,7 +2085,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                 /* Integer overflow has been seen */
                 double dnns = ns * (maxrep + 1.) + 1000;
                 if (dnns > 10000)
-                    dnns = 2 * ns + replen + 1000;
+                    dnns = (double)(2 * ns + replen + 1000);
                 nns = (int)dnns;
             }
             else
@@ -2187,7 +2187,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 double dnns = ns * (maxrep + 1.) + 1000;
                 if (dnns > 10000)
-                    dnns = 2 * ns + replen + 1000;
+                    dnns = (double)(2 * ns + replen + 1000);
                 nns = (int)dnns;
             }
             else
@@ -2362,8 +2362,8 @@ static int getNc(const char *s, int st)
 
 static SEXP gregexpr_Regexc(const regex_t *reg, SEXP sstr, int useBytes, int use_WC)
 {
-    int matchIndex, j, st, foundAll, foundAny;
-    size_t len, offset;
+    int matchIndex = -1, j, st, foundAll = 0, foundAny = 0;
+    size_t len, offset = 0;
     regmatch_t regmatch[10];
     SEXP ans, matchlen;         /* Return vect and its attribute */
     SEXP matchbuf, matchlenbuf; /* Buffers for storing multiple matches */
@@ -2374,8 +2374,6 @@ static SEXP gregexpr_Regexc(const regex_t *reg, SEXP sstr, int useBytes, int use
 
     PROTECT(matchbuf = allocVector(INTSXP, bufsize));
     PROTECT(matchlenbuf = allocVector(INTSXP, bufsize));
-    matchIndex = -1;
-    foundAll = foundAny = offset = 0;
 
     if (useBytes)
     {
@@ -2461,8 +2459,8 @@ static SEXP gregexpr_Regexc(const regex_t *reg, SEXP sstr, int useBytes, int use
 
 static SEXP gregexpr_fixed(const char *pattern, const char *string, Rboolean useBytes, Rboolean use_UTF8)
 {
-    int patlen, matchIndex, st, foundAll, foundAny, j, ansSize, nb = 0;
-    size_t curpos, slen;
+    int patlen, matchIndex, st = 0, foundAll = 0, foundAny = 0, j, ansSize, nb = 0;
+    size_t curpos = 0, slen;
     SEXP ans, matchlen;         /* return vect and its attribute */
     SEXP matchbuf, matchlenbuf; /* buffers for storing multiple matches */
     int bufsize = 1024;         /* starting size for buffers */
@@ -2475,7 +2473,6 @@ static SEXP gregexpr_fixed(const char *pattern, const char *string, Rboolean use
     else
         patlen = (int)strlen(pattern);
     slen = strlen(string);
-    foundAll = curpos = st = foundAny = 0;
     st = fgrep_one(pattern, string, useBytes, use_UTF8, &nb);
     matchIndex = -1;
     if (st < 0)
