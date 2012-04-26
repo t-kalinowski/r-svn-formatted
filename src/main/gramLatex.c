@@ -2020,7 +2020,7 @@ static int xxgetc(void)
         return R_EOF;
 
     R_ParseContextLast = (R_ParseContextLast + 1) % PARSE_CONTEXT_SIZE;
-    R_ParseContext[R_ParseContextLast] = c;
+    R_ParseContext[R_ParseContextLast] = (char)c;
 
     if (c == '\n')
     {
@@ -2078,13 +2078,13 @@ static SEXP makeSrcref(YYLTYPE *lloc, SEXP srcfile)
     return val;
 }
 
-static SEXP mkString2(const char *s, int len)
+static SEXP mkString2(const char *s, size_t len)
 {
     SEXP t;
     cetype_t enc = CE_UTF8;
 
     PROTECT(t = allocVector(STRSXP, 1));
-    SET_STRING_ELT(t, 0, mkCharLenCE(s, len, enc));
+    SET_STRING_ELT(t, 0, mkCharLenCE(s, (int)len, enc));
     UNPROTECT(1);
     return t;
 }
@@ -2319,7 +2319,7 @@ static void yyerror(const char *s)
 #define TEXT_PUSH(c)                                                                                                   \
     do                                                                                                                 \
     {                                                                                                                  \
-        unsigned int nc = bp - stext;                                                                                  \
+        size_t nc = bp - stext;                                                                                        \
         if (nc >= nstext - 1)                                                                                          \
         {                                                                                                              \
             char *old = stext;                                                                                         \
@@ -2332,7 +2332,7 @@ static void yyerror(const char *s)
                 free(old);                                                                                             \
             bp = stext + nc;                                                                                           \
         }                                                                                                              \
-        *bp++ = (c);                                                                                                   \
+        *bp++ = ((char)c);                                                                                             \
     } while (0)
 
 static void setfirstloc(void)

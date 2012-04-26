@@ -42,7 +42,7 @@ char La_norm_type(const char *typstr)
 
     if (strlen(typstr) != 1)
         error(_("argument type[1]='%s' must be a character string of string length 1"), typstr);
-    typup = toupper(*typstr);
+    typup = (char)toupper(*typstr);
     if (typup == '1')
         typup = 'O'; /* aliases */
     else if (typup == 'E')
@@ -59,7 +59,7 @@ char La_rcond_type(const char *typstr)
 
     if (strlen(typstr) != 1)
         error(_("argument type[1]='%s' must be a character string of string length 1"), typstr);
-    typup = toupper(*typstr);
+    typup = (char)toupper(*typstr);
     if (typup == '1')
         typup = 'O'; /* alias */
     else if (typup != 'O' && typup != 'I')
