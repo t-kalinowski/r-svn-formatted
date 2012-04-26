@@ -2527,7 +2527,7 @@ static void raw_resize(Rrawconn this, size_t needed)
     SEXP tmp;
 
     if (needed > 8192)
-        nalloc = (size_t)(1.2 * needed); /* 20% over-allocation */
+        nalloc = (size_t)(1.2 * (double)needed); /* 20% over-allocation */
     else
         while (nalloc < needed)
             nalloc *= 2; /* use powers of 2 if small */

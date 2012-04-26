@@ -141,11 +141,11 @@ static double wprob(double w, double rr, double cc)
     for (wi = 1; wi <= wincr; wi++)
     {
         elsum = 0.0;
-        a = 0.5 * (bub + blb);
+        a = (double)(0.5 * (bub + blb));
 
         /* legendre quadrature with order = nleg */
 
-        b = 0.5 * (bub - blb);
+        b = (double)(0.5 * (bub - blb));
 
         for (jj = 1; jj <= nleg; jj++)
         {
@@ -189,7 +189,7 @@ static double wprob(double w, double rr, double cc)
     }
 
     /* if pr_w ^ rr < 9e-14, then return 0 */
-    pr_w += einsum;
+    pr_w += (double)einsum;
     if (pr_w <= exp(C1 / rr))
         return 0.;
 

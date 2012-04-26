@@ -1937,7 +1937,6 @@ void GEText(double x, double y, const char *const str, cetype_t enc, double xc, 
                                                     maxDepth = d;
                                             }
                                             ss += used;
-                                            n -= used;
                                         }
                                         done = TRUE;
                                     }
