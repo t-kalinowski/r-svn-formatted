@@ -125,13 +125,13 @@ SEXP attribute_hidden do_matrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         if (lendat > (double)nc * INT_MAX)
             error("data is too long");
-        nr = (int)ceil(lendat / (double)nc);
+        nr = (int)ceil((double)lendat / (double)nc);
     }
     else if (miss_nc)
     {
         if (lendat > (double)nr * INT_MAX)
             error("data is too long");
-        nc = (int)ceil(lendat / (double)nr);
+        nc = (int)ceil((double)lendat / (double)nr);
     }
 
     if (lendat > 0)
