@@ -454,7 +454,7 @@ SEXP attribute_hidden do_rep(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (len == NA_INTEGER)
             return x;
         else
-            return lengthgets(duplicate(x), (R_len_t)len);
+            return xlengthgets(duplicate(x), len);
     }
 
     if (len != NA_INTEGER)

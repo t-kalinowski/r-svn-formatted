@@ -903,9 +903,9 @@ SEXP namesgets(SEXP vec, SEXP val)
 
     /* Check that the lengths and types are compatible */
 
-    if (length(val) < length(vec))
+    if (xlength(val) < xlength(vec))
     {
-        val = lengthgets(val, length(vec));
+        val = xlengthgets(val, xlength(vec));
         UNPROTECT(1);
         PROTECT(val);
     }
