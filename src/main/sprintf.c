@@ -70,21 +70,22 @@ static Rboolean checkfmt(const char *fmt, const char *pattern)
     return strcspn(p, pattern) ? TRUE : FALSE;
 }
 
+#define TRANSLATE_CHAR(_STR_, _i_)                                                                                     \
+    ((use_UTF8) ? translateCharUTF8(STRING_ELT(_STR_, _i_)) : translateChar(STRING_ELT(_STR_, _i_)))
+
 SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     int i, nargs, cnt, v, thislen, nfmt, nprotect = 0;
     /* fmt2 is a copy of fmt with '*' expanded.
        bit will hold numeric formats and %<w>s, so be quite small. */
-    char fmt[MAXLINE + 1], fmt2[MAXLINE + 10], *fmtp, bit[MAXLINE + 1], *outputString, *formatString;
+    char fmt[MAXLINE + 1], fmt2[MAXLINE + 10], *fmtp, bit[MAXLINE + 1], *outputString;
+    const char *formatString;
     size_t n, cur, chunk;
 
     SEXP format, _this, a[MAXNARGS], ans /* -Wall */ = R_NilValue;
     int ns, maxlen, lens[MAXNARGS], nthis, nstar, star_arg = 0;
     static R_StringBuffer outbuff = {NULL, 0, MAXELTSIZE};
     Rboolean has_star, use_UTF8;
-
-#define TRANSLATE_CHAR(_STR_, _i_)                                                                                     \
-    (char *)((use_UTF8) ? translateCharUTF8(STRING_ELT(_STR_, _i_)) : translateChar(STRING_ELT(_STR_, _i_)))
 
 #define _my_sprintf(_X_)                                                                                               \
     {                                                                                                                  \
@@ -159,7 +160,8 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
         /* process the format string */
         for (cur = 0, cnt = 0; cur < n; cur += chunk)
         {
-            char *curFormat = formatString + cur, *ss, *starc;
+            const char *curFormat = formatString + cur, *ss;
+            char *starc;
             ss = NULL;
             if (formatString[cur] == '%')
             { /* handle special format command */
@@ -502,7 +504,8 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP attribute_hidden do_getfmts(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     int cnt, v, nfmt;
-    char fmt[MAXLINE + 1], bit[MAXLINE + 1], *formatString;
+    char fmt[MAXLINE + 1], bit[MAXLINE + 1];
+    const char *formatString;
     size_t n, cur, chunk, maxlen = 0;
 
     SEXP format, res;
@@ -512,9 +515,6 @@ SEXP attribute_hidden do_getfmts(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
 
     PROTECT(res = allocVector(STRSXP, MAXNARGS));
-
-#define TRANSLATE_CHAR(_STR_, _i_)                                                                                     \
-    (char *)((use_UTF8) ? translateCharUTF8(STRING_ELT(_STR_, _i_)) : translateChar(STRING_ELT(_STR_, _i_)))
 
 #define SET_RESULT(n, s)                                                                                               \
     {                                                                                                                  \
@@ -539,7 +539,8 @@ SEXP attribute_hidden do_getfmts(SEXP call, SEXP op, SEXP args, SEXP env)
     /* process the format string */
     for (cur = 0, cnt = 0; cur < n; cur += chunk)
     {
-        char *curFormat = formatString + cur, *starc;
+        const char *curFormat = formatString + cur;
+        char *starc;
         if (formatString[cur] == '%')
         { /* handle special format command */
 
