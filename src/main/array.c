@@ -480,9 +480,9 @@ SEXP attribute_hidden do_length(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         if (length(ans) == 1 && TYPEOF(ans) == REALSXP)
         {
-            int l = asInteger(ans);
-            if (l != NA_INTEGER)
-                return ScalarInteger(l);
+            double d = REAL(ans)[0];
+            if (R_FINITE(d) && d >= 0. && d <= INT_MAX)
+                return coerceVector(ans, INTSXP);
         }
         return (ans);
     }
