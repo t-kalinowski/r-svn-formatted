@@ -2,7 +2,7 @@
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 1998-2012   The R Core Team
- *  Copyright (C) 2002--2008  The R Foundation
+ *  Copyright (C) 2002-2008   The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -462,15 +462,30 @@ SEXP attribute_hidden do_length(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (PRIMVAL(op))
     { /* xlength */
-        if (isObject(x) && DispatchOrEval(call, op, "xlength", args, rho, &ans, 0, 1))
-            return (ans);
-        if (isObject(x) && DispatchOrEval(call, op, "length", args, rho, &ans, 0, 1))
-            return (ans);
+        if (isObject(x))
+        {
+            if (DispatchOrEval(call, op, "xlength", args, rho, &ans, 0, 1))
+                return (ans);
+            else if (DispatchOrEval(call, op, "length", args, rho, &ans, 0, 1))
+                return (ans);
+        }
 
-        return ScalarReal((double)xlength(x));
+        R_xlen_t len = xlength(x);
+        if (len > INT_MAX)
+            return ScalarReal((double)xlength(x));
+        else
+            return ScalarInteger((int)len);
     }
     if (isObject(x) && DispatchOrEval(call, op, "length", args, rho, &ans, 0, 1))
+    {
+        if (length(ans) == 1 && TYPEOF(ans) == REALSXP)
+        {
+            int l = asInteger(ans);
+            if (l != NA_INTEGER)
+                return ScalarInteger(l);
+        }
         return (ans);
+    }
 
 #ifdef LONG_VECTOR_SUPPORT
     R_xlen_t len = xlength(x);
