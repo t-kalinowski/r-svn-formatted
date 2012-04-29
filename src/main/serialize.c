@@ -658,7 +658,7 @@ static SEXP MakeHashTable(void)
 
 static void HashAdd(SEXP obj, SEXP ht)
 {
-    int pos = PTRHASH(obj) % HASH_TABLE_SIZE(ht);
+    R_size_t pos = PTRHASH(obj) % HASH_TABLE_SIZE(ht);
     int count = HASH_TABLE_COUNT(ht) + 1;
     SEXP val = ScalarInteger(count);
     SEXP cell = CONS(val, HASH_BUCKET(ht, pos));
@@ -670,7 +670,7 @@ static void HashAdd(SEXP obj, SEXP ht)
 
 static int HashGet(SEXP item, SEXP ht)
 {
-    int pos = PTRHASH(item) % HASH_TABLE_SIZE(ht);
+    R_size_t pos = PTRHASH(item) % HASH_TABLE_SIZE(ht);
     SEXP cell;
     for (cell = HASH_BUCKET(ht, pos); cell != R_NilValue; cell = CDR(cell))
         if (item == TAG(cell))
@@ -867,7 +867,7 @@ static void WriteLENGTH(R_outpstream_t stream, SEXP s)
     {
         OutInteger(stream, -1);
         R_xlen_t len = XLENGTH(s);
-        OutInteger(stream, len / 4294967296L);
+        OutInteger(stream, (int)(len / 4294967296L));
         OutInteger(stream, (int)(len % 4294967296L));
     }
     else
@@ -1215,10 +1215,9 @@ static SEXP MakeCircleHashTable(void)
 static Rboolean AddCircleHash(SEXP item, SEXP ct)
 {
     SEXP table, bucket, list;
-    int pos;
 
     table = CDR(ct);
-    pos = PTRHASH(item) % LENGTH(table);
+    R_size_t pos = PTRHASH(item) % LENGTH(table);
     bucket = VECTOR_ELT(table, pos);
     for (list = bucket; list != R_NilValue; list = CDR(list))
         if (TAG(list) == item)
