@@ -31,6 +31,12 @@
 
 #include "graphics.h"
 
+static void TypeCheck(SEXP s, SEXPTYPE type)
+{
+    if (TYPEOF(s) != type)
+        error("invalid type passed to graphics function");
+}
+
 /*  F i l l e d   C o n t o u r   P l o t s  */
 
 /*  R o s s  I h a k a,  M a r c h  1 9 9 9  */
@@ -170,7 +176,7 @@ static void FindPolygonVertices(double low, double high, double x1, double x2, d
 }
 
 /* filledcontour(x, y, z, levels, col) */
-SEXP FilledContour(SEXP args)
+SEXP C_filledcontour(SEXP args)
 {
     SEXP sx, sy, sz, sc, scol;
     double *x, *y, *z, *c;
@@ -178,7 +184,6 @@ SEXP FilledContour(SEXP args)
     int i, j, k, npt, nx, ny, nc, ncol, colsave, xpdsave;
     double px[8], py[8], pz[8];
     pGEDevDesc dd = GEcurrentDevice();
-    SEXP call = R_NilValue;
 
     GCheckState(dd);
 
@@ -186,21 +191,21 @@ SEXP FilledContour(SEXP args)
 
     args = CDR(args);
     sx = CAR(args);
-    internalTypeCheck(call, sx, REALSXP);
+    TypeCheck(sx, REALSXP);
     nx = LENGTH(sx);
     args = CDR(args);
 
     sy = CAR(args);
-    internalTypeCheck(call, sy, REALSXP);
+    TypeCheck(sy, REALSXP);
     ny = LENGTH(sy);
     args = CDR(args);
 
     sz = CAR(args);
-    internalTypeCheck(call, sz, REALSXP);
+    TypeCheck(sz, REALSXP);
     args = CDR(args);
 
     sc = CAR(args); /* levels */
-    internalTypeCheck(call, sc, REALSXP);
+    TypeCheck(sc, REALSXP);
     nc = length(sc);
     args = CDR(args);
 
@@ -285,7 +290,7 @@ badlev:
 /*  I m a g e   R e n d e r i n g  */
 
 /* image(x, y, z, col, breaks) */
-SEXP Image(SEXP args)
+SEXP C_image(SEXP args)
 {
     SEXP sx, sy, sz, sc;
     double *x, *y;
@@ -294,23 +299,22 @@ SEXP Image(SEXP args)
     int i, j, nx, ny, nc, xpdsave;
     rcolor colsave;
     pGEDevDesc dd = GEcurrentDevice();
-    SEXP call = R_NilValue;
 
     GCheckState(dd);
 
     args = CDR(args);
     sx = CAR(args);
-    internalTypeCheck(call, sx, REALSXP);
+    TypeCheck(sx, REALSXP);
     nx = LENGTH(sx);
     args = CDR(args);
 
     sy = CAR(args);
-    internalTypeCheck(call, sy, REALSXP);
+    TypeCheck(sy, REALSXP);
     ny = LENGTH(sy);
     args = CDR(args);
 
     sz = CAR(args);
-    internalTypeCheck(call, sz, INTSXP);
+    TypeCheck(sz, INTSXP);
     args = CDR(args);
 
     PROTECT(sc = FixupCol(CAR(args), R_TRANWHITE));
@@ -1113,7 +1117,7 @@ static void PerspAxes(double *x, double *y, double *z, const char *xlab, cetype_
     gpptr(dd)->xpd = xpdsave;
 }
 
-SEXP Persp(SEXP args)
+SEXP C_persp(SEXP args)
 {
     SEXP x, y, z, xlim, ylim, zlim;
     SEXP depth, indx, originalArgs;
@@ -1124,8 +1128,6 @@ SEXP Persp(SEXP args)
     int i, j, scale, ncol, dobox, doaxes, nTicks, tickType;
     char EdgeDone[12]; /* Which edges have been drawn previously */
     pGEDevDesc dd;
-
-    SEXP call = R_NilValue;
 
     args = CDR(args);
     if (length(args) < 24) /* 24 plus any inline par()s */
@@ -1265,7 +1267,7 @@ SEXP Persp(SEXP args)
 
     GSetState(1, dd);
     GSavePars(dd);
-    ProcessInlinePars(args, dd, call);
+    ProcessInlinePars(args, dd);
     if (length(border) > 1)
         gpptr(dd)->fg = INTEGER(border)[0];
     gpptr(dd)->xlog = gpptr(dd)->ylog = FALSE;

@@ -29,6 +29,14 @@
 #include <Colors.h> /* for isNAcol */
 #include <Print.h>
 
+#include "graphics.h"
+
+static void TypeCheck(SEXP s, SEXPTYPE type)
+{
+    if (TYPEOF(s) != type)
+        error("invalid type passed to graphics function");
+}
+
 #define imax2(x, y) ((x < y) ? y : x)
 
 static R_INLINE double fmin2(double x, double y)
@@ -351,14 +359,14 @@ attribute_hidden SEXP FixupVFont(SEXP vfont)
     return ans;
 }
 
-/* GetTextArg() : extract from call and possibly set text arguments
+/* GetTextArg() : extract and possibly set text arguments
  *  ("label", col=, cex=, font=)
  *
  * Main purpose: Treat things like  title(main = list("This Title", font= 4))
  *
- * Called from	do_title()  [only, currently]
+ * Called from	Title()  [only, currently]
  */
-static void GetTextArg(SEXP call, SEXP spec, SEXP *ptxt, rcolor *pcol, double *pcex, int *pfont)
+static void GetTextArg(SEXP spec, SEXP *ptxt, rcolor *pcol, double *pcex, int *pfont)
 {
     int i, n, font, colspecd;
     rcolor col;
@@ -507,15 +515,15 @@ SEXP attribute_hidden do_plot_new(SEXP call, SEXP op, SEXP args, SEXP env)
  *	full computation is captured in the display list.
  */
 
-SEXP attribute_hidden do_plot_window(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_plot_window(SEXP args)
 {
     SEXP xlim, ylim, logarg;
     double asp, xmin, xmax, ymin, ymax;
     Rboolean logscale;
     const char *p;
-    SEXP originalArgs = args;
     pGEDevDesc dd = GEcurrentDevice();
 
+    args = CDR(args);
     if (length(args) < 3)
         error(_("at least 3 arguments required"));
 
@@ -628,16 +636,12 @@ SEXP attribute_hidden do_plot_window(SEXP call, SEXP op, SEXP args, SEXP env)
     GMapWin2Fig(dd);
     GRestorePars(dd);
     /* This has now clobbered the Rf_ggptr settings for coord system */
-
-    /* NOTE: the operation is only recorded if there was no "error" */
-    if (GRecording(call, dd))
-        GErecordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
 
 static void GetAxisLimits(double left, double right, Rboolean logflag, double *low, double *high)
 {
-    /*	Called from do_axis()	such as
+    /*	Called from Axis()	such as
      *	GetAxisLimits(gpptr(dd)->usr[0], gpptr(dd)->usr[1], &low, &high)
      *
      *	Computes  *low < left, right < *high  (even if left=right)
@@ -737,7 +741,7 @@ SEXP labelformat(SEXP labels)
 
 SEXP CreateAtVector(double *axp, double *usr, int nint, Rboolean logflag)
 {
-    /*	Create an  'at = ...' vector for  axis(.) / do_axis,
+    /*	Create an  'at = ...' vector for  axis(.)
      *	i.e., the vector of tick mark locations,
      *	when none has been specified (= default).
      *
@@ -1031,14 +1035,14 @@ static void getylimits(double *y, pGEDevDesc dd)
     }
 }
 
-SEXP attribute_hidden do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_axis(SEXP args)
 {
     /* axis(side, at, labels, tick, line, pos,
             outer, font, lty, lwd, lwd.ticks, col, col.ticks,
         hadj, padj, ...)
     */
 
-    SEXP at, lab, padj;
+    SEXP at, lab, padj, label;
     int font, lty, npadj;
     rcolor col, colticks;
     int i, n, nint = 0, ntmp, side, *ind, outer, lineoff = 0;
@@ -1050,13 +1054,13 @@ SEXP attribute_hidden do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     double gap, labw, low, high, line, pos, lwd, lwdticks, hadj;
     double axis_base, axis_tick, axis_lab, axis_low, axis_high;
 
-    SEXP originalArgs = args, label;
     pGEDevDesc dd = GEcurrentDevice();
 
     /* Arity Check */
     /* This is a builtin function, so it should always have */
     /* the correct arity, but it doesn't hurt to be defensive. */
 
+    args = CDR(args);
     if (length(args) < 15)
         error(_("too few arguments"));
     GCheckState(dd);
@@ -1620,14 +1624,11 @@ SEXP attribute_hidden do_axis(SEXP call, SEXP op, SEXP args, SEXP env)
     } /* end  switch(side, ..) */
     GMode(0, dd);
     GRestorePars(dd);
-    /* NOTE: only record operation if no "error"  */
-    if (GRecording(call, dd))
-        GErecordGraphicOperation(op, originalArgs, dd);
     UNPROTECT(4); /* lab, at, lab, padj again */
     return at;
-} /* do_axis */
+} /* Axis */
 
-SEXP attribute_hidden do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_plotXY(SEXP args)
 {
     /*	plot.xy(xy, type, pch, lty, col, bg, cex, lwd, ...)
 
@@ -1639,11 +1640,11 @@ SEXP attribute_hidden do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
     rcolor thiscol, thisbg;
     const void *vmax = NULL /* -Wall */;
 
-    SEXP originalArgs = args;
     pGEDevDesc dd = GEcurrentDevice();
 
     /* Basic Checks */
     GCheckState(dd);
+    args = CDR(args);
     if (length(args) < 7)
         error(_("too few arguments"));
 
@@ -1654,13 +1655,13 @@ SEXP attribute_hidden do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
     sxy = CAR(args);                                                                                                   \
     if (isNewList(sxy) && length(sxy) >= 2)                                                                            \
     {                                                                                                                  \
-        internalTypeCheck(call, sx = VECTOR_ELT(sxy, 0), REALSXP);                                                     \
-        internalTypeCheck(call, sy = VECTOR_ELT(sxy, 1), REALSXP);                                                     \
+        TypeCheck(sx = VECTOR_ELT(sxy, 0), REALSXP);                                                                   \
+        TypeCheck(sy = VECTOR_ELT(sxy, 1), REALSXP);                                                                   \
     }                                                                                                                  \
     else if (isList(sxy) && length(sxy) >= 2)                                                                          \
     {                                                                                                                  \
-        internalTypeCheck(call, sx = CAR(sxy), REALSXP);                                                               \
-        internalTypeCheck(call, sy = CADR(sxy), REALSXP);                                                              \
+        TypeCheck(sx = CAR(sxy), REALSXP);                                                                             \
+        TypeCheck(sy = CADR(sxy), REALSXP);                                                                            \
     }                                                                                                                  \
     else                                                                                                               \
         error(_("invalid plotting structure"));                                                                        \
@@ -1948,15 +1949,12 @@ SEXP attribute_hidden do_plot_xy(SEXP call, SEXP op, SEXP args, SEXP env)
     GMode(0, dd);
     GRestorePars(dd);
     UNPROTECT(6);
-    /* NOTE: only record operation if no "error"  */
-    if (GRecording(call, dd))
-        GErecordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
-} /* do_plot_xy */
+} /* PlotXY */
 
 /* Checks for ... , x0, y0, x1, y1 ... */
 
-static void xypoints(SEXP call, SEXP args, int *n)
+static void xypoints(SEXP args, int *n)
 {
     int k = 0, /* -Wall */ kmin;
 
@@ -2002,21 +2000,21 @@ static void xypoints(SEXP call, SEXP args, int *n)
         error(_("cannot mix zero-length and non-zero-length coordinates"));
 }
 
-SEXP attribute_hidden do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_segments(SEXP args)
 {
     /* segments(x0, y0, x1, y1, col, lty, lwd, ...) */
     SEXP sx0, sx1, sy0, sy1, col, lty, lwd;
     double *x0, *x1, *y0, *y1;
     double xx[2], yy[2];
     int nx0, nx1, ny0, ny1, i, n, ncol, nlty, nlwd;
-    SEXP originalArgs = args;
     pGEDevDesc dd = GEcurrentDevice();
 
+    args = CDR(args);
     if (length(args) < 4)
         error(_("too few arguments"));
     GCheckState(dd);
 
-    xypoints(call, args, &n);
+    xypoints(args, &n);
     if (n == 0)
         return R_NilValue;
 
@@ -2078,26 +2076,23 @@ SEXP attribute_hidden do_segments(SEXP call, SEXP op, SEXP args, SEXP env)
     GRestorePars(dd);
 
     UNPROTECT(3);
-    /* NOTE: only record operation if no "error"  */
-    if (GRecording(call, dd))
-        GErecordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
 
-SEXP attribute_hidden do_rect(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_rect(SEXP args)
 {
     /* rect(xl, yb, xr, yt, col, border, lty, ...) */
     SEXP sxl, sxr, syb, syt, col, lty, lwd, border;
     double *xl, *xr, *yb, *yt, x0, y0, x1, y1;
     int i, n, nxl, nxr, nyb, nyt, ncol, nlty, nlwd, nborder;
-    SEXP originalArgs = args;
     pGEDevDesc dd = GEcurrentDevice();
 
+    args = CDR(args);
     if (length(args) < 4)
         error(_("too few arguments"));
     GCheckState(dd);
 
-    xypoints(call, args, &n);
+    xypoints(args, &n);
     if (n == 0)
         return R_NilValue;
 
@@ -2162,13 +2157,10 @@ SEXP attribute_hidden do_rect(SEXP call, SEXP op, SEXP args, SEXP env)
 
     GRestorePars(dd);
     UNPROTECT(4);
-    /* NOTE: only record operation if no "error"  */
-    if (GRecording(call, dd))
-        GErecordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
 
-SEXP attribute_hidden do_path(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_path(SEXP args)
 {
     /* path(x, y, col, border, lty, ...) */
     SEXP sx, sy, nper, rule, col, border, lty;
@@ -2176,11 +2168,11 @@ SEXP attribute_hidden do_path(SEXP call, SEXP op, SEXP args, SEXP env)
     double *xx, *yy;
     const void *vmax = NULL /* -Wall */;
 
-    SEXP originalArgs = args;
     pGEDevDesc dd = GEcurrentDevice();
 
     GCheckState(dd);
 
+    args = CDR(args);
     if (length(args) < 2)
         error(_("too few arguments"));
     /* (x,y) is checked in R via xy.coords() ; no need here : */
@@ -2239,15 +2231,12 @@ SEXP attribute_hidden do_path(SEXP call, SEXP op, SEXP args, SEXP env)
 
     GRestorePars(dd);
     UNPROTECT(5);
-    /* NOTE: only record operation if no "error"  */
-    if (GRecording(call, dd))
-        GErecordGraphicOperation(op, originalArgs, dd);
 
     vmaxset(vmax);
     return R_NilValue;
 }
 
-SEXP attribute_hidden do_raster(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_raster(SEXP args)
 {
     /* raster(image, xl, yb, xr, yt, angle, interpolate, ...) */
     const void *vmax;
@@ -2255,9 +2244,9 @@ SEXP attribute_hidden do_raster(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP raster, dim, sxl, sxr, syb, syt, angle, interpolate;
     double *xl, *xr, *yb, *yt, x0, y0, x1, y1;
     int i, n, nxl, nxr, nyb, nyt;
-    SEXP originalArgs = args;
     pGEDevDesc dd = GEcurrentDevice();
 
+    args = CDR(args);
     if (length(args) < 7)
         error(_("too few arguments"));
     GCheckState(dd);
@@ -2279,7 +2268,7 @@ SEXP attribute_hidden do_raster(SEXP call, SEXP op, SEXP args, SEXP env)
             image[i] = RGBpar3(raster, i, R_TRANWHITE);
     }
 
-    xypoints(call, args, &n);
+    xypoints(args, &n);
     if (n == 0)
         return R_NilValue;
 
@@ -2325,15 +2314,12 @@ SEXP attribute_hidden do_raster(SEXP call, SEXP op, SEXP args, SEXP env)
     GMode(0, dd);
 
     GRestorePars(dd);
-    /* NOTE: only record operation if no "error"  */
-    if (GRecording(call, dd))
-        GErecordGraphicOperation(op, originalArgs, dd);
 
     vmaxset(vmax);
     return R_NilValue;
 }
 
-SEXP attribute_hidden do_arrows(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_arrows(SEXP args)
 {
     /* arrows(x0, y0, x1, y1, length, angle, code, col, lty, lwd, ...) */
     SEXP sx0, sx1, sy0, sy1, col, lty, lwd;
@@ -2343,14 +2329,14 @@ SEXP attribute_hidden do_arrows(SEXP call, SEXP op, SEXP args, SEXP env)
     int code;
     int nx0, nx1, ny0, ny1, i, n, ncol, nlty, nlwd;
     rcolor thiscol;
-    SEXP originalArgs = args;
     pGEDevDesc dd = GEcurrentDevice();
 
+    args = CDR(args);
     if (length(args) < 4)
         error(_("too few arguments"));
     GCheckState(dd);
 
-    xypoints(call, args, &n);
+    xypoints(args, &n);
     if (n == 0)
         return R_NilValue;
 
@@ -2424,9 +2410,6 @@ SEXP attribute_hidden do_arrows(SEXP call, SEXP op, SEXP args, SEXP env)
     GRestorePars(dd);
 
     UNPROTECT(3);
-    /* NOTE: only record operation if no "error"  */
-    if (GRecording(call, dd))
-        GErecordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
 
@@ -2439,7 +2422,7 @@ static void drawPolygon(int n, double *x, double *y, int lty, int fill, int bord
     GPolygon(n, x, y, USER, fill, border, dd);
 }
 
-SEXP attribute_hidden do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_polygon(SEXP args)
 {
     /* polygon(x, y, col, border, lty, ...) */
     SEXP sx, sy, col, border, lty;
@@ -2448,11 +2431,11 @@ SEXP attribute_hidden do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
     int num = 0;
     double *x, *y, xx, yy, xold, yold;
 
-    SEXP originalArgs = args;
     pGEDevDesc dd = GEcurrentDevice();
 
     GCheckState(dd);
 
+    args = CDR(args);
     if (length(args) < 2)
         error(_("too few arguments"));
     /* (x,y) is checked in R via xy.coords() ; no need here : */
@@ -2513,13 +2496,10 @@ SEXP attribute_hidden do_polygon(SEXP call, SEXP op, SEXP args, SEXP env)
 
     GRestorePars(dd);
     UNPROTECT(3);
-    /* NOTE: only record operation if no "error"  */
-    if (GRecording(call, dd))
-        GErecordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
 
-SEXP attribute_hidden do_text(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_text(SEXP args)
 {
     /* text(xy, labels, adj, pos, offset,
      *	vfont, cex, col, font, ...)
@@ -2530,11 +2510,12 @@ SEXP attribute_hidden do_text(SEXP call, SEXP op, SEXP args, SEXP env)
     double *x, *y;
     double xx, yy;
     Rboolean vectorFonts = FALSE;
-    SEXP string, originalArgs = args;
+    SEXP string;
     pGEDevDesc dd = GEcurrentDevice();
 
     GCheckState(dd);
 
+    args = CDR(args);
     if (length(args) < 3)
         error(_("too few arguments"));
 
@@ -2697,9 +2678,6 @@ SEXP attribute_hidden do_text(SEXP call, SEXP op, SEXP args, SEXP env)
 
     GRestorePars(dd);
     UNPROTECT(7);
-    /* NOTE: only record operation if no "error"  */
-    if (GRecording(call, dd))
-        GErecordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
 
@@ -2843,7 +2821,7 @@ static double ComputeAtValue(double at, double adj, int side, int las, int outer
      font = NA,
      ...) */
 
-SEXP attribute_hidden do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_mtext(SEXP args)
 {
     SEXP text, side, line, outer, at, adj, padj, cex, col, font, string;
     SEXP rawcol;
@@ -2851,11 +2829,11 @@ SEXP attribute_hidden do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
     Rboolean dirtyplot = FALSE, gpnewsave = FALSE, dpnewsave = FALSE;
     int i, n, fontsave, colsave;
     double cexsave;
-    SEXP originalArgs = args;
     pGEDevDesc dd = GEcurrentDevice();
 
     GCheckState(dd);
 
+    args = CDR(args);
     if (length(args) < 9)
         error(_("too few arguments"));
 
@@ -3032,14 +3010,10 @@ SEXP attribute_hidden do_mtext(SEXP call, SEXP op, SEXP args, SEXP env)
         dpptr(dd)->new = dpnewsave;
     }
     UNPROTECT(10);
-
-    /* NOTE: only record operation if no "error"  */
-    if (GRecording(call, dd))
-        GErecordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
-} /* do_mtext */
+} /* Mtext */
 
-SEXP attribute_hidden do_title(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_title(SEXP args)
 {
     /* Annotation for plots :
 
@@ -3051,11 +3025,11 @@ SEXP attribute_hidden do_title(SEXP call, SEXP op, SEXP args, SEXP env)
     double adj, adjy, cex, offset, line, hpos, vpos;
     int i, n, font, outer, where;
     rcolor col;
-    SEXP originalArgs = args;
     pGEDevDesc dd = GEcurrentDevice();
 
     GCheckState(dd);
 
+    args = CDR(args);
     if (length(args) < 6)
         error(_("too few arguments"));
 
@@ -3103,7 +3077,7 @@ SEXP attribute_hidden do_title(SEXP call, SEXP op, SEXP args, SEXP env)
         col = gpptr(dd)->colmain;
         font = gpptr(dd)->fontmain;
         /* GetTextArg may coerce, so protect the result */
-        GetTextArg(call, Main, &Main, &col, &cex, &font);
+        GetTextArg(Main, &Main, &col, &cex, &font);
         PROTECT(Main);
         gpptr(dd)->col = col;
         gpptr(dd)->cex = gpptr(dd)->cexbase * cex;
@@ -3161,7 +3135,7 @@ SEXP attribute_hidden do_title(SEXP call, SEXP op, SEXP args, SEXP env)
         col = gpptr(dd)->colsub;
         font = gpptr(dd)->fontsub;
         /* GetTextArg may coerce, so protect the result */
-        GetTextArg(call, sub, &sub, &col, &cex, &font);
+        GetTextArg(sub, &sub, &col, &cex, &font);
         PROTECT(sub);
         gpptr(dd)->col = col;
         gpptr(dd)->cex = gpptr(dd)->cexbase * cex;
@@ -3200,7 +3174,7 @@ SEXP attribute_hidden do_title(SEXP call, SEXP op, SEXP args, SEXP env)
         col = gpptr(dd)->collab;
         font = gpptr(dd)->fontlab;
         /* GetTextArg may coerce, so protect the result */
-        GetTextArg(call, xlab, &xlab, &col, &cex, &font);
+        GetTextArg(xlab, &xlab, &col, &cex, &font);
         PROTECT(xlab);
         gpptr(dd)->cex = gpptr(dd)->cexbase * cex;
         gpptr(dd)->col = col;
@@ -3239,7 +3213,7 @@ SEXP attribute_hidden do_title(SEXP call, SEXP op, SEXP args, SEXP env)
         col = gpptr(dd)->collab;
         font = gpptr(dd)->fontlab;
         /* GetTextArg may coerce, so protect the result */
-        GetTextArg(call, ylab, &ylab, &col, &cex, &font);
+        GetTextArg(ylab, &ylab, &col, &cex, &font);
         PROTECT(ylab);
         gpptr(dd)->cex = gpptr(dd)->cexbase * cex;
         gpptr(dd)->col = col;
@@ -3274,25 +3248,22 @@ SEXP attribute_hidden do_title(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     GMode(0, dd);
     GRestorePars(dd);
-    /* NOTE: only record operation if no "error"  */
-    if (GRecording(call, dd))
-        GErecordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
-} /* do_title */
+} /* Title */
 
 /*  abline(a, b, h, v, col, lty, lwd, ...)
     draw lines in intercept/slope form.	 */
 
-SEXP attribute_hidden do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_abline(SEXP args)
 {
     SEXP a, b, h, v, untf, col, lty, lwd;
     int i, ncol, nlines, nlty, nlwd, lstart, lstop;
     double aa, bb, x[2], y[2] = {0., 0.} /* -Wall */;
-    SEXP originalArgs = args;
     pGEDevDesc dd = GEcurrentDevice();
 
     GCheckState(dd);
 
+    args = CDR(args);
     if (length(args) < 5)
         error(_("too few arguments"));
 
@@ -3487,24 +3458,21 @@ SEXP attribute_hidden do_abline(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     UNPROTECT(3);
     GRestorePars(dd);
-    /* NOTE: only record operation if no "error"  */
-    if (GRecording(call, dd))
-        GErecordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
-} /* do_abline */
+} /* Abline */
 
-SEXP attribute_hidden do_box(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_box(SEXP args)
 {
     /*     box(which="plot", lty="solid", ...)
            --- which is coded, 1 = plot, 2 = figure, 3 = inner, 4 = outer.
     */
     int which, col;
     SEXP colsxp, fgsxp;
-    SEXP originalArgs = args;
     pGEDevDesc dd = GEcurrentDevice();
 
     GCheckState(dd);
     GSavePars(dd);
+    args = CDR(args);
     which = asInteger(CAR(args));
     args = CDR(args);
     if (which < 1 || which > 4)
@@ -3533,9 +3501,6 @@ SEXP attribute_hidden do_box(SEXP call, SEXP op, SEXP args, SEXP env)
     GBox(which, dd);
     GMode(0, dd);
     GRestorePars(dd);
-    /* NOTE: only record operation if no "error"  */
-    if (GRecording(call, dd))
-        GErecordGraphicOperation(op, originalArgs, dd);
     return R_NilValue;
 }
 
@@ -3907,10 +3872,9 @@ SEXP attribute_hidden do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
         int i, n, units;                                                                                               \
         double cex, cexsave;                                                                                           \
         pGEDevDesc dd = GEcurrentDevice();                                                                             \
-                                                                                                                       \
+        args = CDR(args);                                                                                              \
         if (length(args) < 5)                                                                                          \
             error(_("too few arguments"));                                                                             \
-        /* GCheckState(dd); */                                                                                         \
                                                                                                                        \
         str = CAR(args);                                                                                               \
         if (isSymbol(str) || isLanguage(str))                                                                          \
@@ -3966,9 +3930,9 @@ SEXP attribute_hidden do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
         return ans;                                                                                                    \
     }
 
-SEXP attribute_hidden do_strheight(SEXP call, SEXP op, SEXP args, SEXP env) DO_STR_DIM(Height)
+SEXP C_strHeight(SEXP args) DO_STR_DIM(Height)
 
-    SEXP attribute_hidden do_strwidth(SEXP call, SEXP op, SEXP args, SEXP env) DO_STR_DIM(Width)
+    SEXP C_strWidth(SEXP args) DO_STR_DIM(Width)
 
 #undef DO_STR_DIM
 
@@ -4028,18 +3992,18 @@ static void drawdend(int node, double *x, double *y, SEXP dnd_llabels, pGEDevDes
     *x = 0.5 * (xl + xr);
 }
 
-SEXP attribute_hidden do_dend(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_dend(SEXP args)
 {
     double x, y;
     int n;
 
-    SEXP originalArgs, dnd_llabels, xpos;
+    SEXP dnd_llabels, xpos;
     pGEDevDesc dd;
 
     dd = GEcurrentDevice();
     GCheckState(dd);
 
-    originalArgs = args;
+    args = CDR(args);
     if (length(args) < 6)
         error(_("too few arguments"));
 
@@ -4096,9 +4060,6 @@ SEXP attribute_hidden do_dend(SEXP call, SEXP op, SEXP args, SEXP env)
     drawdend(n, &x, &y, dnd_llabels, dd);
     GMode(0, dd);
     GRestorePars(dd);
-    /* NOTE: only record operation if no "error"  */
-    if (GRecording(call, dd))
-        GErecordGraphicOperation(op, originalArgs, dd);
     UNPROTECT(1);
     return R_NilValue;
 
@@ -4107,17 +4068,17 @@ badargs:
     return R_NilValue; /* never used; to keep -Wall happy */
 }
 
-SEXP attribute_hidden do_dendwindow(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_dendwindow(SEXP args)
 {
     int i, imax, n;
     double pin, *ll, tmp, yval, *y, ymin, ymax, yrange, m;
-    SEXP originalArgs, merge, height, llabels, str;
+    SEXP merge, height, llabels, str;
     const void *vmax;
     pGEDevDesc dd;
 
     dd = GEcurrentDevice();
     GCheckState(dd);
-    originalArgs = args;
+    args = CDR(args);
     if (length(args) < 5)
         error(_("too few arguments"));
     n = asInteger(CAR(args));
@@ -4216,9 +4177,6 @@ SEXP attribute_hidden do_dendwindow(SEXP call, SEXP op, SEXP args, SEXP env)
     GScale(ymin, ymax, 2 /* y */, dd);
     GMapWin2Fig(dd);
     GRestorePars(dd);
-    /* NOTE: only record operation if no "error"  */
-    if (GRecording(call, dd))
-        GErecordGraphicOperation(op, originalArgs, dd);
     vmaxset(vmax);
     return R_NilValue;
 badargs:
@@ -4226,11 +4184,11 @@ badargs:
     return R_NilValue; /* never used; to keep -Wall happy */
 }
 
-SEXP attribute_hidden do_erase(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_erase(SEXP args)
 {
     SEXP col;
     pGEDevDesc dd = GEcurrentDevice();
-    checkArity(op, args);
+    args = CDR(args);
     PROTECT(col = FixupCol(CAR(args), R_TRANWHITE));
     GSavePars(dd);
     GMode(1, dd);
@@ -4260,7 +4218,7 @@ static Rboolean SymbolRange(double *x, int n, double *xmax, double *xmin)
     return (*xmax >= *xmin && *xmin >= 0);
 }
 
-static void CheckSymbolPar(SEXP call, SEXP p, int *nr, int *nc)
+static void CheckSymbolPar(SEXP p, int *nr, int *nc)
 {
     SEXP dim = getAttrib(p, R_DimSymbol);
     switch (length(dim))
@@ -4286,7 +4244,7 @@ static void CheckSymbolPar(SEXP call, SEXP p, int *nr, int *nc)
 }
 
 /* Internal  symbols(x, y, type, data, inches, bg, fg, ...) */
-SEXP attribute_hidden do_symbols(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_symbols(SEXP args)
 {
     SEXP x, y, p, fg, bg;
     int i, j, nr, nc, nbg, nfg, type;
@@ -4295,9 +4253,9 @@ SEXP attribute_hidden do_symbols(SEXP call, SEXP op, SEXP args, SEXP env)
     double *pp, *xp, *yp;
     const void *vmax;
 
-    SEXP originalArgs = args;
     pGEDevDesc dd = GEcurrentDevice();
     GCheckState(dd);
+    args = CDR(args);
 
     if (length(args) < 7)
         error(_("too few arguments"));
@@ -4315,7 +4273,7 @@ SEXP attribute_hidden do_symbols(SEXP call, SEXP op, SEXP args, SEXP env)
     /* data: */
     p = PROTECT(coerceVector(CAR(args), REALSXP));
     args = CDR(args);
-    CheckSymbolPar(call, p, &nr, &nc);
+    CheckSymbolPar(p, &nr, &nc);
     if (LENGTH(x) != nr || LENGTH(y) != nr)
         error(_("x/y/parameter length mismatch"));
 
@@ -4586,13 +4544,11 @@ SEXP attribute_hidden do_symbols(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     GMode(0, dd);
     GRestorePars(dd);
-    if (GRecording(call, dd))
-        GErecordGraphicOperation(op, originalArgs, dd);
     UNPROTECT(5);
     return R_NilValue;
 }
 
-SEXP attribute_hidden do_xspline(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_xspline(SEXP args)
 {
     SEXP sx, sy, ss, col, border, res, ans = R_NilValue;
     int i, nx;
@@ -4604,10 +4560,10 @@ SEXP attribute_hidden do_xspline(SEXP call, SEXP op, SEXP args, SEXP env)
     const void *vmaxsave;
     R_GE_gcontext gc;
 
-    SEXP originalArgs = args;
     pGEDevDesc dd = GEcurrentDevice();
 
     GCheckState(dd);
+    args = CDR(args);
 
     if (length(args) < 6)
         error(_("too few arguments"));
@@ -4657,7 +4613,7 @@ SEXP attribute_hidden do_xspline(SEXP call, SEXP op, SEXP args, SEXP env)
     xx = (double *)R_alloc(nx, sizeof(double));
     yy = (double *)R_alloc(nx, sizeof(double));
     if (!xx || !yy)
-        error(_("unable to allocate memory (in do_xspline)"));
+        error(_("unable to allocate memory (in xspline)"));
     for (i = 0; i < nx; i++)
     {
         xx[i] = x[i];
@@ -4700,21 +4656,17 @@ SEXP attribute_hidden do_xspline(SEXP call, SEXP op, SEXP args, SEXP env)
 
     GMode(0, dd);
     GRestorePars(dd);
-    /* NOTE: only record operation if no "error"  */
-    if (GRecording(call, dd))
-        GErecordGraphicOperation(op, originalArgs, dd);
     return ans;
 }
 
 /* clip(x1, x2, y1, y2) */
-SEXP attribute_hidden do_clip(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_clip(SEXP args)
 {
     SEXP ans = R_NilValue;
     double x1, x2, y1, y2;
-    SEXP originalArgs = args;
     pGEDevDesc dd = GEcurrentDevice();
 
-    checkArity(op, args);
+    args = CDR(args);
     x1 = asReal(CAR(args));
     if (!R_FINITE(x1))
         error("invalid '%s' argument", "x1");
@@ -4736,22 +4688,18 @@ SEXP attribute_hidden do_clip(SEXP call, SEXP op, SEXP args, SEXP env)
     GESetClip(x1, y1, x2, y2, dd);
     /* avoid GClip resetting this */
     gpptr(dd)->oldxpd = gpptr(dd)->xpd;
-
-    /* NOTE: only record operation if no "error"  */
-    if (GRecording(call, dd))
-        GErecordGraphicOperation(op, originalArgs, dd);
     return ans;
 }
 
 /* convert[XY](x, from to) */
-SEXP attribute_hidden do_convertXY(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_convertX(SEXP args)
 {
     SEXP ans = R_NilValue, x;
     int from, to, i, n;
     double *rx;
     pGEDevDesc gdd = GEcurrentDevice();
 
-    checkArity(op, args);
+    args = CDR(args);
     x = CAR(args);
     if (TYPEOF(x) != REALSXP)
         error(_("invalid '%s' argument"), "x");
@@ -4767,12 +4715,38 @@ SEXP attribute_hidden do_convertXY(SEXP call, SEXP op, SEXP args, SEXP env)
 
     PROTECT(ans = duplicate(x));
     rx = REAL(ans);
-    if (PRIMVAL(op) == 1)
-        for (i = 0; i < n; i++)
-            rx[i] = GConvertY(rx[i], from, to, gdd);
-    else
-        for (i = 0; i < n; i++)
-            rx[i] = GConvertX(rx[i], from, to, gdd);
+    for (i = 0; i < n; i++)
+        rx[i] = GConvertX(rx[i], from, to, gdd);
+    UNPROTECT(1);
+
+    return ans;
+}
+
+SEXP C_convertY(SEXP args)
+{
+    SEXP ans = R_NilValue, x;
+    int from, to, i, n;
+    double *rx;
+    pGEDevDesc gdd = GEcurrentDevice();
+
+    args = CDR(args);
+    x = CAR(args);
+    if (TYPEOF(x) != REALSXP)
+        error(_("invalid '%s' argument"), "x");
+    n = LENGTH(x);
+    from = asInteger(CADR(args));
+    if (from == NA_INTEGER || from <= 0 || from > 17)
+        error(_("invalid '%s' argument"), "from");
+    to = asInteger(CADDR(args));
+    if (to == NA_INTEGER || to <= 0 || to > 17)
+        error(_("invalid '%s' argument"), "to");
+    from--;
+    to--;
+
+    PROTECT(ans = duplicate(x));
+    rx = REAL(ans);
+    for (i = 0; i < n; i++)
+        rx[i] = GConvertY(rx[i], from, to, gdd);
     UNPROTECT(1);
 
     return ans;
