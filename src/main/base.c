@@ -321,7 +321,7 @@ GPar *gpptr(pGEDevDesc dd)
     return &(bss->gp);
 }
 
-attribute_hidden GPar *dpptr(pGEDevDesc dd)
+GPar *dpptr(pGEDevDesc dd)
 {
     baseSystemState *bss = dd->gesd[baseRegisterIndex]->systemSpecific;
     return &(bss->dp);

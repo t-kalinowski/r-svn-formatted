@@ -463,6 +463,7 @@ static void GetTextArg(SEXP spec, SEXP *ptxt, rcolor *pcol, double *pcex, int *p
 
 /* GRAPHICS FUNCTION ENTRY POINTS */
 
+#if 0
 SEXP attribute_hidden do_plot_new(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* plot.new() - create a new plot "frame" */
@@ -488,9 +489,10 @@ SEXP attribute_hidden do_plot_new(SEXP call, SEXP op, SEXP args, SEXP env)
     GSetState(1, dd);
 
     if (GRecording(call, dd))
-        GErecordGraphicOperation(op, args, dd);
+	GErecordGraphicOperation(op, args, dd);
     return R_NilValue;
 }
+#endif
 
 /*
  *  SYNOPSIS
