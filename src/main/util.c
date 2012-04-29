@@ -111,7 +111,7 @@ int ncols(SEXP s)
 
 const static char type_msg[] = "invalid type passed to internal function\n";
 
-void attribute_hidden internalTypeCheck(SEXP call, SEXP s, SEXPTYPE type)
+void internalTypeCheck(SEXP call, SEXP s, SEXPTYPE type)
 {
     if (TYPEOF(s) != type)
     {
