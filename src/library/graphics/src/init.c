@@ -27,43 +27,26 @@
 #include "graphics.h"
 #include <R_ext/Rdynload.h>
 
+static const R_CallMethodDef CallEntries[] = {{"C_contourDef", (DL_FUNC)&C_contourDef, 0}, {NULL, NULL, 0}};
+
 #define EXTDEF(name, n)                                                                                                \
     {                                                                                                                  \
 #name, (DL_FUNC)&name, n                                                                                       \
     }
 
-static const R_ExternalMethodDef ExtEntries[] = {EXTDEF(C_filledcontour, 4),
-                                                 EXTDEF(C_image, 4),
-                                                 EXTDEF(C_persp, -1),
+static const R_ExternalMethodDef ExtEntries[] = {
+    EXTDEF(C_contour, -1),    EXTDEF(C_filledcontour, 4), EXTDEF(C_image, 4),      EXTDEF(C_persp, -1),
 
-                                                 EXTDEF(C_abline, -1),
-                                                 EXTDEF(C_axis, -1),
-                                                 EXTDEF(C_arrows, -1),
-                                                 EXTDEF(C_box, -1),
-                                                 EXTDEF(C_clip, -1),
-                                                 EXTDEF(C_convertX, 3),
-                                                 EXTDEF(C_convertY, 3),
-                                                 EXTDEF(C_dend, -1),
-                                                 EXTDEF(C_dendwindow, -1),
-                                                 EXTDEF(C_erase, -1),
-                                                 EXTDEF(C_mtext, -1),
-                                                 EXTDEF(C_path, -1),
-                                                 EXTDEF(C_plotXY, -1),
-                                                 EXTDEF(C_plot_window, -1),
-                                                 EXTDEF(C_polygon, -1),
-                                                 EXTDEF(C_raster, -1),
-                                                 EXTDEF(C_rect, -1),
-                                                 EXTDEF(C_segments, -1),
-                                                 EXTDEF(C_strHeight, -1),
-                                                 EXTDEF(C_strWidth, -1),
-                                                 EXTDEF(C_symbols, -1),
-                                                 EXTDEF(C_text, -1),
-                                                 EXTDEF(C_title, -1),
-                                                 EXTDEF(C_xspline, -1),
-                                                 {NULL, NULL, 0}};
+    EXTDEF(C_abline, -1),     EXTDEF(C_axis, -1),         EXTDEF(C_arrows, -1),    EXTDEF(C_box, -1),
+    EXTDEF(C_clip, -1),       EXTDEF(C_convertX, 3),      EXTDEF(C_convertY, 3),   EXTDEF(C_dend, -1),
+    EXTDEF(C_dendwindow, -1), EXTDEF(C_erase, -1),        EXTDEF(C_mtext, -1),     EXTDEF(C_path, -1),
+    EXTDEF(C_plotXY, -1),     EXTDEF(C_plot_window, -1),  EXTDEF(C_polygon, -1),   EXTDEF(C_raster, -1),
+    EXTDEF(C_rect, -1),       EXTDEF(C_segments, -1),     EXTDEF(C_strHeight, -1), EXTDEF(C_strWidth, -1),
+    EXTDEF(C_symbols, -1),    EXTDEF(C_text, -1),         EXTDEF(C_title, -1),     EXTDEF(C_xspline, -1),
+    {NULL, NULL, 0}};
 
 void R_init_graphics(DllInfo *dll)
 {
-    R_registerRoutines(dll, NULL, NULL, NULL, ExtEntries);
+    R_registerRoutines(dll, NULL, CallEntries, NULL, ExtEntries);
     R_useDynamicSymbols(dll, FALSE);
 }
