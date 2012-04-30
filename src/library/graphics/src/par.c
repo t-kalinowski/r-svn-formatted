@@ -45,6 +45,11 @@
 #include <Rmath.h>
 #include <Graphics.h> /* "GPar" structure + COMMENTS */
 
+static double R_Log10(double x)
+{
+    return (R_FINITE(x) && x > 0.0) ? log10(x) : NA_REAL;
+}
+
 typedef struct
 {
     char *name;
