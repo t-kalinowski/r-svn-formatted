@@ -31,8 +31,6 @@
 
 #include <Rmath.h>
 
-#include <R_ext/GraphicsEngine.h> /* needed for GEDevDesc in do_Externalgr */
-
 #ifdef SUPPORT_CONVERTERS
 #include <R_ext/RConverters.h>
 #endif
@@ -478,15 +476,15 @@ SEXP attribute_hidden do_isloaded(SEXP call, SEXP op, SEXP args, SEXP env)
     return ScalarLogical(val);
 }
 
-/*   Call dynamically loaded "internal" functions
-     code by Jean Meloche <jean@stat.ubc.ca> */
+/*   Call dynamically loaded "internal" functions.
+     Original code by Jean Meloche <jean@stat.ubc.ca> */
 
 typedef SEXP (*R_ExternalRoutine)(SEXP);
+typedef SEXP (*R_ExternalRoutine2)(SEXP, SEXP, SEXP);
 
 SEXP attribute_hidden do_External(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     DL_FUNC ofun = NULL;
-    R_ExternalRoutine fun = NULL;
     SEXP retval;
     R_RegisteredNativeSymbol symbol = {R_EXTERNAL_SYM, {NULL}, NULL};
     const void *vmax = vmaxget();
@@ -496,24 +494,17 @@ SEXP attribute_hidden do_External(SEXP call, SEXP op, SEXP args, SEXP env)
         errorcall(call, _("'.NAME' is missing"));
     check1arg(args, call, "name");
     args = resolveNativeRoutine(args, &ofun, &symbol, buf, NULL, NULL, NULL, call);
-    fun = (R_ExternalRoutine)ofun;
 
-    /* Some external symbols that are registered may have 0 as the
-       expected number of arguments.  We may want a warning
-       here. However, the number of values may vary across calls and
-       that is why people use the .External() mechanism.  So perhaps
-       we should just kill this check.
-    */
-#ifdef CHECK_EXTERNAL_ARG_COUNT /* Off by default. */
-    if (symbol.symbol.external && symbol.symbol.external->numArgs > -1)
+    if (PRIMVAL(op) == 1)
     {
-        if (symbol.symbol.external->numArgs != length(args))
-            errorcall(call, _("Incorrect number of arguments (%d), expecting %d for '%s'"), length(args),
-                      symbol.symbol.external->numArgs, buf);
+        R_ExternalRoutine2 fun = (R_ExternalRoutine2)ofun;
+        retval = fun(call, op, args);
     }
-#endif
-
-    retval = (SEXP)fun(args);
+    else
+    {
+        R_ExternalRoutine fun = (R_ExternalRoutine)ofun;
+        retval = fun(args);
+    }
     vmaxset(vmax);
     return retval;
 }
@@ -1005,6 +996,8 @@ SEXP attribute_hidden do_dotcall(SEXP call, SEXP op, SEXP args, SEXP env)
     to TRUE as per the comment above.
 */
 
+#include <R_ext/GraphicsEngine.h>
+
 SEXP attribute_hidden do_Externalgr(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP retval;
@@ -1014,7 +1007,7 @@ SEXP attribute_hidden do_Externalgr(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(retval = do_External(call, op, args, env));
     dd->recordGraphics = record;
     if (GErecording(call, dd))
-    {
+    { // which is record && call != R_NilValue
         if (!GEcheckState(dd))
             errorcall(call, _("Invalid graphics state"));
         GErecordGraphicOperation(op, args, dd);

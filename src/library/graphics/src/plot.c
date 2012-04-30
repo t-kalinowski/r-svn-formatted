@@ -133,7 +133,7 @@ static SEXP FixupPch(SEXP pch, int dflt)
     return ans;
 }
 
-attribute_hidden SEXP FixupLty(SEXP lty, int dflt)
+SEXP FixupLty(SEXP lty, int dflt)
 {
     int i, n;
     SEXP ans;
@@ -151,7 +151,7 @@ attribute_hidden SEXP FixupLty(SEXP lty, int dflt)
     return ans;
 }
 
-attribute_hidden SEXP FixupLwd(SEXP lwd, double dflt)
+SEXP FixupLwd(SEXP lwd, double dflt)
 {
     int i, n;
     double w;
@@ -307,7 +307,7 @@ static SEXP FixupCex(SEXP cex, double dflt)
     return ans;
 }
 
-attribute_hidden SEXP FixupVFont(SEXP vfont)
+SEXP FixupVFont(SEXP vfont)
 {
     SEXP ans = R_NilValue;
     if (!isNull(vfont))
@@ -463,14 +463,11 @@ static void GetTextArg(SEXP spec, SEXP *ptxt, rcolor *pcol, double *pcex, int *p
 
 /* GRAPHICS FUNCTION ENTRY POINTS */
 
-#if 0
-SEXP attribute_hidden do_plot_new(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_plot_new(SEXP call, SEXP op, SEXP args)
 {
     /* plot.new() - create a new plot "frame" */
 
     pGEDevDesc dd;
-
-    checkArity(op, args);
 
     dd = GEcurrentDevice();
     /*
@@ -489,10 +486,9 @@ SEXP attribute_hidden do_plot_new(SEXP call, SEXP op, SEXP args, SEXP env)
     GSetState(1, dd);
 
     if (GRecording(call, dd))
-	GErecordGraphicOperation(op, args, dd);
+        GErecordGraphicOperation(op, args, dd);
     return R_NilValue;
 }
-#endif
 
 /*
  *  SYNOPSIS
@@ -3296,326 +3292,361 @@ SEXP C_box(SEXP args)
     return R_NilValue;
 }
 
-#if 0
-static void drawPointsLines(double xp, double yp, double xold, double yold,
-			    char type, int first, pGEDevDesc dd)
+static void drawPointsLines(double xp, double yp, double xold, double yold, char type, int first, pGEDevDesc dd)
 {
     if (type == 'p' || type == 'o')
-	GSymbol(xp, yp, DEVICE, gpptr(dd)->pch, dd);
+        GSymbol(xp, yp, DEVICE, gpptr(dd)->pch, dd);
     if ((type == 'l' || type == 'o') && !first)
-	GLine(xold, yold, xp, yp, DEVICE, dd);
+        GLine(xold, yold, xp, yp, DEVICE, dd);
 }
 
-SEXP attribute_hidden do_locator(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_locator(SEXP call, SEXP op, SEXP args)
 {
     SEXP x, y, nobs, ans, saveans, stype = R_NilValue;
     int i, n;
     char type = 'p';
-    double xp, yp, xold=0, yold=0;
+    double xp, yp, xold = 0, yold = 0;
     pGEDevDesc dd = GEcurrentDevice();
 
+    args = CDR(args);
     /* If replaying, just draw the points and lines that were recorded */
-    if (call == R_NilValue) {
-	x = CAR(args); args = CDR(args);
-	y = CAR(args); args = CDR(args);
-	nobs = CAR(args); args = CDR(args);
-	n = INTEGER(nobs)[0];
-	stype = CAR(args); args = CDR(args);
-	type = CHAR(STRING_ELT(stype, 0))[0];
-	if (type != 'n') {
-	    GMode(1, dd);
-	    for (i = 0; i < n; i++) {
-		xp = REAL(x)[i];
-		yp = REAL(y)[i];
-		GConvert(&xp, &yp, USER, DEVICE, dd);
-		drawPointsLines(xp, yp, xold, yold, type, i==0, dd);
-		xold = xp;
-		yold = yp;
-	    }
-	    GMode(0, dd);
-	}
-	return R_NilValue;
-    } else {
-	GCheckState(dd);
+    if (call == R_NilValue)
+    {
+        x = CAR(args);
+        args = CDR(args);
+        y = CAR(args);
+        args = CDR(args);
+        nobs = CAR(args);
+        args = CDR(args);
+        n = INTEGER(nobs)[0];
+        stype = CAR(args);
+        args = CDR(args);
+        type = CHAR(STRING_ELT(stype, 0))[0];
+        if (type != 'n')
+        {
+            GMode(1, dd);
+            for (i = 0; i < n; i++)
+            {
+                xp = REAL(x)[i];
+                yp = REAL(y)[i];
+                GConvert(&xp, &yp, USER, DEVICE, dd);
+                drawPointsLines(xp, yp, xold, yold, type, i == 0, dd);
+                xold = xp;
+                yold = yp;
+            }
+            GMode(0, dd);
+        }
+        return R_NilValue;
+    }
+    else
+    {
+        GCheckState(dd);
 
-	checkArity(op, args);
-	n = asInteger(CAR(args));
-	if (n <= 0 || n == NA_INTEGER)
-	    error(_("invalid number of points in locator()"));
-	args = CDR(args);
-	if (isString(CAR(args)) && LENGTH(CAR(args)) == 1)
-	    stype = CAR(args);
-	else
-	    error(_("invalid plot type"));
-	type = CHAR(STRING_ELT(stype, 0))[0];
-	PROTECT(x = allocVector(REALSXP, n));
-	PROTECT(y = allocVector(REALSXP, n));
-	PROTECT(nobs=allocVector(INTSXP,1));
+        n = asInteger(CAR(args));
+        if (n <= 0 || n == NA_INTEGER)
+            error(_("invalid number of points in locator()"));
+        args = CDR(args);
+        if (isString(CAR(args)) && LENGTH(CAR(args)) == 1)
+            stype = CAR(args);
+        else
+            error(_("invalid plot type"));
+        type = CHAR(STRING_ELT(stype, 0))[0];
+        PROTECT(x = allocVector(REALSXP, n));
+        PROTECT(y = allocVector(REALSXP, n));
+        PROTECT(nobs = allocVector(INTSXP, 1));
 
-	GMode(2, dd);
-	for (i = 0; i < n; i++) {
-	    if (!GLocator(&(REAL(x)[i]), &(REAL(y)[i]), USER, dd)) break;
-	    if (type != 'n') {
-		GMode(1, dd);
-		xp = REAL(x)[i];
-		yp = REAL(y)[i];
-		GConvert(&xp, &yp, USER, DEVICE, dd);
-		drawPointsLines(xp, yp, xold, yold, type, i==0, dd);
-		GMode(0, dd);
-		GMode(2, dd);
-		xold = xp; yold = yp;
-	    }
-	}
-	GMode(0, dd);
-	INTEGER(nobs)[0] = i;
-	for (; i < n; i++) {
-	    REAL(x)[i] = NA_REAL;
-	    REAL(y)[i] = NA_REAL;
-	}
-	PROTECT(ans = allocList(3));
-	SETCAR(ans, x);
-	SETCADR(ans, y);
-	SETCADDR(ans, nobs);
-	PROTECT(saveans = allocList(4));
-	SETCAR(saveans, x);
-	SETCADR(saveans, y);
-	SETCADDR(saveans, nobs);
-	SETCADDDR(saveans, CAR(args));
-	/* Record the points and lines that were drawn in the display list */
-	GErecordGraphicOperation(op, saveans, dd);
-	UNPROTECT(5);
-	return ans;
+        GMode(2, dd);
+        for (i = 0; i < n; i++)
+        {
+            if (!GLocator(&(REAL(x)[i]), &(REAL(y)[i]), USER, dd))
+                break;
+            if (type != 'n')
+            {
+                GMode(1, dd);
+                xp = REAL(x)[i];
+                yp = REAL(y)[i];
+                GConvert(&xp, &yp, USER, DEVICE, dd);
+                drawPointsLines(xp, yp, xold, yold, type, i == 0, dd);
+                GMode(0, dd);
+                GMode(2, dd);
+                xold = xp;
+                yold = yp;
+            }
+        }
+        GMode(0, dd);
+        INTEGER(nobs)[0] = i;
+        for (; i < n; i++)
+        {
+            REAL(x)[i] = NA_REAL;
+            REAL(y)[i] = NA_REAL;
+        }
+        PROTECT(ans = allocList(3));
+        SETCAR(ans, x);
+        SETCADR(ans, y);
+        SETCADDR(ans, nobs);
+        PROTECT(saveans = allocList(4));
+        SETCAR(saveans, x);
+        SETCADR(saveans, y);
+        SETCADDR(saveans, nobs);
+        SETCADDDR(saveans, CAR(args));
+        /* Record the points and lines that were drawn in the display list */
+        // FIXME: should only be if recording
+        GErecordGraphicOperation(op, saveans, dd);
+        UNPROTECT(5);
+        return ans;
     }
 }
 
-static void drawLabel(double xi, double yi, int pos, double offset,
-		      const char *l, cetype_t enc, pGEDevDesc dd)
+static void drawLabel(double xi, double yi, int pos, double offset, const char *l, cetype_t enc, pGEDevDesc dd)
 {
-    switch (pos) {
+    switch (pos)
+    {
     case 4:
-	xi = xi+offset;
-	GText(xi, yi, INCHES, l, enc, 0.0,
-	      dd->dev->yCharOffset, 0.0, dd);
-	break;
+        xi = xi + offset;
+        GText(xi, yi, INCHES, l, enc, 0.0, dd->dev->yCharOffset, 0.0, dd);
+        break;
     case 2:
-	xi = xi-offset;
-	GText(xi, yi, INCHES, l, enc, 1.0,
-	      dd->dev->yCharOffset, 0.0, dd);
-	break;
+        xi = xi - offset;
+        GText(xi, yi, INCHES, l, enc, 1.0, dd->dev->yCharOffset, 0.0, dd);
+        break;
     case 3:
-	yi = yi+offset;
-	GText(xi, yi, INCHES, l, enc, 0.5,
-	      0.0, 0.0, dd);
-	break;
+        yi = yi + offset;
+        GText(xi, yi, INCHES, l, enc, 0.5, 0.0, 0.0, dd);
+        break;
     case 1:
-	yi = yi-offset;
-	GText(xi, yi, INCHES, l, enc, 0.5,
-	      1-(0.5-dd->dev->yCharOffset),
-	      0.0, dd);
-	break;
+        yi = yi - offset;
+        GText(xi, yi, INCHES, l, enc, 0.5, 1 - (0.5 - dd->dev->yCharOffset), 0.0, dd);
+        break;
     case 0:
-	GText(xi, yi, INCHES, l, enc, 0.0, 0.0, 0.0, dd);
-	break;
+        GText(xi, yi, INCHES, l, enc, 0.0, 0.0, 0.0, dd);
+        break;
     }
 }
 
-/* This manages R_Visible */
-SEXP attribute_hidden do_identify(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP C_identify(SEXP call, SEXP op, SEXP args)
 {
     SEXP ans, x, y, l, ind, pos, Offset, draw, saveans;
     double xi, yi, xp, yp, d, dmin, offset, tol;
     int atpen, i, imin, k, n, nl, npts, plot, posi, warn;
     pGEDevDesc dd = GEcurrentDevice();
 
+    args = CDR(args);
     /* If we are replaying the display list, then just redraw the
        labels beside the identified points */
-    if (call == R_NilValue) {
-	ind = CAR(args); args = CDR(args);
-	pos = CAR(args); args = CDR(args);
-	x = CAR(args); args = CDR(args);
-	y = CAR(args); args = CDR(args);
-	Offset = CAR(args); args = CDR(args);
-	l = CAR(args); args = CDR(args);
-	draw = CAR(args);
-	n = LENGTH(x);
-	nl = LENGTH(l);
-	/*
-	 * Most of the appropriate settings have been set up in
-	 * R code by par(...)
-	 * Hence no GSavePars() or ProcessInlinePars() here
-	 * (also because this function is unusual in that it does
-	 *  different things when run by a user compared to when
-	 *  run from the display list)
-	 * BUT par(cex) only sets cexbase, so here we set cex from cexbase
-	 */
-	gpptr(dd)->cex = gpptr(dd)->cexbase;
-	offset = GConvertXUnits(asReal(Offset), CHARS, INCHES, dd);
-	for (i = 0; i < n; i++) {
-	    plot = LOGICAL(ind)[i];
-	    if (LOGICAL(draw)[0] && plot) {
-		xi = REAL(x)[i];
-		yi = REAL(y)[i];
-		GConvert(&xi, &yi, USER, INCHES, dd);
-		posi = INTEGER(pos)[i];
-		drawLabel(xi, yi, posi, offset,
-			  CHAR(STRING_ELT(l, i % nl)),
-			  getCharCE(STRING_ELT(l, i % nl)), dd);
-	    }
-	}
-	return R_NilValue;
+    if (call == R_NilValue)
+    {
+        ind = CAR(args);
+        args = CDR(args);
+        pos = CAR(args);
+        args = CDR(args);
+        x = CAR(args);
+        args = CDR(args);
+        y = CAR(args);
+        args = CDR(args);
+        Offset = CAR(args);
+        args = CDR(args);
+        l = CAR(args);
+        args = CDR(args);
+        draw = CAR(args);
+        n = LENGTH(x);
+        nl = LENGTH(l);
+        /*
+         * Most of the appropriate settings have been set up in
+         * R code by par(...)
+         * Hence no GSavePars() or ProcessInlinePars() here
+         * (also because this function is unusual in that it does
+         *  different things when run by a user compared to when
+         *  run from the display list)
+         * BUT par(cex) only sets cexbase, so here we set cex from cexbase
+         */
+        gpptr(dd)->cex = gpptr(dd)->cexbase;
+        offset = GConvertXUnits(asReal(Offset), CHARS, INCHES, dd);
+        for (i = 0; i < n; i++)
+        {
+            plot = LOGICAL(ind)[i];
+            if (LOGICAL(draw)[0] && plot)
+            {
+                xi = REAL(x)[i];
+                yi = REAL(y)[i];
+                GConvert(&xi, &yi, USER, INCHES, dd);
+                posi = INTEGER(pos)[i];
+                drawLabel(xi, yi, posi, offset, CHAR(STRING_ELT(l, i % nl)), getCharCE(STRING_ELT(l, i % nl)), dd);
+            }
+        }
+        return R_NilValue;
     }
-    else {
-	GCheckState(dd);
+    else
+    {
+        GCheckState(dd);
 
-	checkArity(op, args);
-	x = CAR(args); args = CDR(args);
-	y = CAR(args); args = CDR(args);
-	l = CAR(args); args = CDR(args);
-	npts = asInteger(CAR(args)); args = CDR(args);
-	plot = asLogical(CAR(args)); args = CDR(args);
-	Offset = CAR(args); args = CDR(args);
-	tol = asReal(CAR(args)); args = CDR(args);
-	atpen = asLogical(CAR(args));
-	if (npts <= 0 || npts == NA_INTEGER)
-	    error(_("invalid number of points in identify()"));
-	if (!isReal(x) || !isReal(y) || !isString(l) || !isReal(Offset))
-	    error(_("incorrect argument type"));
-	if (tol <= 0 || ISNAN(tol))
-	    error(_("invalid '%s' value"), "tolerance");
-	if (plot == NA_LOGICAL)
-	    error(_("invalid '%s' value"), "plot");
-	if (atpen == NA_LOGICAL)
-	    error(_("invalid '%s' value"), "atpen");
-	nl = LENGTH(l);
-	if (nl <= 0)
-	    error(_("zero length 'labels'"));
-	n = LENGTH(x);
-	if (n != LENGTH(y))
-	    error(_("different argument lengths"));
-	if (nl > n)
-	    warning(_("more 'labels' than points"));
-	if (n <= 0) {
-	    R_Visible = FALSE;
-	    return NULL;
-	}
+        x = CAR(args);
+        args = CDR(args);
+        y = CAR(args);
+        args = CDR(args);
+        l = CAR(args);
+        args = CDR(args);
+        npts = asInteger(CAR(args));
+        args = CDR(args);
+        plot = asLogical(CAR(args));
+        args = CDR(args);
+        Offset = CAR(args);
+        args = CDR(args);
+        tol = asReal(CAR(args));
+        args = CDR(args);
+        atpen = asLogical(CAR(args));
+        if (npts <= 0 || npts == NA_INTEGER)
+            error(_("invalid number of points in identify()"));
+        if (!isReal(x) || !isReal(y) || !isString(l) || !isReal(Offset))
+            error(_("incorrect argument type"));
+        if (tol <= 0 || ISNAN(tol))
+            error(_("invalid '%s' value"), "tolerance");
+        if (plot == NA_LOGICAL)
+            error(_("invalid '%s' value"), "plot");
+        if (atpen == NA_LOGICAL)
+            error(_("invalid '%s' value"), "atpen");
+        nl = LENGTH(l);
+        if (nl <= 0)
+            error(_("zero length 'labels'"));
+        n = LENGTH(x);
+        if (n != LENGTH(y))
+            error(_("different argument lengths"));
+        if (nl > n)
+            warning(_("more 'labels' than points"));
 
-	/*
-	 * Most of the appropriate settings have been set up in
-	 * R code by par(...)
-	 * Hence no GSavePars() or ProcessInlinePars() here
-	 * (also because this function is unusual in that it does
-	 *  different things when run by a user compared to when
-	 *  run from the display list)
-	 * BUT par(cex) only sets cexbase, so here we set cex from cexbase
-	 */
-	gpptr(dd)->cex = gpptr(dd)->cexbase;
-	offset = GConvertXUnits(asReal(Offset), CHARS, INCHES, dd);
-	PROTECT(ind = allocVector(LGLSXP, n));
-	PROTECT(pos = allocVector(INTSXP, n));
-	for (i = 0; i < n; i++) LOGICAL(ind)[i] = 0;
+        /*
+         * Most of the appropriate settings have been set up in
+         * R code by par(...)
+         * Hence no GSavePars() or ProcessInlinePars() here
+         * (also because this function is unusual in that it does
+         *  different things when run by a user compared to when
+         *  run from the display list)
+         * BUT par(cex) only sets cexbase, so here we set cex from cexbase
+         */
+        gpptr(dd)->cex = gpptr(dd)->cexbase;
+        offset = GConvertXUnits(asReal(Offset), CHARS, INCHES, dd);
+        PROTECT(ind = allocVector(LGLSXP, n));
+        PROTECT(pos = allocVector(INTSXP, n));
+        for (i = 0; i < n; i++)
+            LOGICAL(ind)[i] = 0;
 
-	k = 0;
-	GMode(2, dd);
-	PROTECT(x = duplicate(x));
-	PROTECT(y = duplicate(y));
-	while (k < npts) {
-	    if (!GLocator(&xp, &yp, INCHES, dd)) break;
-	    /*
-	     * Repeat cex setting from cexbase within loop
-	     * so that if window is redrawn
-	     * (e.g., conver/uncover window)
-	     * during identifying (i.e., between clicks)
-	     * we reset cex properly.
-	     */
-	    gpptr(dd)->cex = gpptr(dd)->cexbase;
-	    dmin = DBL_MAX;
-	    imin = -1;
-	    for (i = 0; i < n; i++) {
-		xi = REAL(x)[i];
-		yi = REAL(y)[i];
-		GConvert(&xi, &yi, USER, INCHES, dd);
-		if (!R_FINITE(xi) || !R_FINITE(yi)) continue;
-		d = hypot(xp-xi, yp-yi);
-		if (d < dmin) {
-		    imin = i;
-		    dmin = d;
-		}
-	    }
-	    /* can't use warning because we want to print immediately  */
-	    /* might want to handle warn=2? */
-	    warn = asInteger(GetOption1(install("warn")));
-	    if (dmin > tol) {
-		if(warn >= 0) {
-		    REprintf(_("warning: no point within %.2f inches\n"), tol);
-		    R_FlushConsole();
-		}
-	    }
-	    else if (LOGICAL(ind)[imin]) {
-		if(warn >= 0 ) {
-		    REprintf(_("warning: nearest point already identified\n"));
-		    R_FlushConsole();
-		}
-	    }
-	    else {
-		k++;
-		LOGICAL(ind)[imin] = 1;
+        k = 0;
+        GMode(2, dd);
+        PROTECT(x = duplicate(x));
+        PROTECT(y = duplicate(y));
+        while (k < npts)
+        {
+            if (!GLocator(&xp, &yp, INCHES, dd))
+                break;
+            /*
+             * Repeat cex setting from cexbase within loop
+             * so that if window is redrawn
+             * (e.g., conver/uncover window)
+             * during identifying (i.e., between clicks)
+             * we reset cex properly.
+             */
+            gpptr(dd)->cex = gpptr(dd)->cexbase;
+            dmin = DBL_MAX;
+            imin = -1;
+            for (i = 0; i < n; i++)
+            {
+                xi = REAL(x)[i];
+                yi = REAL(y)[i];
+                GConvert(&xi, &yi, USER, INCHES, dd);
+                if (!R_FINITE(xi) || !R_FINITE(yi))
+                    continue;
+                d = hypot(xp - xi, yp - yi);
+                if (d < dmin)
+                {
+                    imin = i;
+                    dmin = d;
+                }
+            }
+            /* can't use warning because we want to print immediately  */
+            /* might want to handle warn=2? */
+            warn = asInteger(GetOption1(install("warn")));
+            if (dmin > tol)
+            {
+                if (warn >= 0)
+                {
+                    REprintf(_("warning: no point within %.2f inches\n"), tol);
+                    R_FlushConsole();
+                }
+            }
+            else if (LOGICAL(ind)[imin])
+            {
+                if (warn >= 0)
+                {
+                    REprintf(_("warning: nearest point already identified\n"));
+                    R_FlushConsole();
+                }
+            }
+            else
+            {
+                k++;
+                LOGICAL(ind)[imin] = 1;
 
-		if (atpen) {
-		    xi = xp;
-		    yi = yp;
-		    INTEGER(pos)[imin] = 0;
-		    /* now record where to replot if necessary */
-		    GConvert(&xp, &yp, INCHES, USER, dd);
-		    REAL(x)[imin] = xp; REAL(y)[imin] = yp;
-		} else {
-		    xi = REAL(x)[imin];
-		    yi = REAL(y)[imin];
-		    GConvert(&xi, &yi, USER, INCHES, dd);
-		    if (fabs(xp-xi) >= fabs(yp-yi)) {
-			if (xp >= xi)
-			    INTEGER(pos)[imin] = 4;
-			else
-			    INTEGER(pos)[imin] = 2;
-		    } else {
-			if (yp >= yi)
-			    INTEGER(pos)[imin] = 3;
-			else
-			    INTEGER(pos)[imin] = 1;
-		    }
-		}
-		if (plot) {
-		    drawLabel(xi, yi, INTEGER(pos)[imin], offset,
-			      CHAR(STRING_ELT(l, imin % nl)),
-			      getCharCE(STRING_ELT(l, imin % nl)), dd);
-		    GMode(0, dd);
-		    GMode(2, dd);
-		}
-	    }
-	}
-	GMode(0, dd);
-	PROTECT(ans = allocList(2));
-	SETCAR(ans, ind);
-	SETCADR(ans, pos);
-	PROTECT(saveans = allocList(7));
-	SETCAR(saveans, ind);
-	SETCADR(saveans, pos);
-	SETCADDR(saveans, x);
-	SETCADDDR(saveans, y);
-	SETCAD4R(saveans, Offset);
-	SETCAD4R(CDR(saveans), l);
-	SETCAD4R(CDDR(saveans), ScalarLogical(plot));
+                if (atpen)
+                {
+                    xi = xp;
+                    yi = yp;
+                    INTEGER(pos)[imin] = 0;
+                    /* now record where to replot if necessary */
+                    GConvert(&xp, &yp, INCHES, USER, dd);
+                    REAL(x)[imin] = xp;
+                    REAL(y)[imin] = yp;
+                }
+                else
+                {
+                    xi = REAL(x)[imin];
+                    yi = REAL(y)[imin];
+                    GConvert(&xi, &yi, USER, INCHES, dd);
+                    if (fabs(xp - xi) >= fabs(yp - yi))
+                    {
+                        if (xp >= xi)
+                            INTEGER(pos)[imin] = 4;
+                        else
+                            INTEGER(pos)[imin] = 2;
+                    }
+                    else
+                    {
+                        if (yp >= yi)
+                            INTEGER(pos)[imin] = 3;
+                        else
+                            INTEGER(pos)[imin] = 1;
+                    }
+                }
+                if (plot)
+                {
+                    drawLabel(xi, yi, INTEGER(pos)[imin], offset, CHAR(STRING_ELT(l, imin % nl)),
+                              getCharCE(STRING_ELT(l, imin % nl)), dd);
+                    GMode(0, dd);
+                    GMode(2, dd);
+                }
+            }
+        }
+        GMode(0, dd);
+        PROTECT(ans = allocList(2));
+        SETCAR(ans, ind);
+        SETCADR(ans, pos);
+        PROTECT(saveans = allocList(7));
+        SETCAR(saveans, ind);
+        SETCADR(saveans, pos);
+        SETCADDR(saveans, x);
+        SETCADDDR(saveans, y);
+        SETCAD4R(saveans, Offset);
+        SETCAD4R(CDR(saveans), l);
+        SETCAD4R(CDDR(saveans), ScalarLogical(plot));
 
-	/* If we are recording, save enough information to be able to
-	   redraw the text labels beside identified points */
-	if (GRecording(call, dd))
-	    GErecordGraphicOperation(op, saveans, dd);
-	UNPROTECT(6);
+        /* If we are recording, save enough information to be able to
+           redraw the text labels beside identified points */
+        if (GRecording(call, dd))
+            GErecordGraphicOperation(op, saveans, dd);
+        UNPROTECT(6);
 
-	R_Visible = TRUE;
-	return ans;
+        R_Visible = TRUE;
+        return ans;
     }
 }
-#endif
 
 /* strheight(str, units, cex, font, vfont, ...)  ||  strwidth() */
 #define DO_STR_DIM(KIND)                                                                                               \
