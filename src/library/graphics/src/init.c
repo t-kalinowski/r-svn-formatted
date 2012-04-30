@@ -47,7 +47,11 @@ static const R_ExternalMethodDef ExtEntries[] = {
 
     EXTDEF(C_plot_new, 0),    EXTDEF(C_locator, -1),      EXTDEF(C_identify, -1), {NULL, NULL, 0}};
 
-void R_init_graphics(DllInfo *dll)
+void
+#ifdef HAVE_VISIBILITY_ATTRIBUTE
+    __attribute__((visibility("default")))
+#endif
+    R_init_graphics(DllInfo *dll)
 {
     R_registerRoutines(dll, NULL, CallEntries, NULL, ExtEntries);
     R_useDynamicSymbols(dll, FALSE);
