@@ -327,9 +327,7 @@ GPar *dpptr(pGEDevDesc dd)
     return &(bss->dp);
 }
 
-attribute_hidden /* used in GNewPlot */
-    void
-    Rf_setBaseDevice(Rboolean val, pGEDevDesc dd)
+void Rf_setBaseDevice(Rboolean val, pGEDevDesc dd)
 {
     baseSystemState *bss = dd->gesd[baseRegisterIndex]->systemSpecific;
     bss->baseDevice = val;
