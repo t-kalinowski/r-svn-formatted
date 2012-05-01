@@ -410,6 +410,8 @@ SEXP attribute_hidden do_gray(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
+/* This is in package grDevices, but mixes up the base graphics concept
+   of a background colour */
 SEXP attribute_hidden do_col2RGB(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* colorname, "#rrggbb" or "col.number" to (r,g,b) conversion */
