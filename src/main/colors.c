@@ -1458,6 +1458,7 @@ static unsigned int rgb2col(const char *rgb)
 
 /* External Color Name to Internal Color Code */
 
+/* in GraphicsEngine.h */
 unsigned int attribute_hidden name2col(const char *nm)
 {
     int i;
@@ -1534,6 +1535,7 @@ static char *RGBA2rgb(unsigned int r, unsigned int g, unsigned int b, unsigned i
 /* If this fails, create an #RRGGBB string */
 
 /* used in grid */
+/* in GraphicsEngine.h */
 const char *col2name(unsigned int col)
 {
     int i;
@@ -1589,7 +1591,8 @@ static double str2col(const char *s, double bg)
         return name2col(s);
 }
 
-/* used in grDevices, public */
+/* used in grDevices */
+/* in GraphicsEngine.h */
 unsigned int R_GE_str2col(const char *s)
 {
     return (unsigned int)str2col(s, R_TRANWHITE);
@@ -1599,6 +1602,7 @@ unsigned int R_GE_str2col(const char *s)
 /* We Assume that Checks Have Been Done */
 
 /* used in grid/src/gpar.c */
+/* in GraphicsEngine.h */
 unsigned int RGBpar3(SEXP x, int i, unsigned int bg)
 {
     int indx;
@@ -1631,6 +1635,7 @@ unsigned int RGBpar3(SEXP x, int i, unsigned int bg)
         return R_ColorTable[(indx - 1) % R_ColorTableSize];
 }
 
+/* in GraphicsEngine.h */
 unsigned int RGBpar(SEXP x, int i)
 {
     return RGBpar3(x, i, R_TRANWHITE);
