@@ -831,9 +831,9 @@ static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
     case POWOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            x1 = INTEGER(s1)[i1];
-            x2 = INTEGER(s2)[i2];
-            if (x1 == NA_INTEGER || x2 == NA_INTEGER)
+            if ((x1 = INTEGER(s1)[i1]) == 1 || (x2 = INTEGER(s2)[i2]) == 0)
+                REAL(ans)[i] = 1.;
+            else if (x1 == NA_INTEGER || x2 == NA_INTEGER)
                 REAL(ans)[i] = NA_REAL;
             else
             {
