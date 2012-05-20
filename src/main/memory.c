@@ -253,7 +253,7 @@ static void R_ReportAllocation(R_size_t);
 static void R_ReportNewPage();
 #endif
 
-/* used from model.c and names.c */
+/* used in src/library/stats/src/model.c */
 SEXP framenames;
 
 #define GC_PROT(X)                                                                                                     \
@@ -1569,9 +1569,6 @@ again:
         FORWARD_NODE(ctxt->srcref);       /* the current source reference */
     }
 
-    FORWARD_NODE(framenames); /* used for interprocedure
-                 communication in model.c */
-
     FORWARD_NODE(R_PreciousList);
 
     for (i = 0; i < R_PPStackTop; i++) /* Protected pointers */
@@ -2053,6 +2050,8 @@ void attribute_hidden InitMemory()
 
     /*  Unbound values which are to be preserved through GCs */
     R_PreciousList = R_NilValue;
+    framenames = R_NilValue;
+    R_PreserveObject(framenames);
 
     /*  The current source line */
     R_Srcref = R_NilValue;
