@@ -253,9 +253,6 @@ static void R_ReportAllocation(R_size_t);
 static void R_ReportNewPage();
 #endif
 
-/* used in src/library/stats/src/model.c */
-SEXP framenames;
-
 #define GC_PROT(X)                                                                                                     \
     do                                                                                                                 \
     {                                                                                                                  \
@@ -2050,8 +2047,6 @@ void attribute_hidden InitMemory()
 
     /*  Unbound values which are to be preserved through GCs */
     R_PreciousList = R_NilValue;
-    framenames = R_NilValue;
-    R_PreserveObject(framenames);
 
     /*  The current source line */
     R_Srcref = R_NilValue;
