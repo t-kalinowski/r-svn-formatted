@@ -55,14 +55,15 @@ static SEXP parenSymbol = NULL;
 static SEXP inSymbol = NULL;
 /* unused static SEXP identSymbol = NULL; */
 
-static int intercept;             /* intercept term in the model */
-static int parity;                /* +/- parity */
-static int response;              /* response term in the model */
-static int nvar;                  /* Number of variables in the formula */
-static int nwords;                /* # of words (ints) to code a term */
-static int nterm;                 /* # of model terms */
-static SEXP varlist;              /* variables in the model */
-attribute_hidden SEXP framenames; /* variables names for specified frame */
+static int intercept; /* intercept term in the model */
+static int parity;    /* +/- parity */
+static int response;  /* response term in the model */
+static int nvar;      /* Number of variables in the formula */
+static int nwords;    /* # of words (ints) to code a term */
+static int nterm;     /* # of model terms */
+static SEXP varlist;  /* variables in the model */
+/* from memory.c */
+extern SEXP framenames; /* variables names for specified frame */
 /* NOTE: framenames can't be static because it must be protected from
    garbage collection. */
 static Rboolean haveDot; /* does RHS of formula contain `.'? */
@@ -1537,26 +1538,6 @@ SEXP attribute_hidden do_modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
        setAttrib(ans, install("terms"), terms); */
     UNPROTECT(1);
     return ans;
-}
-
-/* Internal code for the ~ operator */
-/* Just returns the unevaluated call */
-/* No longer needed??? */
-
-SEXP attribute_hidden do_tilde(SEXP call, SEXP op, SEXP args, SEXP rho)
-{
-    if (isObject(call))
-        return duplicate(call);
-    else
-    {
-        SEXP klass;
-        PROTECT(call = duplicate(call));
-        PROTECT(klass = mkString("formula"));
-        setAttrib(call, R_ClassSymbol, klass);
-        setAttrib(call, R_DotEnvSymbol, rho);
-        UNPROTECT(2);
-        return call;
-    }
 }
 
 /* The code below is related to model expansion */

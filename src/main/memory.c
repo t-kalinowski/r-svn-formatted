@@ -253,7 +253,8 @@ static void R_ReportAllocation(R_size_t);
 static void R_ReportNewPage();
 #endif
 
-extern SEXP framenames;
+/* used from model.c and names.c */
+SEXP framenames;
 
 #define GC_PROT(X)                                                                                                     \
     do                                                                                                                 \
