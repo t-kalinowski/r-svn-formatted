@@ -25,6 +25,17 @@
 #include <Defn.h>
 #include <Rmath.h>
 
+static SEXP corcov(SEXP x, SEXP y, SEXP na_method, SEXP kendall, Rboolean cor);
+
+SEXP cor(SEXP x, SEXP y, SEXP na_method, SEXP kendall)
+{
+    return corcov(x, y, na_method, kendall, TRUE);
+}
+SEXP cov(SEXP x, SEXP y, SEXP na_method, SEXP kendall)
+{
+    return corcov(x, y, na_method, kendall, FALSE);
+}
+
 #define COV_SUM_UPDATE                                                                                                 \
     sum += xm * ym;                                                                                                    \
     if (cor)                                                                                                           \
@@ -688,23 +699,17 @@ static void find_na_2(int n, int ncx, int ncy, double *x, double *y, int *has_na
   "all.obs", "complete.obs", "pairwise.complete", "everything", "na.or.complete"
       kendall = TRUE/FALSE)
 */
-SEXP attribute_hidden do_cov(SEXP call, SEXP op, SEXP args, SEXP env)
+static SEXP corcov(SEXP x, SEXP y, SEXP na_method, SEXP skendall, Rboolean cor)
 {
-    SEXP x, y, ans, xm, ym, ind;
-    Rboolean cor, ansmat, kendall, pair, na_fail, everything, sd_0, empty_err;
-    int i, method, n, ncx, ncy;
-
-    checkArity(op, args);
-
-    /* compute correlations if PRIMVAL(op) == 0,
-           covariances  if PRIMVAL(op) != 0 */
-    cor = PRIMVAL(op);
+    SEXP ans, xm, ym, ind;
+    Rboolean ansmat, kendall, pair, na_fail, everything, sd_0, empty_err;
+    int i, method, n, ncx, ncy, nprotect = 2;
 
     /* Arg.1: x */
-    if (isNull(CAR(args))) /* never allowed */
+    if (isNull(x)) /* never allowed */
         error(_("'x' is NULL"));
     /* length check of x -- only if(empty_err) --> below */
-    x = SETCAR(args, coerceVector(CAR(args), REALSXP));
+    x = PROTECT(coerceVector(x, REALSXP));
     if ((ansmat = isMatrix(x)))
     {
         n = nrows(x);
@@ -715,16 +720,15 @@ SEXP attribute_hidden do_cov(SEXP call, SEXP op, SEXP args, SEXP env)
         n = length(x);
         ncx = 1;
     }
-    args = CDR(args);
     /* Arg.2: y */
-    if (isNull(CAR(args)))
+    if (isNull(y))
     { /* y = x  : var() */
-        y = R_NilValue;
         ncy = ncx;
     }
     else
     {
-        y = SETCAR(args, coerceVector(CAR(args), REALSXP));
+        y = PROTECT(coerceVector(y, REALSXP));
+        nprotect++;
         if (isMatrix(y))
         {
             if (nrows(y) != n)
@@ -739,13 +743,11 @@ SEXP attribute_hidden do_cov(SEXP call, SEXP op, SEXP args, SEXP env)
             ncy = 1;
         }
     }
-    args = CDR(args);
     /* Arg.3:  method */
-    method = asInteger(CAR(args));
+    method = asInteger(na_method);
 
-    args = CDR(args);
     /* Arg.4:  kendall */
-    kendall = asLogical(CAR(args));
+    kendall = asLogical(skendall);
 
     /* "default: complete" (easier for -Wall) */
     na_fail = FALSE;
@@ -897,6 +899,6 @@ SEXP attribute_hidden do_cov(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     if (sd_0) /* only in cor() */
         warning(_("the standard deviation is zero"));
-    UNPROTECT(1);
+    UNPROTECT(nprotect);
     return ans;
 }

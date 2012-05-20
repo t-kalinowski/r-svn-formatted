@@ -175,6 +175,7 @@ badvalue:
     return 0; /* for -Wall */
 }
 
+/* FIXME: unused */
 /* zeroin(f, xmin, xmax, tol, maxiter) */
 SEXP attribute_hidden do_zeroin(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
