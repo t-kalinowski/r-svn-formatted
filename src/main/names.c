@@ -1071,8 +1071,6 @@ static void SymbolShortcuts(void)
     R_dot_GenericDefEnv = install(".GenericDefEnv");
 }
 
-extern SEXP framenames; /* from model.c */
-
 /* initialize the symbol table */
 void InitNames()
 {
@@ -1114,7 +1112,6 @@ void InitNames()
     /*  Builtin Functions */
     for (int i = 0; R_FunTab[i].name; i++)
         installFunTab(i);
-    framenames = R_NilValue;
 
     R_initialize_bcode();
 }
