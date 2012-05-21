@@ -253,6 +253,8 @@ static void R_ReportAllocation(R_size_t);
 static void R_ReportNewPage();
 #endif
 
+extern SEXP framenames;
+
 #define GC_PROT(X)                                                                                                     \
     do                                                                                                                 \
     {                                                                                                                  \
@@ -1565,6 +1567,9 @@ again:
         FORWARD_NODE(ctxt->restartstack); /* the available restarts stack */
         FORWARD_NODE(ctxt->srcref);       /* the current source reference */
     }
+
+    FORWARD_NODE(framenames); /* used for interprocedure
+                 communication in model.c */
 
     FORWARD_NODE(R_PreciousList);
 
