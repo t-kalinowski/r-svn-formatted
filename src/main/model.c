@@ -53,7 +53,6 @@ static SEXP powerSymbol = NULL;
 static SEXP dotSymbol = NULL;
 static SEXP parenSymbol = NULL;
 static SEXP inSymbol = NULL;
-/* unused static SEXP identSymbol = NULL; */
 
 static int intercept;             /* intercept term in the model */
 static int parity;                /* +/- parity */
@@ -119,8 +118,8 @@ static int MatchVar(SEXP var1, SEXP var2)
     return 0;
 }
 
-/* InstallVar locates a ``variable'' in the model */
-/* variable list;  adding it to the global varlist if not found. */
+/* InstallVar locates a ``variable'' in the model variable list;
+   adding it to the global varlist if not found. */
 
 static int InstallVar(SEXP var)
 {
@@ -141,10 +140,10 @@ static int InstallVar(SEXP var)
     return indx + 1;
 }
 
-/* If there is a dotsxp being expanded then we need to see */
-/* whether any of the variables in the data frame match with */
-/* the variable on the lhs. If so they shouldn't be included */
-/* in the factors */
+/* If there is a dotsxp being expanded then we need to see
+   whether any of the variables in the data frame match with
+   the variable on the lhs. If so they shouldn't be included
+   in the factors */
 
 static void CheckRHS(SEXP v)
 {
@@ -176,11 +175,11 @@ static void CheckRHS(SEXP v)
     }
 }
 
-/* ExtractVars recursively extracts the variables */
-/* in a model formula.  It calls InstallVar to do */
-/* the installation.  The code takes care of unary */
-/* + and minus.  No checks are made of the other */
-/* ``binary'' operators.  Maybe there should be some. */
+/* ExtractVars recursively extracts the variables
+   in a model formula.  It calls InstallVar to do
+   the installation.  The code takes care of unary/
+   + and minus.  No checks are made of the other
+   ``binary'' operators.  Maybe there should be some. */
 
 static void ExtractVars(SEXP formula, int checkonly)
 {
@@ -293,8 +292,8 @@ static void ExtractVars(SEXP formula, int checkonly)
     error(_("invalid model formula in ExtractVars"));
 }
 
-/* AllocTerm allocates an integer array for */
-/* bit string representation of a model term */
+/* AllocTerm allocates an integer array for
+   bit string representation of a model term */
 
 static SEXP AllocTerm(void)
 {
@@ -305,8 +304,8 @@ static SEXP AllocTerm(void)
     return term;
 }
 
-/* SetBit sets bit ``whichBit'' to value ``value'' */
-/* in the bit string representation of a term. */
+/* SetBit sets bit ``whichBit'' to value ``value''
+   in the bit string representation of a term. */
 
 static void SetBit(SEXP term, int whichBit, int value)
 {
@@ -397,9 +396,9 @@ static SEXP StripTerm(SEXP term, SEXP list)
     return list;
 }
 
-/* TrimRepeats removes duplicates of (bit string) terms */
-/* in a model formula by repeated use of ``StripTerm''. */
-/* Also drops zero terms. */
+/* TrimRepeats removes duplicates of (bit string) terms
+   in a model formula by repeated use of ``StripTerm''.
+   Also drops zero terms. */
 
 static SEXP TrimRepeats(SEXP list)
 {
@@ -760,10 +759,8 @@ SEXP attribute_hidden do_termsform(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
 
-    /* Always fetch these values rather than trying */
-    /* to remember them between calls.  The overhead */
-    /* is minimal and we don't have to worry about */
-    /* intervening dump/restore problems. */
+    /* Always fetch these values rather than trying to remember them
+       between calls.  The overhead is minimal. */
 
     tildeSymbol = install("~");
     plusSymbol = install("+");
@@ -775,7 +772,6 @@ SEXP attribute_hidden do_termsform(SEXP call, SEXP op, SEXP args, SEXP rho)
     dotSymbol = install(".");
     parenSymbol = install("(");
     inSymbol = install("%in%");
-    /* identSymbol = install("I"); */
 
     /* Do we have a model formula? */
     /* Check for unary or binary ~ */
@@ -794,8 +790,7 @@ SEXP attribute_hidden do_termsform(SEXP call, SEXP op, SEXP args, SEXP rho)
         error(_("'specials' must be NULL or a character vector"));
     a = CDDR(args);
 
-    /* We use data to get the value to */
-    /* substitute for "." in formulae */
+    /* We use data to get the value to substitute for "." in formulae */
 
     data = CAR(a);
     a = CDR(a);
@@ -1255,80 +1250,6 @@ static SEXP ExpandDots(SEXP object, SEXP value)
 badformula:
     error(_("invalid formula in 'update'"));
     return R_NilValue; /*NOTREACHED*/
-}
-
-SEXP attribute_hidden do_updateform(SEXP call, SEXP op, SEXP args, SEXP rho)
-{
-    SEXP _new, old, lhs, rhs;
-
-    checkArity(op, args);
-
-    /* Always fetch these values rather than trying */
-    /* to remember them between calls.  The overhead */
-    /* is minimal and we don't have to worry about */
-    /* intervening dump/restore problems. */
-
-    tildeSymbol = install("~");
-    plusSymbol = install("+");
-    minusSymbol = install("-");
-    timesSymbol = install("*");
-    slashSymbol = install("/");
-    colonSymbol = install(":");
-    powerSymbol = install("^");
-    dotSymbol = install(".");
-    parenSymbol = install("(");
-    inSymbol = install("%in%");
-    /* identSymbol = install("I"); */
-
-    /* We must duplicate here because the */
-    /* formulae may be part of the parse tree */
-    /* and we don't want to modify it. */
-
-    old = CAR(args);
-    _new = SETCADR(args, duplicate(CADR(args)));
-
-    /* Check of new and old formulae. */
-    if (TYPEOF(old) != LANGSXP || (TYPEOF(_new) != LANGSXP && CAR(old) != tildeSymbol) || CAR(_new) != tildeSymbol)
-        error(_("formula expected"));
-
-    if (length(old) == 3)
-    {
-        lhs = CADR(old);
-        rhs = CADDR(old);
-        /* We now check that new formula has a valid lhs.
-           If it doesn't, we add one and set it to the rhs of the old
-           formula. */
-        if (length(_new) == 2)
-            SETCDR(_new, CONS(lhs, CDR(_new)));
-        /* Now we check the left and right sides of the new formula
-           and substitute the correct value for any "." templates.
-           We must parenthesize the rhs or we might upset arity and
-           precedence. */
-        PROTECT(rhs);
-        SETCADR(_new, ExpandDots(CADR(_new), lhs));
-        SETCADDR(_new, ExpandDots(CADDR(_new), rhs));
-        UNPROTECT(1);
-    }
-    else
-    {
-        /* The old formula had no lhs, so we only expand the rhs of the
-           new formula. */
-        rhs = CADR(old);
-        if (length(_new) == 3)
-            SETCADDR(_new, ExpandDots(CADDR(_new), rhs));
-        else
-            SETCADR(_new, ExpandDots(CADR(_new), rhs));
-    }
-
-    /* It might be overkill to zero the */
-    /* the attribute list of the returned */
-    /* value, but it can't hurt. */
-
-    SET_ATTRIB(_new, R_NilValue);
-    SET_OBJECT(_new, 0);
-    setAttrib(_new, R_DotEnvSymbol, getAttrib(old, R_DotEnvSymbol));
-
-    return _new;
 }
 
 /* Internal code for the ~ operator */
