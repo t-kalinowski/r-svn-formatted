@@ -463,7 +463,7 @@ static void GetTextArg(SEXP spec, SEXP *ptxt, rcolor *pcol, double *pcex, int *p
 
 /* GRAPHICS FUNCTION ENTRY POINTS */
 
-SEXP C_plot_new(SEXP call, SEXP op, SEXP args)
+SEXP C_plot_new(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     /* plot.new() - create a new plot "frame" */
 
@@ -3300,7 +3300,7 @@ static void drawPointsLines(double xp, double yp, double xold, double yold, char
         GLine(xold, yold, xp, yp, DEVICE, dd);
 }
 
-SEXP C_locator(SEXP call, SEXP op, SEXP args)
+SEXP C_locator(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, y, nobs, ans, saveans, stype = R_NilValue;
     int i, n;
@@ -3423,7 +3423,7 @@ static void drawLabel(double xi, double yi, int pos, double offset, const char *
     }
 }
 
-SEXP C_identify(SEXP call, SEXP op, SEXP args)
+SEXP C_identify(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, x, y, l, ind, pos, Offset, draw, saveans;
     double xi, yi, xp, yp, d, dmin, offset, tol;

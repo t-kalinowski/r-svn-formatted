@@ -480,7 +480,7 @@ SEXP attribute_hidden do_isloaded(SEXP call, SEXP op, SEXP args, SEXP env)
      Original code by Jean Meloche <jean@stat.ubc.ca> */
 
 typedef SEXP (*R_ExternalRoutine)(SEXP);
-typedef SEXP (*R_ExternalRoutine2)(SEXP, SEXP, SEXP);
+typedef SEXP (*R_ExternalRoutine2)(SEXP, SEXP, SEXP, SEXP);
 
 SEXP attribute_hidden do_External(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -498,7 +498,7 @@ SEXP attribute_hidden do_External(SEXP call, SEXP op, SEXP args, SEXP env)
     if (PRIMVAL(op) == 1)
     {
         R_ExternalRoutine2 fun = (R_ExternalRoutine2)ofun;
-        retval = fun(call, op, args);
+        retval = fun(call, op, args, env);
     }
     else
     {
