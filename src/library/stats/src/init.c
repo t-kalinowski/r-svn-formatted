@@ -230,6 +230,9 @@ SEXP doD(SEXP args);
 SEXP deriv(SEXP args);
 SEXP modelframe(SEXP args);
 SEXP modelmatrix(SEXP args);
+SEXP do_fmin(SEXP args);
+SEXP nlm(SEXP args);
+SEXP zeroin2(SEXP args);
 
 #define EXTDEF(name, n)                                                                                                \
     {                                                                                                                  \
@@ -237,7 +240,8 @@ SEXP modelmatrix(SEXP args);
     }
 
 static const R_ExternalMethodDef ExtEntries[] = {EXTDEF(compcases, -1), EXTDEF(doD, 2),         EXTDEF(deriv, 5),
-                                                 EXTDEF(modelframe, 9), EXTDEF(modelmatrix, 3), {NULL, NULL, 0}};
+                                                 EXTDEF(modelframe, 9), EXTDEF(modelmatrix, 3), EXTDEF(do_fmin, 5),
+                                                 EXTDEF(nlm, 11),       EXTDEF(zeroin2, 8),     {NULL, NULL, 0}};
 
 void attribute_visible R_init_stats(DllInfo *dll)
 {
