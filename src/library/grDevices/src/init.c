@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2004-11   The R Core Team.
+ *  Copyright (C) 2004-12   The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -93,14 +93,18 @@ static const R_CallMethodDef CallEntries[] = {
 #name, (DL_FUNC)&name, n                                                                                       \
     }
 
-static const R_ExternalMethodDef ExtEntries[] = {EXTDEF(PicTeX, 6), EXTDEF(PostScript, 16), EXTDEF(XFig, 11),
-                                                 EXTDEF(PDF, 16),   EXTDEF(devCairo, 10),
+static const R_ExternalMethodDef ExtEntries[] = {
+    EXTDEF(PicTeX, 6),    EXTDEF(PostScript, 16), EXTDEF(XFig, 11),          EXTDEF(PDF, 16),
+    EXTDEF(devCairo, 10), EXTDEF(devcap, 1),      EXTDEF(devcapture, 1),     EXTDEF(devcontrol, 1),
+    EXTDEF(devcopy, 1),   EXTDEF(devcur, 0),      EXTDEF(devdisplaylist, 0), EXTDEF(devholdflush, 1),
+    EXTDEF(devnext, 1),   EXTDEF(devoff, 1),      EXTDEF(devprev, 1),        EXTDEF(devset, 1),
+    EXTDEF(devsize, 0),
 #ifdef WIN32
-                                                 EXTDEF(devga, 19), EXTDEF(savePlot, 3),
+    EXTDEF(devga, 19),    EXTDEF(savePlot, 3),
 #else
-                                                 EXTDEF(Quartz, 12),
+    EXTDEF(Quartz, 12),
 #endif
-                                                 {NULL, NULL, 0}};
+    {NULL, NULL, 0}};
 
 void R_init_grDevices(DllInfo *dll)
 {
