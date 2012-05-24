@@ -156,6 +156,11 @@ static const R_CMethodDef CEntries[] = {{"chisqsim", (DL_FUNC)&chisqsim, 11, chi
                                         CDEF(spline_eval),
                                         {NULL, NULL, 0}};
 
+#define CALLDEF(name, n)                                                                                               \
+    {                                                                                                                  \
+#name, (DL_FUNC)&name, n                                                                                       \
+    }
+
 static const R_CallMethodDef CallEntries[] = {{"R_cutree", (DL_FUNC)&R_cutree, 2},
                                               {"R_isoreg", (DL_FUNC)&R_isoreg, 1},
                                               {"R_monoFC_m", (DL_FUNC)&R_monoFC_m, 2},
@@ -200,6 +205,7 @@ static const R_CallMethodDef CallEntries[] = {{"R_cutree", (DL_FUNC)&R_cutree, 2
                                               {"fft", (DL_FUNC)&fft, 2},
                                               {"mvfft", (DL_FUNC)&mvfft, 2},
                                               {"nextn", (DL_FUNC)&nextn, 2},
+                                              {"r2dtable", (DL_FUNC)&r2dtable, 3},
                                               {NULL, NULL, 0}};
 
 static const R_FortranMethodDef FortEntries[] = {FDEF(lowesw),
@@ -224,10 +230,14 @@ static const R_FortranMethodDef FortEntries[] = {FDEF(lowesw),
 #name, (DL_FUNC)&name, n                                                                                       \
     }
 
-static const R_ExternalMethodDef ExtEntries[] = {EXTDEF(compcases, -1), EXTDEF(doD, 2),         EXTDEF(deriv, 5),
-                                                 EXTDEF(modelframe, 9), EXTDEF(modelmatrix, 3), EXTDEF(termsform, 5),
-                                                 EXTDEF(do_fmin, 5),    EXTDEF(nlm, 11),        EXTDEF(zeroin2, 8),
-                                                 EXTDEF(optim, 5),      EXTDEF(optimhess, 4),   {NULL, NULL, 0}};
+static const R_ExternalMethodDef ExtEntries[] = {EXTDEF(compcases, -1),  EXTDEF(doD, 2),
+                                                 EXTDEF(deriv, 5),       EXTDEF(modelframe, 9),
+                                                 EXTDEF(modelmatrix, 3), EXTDEF(termsform, 5),
+                                                 EXTDEF(do_fmin, 5),     EXTDEF(nlm, 11),
+                                                 EXTDEF(zeroin2, 8),     EXTDEF(optim, 5),
+                                                 EXTDEF(optimhess, 4),   EXTDEF(call_dqags, 7),
+                                                 EXTDEF(call_dqagi, 7),  {"rmultinom", (DL_FUNC)&Rmultinom, 3},
+                                                 {NULL, NULL, 0}};
 
 void attribute_visible R_init_stats(DllInfo *dll)
 {
