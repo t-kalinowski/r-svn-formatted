@@ -1224,6 +1224,7 @@ static SEXP math1(SEXP sa, double (*f)(double), SEXP lcall)
                 naflag = 1;
         }
     }
+    /* These are primitives, so need to use the call */
     if (naflag)
         warningcall(lcall, R_MSG_NA);
 
@@ -1443,7 +1444,7 @@ static SEXP math2(SEXP sa, SEXP sb, double (*f)(double, double), SEXP lcall)
 
 #define FINISH_Math2                                                                                                   \
     if (naflag)                                                                                                        \
-        warningcall(lcall, R_MSG_NA);                                                                                  \
+        warning(R_MSG_NA);                                                                                             \
     if (n == na)                                                                                                       \
         DUPLICATE_ATTRIB(sy, sa);                                                                                      \
     else if (n == nb)                                                                                                  \
@@ -1878,7 +1879,7 @@ SEXP attribute_hidden do_log(SEXP call, SEXP op, SEXP args, SEXP env)
 
 #define FINISH_Math3                                                                                                   \
     if (naflag)                                                                                                        \
-        warningcall(lcall, R_MSG_NA);                                                                                  \
+        warning(R_MSG_NA);                                                                                             \
                                                                                                                        \
     if (n == na)                                                                                                       \
         DUPLICATE_ATTRIB(sy, sa);                                                                                      \
@@ -2219,7 +2220,7 @@ static SEXP math4(SEXP sa, SEXP sb, SEXP sc, SEXP sd, double (*f)(double, double
 
 #define FINISH_Math4                                                                                                   \
     if (naflag)                                                                                                        \
-        warningcall(lcall, R_MSG_NA);                                                                                  \
+        warning(R_MSG_NA);                                                                                             \
                                                                                                                        \
     if (n == na)                                                                                                       \
         DUPLICATE_ATTRIB(sy, sa);                                                                                      \
@@ -2420,7 +2421,7 @@ static SEXP math5(SEXP sa, SEXP sb, SEXP sc, SEXP sd, SEXP se, double (*f)())
 
 #define FINISH_Math5                                                                                                   \
     if (naflag)                                                                                                        \
-        warningcall(lcall, R_MSG_NA);                                                                                  \
+        warning(R_MSG_NA);                                                                                             \
                                                                                                                        \
     if (n == na)                                                                                                       \
         DUPLICATE_ATTRIB(sy, sa);                                                                                      \
