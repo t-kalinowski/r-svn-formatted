@@ -83,24 +83,6 @@ static SEXP math2_1(SEXP sa, SEXP sb, SEXP sI, double (*f)(double, double, int))
     SETUP_Math2;
     m_opt = asInteger(sI);
 
-#ifdef R_MEMORY_PROFILING
-    if (RTRACE(sa) || RTRACE(sb))
-    {
-        if (RTRACE(sa) && RTRACE(sb))
-        {
-            if (na > nb)
-                memtrace_report(sa, sy);
-            else
-                memtrace_report(sb, sy);
-        }
-        else if (RTRACE(sa))
-            memtrace_report(sa, sy);
-        else /* only s2 */
-            memtrace_report(sb, sy);
-        SET_RTRACE(sy, 1);
-    }
-#endif
-
     mod_iterate(na, nb, ia, ib)
     {
         ai = a[ia];
@@ -129,24 +111,6 @@ static SEXP math2_2(SEXP sa, SEXP sb, SEXP sI1, SEXP sI2, double (*f)(double, do
     SETUP_Math2;
     i_1 = asInteger(sI1);
     i_2 = asInteger(sI2);
-
-#ifdef R_MEMORY_PROFILING
-    if (RTRACE(sa) || RTRACE(sb))
-    {
-        if (RTRACE(sa) && RTRACE(sb))
-        {
-            if (na > nb)
-                memtrace_report(sa, sy);
-            else
-                memtrace_report(sb, sy);
-        }
-        else if (RTRACE(sa))
-            memtrace_report(sa, sy);
-        else /* only s2 */
-            memtrace_report(sb, sy);
-        SET_RTRACE(sy, 1);
-    }
-#endif
 
     mod_iterate(na, nb, ia, ib)
     {
@@ -271,19 +235,6 @@ static SEXP math3_1(SEXP sa, SEXP sb, SEXP sc, SEXP sI, double (*f)(double, doub
     SETUP_Math3;
     i_1 = asInteger(sI);
 
-#ifdef R_MEMORY_PROFILING
-    if (RTRACE(sa) || RTRACE(sb) || RTRACE(sc))
-    {
-        if (RTRACE(sa))
-            memtrace_report(sa, sy);
-        else if (RTRACE(sb))
-            memtrace_report(sb, sy);
-        else if (RTRACE(sc))
-            memtrace_report(sc, sy);
-        SET_RTRACE(sy, 1);
-    }
-#endif
-
     mod_iterate3(na, nb, nc, ia, ib, ic)
     {
         ai = a[ia];
@@ -312,19 +263,6 @@ static SEXP math3_2(SEXP sa, SEXP sb, SEXP sc, SEXP sI, SEXP sJ, double (*f)(dou
     SETUP_Math3;
     i_1 = asInteger(sI);
     i_2 = asInteger(sJ);
-
-#ifdef R_MEMORY_PROFILING
-    if (RTRACE(sa) || RTRACE(sb) || RTRACE(sc))
-    {
-        if (RTRACE(sa))
-            memtrace_report(sa, sy);
-        else if (RTRACE(sb))
-            memtrace_report(sb, sy);
-        else if (RTRACE(sc))
-            memtrace_report(sc, sy);
-        SET_RTRACE(sy, 1);
-    }
-#endif
 
     mod_iterate3(na, nb, nc, ia, ib, ic)
     {
