@@ -1300,10 +1300,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                 cargs[na] = (void *)RAW(ss);
 #ifdef R_MEMORY_PROFILING
                 if (RTRACE(s))
-                {
                     memtrace_report(s, ss);
-                    SET_RTRACE(ss, 1);
-                }
 #endif
             }
             else
@@ -1333,10 +1330,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                 cargs[na] = (void *)INTEGER(ss);
 #ifdef R_MEMORY_PROFILING
                 if (RTRACE(s))
-                {
                     memtrace_report(s, ss);
-                    SET_RTRACE(ss, 1);
-                }
 #endif
             }
             else
@@ -1376,10 +1370,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                 cargs[na] = (void *)REAL(ss);
 #ifdef R_MEMORY_PROFILING
                 if (RTRACE(s))
-                {
                     memtrace_report(s, ss);
-                    SET_RTRACE(ss, 1);
-                }
 #endif
             }
             else
@@ -1408,10 +1399,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                 cargs[na] = (void *)COMPLEX(ss);
 #ifdef R_MEMORY_PROFILING
                 if (RTRACE(s))
-                {
                     memtrace_report(s, ss);
-                    SET_RTRACE(ss, 1);
-                }
 #endif
             }
             else
@@ -1983,13 +1971,6 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                             if (*--ptr != FILL)
                                 error("array under-run in %s(\"%s\") in %s argument %d\n", Fort ? ".Fortran" : ".C",
                                       symName, type2char(type), na + 1);
-#if R_MEMORY_PROFILING
-                        if (RTRACE(arg))
-                        {
-                            memtrace_report(p, s);
-                            SET_RTRACE(s, 1);
-                        }
-#endif
                     }
                     break;
                 case INTSXP:
@@ -2008,13 +1989,6 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                             if (*--ptr != FILL)
                                 error("array under-run in %s(\"%s\") in %s argument %d\n", Fort ? ".Fortran" : ".C",
                                       symName, type2char(type), na + 1);
-#if R_MEMORY_PROFILING
-                        if (RTRACE(arg))
-                        {
-                            memtrace_report(p, s);
-                            SET_RTRACE(s, 1);
-                        }
-#endif
                     }
                     break;
                 case LGLSXP:
@@ -2038,13 +2012,6 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                             if (*--ptr != FILL)
                                 error("array under-run in %s(\"%s\") in %s argument %d\n", Fort ? ".Fortran" : ".C",
                                       symName, type2char(type), na + 1);
-#if R_MEMORY_PROFILING
-                        if (RTRACE(arg))
-                        {
-                            memtrace_report(p, s);
-                            SET_RTRACE(s, 1);
-                        }
-#endif
                     }
                     else
                     {
@@ -2066,13 +2033,6 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                             float *sptr = (float *)p;
                             for (R_xlen_t i = 0; i < n; i++)
                                 REAL(s)[i] = (double)sptr[i];
-#if R_MEMORY_PROFILING
-                            if (RTRACE(arg))
-                            {
-                                memtrace_report(p, s);
-                                SET_RTRACE(s, 1);
-                            }
-#endif
                         }
                         else
                         {
@@ -2088,13 +2048,6 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                                 if (*--ptr != FILL)
                                     error("array under-run in %s(\"%s\") in %s argument %d\n", Fort ? ".Fortran" : ".C",
                                           symName, type2char(type), na + 1);
-#if R_MEMORY_PROFILING
-                            if (RTRACE(arg))
-                            {
-                                memtrace_report(p, s);
-                                SET_RTRACE(s, 1);
-                            }
-#endif
                         }
                     }
                     else
@@ -2124,13 +2077,6 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                             if (*--ptr != FILL)
                                 error("array under-run in %s(\"%s\") in %s argument %d\n", Fort ? ".Fortran" : ".C",
                                       symName, type2char(type), na + 1);
-#if R_MEMORY_PROFILING
-                        if (RTRACE(arg))
-                        {
-                            memtrace_report(p, s);
-                            SET_RTRACE(s, 1);
-                        }
-#endif
                     }
                     break;
                 case STRSXP:
@@ -2176,13 +2122,6 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                                     }
                             }
                         }
-#if R_MEMORY_PROFILING
-                        if (RTRACE(arg))
-                        {
-                            memtrace_report(p, s);
-                            SET_RTRACE(s, 1);
-                        }
-#endif
                         UNPROTECT(1);
                     }
                     else
@@ -2191,13 +2130,6 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                         char **cptr = (char **)p;
                         for (R_xlen_t i = 0; i < n; i++)
                             SET_STRING_ELT(s, i, mkChar(cptr[i]));
-#if R_MEMORY_PROFILING
-                        if (RTRACE(arg))
-                        {
-                            memtrace_report(p, s);
-                            SET_RTRACE(s, 1);
-                        }
-#endif
                         UNPROTECT(1);
                     }
                     break;
