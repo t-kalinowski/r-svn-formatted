@@ -533,7 +533,7 @@ static SEXP logicalSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch
         for (R_xlen_t i = 0; i < nmax; i++)
             if (LOGICAL(s)[i % ns])
                 count++;
-        indx = allocVector(INTSXP, count);
+        indx = allocVector(REALSXP, count);
         count = 0;
         for (i = 0; i < nmax; i++)
             if (LOGICAL(s)[i % ns])
