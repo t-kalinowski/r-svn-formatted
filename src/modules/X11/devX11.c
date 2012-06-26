@@ -69,6 +69,7 @@
 typedef int (*X11IOhandler)(Display *);
 
 #include "devX11.h"
+#include "rlogo_icon.h" /* hard-coded ARGB icon */
 
 #include <Rmodules/RX11.h>
 
@@ -1644,8 +1645,7 @@ Rboolean X11_Open(pDevDesc dd, pX11Desc xd, const char *dsp, double w, double h,
 
             XStoreName(display, xd->window, xd->title);
 
-#ifndef USE_Xt
-            /* For those too idle to make use of Xt (PR#14588) */
+            /* See (PR#14588) */
             XClassHint *chint;
             chint = XAllocClassHint();
             if (chint)
@@ -1655,7 +1655,11 @@ Rboolean X11_Open(pDevDesc dd, pX11Desc xd, const char *dsp, double w, double h,
                 XSetClassHint(display, xd->window, chint);
                 XFree(chint);
             }
-#endif
+
+            /* set window icon */
+            XChangeProperty(display, xd->window, XInternAtom(display, "_NET_WM_ICON", False),
+                            XInternAtom(display, "CARDINAL", False), 32, PropModeReplace,
+                            (const unsigned char *)rlogo_icon, 2 + 48 * 48);
 
             /* set up protocols so that window manager sends */
             /* me an event when user "destroys" window */
