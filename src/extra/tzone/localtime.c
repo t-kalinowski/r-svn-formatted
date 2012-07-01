@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2007-2010  The R Core Team
+ *  Copyright (C) 2007-2012  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1820,6 +1820,7 @@ static time_t time1(struct tm *const tmp, struct tm *(*const funcp)(const time_t
     if (tmp->tm_isdst >= 0)
     {
         tmp->tm_isdst = -1;
+        errno = 0; // previous attempt will have set it
         t = time2(tmp, funcp, offset, &okay);
         if (okay)
             return t;
