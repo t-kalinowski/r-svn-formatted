@@ -3336,7 +3336,7 @@ static void GA_Text0(double x, double y, const char *str, int enc, double rot, d
         {
             /* As from 2.7.0 can use Unicode always */
             int n = strlen(str), cnt;
-            R_CheckStack2(sizeof(wchar_t) * (nc + 1));
+            R_CheckStack2(sizeof(wchar_t) * (n + 1));
             wchar_t wc[n + 1]; /* only need terminator to debug */
             cnt = (enc == CE_UTF8) ? Rf_utf8towcs(wc, str, n + 1) : mbstowcs(wc, str, n);
             /* These macros need to be wrapped in braces */
@@ -3359,7 +3359,7 @@ static void GA_Text0(double x, double y, const char *str, int enc, double rot, d
             if (gc->fontface != 5)
             {
                 int n = strlen(str), cnt;
-                R_CheckStack2(sizeof(wchar_t) * (nc + 1));
+                R_CheckStack2(sizeof(wchar_t) * (n + 1));
                 wchar_t wc[n + 1];
                 cnt = (enc == CE_UTF8) ? Rf_utf8towcs(wc, str, n + 1) : mbstowcs(wc, str, n);
                 gwdrawstr1(xd->bm2, xd->font, xd->fgcolor, pt(x, y), wc, cnt, hadj);
