@@ -1554,8 +1554,8 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
         long double *rans;
         if (n <= 10000)
         {
+            R_CheckStack2(n * sizeof(long double));
             rans = (long double *)alloca(n * sizeof(long double));
-            R_CheckStack();
             memset(rans, 0, n * sizeof(long double));
         }
         else

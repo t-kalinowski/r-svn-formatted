@@ -778,8 +778,8 @@ static double PostScriptStringWidth(const unsigned char *str, int enc, FontMetri
         if (ucslen != (size_t)-1)
         {
             /* We convert the characters but not the terminator here */
+            R_CheckStack2(ucslen * sizeof(ucs2_t));
             ucs2_t ucs2s[ucslen];
-            R_CheckStack();
             status = (int)mbcsToUcs2((char *)str, ucs2s, ucslen, enc);
             if (status >= 0)
                 for (i = 0; i < ucslen; i++)
@@ -805,9 +805,9 @@ static double PostScriptStringWidth(const unsigned char *str, int enc, FontMetri
               */
              (face % 5) != 0)
     {
+        R_CheckStack2(strlen((char *)str) + 1);
         char buff[strlen((char *)str) + 1];
         /* Output string cannot be longer */
-        R_CheckStack();
         mbcsToSbcs((char *)str, buff, encoding, enc);
         str1 = (unsigned char *)buff;
     }
@@ -4606,8 +4606,8 @@ static void PS_Text0(double x, double y, const char *str, int enc, double rot, d
                 return;
             }
 
+            R_CheckStack2(buflen);
             unsigned char buf[buflen];
-            R_CheckStack();
 
             i_buf = (char *)str;
             o_buf = (char *)buf;
@@ -4648,8 +4648,8 @@ static void PS_Text0(double x, double y, const char *str, int enc, double rot, d
     */
     if ((enc == CE_UTF8 || mbcslocale) && !strIsASCII(str))
     {
+        R_CheckStack2(strlen(str) + 1);
         buff = alloca(strlen(str) + 1); /* Output string cannot be longer */
-        R_CheckStack();
         mbcsToSbcs(str, buff, convname(gc->fontfamily, pd), enc);
         str1 = buff;
     }
@@ -5514,8 +5514,8 @@ static void XFig_Text(double x, double y, const char *str, double rot, double ha
             }
             else
             {
+                R_CheckStack2(buflen);
                 buf = (char *)alloca(buflen);
-                R_CheckStack();
                 i_buf = (char *)str;
                 o_buf = buf;
                 i_len = strlen(str) + 1; /* including terminator */
@@ -8263,8 +8263,8 @@ static void PDF_Text0(double x, double y, const char *str, int enc, double rot, 
             if (cd == (void *)-1)
                 return;
 
+            R_CheckStack2(buflen);
             unsigned char buf[buflen];
-            R_CheckStack();
 
             i_buf = (char *)str;
             o_buf = (char *)buf;
@@ -8302,8 +8302,8 @@ static void PDF_Text0(double x, double y, const char *str, int enc, double rot, 
     if ((enc == CE_UTF8 || mbcslocale) && !strIsASCII(str) && face < 5)
     {
         /* face 5 handled above */
+        R_CheckStack2(strlen(str) + 1);
         buff = alloca(strlen(str) + 1); /* Output string cannot be longer */
-        R_CheckStack();
         mbcsToSbcs(str, buff, PDFconvname(gc->fontfamily, pd), enc);
         str1 = buff;
     }
