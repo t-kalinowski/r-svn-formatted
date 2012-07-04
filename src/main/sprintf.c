@@ -196,7 +196,7 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                             nthis = v - 1;
                             memmove(fmt + 1, fmt + 3, strlen(fmt) - 2);
                         }
-                        else if (fmt[2] >= '1' && fmt[2] <= '9' && fmt[3] == '$')
+                        else if (fmt[2] >= '0' && fmt[2] <= '9' && fmt[3] == '$')
                         {
                             v = 10 * v + fmt[2] - '0';
                             if (v > nargs)
@@ -220,7 +220,7 @@ SEXP attribute_hidden do_sprintf(SEXP call, SEXP op, SEXP args, SEXP env)
                                 nstar = v - 1;
                                 memmove(starc + 1, starc + 3, strlen(starc) - 2);
                             }
-                            else if (starc[2] >= '1' && starc[2] <= '9' && starc[3] == '$')
+                            else if (starc[2] >= '0' && starc[2] <= '9' && starc[3] == '$')
                             {
                                 v = 10 * v + starc[2] - '0';
                                 if (v > nargs)
@@ -575,7 +575,7 @@ SEXP attribute_hidden do_getfmts(SEXP call, SEXP op, SEXP args, SEXP env)
                         nthis = v - 1;
                         memmove(fmt + 1, fmt + 3, strlen(fmt) - 2);
                     }
-                    else if (fmt[2] >= '1' && fmt[2] <= '9' && fmt[3] == '$')
+                    else if (fmt[2] >= '0' && fmt[2] <= '9' && fmt[3] == '$')
                     {
                         v = 10 * v + fmt[2] - '0';
                         nthis = v - 1;
@@ -595,7 +595,7 @@ SEXP attribute_hidden do_getfmts(SEXP call, SEXP op, SEXP args, SEXP env)
                             nstar = v - 1;
                             memmove(starc + 1, starc + 3, strlen(starc) - 2);
                         }
-                        else if (starc[2] >= '1' && starc[2] <= '9' && starc[3] == '$')
+                        else if (starc[2] >= '0' && starc[2] <= '9' && starc[3] == '$')
                         {
                             v = 10 * v + starc[2] - '0';
                             nstar = v - 1;
