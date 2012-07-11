@@ -324,7 +324,7 @@ void R_ReplDLLinit(void)
 {
     R_IoBufferInit(&R_ConsoleIob);
     SETJMP(R_Toplevel.cjmpbuf);
-    R_GlobalContext = R_ToplevelContext = &R_Toplevel;
+    R_GlobalContext = R_ToplevelContext = R_SessionContext = &R_Toplevel;
     R_IoBufferWriteReset(&R_ConsoleIob);
     prompt_type = 1;
     DLLbuf[0] = DLLbuf[CONSOLE_BUFFER_SIZE] = '\0';
@@ -686,7 +686,7 @@ static void R_LoadProfile(FILE *fparg, SEXP env)
     {
         if (!SETJMP(R_Toplevel.cjmpbuf))
         {
-            R_GlobalContext = R_ToplevelContext = &R_Toplevel;
+            R_GlobalContext = R_ToplevelContext = R_SessionContext = &R_Toplevel;
             R_ReplFile(fp, env);
         }
         fclose(fp);
@@ -845,7 +845,7 @@ void setup_Rmainloop(void)
     R_Toplevel.handlerstack = R_HandlerStack;
     R_Toplevel.restartstack = R_RestartStack;
     R_Toplevel.srcref = R_NilValue;
-    R_GlobalContext = R_ToplevelContext = &R_Toplevel;
+    R_GlobalContext = R_ToplevelContext = R_SessionContext = &R_Toplevel;
 
     R_Warnings = R_NilValue;
 
@@ -868,7 +868,7 @@ void setup_Rmainloop(void)
 
     doneit = 0;
     SETJMP(R_Toplevel.cjmpbuf);
-    R_GlobalContext = R_ToplevelContext = &R_Toplevel;
+    R_GlobalContext = R_ToplevelContext = R_SessionContext = &R_Toplevel;
     if (R_SignalHandlers)
         init_signal_handlers();
     if (!doneit)
@@ -898,7 +898,7 @@ void setup_Rmainloop(void)
     /* require(methods) if it is in the default packages */
     doneit = 0;
     SETJMP(R_Toplevel.cjmpbuf);
-    R_GlobalContext = R_ToplevelContext = &R_Toplevel;
+    R_GlobalContext = R_ToplevelContext = R_SessionContext = &R_Toplevel;
     if (!doneit)
     {
         doneit = 1;
@@ -939,7 +939,7 @@ void setup_Rmainloop(void)
     */
     doneit = 0;
     SETJMP(R_Toplevel.cjmpbuf);
-    R_GlobalContext = R_ToplevelContext = &R_Toplevel;
+    R_GlobalContext = R_ToplevelContext = R_SessionContext = &R_Toplevel;
     if (!doneit)
     {
         doneit = 1;
@@ -959,7 +959,7 @@ void setup_Rmainloop(void)
 
     doneit = 0;
     SETJMP(R_Toplevel.cjmpbuf);
-    R_GlobalContext = R_ToplevelContext = &R_Toplevel;
+    R_GlobalContext = R_ToplevelContext = R_SessionContext = &R_Toplevel;
     if (!doneit)
     {
         doneit = 1;
@@ -978,7 +978,7 @@ void setup_Rmainloop(void)
 
     doneit = 0;
     SETJMP(R_Toplevel.cjmpbuf);
-    R_GlobalContext = R_ToplevelContext = &R_Toplevel;
+    R_GlobalContext = R_ToplevelContext = R_SessionContext = &R_Toplevel;
     if (!doneit)
     {
         doneit = 1;
@@ -1025,7 +1025,7 @@ void run_Rmainloop(void)
     /* We handle the console until end-of-file. */
     R_IoBufferInit(&R_ConsoleIob);
     SETJMP(R_Toplevel.cjmpbuf);
-    R_GlobalContext = R_ToplevelContext = &R_Toplevel;
+    R_GlobalContext = R_ToplevelContext = R_SessionContext = &R_Toplevel;
     R_ReplConsole(R_GlobalEnv, 0, 0);
     end_Rmainloop(); /* must go here */
 }
@@ -1209,7 +1209,7 @@ void R_dot_Last(void)
     /* Run the .Last function. */
     /* Errors here should kick us back into the repl. */
 
-    R_GlobalContext = R_ToplevelContext = &R_Toplevel;
+    R_GlobalContext = R_ToplevelContext = R_SessionContext = &R_Toplevel;
     PROTECT(cmd = install(".Last"));
     R_CurrentExpr = findVar(cmd, R_GlobalEnv);
     if (R_CurrentExpr != R_UnboundValue && TYPEOF(R_CurrentExpr) == CLOSXP)
