@@ -1844,7 +1844,7 @@ SEXP attribute_hidden do_glob(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, ans;
     R_xlen_t i, n;
-    int res, dirmark;
+    int res, dirmark, initialized = FALSE;
     glob_t globbuf;
 #ifdef Win32
     R_StringBuffer cbuff = {NULL, 0, MAXELTSIZE};
@@ -1869,8 +1869,8 @@ SEXP attribute_hidden do_glob(SEXP call, SEXP op, SEXP args, SEXP env)
         if (el == NA_STRING)
             continue;
 #ifdef Win32
-        res = dos_wglob(filenameToWchar(el, FALSE), (dirmark ? GLOB_MARK : 0) | GLOB_QUOTE | (i ? GLOB_APPEND : 0),
-                        NULL, &globbuf);
+        res = dos_wglob(filenameToWchar(el, FALSE),
+                        (dirmark ? GLOB_MARK : 0) | GLOB_QUOTE | (initialized ? GLOB_APPEND : 0), NULL, &globbuf);
         if (res == GLOB_NOSPACE)
             error(_("internal out-of-memory condition"));
 #else
@@ -1878,7 +1878,7 @@ SEXP attribute_hidden do_glob(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef GLOB_MARK
                    (dirmark ? GLOB_MARK : 0) |
 #endif
-                       GLOB_QUOTE | (i ? GLOB_APPEND : 0),
+                       GLOB_QUOTE | (initialized ? GLOB_APPEND : 0),
                    NULL, &globbuf);
 #ifdef GLOB_ABORTED
         if (res == GLOB_ABORTED)
@@ -1889,8 +1889,9 @@ SEXP attribute_hidden do_glob(SEXP call, SEXP op, SEXP args, SEXP env)
             error(_("internal out-of-memory condition"));
 #endif
 #endif
+        initialized = TRUE;
     }
-    n = globbuf.gl_pathc;
+    n = initialized ? globbuf.gl_pathc : 0;
     PROTECT(ans = allocVector(STRSXP, n));
     for (i = 0; i < n; i++)
 #ifdef Win32
@@ -1910,6 +1911,7 @@ SEXP attribute_hidden do_glob(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef Win32
     R_FreeStringBufferL(&cbuff);
 #endif
-    globfree(&globbuf);
+    if (initialized)
+        globfree(&globbuf);
     return ans;
 }
