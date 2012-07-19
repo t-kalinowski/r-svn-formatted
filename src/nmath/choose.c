@@ -84,6 +84,7 @@ double lchoose(double n, double k)
     }
     else if (R_IS_INT(n))
     {
+        n = floor(n + 0.5);
         if (n < k)
             return ML_NEGINF;
         /* k <= n :*/
@@ -142,6 +143,7 @@ double choose(double n, double k)
     }
     else if (R_IS_INT(n))
     {
+        n = floor(n + 0.5);
         if (n < k)
             return 0.;
         if (n - k < k_small_max)
