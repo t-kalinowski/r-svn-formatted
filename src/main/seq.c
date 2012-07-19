@@ -173,7 +173,7 @@ static SEXP rep2(SEXP s, SEXP ncopy)
 {
     R_xlen_t i, na, nc, n;
     int j;
-    SEXP a, t, u;
+    SEXP a, t;
 
     PROTECT(t = coerceVector(ncopy, INTSXP));
 
@@ -186,15 +186,7 @@ static SEXP rep2(SEXP s, SEXP ncopy)
         na += INTEGER(t)[i];
     }
 
-    if (isVector(s))
-        a = allocVector(TYPEOF(s), na);
-    else
-    {
-        if (na > INT_MAX)
-            error("too long for a pairlist");
-        a = allocList((int)na);
-    }
-    PROTECT(a);
+    PROTECT(a = allocVector(TYPEOF(s), na));
     n = 0;
     switch (TYPEOF(s))
     {
@@ -229,15 +221,6 @@ static SEXP rep2(SEXP s, SEXP ncopy)
             for (j = 0; j < (INTEGER(t)[i]); j++)
                 SET_VECTOR_ELT(a, n++, VECTOR_ELT(s, i));
         break;
-    case LISTSXP:
-        u = a;
-        for (int ii = 0; ii < (int)nc; ii++)
-            for (j = 0; j < (INTEGER(t)[ii]); j++)
-            {
-                SETCAR(u, duplicate(CAR(nthcdr(s, ii))));
-                u = CDR(u);
-            }
-        break;
     case RAWSXP:
         for (i = 0; i < nc; i++)
             for (j = 0; j < (INTEGER(t)[i]); j++)
@@ -255,14 +238,7 @@ static SEXP rep3(SEXP s, R_xlen_t na)
     R_xlen_t i, ns = xlength(s);
     SEXP a;
 
-    if (isVector(s))
-        a = allocVector(TYPEOF(s), na);
-    else
-    {
-        if (na > INT_MAX)
-            error("too long for a pairlist");
-        a = allocList((int)na);
-    }
+    PROTECT(a = allocVector(TYPEOF(s), na));
 
     /* We need to handle ns = 0 and do that separately for speed. */
     if (ns > 0)
@@ -293,12 +269,6 @@ static SEXP rep3(SEXP s, R_xlen_t na)
             for (i = 0; i < na; i++)
                 SET_STRING_ELT(a, i, STRING_ELT(s, i % ns));
             break;
-        case LISTSXP: {
-            int i = 0, nss = (int)ns;
-            for (SEXP t = a; t != R_NilValue; t = CDR(t), i++)
-                SETCAR(t, duplicate(CAR(nthcdr(s, (i % nss)))));
-        }
-        break;
         case VECSXP:
             for (i = 0; i < na; i++)
                 SET_VECTOR_ELT(a, i, duplicate(VECTOR_ELT(s, i % ns)));
@@ -338,12 +308,6 @@ static SEXP rep3(SEXP s, R_xlen_t na)
             for (i = 0; i < na; i++)
                 SET_STRING_ELT(a, i, NA_STRING);
             break;
-        case LISTSXP: {
-            int i = 0;
-            for (SEXP t = a; t != R_NilValue; t = CDR(t), i++)
-                SETCAR(t, R_NilValue);
-        }
-        break;
         case VECSXP:
             for (i = 0; i < na; i++)
                 SET_VECTOR_ELT(a, i, R_NilValue);
@@ -352,6 +316,7 @@ static SEXP rep3(SEXP s, R_xlen_t na)
             UNIMPLEMENTED_TYPE("rep3", s);
         }
     }
+    UNPROTECT(1);
     return a;
 }
 
@@ -365,7 +330,7 @@ SEXP attribute_hidden do_rep_int(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (!isVector(ncopy))
         error(_("incorrect type for second argument"));
 
-    if (!isVector(s) && (!isList(s)))
+    if (!isVector(s) && s != R_NilValue)
         error(_("attempt to replicate non-vector"));
 
     nc = xlength(ncopy); // might be 0
@@ -423,7 +388,7 @@ SEXP attribute_hidden do_rep_len(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     s = CAR(args);
 
-    if (!isVector(s) && (!isList(s)))
+    if (!isVector(s) && s != R_NilValue)
         error(_("attempt to replicate non-vector"));
 
     len = CADR(args);
@@ -524,6 +489,8 @@ SEXP attribute_hidden do_rep(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (each == NA_INTEGER)
         each = 1;
 
+    if (TYPEOF(x) == LISTSXP)
+        errorcall(call, "replication of pairlists is defunct");
     if (lx == 0)
     {
         if (len > 0 && x == R_NilValue)
