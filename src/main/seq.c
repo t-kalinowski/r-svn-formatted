@@ -235,9 +235,9 @@ static SEXP rep2(SEXP s, SEXP ncopy)
 }
 
 /* rep_len(x, len), also used for rep.int() with scalar 'times' */
-static SEXP rep3(SEXP s, R_xlen_t na)
+static SEXP rep3(SEXP s, R_xlen_t ns, R_xlen_t na)
 {
-    R_xlen_t i, j, ns = xlength(s);
+    R_xlen_t i, j;
     SEXP a;
 
     PROTECT(a = allocVector(TYPEOF(s), na));
@@ -338,7 +338,8 @@ SEXP attribute_hidden do_rep_int(SEXP call, SEXP op, SEXP args, SEXP rho)
         if ((nc = asInteger(ncopy)) == NA_INTEGER || nc < 0) /* nc = 0 ok */
             error(_("invalid '%s' value"), "times");
 #endif
-        PROTECT(a = rep3(s, nc * xlength(s)));
+        R_xlen_t ns = xlength(s);
+        PROTECT(a = rep3(s, ns, nc * ns));
     }
 
 #ifdef _S4_rep_keepClass
@@ -370,7 +371,7 @@ SEXP attribute_hidden do_rep_int(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP attribute_hidden do_rep_len(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    R_xlen_t na;
+    R_xlen_t ns, na;
     SEXP a, s, len;
 
     checkArity(op, args);
@@ -394,7 +395,8 @@ SEXP attribute_hidden do_rep_len(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (TYPEOF(s) == NILSXP && na > 0)
         error(_("cannot replicate NULL to a non-zero length"));
-    if (xlength(s) == 0)
+    ns = xlength(s);
+    if (ns == 0)
     {
         SEXP a;
         PROTECT(a = duplicate(s));
@@ -403,7 +405,7 @@ SEXP attribute_hidden do_rep_len(SEXP call, SEXP op, SEXP args, SEXP rho)
         UNPROTECT(1);
         return a;
     }
-    PROTECT(a = rep3(s, na));
+    PROTECT(a = rep3(s, ns, na));
 
 #ifdef _S4_rep_keepClass
     if (IS_S4_OBJECT(s))
@@ -432,6 +434,8 @@ SEXP attribute_hidden do_rep_len(SEXP call, SEXP op, SEXP args, SEXP rho)
     return a;
 }
 
+//#define NEW_REP
+
 #ifdef NEW_REP
 
 /* rep(), allowing for both times and each */
@@ -440,6 +444,11 @@ static SEXP rep4(SEXP x, SEXP times, R_xlen_t len, int each, R_xlen_t nt)
     SEXP a;
     R_xlen_t lx = xlength(x);
     R_xlen_t i, j, k, k2, k3, sum;
+
+    // faster code for common special case
+    if (each == 1 && nt == 1)
+        return rep3(x, lx, len);
+
     PROTECT(a = allocVector(TYPEOF(x), len));
 
     switch (TYPEOF(x))
