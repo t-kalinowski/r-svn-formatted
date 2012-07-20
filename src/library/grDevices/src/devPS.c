@@ -5650,6 +5650,7 @@ typedef struct
     Rboolean dingbats, useKern;
     Rboolean fillOddEven; /* polygon fill mode */
     Rboolean useCompression;
+    char tmpname[PATH_MAX]; /* used before compression */
 
     /*
      * Fonts and encodings used on the device
@@ -7425,6 +7426,7 @@ static void PDF_endpage(PDFDesc *pd)
         if (res < len)
             error("internal read error in PDF_endpage");
         fclose(pd->pdffp);
+        unlink(pd->tmpname);
         pd->pdffp = pd->mainfp;
         int res2 = compress(buf2, &outlen, buf, len);
         if (res2 != Z_OK)
@@ -7524,6 +7526,8 @@ static void PDF_NewPage(const pGEcontext gc, pDevDesc dd)
     if (pd->useCompression)
     {
         char *tmp = R_tmpnam("pdf", R_TempDir);
+        /* assume tmpname is less than PATH_MAX */
+        strcpy(pd->tmpname, tmp);
         pd->pdffp = fopen(tmp, "w+b");
         free(tmp);
         if (!pd->pdffp)
