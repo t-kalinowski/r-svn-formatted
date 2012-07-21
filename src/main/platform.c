@@ -1101,7 +1101,7 @@ static void list_files(const char *dnp, const char *stem, int *count, SEXP *pans
 #else
     struct stat sb;
 #endif
-    R_CheckUserInterrupt();
+    R_CheckUserInterrupt(); // includes stack check
     if ((dir = opendir(dnp)) != NULL)
     {
         while ((de = readdir(dir)))
@@ -1245,7 +1245,7 @@ static void list_dirs(const char *dnp, const char *stem, int *count, SEXP *pans,
 #else
     struct stat sb;
 #endif
-    R_CheckUserInterrupt();
+    R_CheckUserInterrupt(); // includes stack check
     if ((dir = opendir(dnp)) != NULL)
     {
         if (recursive)
@@ -1507,6 +1507,7 @@ static int delReparsePoint(const wchar_t *name)
 
 static int R_unlink(wchar_t *name, int recursive, int force)
 {
+    R_CheckStack(); // called recursively
     if (wcscmp(name, L".") == 0 || wcscmp(name, L"..") == 0)
         return 0;
     // printf("R_unlink(%ls)\n", name);
@@ -1599,6 +1600,7 @@ void R_CleanTempDir(void)
 #else
 static int R_unlink(const char *name, int recursive, int force)
 {
+    R_CheckStack(); // called recursively
     struct stat sb;
     int res, res2;
 
@@ -2449,6 +2451,7 @@ end:
 #ifdef Win32
 static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, int over, int recursive, int perms)
 {
+    R_CheckUserInterrupt(); // includes stack check
     struct _stati64 sb;
     int nc, nfail = 0, res;
     wchar_t dest[PATH_MAX], this[PATH_MAX];
@@ -2604,6 +2607,7 @@ SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 static int do_copy(const char *from, const char *name, const char *to, int over, int recursive, int perms)
 {
+    R_CheckUserInterrupt(); // includes stack check
     struct stat sb;
     int nfail = 0, res, mask;
     char dest[PATH_MAX], this[PATH_MAX];
