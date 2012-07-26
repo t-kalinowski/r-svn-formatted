@@ -2454,13 +2454,19 @@ static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, 
 {
     R_CheckUserInterrupt(); // includes stack check
     if (depth > 100)
-        error(_("too deep nesting"));
+    {
+        warning(_("too deep nesting"));
+        return 1;
+    }
     struct _stati64 sb;
     int nc, nfail = 0, res;
     wchar_t dest[PATH_MAX + 1], this[PATH_MAX + 1];
 
     if (wcslen(from) + wcslen(name) >= PATH_MAX)
-        error(_("over-long path length"));
+    {
+        warning(_("over-long path length"));
+        return 1;
+    }
     wsprintfW(this, L"%ls%ls", from, name);
     _wstati64(this, &sb);
     if ((sb.st_mode & S_IFDIR) > 0)
@@ -2515,7 +2521,7 @@ static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, 
 
         nfail = 0;
         nc = wcslen(to);
-        if (wcslen(from) + wcslen(name) >= PATH_MAX)
+        if (nc + wcslen(name) >= PATH_MAX)
         {
             warning(_("over-long path length"));
             nfail++;
@@ -2629,7 +2635,10 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
 {
     R_CheckUserInterrupt(); // includes stack check
     if (depth > 100)
-        error(_("too deep nesting"));
+    {
+        warning(_("too deep nesting"));
+        return 1;
+    }
 
     struct stat sb;
     int nfail = 0, res, mask;
@@ -2644,8 +2653,11 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
 #endif
     /* REprintf("from: %s, name: %s, to: %s\n", from, name, to); */
     if (strlen(from) + strlen(name) >= PATH_MAX)
-        error(_("over-long path length"));
-    snprintf(this, PATH_MAX, "%s%s", from, name);
+    {
+        warning(_("over-long path length"));
+        return 1;
+    }
+    snprintf(this, PATH_MAX + 1, "%s%s", from, name);
     /* Here we want the target not the link */
     stat(this, &sb);
     if ((sb.st_mode & S_IFDIR) > 0)
@@ -2702,7 +2714,7 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
 
         nfail = 0;
         size_t nc = strlen(to);
-        if (strlen(from) + strlen(name) >= PATH_MAX)
+        if (strlen(to) + strlen(name) >= PATH_MAX)
         {
             warning(_("over-long path length"));
             nfail++;
