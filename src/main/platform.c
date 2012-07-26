@@ -2473,17 +2473,19 @@ static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, 
             return 1;
         nc = wcslen(to);
         if (wcslen(to) + wcslen(name) >= PATH_MAX)
-            error(_("over-long path length"));
+        {
+            warning(_("over-long path length"));
+            return 1;
+        }
         wsprintfW(dest, L"%ls%ls", to, name);
         /* We could set the mode (only the 200 part matters) later */
         res = _wmkdir(dest);
         if (res && errno != EEXIST)
         {
-            warning(_("problem creating directory %ls: %s"), this, strerror(errno));
+            warning(_("problem creating directory %ls: %s"), dest, strerror(errno));
             return 1;
         }
         // NB Windows' mkdir appears to require \ not /.
-        wcscat(dest, L"\\");
         if ((dir = _wopendir(this)) != NULL)
         {
             while ((de = _wreaddir(dir)))
@@ -2491,9 +2493,12 @@ static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, 
                 if (!wcscmp(de->d_name, L".") || !wcscmp(de->d_name, L".."))
                     continue;
                 if (wcslen(name) + wcslen(de->d_name) + 1 >= PATH_MAX)
-                    error(_("over-long path length"));
+                {
+                    warning(_("over-long path length"));
+                    return 1;
+                }
                 wsprintfW(p, L"%ls%\\%ls", name, de->d_name);
-                do_copy(from, p, to, over, recursive, perms, ++depth);
+                nfail += do_copy(from, p, to, over, recursive, perms, ++depth);
             }
             _wclosedir(dir);
         }
@@ -2511,7 +2516,11 @@ static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, 
         nfail = 0;
         nc = wcslen(to);
         if (wcslen(from) + wcslen(name) >= PATH_MAX)
-            error(_("over-long path length"));
+        {
+            warning(_("over-long path length"));
+            nfail++;
+            goto copy_error;
+        }
         wsprintfW(dest, L"%ls%ls", to, name);
         if (over || !R_WFileExists(dest))
         { /* FIXME */
@@ -2648,7 +2657,10 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
         if (!recursive)
             return 1;
         if (strlen(to) + strlen(name) >= PATH_MAX)
-            error(_("over-long path length"));
+        {
+            warning(_("over-long path length"));
+            return 1;
+        }
         snprintf(dest, PATH_MAX + 1, "%s%s", to, name);
         /* If a directory does not have write permission for the user,
            we will fail to create files in that directory, so defer
@@ -2667,9 +2679,12 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
                 if (streql(de->d_name, ".") || streql(de->d_name, ".."))
                     continue;
                 if (strlen(name) + strlen(de->d_name) + 1 >= PATH_MAX)
-                    error(_("over-long path length"));
+                {
+                    warning(_("over-long path length"));
+                    return 1;
+                }
                 snprintf(p, PATH_MAX + 1, "%s/%s", name, de->d_name);
-                do_copy(from, p, to, over, recursive, perms, ++depth);
+                nfail += do_copy(from, p, to, over, recursive, perms, ++depth);
             }
             closedir(dir);
         }
@@ -2688,7 +2703,11 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
         nfail = 0;
         size_t nc = strlen(to);
         if (strlen(from) + strlen(name) >= PATH_MAX)
-            error(_("over-long path length"));
+        {
+            warning(_("over-long path length"));
+            nfail++;
+            goto copy_error;
+        }
         snprintf(dest, PATH_MAX + 1, "%s%s", to, name);
         if (over || !R_FileExists(dest))
         {
