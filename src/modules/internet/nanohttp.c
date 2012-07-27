@@ -486,7 +486,7 @@ void RxmlNanoHTTPScanProxy(const char *URL)
         if (proxyUser)
             xmlFree(proxyUser);
         proxyUser = xmlMemStrdup(buf);
-        cur += strlen(buf) + 1;
+        cur += (int)strlen(buf) + 1;
     }
     buf[indx] = 0;
     while (1)
@@ -1364,7 +1364,7 @@ static void base64_encode(char *proxyUser, char *out)
     int i, length;
     unsigned char *p = (unsigned char *)out;
 
-    length = strlen(s);
+    length = (int)strlen(s);
     for (i = 0; i < length; i += 3)
     {
         *p++ = tbl[s[i] >> 2];
@@ -1460,12 +1460,12 @@ retry:
     }
     if (proxy)
     {
-        blen = strlen(ctxt->hostname) * 2 + 16;
+        blen = (int)strlen(ctxt->hostname) * 2 + 16;
         ret = RxmlNanoHTTPConnectHost(proxy, proxyPort);
     }
     else
     {
-        blen = strlen(ctxt->hostname);
+        blen = (int)strlen(ctxt->hostname);
         ret = RxmlNanoHTTPConnectHost(ctxt->hostname, ctxt->port);
     }
     if (ret < 0)
@@ -1477,7 +1477,7 @@ retry:
 
     if (input != NULL)
     {
-        ilen = strlen(input);
+        ilen = (int)strlen(input);
         blen += ilen + 32;
     }
     else
@@ -1485,15 +1485,15 @@ retry:
     if (!cacheOK)
         blen += 20;
     if (headers != NULL)
-        blen += strlen(headers) + 2;
+        blen += (int)strlen(headers) + 2;
     if (contentType && *contentType)
-        blen += strlen(*contentType) + 16;
+        blen += (int)strlen(*contentType) + 16;
     if (proxy && proxyUser)
     {
         base64_encode(proxyUser, buf);
-        blen += strlen(buf) + 50;
+        blen += (int)strlen(buf) + 50;
     }
-    blen += strlen(method) + strlen(ctxt->path) + 23;
+    blen += (int)strlen(method) + (int)strlen(ctxt->path) + 23;
 #ifdef HAVE_ZLIB_H
     blen += 23;
 #endif
@@ -1530,7 +1530,7 @@ retry:
     else
         snprintf(p, blen - (p - bp), "\r\n");
     RxmlMessage(0, "-> %s%s", proxy ? "(Proxy) " : "", bp);
-    if ((blen -= strlen(bp) + 1) < 0)
+    if ((blen -= (int)strlen(bp) + 1) < 0)
         RxmlMessage(0, "ERROR: overflowed buffer by %d bytes\n", -blen);
     ctxt->outptr = ctxt->out = bp;
     ctxt->state = XML_NANO_HTTP_WRITE;

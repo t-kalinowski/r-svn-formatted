@@ -623,7 +623,7 @@ static int RxmlNanoFTPGetMore(void *ctx)
     /*
      * Read the amount left on the control connection
      */
-    if ((len = recv(ctxt->controlFd, &ctxt->controlBuf[ctxt->controlBufIndex], size, 0)) < 0)
+    if ((len = (int)recv(ctxt->controlFd, &ctxt->controlBuf[ctxt->controlBufIndex], size, 0)) < 0)
     {
         RxmlMessage(1, "recv failed");
         closesocket(ctxt->controlFd);
@@ -693,7 +693,7 @@ get_more:
     RxmlMessage(0, "\n<<<\n%s\n--\n", ptr);
     while (ptr < end)
     {
-        cur = RxmlNanoFTPParseResponse(ptr, end - ptr);
+        cur = RxmlNanoFTPParseResponse(ptr, (int)(end - ptr));
         if (cur > 0)
         {
             /*
@@ -705,7 +705,7 @@ get_more:
             if (res == 150)
                 RxmlFindLength(ctxt, ptr);
             ptr += 3;
-            ctxt->controlBufAnswer = ptr - ctxt->controlBuf;
+            ctxt->controlBufAnswer = (int)(ptr - ctxt->controlBuf);
             while ((ptr < end) && (*ptr != '\n'))
                 ptr++;
             if (*ptr == '\n')
@@ -727,7 +727,7 @@ get_more:
 
     if (res < 0)
         goto get_more;
-    ctxt->controlBufIndex = ptr - ctxt->controlBuf;
+    ctxt->controlBufIndex = (int)(ptr - ctxt->controlBuf);
     ptr = &ctxt->controlBuf[ctxt->controlBufIndex];
     RxmlMessage(1, "\n---\n%s\n--\n", ptr);
     RxmlMessage(1, "Got %d", res);
@@ -795,14 +795,14 @@ static int RxmlNanoFTPSendUser(void *ctx)
     RxmlNanoFTPCtxtPtr ctxt = (RxmlNanoFTPCtxtPtr)ctx;
     char buf[200];
     int len;
-    int res;
+    ssize_t res;
 
     if (ctxt->user == NULL)
         snprintf(buf, sizeof(buf), "USER anonymous\r\n");
     else
         snprintf(buf, sizeof(buf), "USER %s\r\n", ctxt->user);
     buf[sizeof(buf) - 1] = 0;
-    len = strlen(buf);
+    len = (int)strlen(buf);
     RxmlMessage(0, "%s", buf);
     res = send(ctxt->controlFd, buf, len, 0);
     if (res < 0)
@@ -822,14 +822,14 @@ static int RxmlNanoFTPSendPasswd(void *ctx)
     RxmlNanoFTPCtxtPtr ctxt = (RxmlNanoFTPCtxtPtr)ctx;
     char buf[200];
     int len;
-    int res;
+    ssize_t res;
 
     if (ctxt->passwd == NULL)
         snprintf(buf, sizeof(buf), "PASS anonymous@\r\n");
     else
         snprintf(buf, sizeof(buf), "PASS %s\r\n", ctxt->passwd);
     buf[sizeof(buf) - 1] = 0;
-    len = strlen(buf);
+    len = (int)strlen(buf);
     RxmlMessage(0, "%s", buf);
     res = send(ctxt->controlFd, buf, len, 0);
     if (res < 0)
@@ -859,7 +859,7 @@ static int RxmlNanoFTPQuit(void *ctx)
         return (-1);
 
     snprintf(buf, sizeof(buf), "QUIT\r\n");
-    len = strlen(buf);
+    len = (int)strlen(buf);
     RxmlMessage(0, "%s", buf);
     send(ctxt->controlFd, buf, len, 0);
     return (0);
@@ -879,7 +879,7 @@ static int RxmlNanoFTPConnect(void *ctx)
     RxmlNanoFTPCtxtPtr ctxt = (RxmlNanoFTPCtxtPtr)ctx;
     struct hostent *hp;
     int port;
-    int res;
+    ssize_t res;
 
     if (ctxt == NULL)
         return (-1);
@@ -992,7 +992,7 @@ static int RxmlNanoFTPConnect(void *ctx)
              */
             snprintf(buf, sizeof(buf), "USER %s\r\n", proxyUser);
             buf[sizeof(buf) - 1] = 0;
-            len = strlen(buf);
+            len = (int)strlen(buf);
             RxmlMessage(0, "%s", buf);
             res = send(ctxt->controlFd, buf, len, 0);
             if (res < 0)
@@ -1014,7 +1014,7 @@ static int RxmlNanoFTPConnect(void *ctx)
                 else
                     snprintf(buf, sizeof(buf), "PASS anonymous@\r\n");
                 buf[sizeof(buf) - 1] = 0;
-                len = strlen(buf);
+                len = (int)strlen(buf);
                 RxmlMessage(0, "%s", buf);
                 res = send(ctxt->controlFd, buf, len, 0);
                 if (res < 0)
@@ -1056,7 +1056,7 @@ static int RxmlNanoFTPConnect(void *ctx)
             /* Using SITE command */
             snprintf(buf, sizeof(buf), "SITE %s\r\n", ctxt->hostname);
             buf[sizeof(buf) - 1] = 0;
-            len = strlen(buf);
+            len = (int)strlen(buf);
             RxmlMessage(0, "%s", buf);
             res = send(ctxt->controlFd, buf, len, 0);
             if (res < 0)
@@ -1088,7 +1088,7 @@ static int RxmlNanoFTPConnect(void *ctx)
             else
                 snprintf(buf, sizeof(buf), "USER %s@%s\r\n", ctxt->user, ctxt->hostname);
             buf[sizeof(buf) - 1] = 0;
-            len = strlen(buf);
+            len = (int)strlen(buf);
             RxmlMessage(0, "%s", buf);
             res = send(ctxt->controlFd, buf, len, 0);
             if (res < 0)
@@ -1112,7 +1112,7 @@ static int RxmlNanoFTPConnect(void *ctx)
 
                 snprintf(buf, sizeof(buf), "PASS %s\r\n", ctxt->passwd);
             buf[sizeof(buf) - 1] = 0;
-            len = strlen(buf);
+            len = (int)strlen(buf);
             RxmlMessage(0, "%s", buf);
             res = send(ctxt->controlFd, buf, len, 0);
             if (res < 0)
@@ -1240,7 +1240,7 @@ static int RxmlNanoFTPGetConnection(void *ctx)
     if (ctxt->passive)
     {
         snprintf(buf, sizeof(buf), "PASV\r\n");
-        len = strlen(buf);
+        len = (int)strlen(buf);
 #ifdef DEBUG_FTP
         RxmlMessage(0, "%s", buf);
 #endif
@@ -1321,7 +1321,7 @@ static int RxmlNanoFTPGetConnection(void *ctx)
         snprintf(buf, sizeof(buf), "PORT %d,%d,%d,%d,%d,%d\r\n", adp[0] & 0xff, adp[1] & 0xff, adp[2] & 0xff,
                  adp[3] & 0xff, portp[0] & 0xff, portp[1] & 0xff);
         buf[sizeof(buf) - 1] = 0;
-        len = strlen(buf);
+        len = (int)strlen(buf);
 #ifdef DEBUG_FTP
         RxmlMessage(1, "%s", buf);
 #endif
@@ -1369,7 +1369,7 @@ static int RxmlNanoFTPGetSocket(void *ctx, const char *filename)
         return (-1);
 
     snprintf(buf, sizeof(buf), "TYPE I\r\n");
-    len = strlen(buf);
+    len = (int)strlen(buf);
 #ifdef DEBUG_FTP
     RxmlMessage(0, "%s", buf);
 #endif
@@ -1393,7 +1393,7 @@ static int RxmlNanoFTPGetSocket(void *ctx, const char *filename)
     else
         snprintf(buf, sizeof(buf), "RETR %s\r\n", filename);
     buf[sizeof(buf) - 1] = 0;
-    len = strlen(buf);
+    len = (int)strlen(buf);
 #ifdef DEBUG_FTP
     RxmlMessage(0, "%s", buf);
 #endif
