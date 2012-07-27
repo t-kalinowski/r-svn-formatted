@@ -9,10 +9,10 @@
 #define min(a, b) ((a) > (b) ? (b) : (a))
 #endif
 
-static double poly(const float *, int, float);
+static double poly(const double *, int, double);
 
-void swilk(int *init,                                    /* logical: is a[] already initialized ? */
-           float *x, int *n, int *n1, int *n2, float *a, /* coefficients a[] */
+void swilk(int *init,                                      /* logical: is a[] already initialized ? */
+           double *x, int *n, int *n1, int *n2, double *a, /* coefficients a[] */
            double *w, double *pw, int *ifault)
 {
 
@@ -22,26 +22,26 @@ void swilk(int *init,                                    /* logical: is a[] alre
     */
 
     /* Initialized data */
-    const static float zero = 0.f;
-    const static float one = 1.f;
-    const static float two = 2.f;
+    const static double zero = 0.;
+    const static double one = 1.;
+    const static double two = 2.;
 
-    const static float small = 1e-19f;
+    const static double small = 1e-19;
 
     /* polynomial coefficients */
-    const static float g[2] = {-2.273f, .459f};
-    const static float c1[6] = {0.f, .221157f, -.147981f, -2.07119f, 4.434685f, -2.706056f},
-                       c2[6] = {0.f, .042981f, -.293762f, -1.752461f, 5.682633f, -3.582633f};
-    const static float c3[4] = {.544f, -.39978f, .025054f, -6.714e-4f};
-    const static float c4[4] = {1.3822f, -.77857f, .062767f, -.0020322f};
-    const static float c5[4] = {-1.5861f, -.31082f, -.083751f, .0038915f};
-    const static float c6[3] = {-.4803f, -.082676f, .0030302f};
-    const static float c7[2] = {.164f, .533f};
-    const static float c8[2] = {.1736f, .315f};
-    const static float c9[2] = {.256f, -.00635f};
+    const static double g[2] = {-2.273, .459};
+    const static double c1[6] = {0., .221157, -.147981, -2.07119, 4.434685, -2.706056},
+                        c2[6] = {0., .042981, -.293762, -1.752461, 5.682633, -3.582633};
+    const static double c3[4] = {.544, -.39978, .025054, -6.714e-4};
+    const static double c4[4] = {1.3822, -.77857, .062767, -.0020322};
+    const static double c5[4] = {-1.5861, -.31082, -.083751, .0038915};
+    const static double c6[3] = {-.4803, -.082676, .0030302};
+    const static double c7[2] = {.164, .533};
+    const static double c8[2] = {.1736, .315};
+    const static double c9[2] = {.256, -.00635};
 
     /* System generated locals */
-    float r__1;
+    double r__1;
 
     /*
         Auxiliary routines : poly()  {below}
@@ -49,9 +49,9 @@ void swilk(int *init,                                    /* logical: is a[] alre
     /* Local variables */
     int i, j, ncens, i1, nn2;
 
-    float zbar, ssassx, summ2, ssumm2, gamma, delta, range;
-    float a1, a2, an, bf, ld, m, s, sa, xi, sx, xx, y, w1;
-    float fac, asa, an25, ssa, z90f, sax, zfm, z95f, zsd, z99f, rsn, ssx, xsx;
+    double zbar, ssassx, summ2, ssumm2, gamma, delta, range;
+    double a1, a2, an, bf, ld, m, s, sa, xi, sx, xx, y, w1;
+    double fac, asa, an25, ssa, z90f, sax, zfm, z95f, zsd, z99f, rsn, ssx, xsx;
 
     *pw = 1.;
     if (*w >= 0.)
@@ -64,7 +64,7 @@ void swilk(int *init,                                    /* logical: is a[] alre
         return;
     }
 
-    an = (float)(*n);
+    an = (double)(*n);
     nn2 = *n / 2;
     if (*n2 < nn2)
     {
@@ -84,7 +84,7 @@ void swilk(int *init,                                    /* logical: is a[] alre
     }
     if (ncens > 0)
     {
-        delta = (float)ncens / an;
+        delta = (double)ncens / an;
         if (delta > .8f)
         {
             *ifault = 5;
@@ -93,7 +93,7 @@ void swilk(int *init,                                    /* logical: is a[] alre
     } /* just for -Wall:*/
     else
     {
-        delta = 0.f;
+        delta = 0.;
     }
 
     --a; /* so we can keep using 1-based indices */
@@ -104,7 +104,7 @@ void swilk(int *init,                                    /* logical: is a[] alre
     {
         if (*n == 3)
         {
-            const static float sqrth = .70710678f; /* = sqrt(1/2), was .70711f */
+            const static double sqrth = .70710678; /* = sqrt(1/2), was .70711f */
             a[1] = sqrth;
         }
         else
@@ -113,7 +113,7 @@ void swilk(int *init,                                    /* logical: is a[] alre
             summ2 = zero;
             for (i = 1; i <= *n2; ++i)
             {
-                a[i] = (float)qnorm((i - .375f) / an25, 0., 1., 1, 0);
+                a[i] = (double)qnorm((i - .375f) / an25, 0., 1., 1, 0);
                 r__1 = a[i];
                 summ2 += r__1 * r__1;
             }
@@ -256,14 +256,14 @@ L70:
         /*	Censoring by proportion NCENS/N.
             Calculate mean and sd of normal equivalent deviate of W. */
 
-        const static float three = 3.f;
+        const static double three = 3.;
 
-        const static float z90 = 1.2816f;
-        const static float z95 = 1.6449f;
-        const static float z99 = 2.3263f;
-        const static float zm = 1.7509f;
-        const static float zss = .56268f;
-        const static float bf1 = .8378f;
+        const static double z90 = 1.2816;
+        const static double z95 = 1.6449;
+        const static double z99 = 2.3263;
+        const static double zm = 1.7509;
+        const static double zss = .56268;
+        const static double bf1 = .8378;
 
         const static double xx90 = .556;
         const static double xx95 = .622;
@@ -291,7 +291,7 @@ L70:
     return;
 } /* swilk */
 
-static double poly(const float *cc, int nord, float x)
+static double poly(const double *cc, int nord, double x)
 {
     /* Algorithm AS 181.2	Appl. Statist.	(1982) Vol. 31, No. 2
 
