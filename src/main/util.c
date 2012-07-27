@@ -1967,7 +1967,7 @@ SEXP attribute_hidden do_ICUset(SEXP call, SEXP op, SEXP args, SEXP rho)
     for (; args != R_NilValue; args = CDR(args))
     {
         if (isNull(TAG(args)))
-            error(_("alll arguments must be named"));
+            error(_("all arguments must be named"));
         const char *this = CHAR(PRINTNAME(TAG(args)));
         const char *s;
 
