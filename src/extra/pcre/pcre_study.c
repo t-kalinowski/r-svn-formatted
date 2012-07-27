@@ -1146,7 +1146,7 @@ volatile int dummy;
                 case OP_HSPACE:
                     SET_BIT(0x09);
                     SET_BIT(0x20);
-#ifdef COMPILE_PCRE8
+#ifdef SUPPORT_UTF
                     if (utf)
                     {
 #ifdef COMPILE_PCRE8
@@ -1171,7 +1171,7 @@ volatile int dummy;
                     SET_BIT(0x0B);
                     SET_BIT(0x0C);
                     SET_BIT(0x0D);
-#ifdef COMPILE_PCRE8
+#ifdef SUPPORT_UTF
                     if (utf)
                     {
 #ifdef COMPILE_PCRE8
@@ -1438,7 +1438,8 @@ PCRE_EXP_DEFN pcre16_extra *PCRE_CALL_CONVENTION pcre16_study(const pcre16 *exte
 
     if (bits_set || min > 0
 #ifdef SUPPORT_JIT
-        || (options & PCRE_STUDY_JIT_COMPILE) != 0
+        || (options &
+            (PCRE_STUDY_JIT_COMPILE | PCRE_STUDY_JIT_PARTIAL_SOFT_COMPILE | PCRE_STUDY_JIT_PARTIAL_HARD_COMPILE)) != 0
 #endif
     )
     {
@@ -1500,7 +1501,12 @@ PCRE_EXP_DEFN pcre16_extra *PCRE_CALL_CONVENTION pcre16_study(const pcre16 *exte
 #ifdef SUPPORT_JIT
         extra->executable_jit = NULL;
         if ((options & PCRE_STUDY_JIT_COMPILE) != 0)
-            PRIV(jit_compile)(re, extra);
+            PRIV(jit_compile)(re, extra, JIT_COMPILE);
+        if ((options & PCRE_STUDY_JIT_PARTIAL_SOFT_COMPILE) != 0)
+            PRIV(jit_compile)(re, extra, JIT_PARTIAL_SOFT_COMPILE);
+        if ((options & PCRE_STUDY_JIT_PARTIAL_HARD_COMPILE) != 0)
+            PRIV(jit_compile)(re, extra, JIT_PARTIAL_HARD_COMPILE);
+
         if (study->flags == 0 && (extra->flags & PCRE_EXTRA_EXECUTABLE_JIT) == 0)
         {
 #ifdef COMPILE_PCRE8
