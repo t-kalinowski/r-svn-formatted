@@ -2494,6 +2494,7 @@ static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, 
         // NB Windows' mkdir appears to require \ not /.
         if ((dir = _wopendir(this)) != NULL)
         {
+            depth++;
             while ((de = _wreaddir(dir)))
             {
                 if (!wcscmp(de->d_name, L".") || !wcscmp(de->d_name, L".."))
@@ -2504,7 +2505,7 @@ static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, 
                     return 1;
                 }
                 wsprintfW(p, L"%ls%\\%ls", name, de->d_name);
-                nfail += do_copy(from, p, to, over, recursive, perms, ++depth);
+                nfail += do_copy(from, p, to, over, recursive, perms, depth);
             }
             _wclosedir(dir);
         }
@@ -2686,6 +2687,7 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
         strcat(dest, "/");
         if ((dir = opendir(this)) != NULL)
         {
+            depth++;
             while ((de = readdir(dir)))
             {
                 if (streql(de->d_name, ".") || streql(de->d_name, ".."))
@@ -2696,7 +2698,7 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
                     return 1;
                 }
                 snprintf(p, PATH_MAX + 1, "%s/%s", name, de->d_name);
-                nfail += do_copy(from, p, to, over, recursive, perms, ++depth);
+                nfail += do_copy(from, p, to, over, recursive, perms, depth);
             }
             closedir(dir);
         }
