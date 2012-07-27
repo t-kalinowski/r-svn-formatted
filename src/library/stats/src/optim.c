@@ -117,6 +117,7 @@ static void fmingr(int n, double *p, double *df, void *ex)
     { /* numerical derivatives */
         PROTECT(x = allocVector(REALSXP, n));
         setAttrib(x, R_NamesSymbol, OS->names);
+        SET_NAMED(x, 2); // in case f tries to change it
         for (i = 0; i < n; i++)
             REAL(x)[i] = p[i] * (OS->parscale[i]);
         SETCADR(OS->R_fcall, x);
@@ -126,22 +127,17 @@ static void fmingr(int n, double *p, double *df, void *ex)
             {
                 eps = OS->ndeps[i];
                 REAL(x)[i] = (p[i] + eps) * (OS->parscale[i]);
-                SETCADR(OS->R_fcall, x);
                 PROTECT_WITH_INDEX(s = eval(OS->R_fcall, OS->R_env), &ipx);
                 REPROTECT(s = coerceVector(s, REALSXP), ipx);
                 val1 = REAL(s)[0] / (OS->fnscale);
                 REAL(x)[i] = (p[i] - eps) * (OS->parscale[i]);
-                SETCADR(OS->R_fcall, x);
                 REPROTECT(s = eval(OS->R_fcall, OS->R_env), ipx);
                 REPROTECT(s = coerceVector(s, REALSXP), ipx);
                 val2 = REAL(s)[0] / (OS->fnscale);
                 df[i] = (val1 - val2) / (2 * eps);
-#define DO_df_x                                                                                                        \
-    if (!R_FINITE(df[i]))                                                                                              \
-        error(("non-finite finite-difference value [%d]"), i + 1);                                                     \
-    REAL(x)[i] = p[i] * (OS->parscale[i])
-
-                DO_df_x;
+                if (!R_FINITE(df[i]))
+                    error(("non-finite finite-difference value [%d]"), i + 1);
+                REAL(x)[i] = p[i] * (OS->parscale[i]);
                 UNPROTECT(1);
             }
         }
@@ -157,7 +153,6 @@ static void fmingr(int n, double *p, double *df, void *ex)
                     epsused = tmp - p[i];
                 }
                 REAL(x)[i] = tmp * (OS->parscale[i]);
-                SETCADR(OS->R_fcall, x);
                 PROTECT_WITH_INDEX(s = eval(OS->R_fcall, OS->R_env), &ipx);
                 REPROTECT(s = coerceVector(s, REALSXP), ipx);
                 val1 = REAL(s)[0] / (OS->fnscale);
@@ -168,13 +163,13 @@ static void fmingr(int n, double *p, double *df, void *ex)
                     eps = p[i] - tmp;
                 }
                 REAL(x)[i] = tmp * (OS->parscale[i]);
-                SETCADR(OS->R_fcall, x);
                 REPROTECT(s = eval(OS->R_fcall, OS->R_env), ipx);
                 REPROTECT(s = coerceVector(s, REALSXP), ipx);
                 val2 = REAL(s)[0] / (OS->fnscale);
                 df[i] = (val1 - val2) / (epsused + eps);
-
-                DO_df_x;
+                if (!R_FINITE(df[i]))
+                    error(("non-finite finite-difference value [%d]"), i + 1);
+                REAL(x)[i] = p[i] * (OS->parscale[i]);
                 UNPROTECT(1);
             }
         }
