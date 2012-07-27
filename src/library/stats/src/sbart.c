@@ -56,6 +56,7 @@ void F77_SUB(sbart)(double *penalt, double *dofoff, double *xs, double *ys, doub
        lspar, uspar lower and upper values for spar search;  0.,1. are good values
        tol, eps	used in Golden Search routine
        isetup	setup indicator [initially 0
+       NB: this alters that, and it is a constant in the caller!
        icrit	indicator saying which cross validation score is to be computed
             0: none ;  1: GCV ;  2: CV ;  3: 'df matching'
        ld4		the leading dimension of abd (ie ld4=4)
