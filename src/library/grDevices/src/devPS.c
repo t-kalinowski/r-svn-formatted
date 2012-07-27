@@ -372,7 +372,7 @@ static int GetKPX(char *buf, int nkp, FontMetricInfo *metrics, CNAME *charnames)
     {
         if (!strcmp(c1, charnames[i].cname))
         {
-            metrics->KernPairs[nkp].c1 = i;
+            metrics->KernPairs[nkp].c1 = (unsigned char)i;
             done++;
             break;
         }
@@ -380,7 +380,7 @@ static int GetKPX(char *buf, int nkp, FontMetricInfo *metrics, CNAME *charnames)
     for (i = 0; i < 256; i++)
         if (!strcmp(c2, charnames[i].cname))
         {
-            metrics->KernPairs[nkp].c2 = i;
+            metrics->KernPairs[nkp].c2 = (unsigned char)i;
             done++;
             break;
         }
@@ -729,7 +729,7 @@ static int PostScriptLoadFontMetrics(const char *const fontpath, FontMetricInfo 
             break;
         }
     }
-    metrics->nKP = i;
+    metrics->nKP = (short)i;
     R_gzclose(fp);
     /* Make an index for kern-pair searches: relies on having contiguous
        blocks by first char for efficiency, but works in all cases. */
@@ -737,7 +737,7 @@ static int PostScriptLoadFontMetrics(const char *const fontpath, FontMetricInfo 
         short ind, tmp;
         for (j = 0; j < 256; j++)
         {
-            metrics->KPstart[j] = i;
+            metrics->KPstart[j] = (short)i;
             metrics->KPend[j] = 0;
         }
         for (j = 0; j < i; j++)
@@ -745,10 +745,10 @@ static int PostScriptLoadFontMetrics(const char *const fontpath, FontMetricInfo 
             ind = metrics->KernPairs[j].c1;
             tmp = metrics->KPstart[ind];
             if (j < tmp)
-                metrics->KPstart[ind] = j;
+                metrics->KPstart[ind] = (short)j;
             tmp = metrics->KPend[ind];
             if (j > tmp)
-                metrics->KPend[ind] = j;
+                metrics->KPend[ind] = (short)j;
         }
     }
     return 1;
@@ -2909,9 +2909,9 @@ static void PostScriptCircle(FILE *fp, double x, double y, double r)
     fprintf(fp, "%.2f %.2f %.2f c ", x, y, r);
 }
 
-static void PostScriptWriteString(FILE *fp, const char *str, int nb)
+static void PostScriptWriteString(FILE *fp, const char *str, size_t nb)
 {
-    int i;
+    size_t i;
 
     fputc('(', fp);
     for (i = 0; i < nb && *str; i++, str++)
@@ -2944,7 +2944,7 @@ static void PostScriptWriteString(FILE *fp, const char *str, int nb)
 
 static FontMetricInfo *metricInfo(const char *, int, PostScriptDesc *);
 
-static void PostScriptText(FILE *fp, double x, double y, const char *str, int nb, double xc, double rot,
+static void PostScriptText(FILE *fp, double x, double y, const char *str, size_t nb, double xc, double rot,
                            const pGEcontext gc, pDevDesc dd)
 {
     int face = gc->fontface;
@@ -2975,7 +2975,7 @@ static void PostScriptText(FILE *fp, double x, double y, const char *str, int nb
     fprintf(fp, " t\n");
 }
 
-static void PostScriptText2(FILE *fp, double x, double y, const char *str, int nb, Rboolean relative, double rot,
+static void PostScriptText2(FILE *fp, double x, double y, const char *str, size_t nb, Rboolean relative, double rot,
                             const pGEcontext gc, pDevDesc dd)
 {
     int face = gc->fontface;
@@ -3003,10 +3003,10 @@ static void PostScriptText2(FILE *fp, double x, double y, const char *str, int n
     }
 }
 
-static void PostScriptHexText(FILE *fp, double x, double y, const char *str, int strlen, double xc, double rot)
+static void PostScriptHexText(FILE *fp, double x, double y, const char *str, size_t strlen, double xc, double rot)
 {
     unsigned char *p = (unsigned char *)str;
-    int i;
+    size_t i;
 
     fprintf(fp, "%.2f %.2f ", x, y);
     fprintf(fp, "<");
@@ -3039,7 +3039,8 @@ static void PostScriptTextKern(FILE *fp, double x, double y, const char *str, do
     PostScriptDesc *pd = (PostScriptDesc *)dd->deviceSpecific;
     int face = gc->fontface;
     FontMetricInfo *metrics;
-    int i, j, n, nout = 0, w;
+    size_t i, n, nout = 0;
+    int j, w;
     unsigned char p1, p2;
     double fac = 0.001 * floor(gc->cex * gc->ps + 0.5);
     Rboolean relative = FALSE;
@@ -3059,6 +3060,8 @@ static void PostScriptTextKern(FILE *fp, double x, double y, const char *str, do
     metrics = metricInfo(gc->fontfamily, face, pd);
 
     n = strlen(str);
+    if (n < 1)
+        return;
     /* First check for any kerning */
     for (i = 0; i < n - 1; i++)
     {
@@ -5505,7 +5508,7 @@ static void XFig_Text(double x, double y, const char *str, double rot, double ha
             const char *i_buf;
             char *o_buf;
             size_t i_len, o_len, status;
-            int buflen = MB_LEN_MAX * strlen(str) + 1;
+            size_t buflen = MB_LEN_MAX * strlen(str) + 1;
 
             cd = (void *)Riconv_open(pd->encoding, "");
             if (cd == (void *)-1)
@@ -8047,11 +8050,13 @@ static int PDFfontNumber(const char *family, int face, PDFDesc *pd)
 static void PDFWriteT1KerningString(FILE *fp, const char *str, FontMetricInfo *metrics, const pGEcontext gc)
 {
     unsigned char p1, p2;
-    int i, j, n;
-    int ary_buf[128], *ary;
+    size_t i, n;
+    int j, ary_buf[128], *ary;
     Rboolean haveKerning = FALSE;
 
     n = strlen(str);
+    if (n < 1)
+        return;
     if (n > sizeof(ary_buf) / sizeof(int))
         ary = Calloc(n, int);
     else
