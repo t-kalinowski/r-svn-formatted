@@ -29,7 +29,16 @@
 
 static const R_CallMethodDef CallEntries[] = {{"C_contourDef", (DL_FUNC)&C_contourDef, 0}, {NULL, NULL, 0}};
 
-static R_CMethodDef CEntries[] = {{"unregisterBase", (DL_FUNC)unregisterBase, 0}, {NULL, NULL, 0}};
+#define CDEF(name)                                                                                                     \
+    {                                                                                                                  \
+#name, (DL_FUNC)&name, sizeof(name##_t) / sizeof(name##_t[0]), name##_t                                        \
+    }
+
+static R_NativePrimitiveArgType C_stemleaf_t[] = {REALSXP, INTSXP, REALSXP, INTSXP, REALSXP};
+static R_NativePrimitiveArgType C_bincount_t[] = {REALSXP, INTSXP, REALSXP, INTSXP, INTSXP, LGLSXP, LGLSXP, LGLSXP};
+
+static R_CMethodDef CEntries[] = {
+    CDEF(C_bincount), CDEF(C_stemleaf), {"unregisterBase", (DL_FUNC)unregisterBase, 0}, {NULL, NULL, 0}};
 
 #define EXTDEF(name, n)                                                                                                \
     {                                                                                                                  \
