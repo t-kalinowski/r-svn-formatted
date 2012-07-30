@@ -1209,3 +1209,9 @@ SEXP attribute_hidden do_tilde(SEXP call, SEXP op, SEXP args, SEXP rho)
         return call;
     }
 }
+
+/* For use in packages */
+SEXP getPRIMNAME(SEXP object)
+{
+    return PRIMNAME(object);
+}
