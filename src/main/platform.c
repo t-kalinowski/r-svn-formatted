@@ -3073,7 +3073,7 @@ typedef struct TMN_REPARSE_DATA_BUFFER
     WORD ReparseDataLength;
     WORD Reserved;
     WORD SubstituteNameOffset;
-    ` WORD SubstituteNameLength;
+    WORD SubstituteNameLength;
     WORD PrintNameOffset;
     WORD PrintNameLength;
     WCHAR PathBuffer[1024];
