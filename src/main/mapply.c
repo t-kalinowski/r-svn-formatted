@@ -23,9 +23,11 @@
 
 #include <Defn.h>
 
-SEXP attribute_hidden do_mapply(SEXP f, SEXP varyingArgs, SEXP constantArgs, SEXP rho)
+SEXP attribute_hidden do_mapply(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
+    checkArity(op, args);
 
+    SEXP f = CAR(args), varyingArgs = CADR(args), constantArgs = CADDR(args);
     int i, j, m, named, zero = 0;
     R_xlen_t *lengths, *counters, longest = 0;
     SEXP vnames, fcall = R_NilValue, mindex, nindex, tmp1, tmp2, ans;
@@ -47,8 +49,8 @@ SEXP attribute_hidden do_mapply(SEXP f, SEXP varyingArgs, SEXP constantArgs, SEX
         error(_("Zero-length inputs cannot be mixed with those of non-zero length"));
 
     counters = (R_xlen_t *)R_alloc(m, sizeof(R_xlen_t));
-    for (i = 0; i < m; counters[i++] = 0)
-        ;
+    memset(counters, 0, m * sizeof(R_xlen_t));
+    // for(i = 0; i < m; counters[i++] = 0);
 
     mindex = PROTECT(allocVector(VECSXP, m));
     nindex = PROTECT(allocVector(VECSXP, m));
@@ -96,12 +98,9 @@ SEXP attribute_hidden do_mapply(SEXP f, SEXP varyingArgs, SEXP constantArgs, SEX
     }
 
     for (j = 0; j < m; j++)
-    {
         if (counters[j] != lengths[j])
             warning(_("longer argument not a multiple of length of shorter"));
-    }
 
     UNPROTECT(5);
-
     return (ans);
 }
