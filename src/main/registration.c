@@ -59,26 +59,8 @@
 
 #include "basedecl.h"
 
-/* Omitted (relative to those in ROUTINES):
-
-   fft_factor
-   fft_work
-   fdhess
-   optif9
-
-   These can still be called directly in native code in a package.
-   They are just not exported here for access via the .C(), .Call(),
-   .Fortran() or .External() interfaces.
-
-   If these omitted routines are not visible to package DLLs/shared
-   libraries on some platforms, the package should be linked against
-   R.dll or libR.so or the equivalent on that platform.
-*/
-
 /* FIXME: bincode is no longer used in R, but is still used by
    packages misc3d mixOmics spam
-
-   R_tabulate is no longer used in R, but is used by package pegas
 */
 
 static R_NativePrimitiveArgType bakslv_t[] = {REALSXP, INTSXP,  INTSXP, REALSXP, INTSXP,
@@ -102,7 +84,7 @@ static R_NativePrimitiveArgType R_rowsum_t[] = {INTSXP, REALSXP, REALSXP, REALSX
 static R_NativePrimitiveArgType str_signif_t[] = {ANYSXP, INTSXP, STRSXP, INTSXP, INTSXP, STRSXP, STRSXP, STRSXP};
 */
 
-static R_NativePrimitiveArgType R_tabulate_t[] = {INTSXP, INTSXP, INTSXP, INTSXP};
+// static R_NativePrimitiveArgType R_tabulate_t[] = {INTSXP, INTSXP, INTSXP, INTSXP};
 
 static R_NativePrimitiveArgType Rsockconnect_t[] = {INTSXP, STRSXP};
 static R_NativePrimitiveArgType Rsockopen_t[] = {INTSXP};
@@ -139,7 +121,7 @@ static R_CMethodDef cMethods[] = {CDEF(bakslv),
 #else
                                   {"str_signif", (DL_FUNC)&str_signif, 8, NULL},
 #endif
-                                  CDEF(R_tabulate),
+                                  //    CDEF(R_tabulate),
 
                                   /* Sockets */
                                   CDEF(Rsockconnect),
