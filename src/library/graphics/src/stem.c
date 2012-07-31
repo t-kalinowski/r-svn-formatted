@@ -165,12 +165,11 @@ SEXP C_StemLeaf(SEXP x, SEXP scale, SEXP swidth, SEXP atom)
 }
 
 /* Formerly a version in src/appl/binning.c */
+#include <string.h> // for memset
 
-/* FIXME: with long vectors, count could overflow */
 static void C_bincount(double *x, int n, double *breaks, int nb, int *count, int right, int include_border)
 {
     R_xlen_t i, lo, hi, nb1 = nb - 1, new;
-    int lft = !right;
 
     // for(i = 0; i < nb1; i++) count[i] = 0;
     memset(count, 0, nb1 * sizeof(int));
@@ -185,12 +184,16 @@ static void C_bincount(double *x, int n, double *breaks, int nb, int *count, int
                 while (hi - lo >= 2)
                 {
                     new = (hi + lo) / 2;
-                    if (x[i] > breaks[new] || (lft && x[i] == breaks[new]))
+                    if (x[i] > breaks[new] || (!right && x[i] == breaks[new]))
                         lo = new;
                     else
                         hi = new;
                 }
-                count[lo] += 1;
+#ifdef LONG_VECTOR_SUPPORT
+                if (count[lo] >= INT_MAX)
+                    error("count for a bin exceeds INT_MAX");
+#endif
+                count[lo]++;
             }
         }
 }
