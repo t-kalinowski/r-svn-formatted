@@ -207,6 +207,8 @@ static const R_CallMethodDef CallEntries[] = {{"R_cutree", (DL_FUNC)&R_cutree, 2
                                               {"mvfft", (DL_FUNC)&mvfft, 2},
                                               {"nextn", (DL_FUNC)&nextn, 2},
                                               {"r2dtable", (DL_FUNC)&r2dtable, 3},
+                                              CALLDEF(filter3, 4),
+                                              CALLDEF(filter4, 3),
                                               {NULL, NULL, 0}};
 
 static const R_FortranMethodDef FortEntries[] = {FDEF(lowesw),
