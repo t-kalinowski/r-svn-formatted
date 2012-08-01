@@ -35,7 +35,9 @@ int F77_SUB(interv)(double *xt, int *n, double *x, Rboolean *rightmost_closed, R
 }
 
 /* This one to be called from R {via .C(..)} :
- * FIXME: Replace by a .Call()able version!
+   FIXME: Replace by a .Call()able version!
+
+   Done for R 2.15.2, no longer used in R, but used in IBDsim and timeSeries
  */
 void find_interv_vec(double *xt, int *n, double *x, int *nx, int *rightmost_closed, int *all_inside, int *indx)
 {
