@@ -60,7 +60,7 @@
 #include "basedecl.h"
 
 /* FIXME: bincode is no longer used in R, but is still used by
-   packages misc3d mixOmics spam
+   packages misc3d mixOmics spam .  Remove after R 2.15.2.
 */
 void bincode(double *x, int *n, double *breaks, int *nb, int *code, int *right, int *include_border, int *naok);
 
@@ -68,8 +68,6 @@ static R_NativePrimitiveArgType bakslv_t[] = {REALSXP, INTSXP,  INTSXP, REALSXP,
                                               INTSXP,  REALSXP, INTSXP, INTSXP};
 
 static R_NativePrimitiveArgType bincode_t[] = {REALSXP, INTSXP, REALSXP, INTSXP, INTSXP, LGLSXP, LGLSXP, LGLSXP};
-
-static R_NativePrimitiveArgType R_cumsum_t[] = {REALSXP, INTSXP, REALSXP, REALSXP};
 
 static R_NativePrimitiveArgType R_max_col_t[] = {REALSXP, INTSXP, INTSXP, INTSXP, INTSXP};
 
@@ -82,24 +80,13 @@ static R_NativePrimitiveArgType Rsockclose_t[] = {INTSXP};
 static R_NativePrimitiveArgType Rsockread_t[] = {INTSXP, STRSXP, INTSXP};
 static R_NativePrimitiveArgType Rsockwrite_t[] = {INTSXP, STRSXP, INTSXP, INTSXP, INTSXP};
 
-#ifdef PROBLEMS
-static R_NativePrimitiveArgType fft_factor_t[] = {REALSXP, INTSXP, REALSXP, INTSXP, INTSXP, INTSXP, INTSXP};
-
-static R_NativePrimitiveArgType fft_work_t[] = {
-    REALSXP,
-    REALSXP,
-};
-static R_NativePrimitiveArgType fdhess_t[] = {};
-#endif
-
 #define CDEF(name)                                                                                                     \
     {                                                                                                                  \
 #name, (DL_FUNC)&name, sizeof(name##_t) / sizeof(name##_t[0]), name##_t                                        \
     }
 
 static R_CMethodDef cMethods[] = {CDEF(bakslv),
-                                  CDEF(bincode),
-                                  CDEF(R_cumsum),
+                                  CDEF(bincode), // remove after R 2.15.2
                                   CDEF(R_max_col),
                                   CDEF(R_pretty),
                                   {"str_signif", (DL_FUNC)&str_signif, 8, NULL}, // mutable first arg
