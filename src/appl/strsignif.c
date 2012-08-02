@@ -101,7 +101,7 @@ int trio_sprintf(char *buffer, const char *format, ...);
    casting in the code itself.  However, it does mean that we cannot
    use the argument type matching
  */
-attribute_hidden void str_signif(char *x, int *n, const char **type, int *width, int *digits, const char **format,
+attribute_hidden void str_signif(void *x, int *n, const char **type, int *width, int *digits, const char **format,
                                  const char **flag, char **result)
 {
     int wid = *width;
