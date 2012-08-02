@@ -311,7 +311,7 @@ SEXP lowess(SEXP x, SEXP y, SEXP sf, SEXP siter, SEXP sdelta)
     if (!R_FINITE(f) || f <= 0)
         error("'f' must be finite and > 0");
     int iter = asInteger(siter);
-    if (!R_FINITE(iter) || iter < 0)
+    if (iter == NA_INTEGER || iter < 0)
         error("'iter' must be finite and >= 0");
     double delta = asReal(sdelta), *rw, *res;
     SEXP ans;
