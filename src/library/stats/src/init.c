@@ -75,9 +75,6 @@ static R_NativePrimitiveArgType loglin_t[] = {INTSXP,  INTSXP, INTSXP,  INTSXP, 
                                               REALSXP, INTSXP, INTSXP,  REALSXP, INTSXP, REALSXP,
                                               REALSXP, INTSXP, REALSXP, INTSXP,  INTSXP};
 
-static R_NativePrimitiveArgType lowess_t[] = {REALSXP, REALSXP, INTSXP,  REALSXP, INTSXP,
-                                              REALSXP, REALSXP, REALSXP, REALSXP};
-
 static R_NativePrimitiveArgType massdist_t[] = {REALSXP, REALSXP, INTSXP, REALSXP, REALSXP, REALSXP, INTSXP};
 static R_NativePrimitiveArgType spline_coef_t[] = {INTSXP,  INTSXP,  REALSXP, REALSXP,
                                                    REALSXP, REALSXP, REALSXP, REALSXP};
@@ -149,7 +146,6 @@ static const R_CMethodDef CEntries[] = {{"chisqsim", (DL_FUNC)&chisqsim, 11, chi
                                         CDEF(band_phi6_bin),
                                         CDEF(band_den_bin),
                                         CDEF(loglin),
-                                        CDEF(lowess),
                                         CDEF(massdist),
                                         CDEF(spline_coef),
                                         CDEF(spline_eval),
@@ -209,6 +205,7 @@ static const R_CallMethodDef CallEntries[] = {{"R_cutree", (DL_FUNC)&R_cutree, 2
                                               {"r2dtable", (DL_FUNC)&r2dtable, 3},
                                               CALLDEF(filter3, 4),
                                               CALLDEF(filter4, 3),
+                                              CALLDEF(lowess, 5),
                                               {NULL, NULL, 0}};
 
 static const R_FortranMethodDef FortEntries[] = {FDEF(lowesw),
