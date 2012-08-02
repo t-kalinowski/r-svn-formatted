@@ -93,8 +93,14 @@
 #include <math.h>
 #include <R_ext/Applic.h>
 
-void machar(int *ibeta, int *it, int *irnd, int *ngrd, int *machep, int *negep, int *iexp, int *minexp, int *maxexp,
-            double *eps, double *epsneg, double *xmin, double *xmax)
+#ifdef HAVE_VISIBILITY_ATTRIBUTE
+#define attribute_hidden __attribute__((visibility("hidden")))
+#else
+#define attribute_hidden
+#endif
+
+attribute_hidden void machar(int *ibeta, int *it, int *irnd, int *ngrd, int *machep, int *negep, int *iexp, int *minexp,
+                             int *maxexp, double *eps, double *epsneg, double *xmin, double *xmax)
 {
     volatile double a, b, beta, betain, betah, one, t, temp, tempa, temp1, two, y, z, zero;
     int i, itemp, iz, j, k, mx, nxres;
