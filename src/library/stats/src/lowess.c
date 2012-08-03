@@ -22,6 +22,13 @@
 #include <config.h>
 #endif
 
+#ifdef ENABLE_NLS
+#include <libintl.h>
+#define _(String) dgettext("stats", String)
+#else
+#define _(String) (String)
+#endif
+
 #include <math.h>
 #include <Rmath.h>        /* fmax2, imin2, imax2 */
 #include <R_ext/Applic.h> /* prototypes for lowess and clowess */
@@ -300,13 +307,13 @@ SEXP lowess(SEXP x, SEXP y, SEXP sf, SEXP siter, SEXP sdelta)
         error("invalid input");
     double f = asReal(sf);
     if (!R_FINITE(f) || f <= 0)
-        error("'f' must be finite and > 0");
+        error(_("'f' must be finite and > 0"));
     int iter = asInteger(siter);
     if (iter == NA_INTEGER || iter < 0)
-        error("'iter' must be finite and >= 0");
+        error(_("'iter' must be finite and >= 0"));
     double delta = asReal(sdelta), *rw, *res;
     if (!R_FINITE(delta) || delta < 0)
-        error("'delta' must be finite and > 0");
+        error(_("'delta' must be finite and > 0"));
     SEXP ans;
     PROTECT(ans = allocVector(REALSXP, nx));
     rw = (double *)R_alloc(nx, sizeof(double));
