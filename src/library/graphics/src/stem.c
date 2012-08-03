@@ -165,8 +165,10 @@ SEXP C_StemLeaf(SEXP x, SEXP scale, SEXP swidth, SEXP atom)
 {
     if (TYPEOF(x) != REALSXP || TYPEOF(scale) != REALSXP)
         error("invalid input");
+#ifdef LONG_VECTOR_SUPPORT
     if (IS_LONG_VEC(x))
         error(_("long vector '%s' is not supported"), "x");
+#endif
     int width = asInteger(swidth), n = LENGTH(x);
     if (n == NA_INTEGER)
         error(_("invalid '%s' argument"), "x");
