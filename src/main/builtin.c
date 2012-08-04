@@ -946,8 +946,6 @@ SEXP attribute_hidden do_lengthgets(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (PRIMVAL(op))
     { /* xlength<- */
-        if (isObject(x) && DispatchOrEval(call, op, "xlength<-", args, rho, &ans, 0, 1))
-            return (ans);
         if (isObject(x) && DispatchOrEval(call, op, "length<-", args, rho, &ans, 0, 1))
             return (ans);
         if (!isVector(x) && !isVectorizable(x))
@@ -967,7 +965,14 @@ SEXP attribute_hidden do_lengthgets(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (len < 0)
         error(_("invalid value"));
     if (len > R_LEN_T_MAX)
+    {
+#ifdef LONG_VECTOR_SUPPORT
+        return xlengthgets(x, len);
+#else
         error(_("vector size specified is too large"));
+        return x; /* -Wall */
+#endif
+    }
     return lengthgets(x, (R_len_t)len);
 }
 
