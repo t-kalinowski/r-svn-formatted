@@ -26,6 +26,9 @@
 #include <Rmath.h>
 #include "statsR.h"
 
+/* interval at which to check interrupts */
+#define NINTERRUPT 1000000
+
 #define R_MSG_NA _("NaNs produced")
 #define R_MSG_NONNUM_MATH _("Non-numeric argument to mathematical function")
 
@@ -85,6 +88,8 @@ static SEXP math2_1(SEXP sa, SEXP sb, SEXP sI, double (*f)(double, double, int))
 
     mod_iterate(na, nb, ia, ib)
     {
+        if (i % NINTERRUPT)
+            R_CheckUserInterrupt();
         ai = a[ia];
         bi = b[ib];
         if_NA_Math2_set(y[i], ai, bi) else
@@ -114,6 +119,8 @@ static SEXP math2_2(SEXP sa, SEXP sb, SEXP sI1, SEXP sI2, double (*f)(double, do
 
     mod_iterate(na, nb, ia, ib)
     {
+        if (i % NINTERRUPT)
+            R_CheckUserInterrupt();
         ai = a[ia];
         bi = b[ib];
         if_NA_Math2_set(y[i], ai, bi) else
@@ -237,6 +244,8 @@ static SEXP math3_1(SEXP sa, SEXP sb, SEXP sc, SEXP sI, double (*f)(double, doub
 
     mod_iterate3(na, nb, nc, ia, ib, ic)
     {
+        if (i % NINTERRUPT)
+            R_CheckUserInterrupt();
         ai = a[ia];
         bi = b[ib];
         ci = c[ic];
@@ -266,6 +275,8 @@ static SEXP math3_2(SEXP sa, SEXP sb, SEXP sc, SEXP sI, SEXP sJ, double (*f)(dou
 
     mod_iterate3(na, nb, nc, ia, ib, ic)
     {
+        if (i % NINTERRUPT)
+            R_CheckUserInterrupt();
         ai = a[ia];
         bi = b[ib];
         ci = c[ic];
@@ -452,6 +463,8 @@ static SEXP math4_1(SEXP sa, SEXP sb, SEXP sc, SEXP sd, SEXP sI, double (*f)(dou
 
     mod_iterate4(na, nb, nc, nd, ia, ib, ic, id)
     {
+        if (i % NINTERRUPT)
+            R_CheckUserInterrupt();
         ai = a[ia];
         bi = b[ib];
         ci = c[ic];
@@ -482,6 +495,8 @@ static SEXP math4_2(SEXP sa, SEXP sb, SEXP sc, SEXP sd, SEXP sI, SEXP sJ,
 
     mod_iterate4(na, nb, nc, nd, ia, ib, ic, id)
     {
+        if (i % NINTERRUPT)
+            R_CheckUserInterrupt();
         ai = a[ia];
         bi = b[ib];
         ci = c[ic];

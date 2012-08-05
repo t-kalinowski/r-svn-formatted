@@ -30,6 +30,9 @@
 #include "ctest.h" /* for rcont2 */
 #include "statsR.h"
 
+/* interval at which to check interrupts */
+#define NINTERRUPT 1000000
+
 typedef double (*ran1)(double);
 typedef double (*ran2)(double, double);
 typedef double (*ran3)(double, double, double);
@@ -97,6 +100,8 @@ SEXP Random1(SEXP args)
         errno = 0;
         for (R_xlen_t i = 0; i < n; i++)
         {
+            if (i % NINTERRUPT)
+                R_CheckUserInterrupt();
             rx[i] = fn(ra[i % na]);
             if (ISNAN(rx[i]))
                 naflag = TRUE;
@@ -191,6 +196,8 @@ SEXP Random2(SEXP args)
         errno = 0;
         for (R_xlen_t i = 0; i < n; i++)
         {
+            if (i % NINTERRUPT)
+                R_CheckUserInterrupt();
             rx[i] = fn(ra[i % na], rb[i % nb]);
             if (ISNAN(rx[i]))
                 naflag = TRUE;
@@ -265,6 +272,8 @@ SEXP Random3(SEXP args)
         errno = 0;
         for (R_xlen_t i = 0; i < n; i++)
         {
+            if (i % NINTERRUPT)
+                R_CheckUserInterrupt();
             rx[i] = fn(ra[i % na], rb[i % nb], rc[i % nc]);
             if (ISNAN(rx[i]))
                 naflag = TRUE;
@@ -304,7 +313,11 @@ SEXP Rmultinom(SEXP args)
     GetRNGstate();
     PROTECT(ans = allocMatrix(INTSXP, k, n)); /* k x n : natural for columnwise store */
     for (i = ik = 0; i < n; i++, ik += k)
+    {
+        if (i % NINTERRUPT)
+            R_CheckUserInterrupt();
         rmultinom(size, REAL(prob), k, &INTEGER(ans)[ik]);
+    }
     PutRNGstate();
     if (!isNull(nms = getAttrib(prob, R_NamesSymbol)))
     {
