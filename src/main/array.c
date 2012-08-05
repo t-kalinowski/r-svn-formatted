@@ -453,12 +453,10 @@ SEXP attribute_hidden do_drop(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP attribute_hidden do_length(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP ans;
-
     checkArity(op, args);
     check1arg(args, call, "x");
 
-    SEXP x = CAR(args);
+    SEXP x = CAR(args), ans;
 
     if (isObject(x) && DispatchOrEval(call, op, "length", args, rho, &ans, 0, 1))
     {
