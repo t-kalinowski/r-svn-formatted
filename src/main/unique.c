@@ -31,6 +31,9 @@
 #define ARGUSED(x) LEVELS(x)
 #define SET_ARGUSED(x, v) SETLEVELS(x, v)
 
+/* interval at which to check interrupts */
+#define NINTERRUPT 1000000
+
 /* Hash function and equality test for keys */
 typedef struct _HashData HashData;
 
@@ -234,7 +237,7 @@ static int sequal(SEXP x, int i, SEXP y, int j)
 
 static int rawhash(SEXP x, int indx, HashData *d)
 {
-    return RAW(x)[indx];
+    return (int)RAW(x)[indx];
 }
 
 static int rawequal(SEXP x, int i, SEXP y, int j)
@@ -443,7 +446,7 @@ SEXP duplicated(SEXP x, Rboolean from_last)
     {                                                                                                                  \
         data.useUTF8 = FALSE;                                                                                          \
         data.useCache = TRUE;                                                                                          \
-        for (i = 0; i < length(x); i++)                                                                                \
+        for (i = 0; i < n; i++)                                                                                        \
         {                                                                                                              \
             if (IS_BYTES(STRING_ELT(x, i)))                                                                            \
             {                                                                                                          \
@@ -473,10 +476,18 @@ SEXP duplicated(SEXP x, Rboolean from_last)
         h[i] = NIL;
     if (from_last)
         for (i = n - 1; i >= 0; i--)
+        {
+            if (i % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             v[i] = isDuplicated(x, i, &data);
+        }
     else
         for (i = 0; i < n; i++)
+        {
+            if (i % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             v[i] = isDuplicated(x, i, &data);
+        }
 
     UNPROTECT(2);
     return ans;
@@ -494,20 +505,28 @@ int any_duplicated(SEXP x, Rboolean from_last)
     if (from_last)
     {
         for (i = n - 1; i >= 0; i--)
+        {
+            if (i % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             if (isDuplicated(x, i, &data))
             {
                 result = ++i;
                 break;
             }
+        }
     }
     else
     {
         for (i = 0; i < n; i++)
+        {
+            if (i % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             if (isDuplicated(x, i, &data))
             {
                 result = ++i;
                 break;
             }
+        }
     }
     UNPROTECT(1);
     return result;
@@ -529,10 +548,18 @@ SEXP duplicated3(SEXP x, SEXP incomp, Rboolean from_last)
         h[i] = NIL;
     if (from_last)
         for (i = n - 1; i >= 0; i--)
+        {
+            if (i % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             v[i] = isDuplicated(x, i, &data);
+        }
     else
         for (i = 0; i < n; i++)
+        {
+            if (i % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             v[i] = isDuplicated(x, i, &data);
+        }
 
     if (length(incomp))
     {
@@ -574,6 +601,8 @@ int any_duplicated3(SEXP x, SEXP incomp, Rboolean from_last)
         for (i = n - 1; i >= 0; i--)
         {
 #define IS_DUPLICATED_CHECK                                                                                            \
+    if (i % NINTERRUPT == 0)                                                                                           \
+        R_CheckUserInterrupt();                                                                                        \
     if (isDuplicated(x, i, &data))                                                                                     \
     {                                                                                                                  \
         Rboolean isDup = TRUE;                                                                                         \
@@ -595,7 +624,9 @@ int any_duplicated3(SEXP x, SEXP incomp, Rboolean from_last)
     else
     {
         for (i = 0; i < n; i++)
+        {
             IS_DUPLICATED_CHECK;
+        }
     }
 
     UNPROTECT(2);
@@ -719,7 +750,11 @@ static void DoHashing(SEXP table, HashData *d)
         h[i] = NIL;
 
     for (int i = 0; i < n; i++)
+    {
+        if (i % NINTERRUPT == 0)
+            R_CheckUserInterrupt();
         (void)isDuplicated(table, i, d);
+    }
 }
 
 /* invalidate entries: normally few */
@@ -752,6 +787,8 @@ static SEXP HashLookup(SEXP table, SEXP x, HashData *d)
     PROTECT(ans = allocVector(INTSXP, n));
     for (i = 0; i < n; i++)
     {
+        if (i % NINTERRUPT == 0)
+            R_CheckUserInterrupt();
         INTEGER(ans)[i] = Lookup(table, x, i, d);
     }
     UNPROTECT(1);
