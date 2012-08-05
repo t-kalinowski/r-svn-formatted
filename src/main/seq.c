@@ -91,6 +91,9 @@ static SEXP cross_colon(SEXP call, SEXP s, SEXP t)
     return (a);
 }
 
+/* interval at which to check interrupts */
+#define NINTERRUPT 1000000
+
 static SEXP seq_colon(double n1, double n2, SEXP call)
 {
     int in1;
@@ -125,20 +128,36 @@ static SEXP seq_colon(double n1, double n2, SEXP call)
         ans = allocVector(INTSXP, n);
         if (n1 <= n2)
             for (int i = 0; i < n; i++)
+            {
+                if (i % NINTERRUPT == 0)
+                    R_CheckUserInterrupt();
                 INTEGER(ans)[i] = in1 + i;
+            }
         else
             for (int i = 0; i < n; i++)
+            {
+                if (i % NINTERRUPT == 0)
+                    R_CheckUserInterrupt();
                 INTEGER(ans)[i] = in1 - i;
+            }
     }
     else
     {
         ans = allocVector(REALSXP, n);
         if (n1 <= n2)
             for (R_xlen_t i = 0; i < n; i++)
+            {
+                if (i % NINTERRUPT == 0)
+                    R_CheckUserInterrupt();
                 REAL(ans)[i] = n1 + (double)i;
+            }
         else
             for (R_xlen_t i = 0; i < n; i++)
+            {
+                if (i % NINTERRUPT == 0)
+                    R_CheckUserInterrupt();
                 REAL(ans)[i] = n1 - (double)i;
+            }
     }
     return ans;
 }
@@ -182,6 +201,8 @@ static SEXP rep2(SEXP s, SEXP ncopy)
     na = 0;
     for (i = 0; i < nc; i++)
     {
+        if (i % NINTERRUPT == 0)
+            R_CheckUserInterrupt();
         if (INTEGER(t)[i] == NA_INTEGER || INTEGER(t)[i] < 0)
             error(_("invalid '%s' value"), "times");
         na += INTEGER(t)[i];
@@ -248,6 +269,8 @@ static SEXP rep3(SEXP s, R_xlen_t ns, R_xlen_t na)
     case LGLSXP:
         for (i = 0, j = 0; i < na;)
         {
+            if (i % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             if (j >= ns)
                 j = 0;
             LOGICAL(a)[i++] = LOGICAL(s)[j++];
@@ -256,6 +279,8 @@ static SEXP rep3(SEXP s, R_xlen_t ns, R_xlen_t na)
     case INTSXP:
         for (i = 0, j = 0; i < na;)
         {
+            if (i % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             if (j >= ns)
                 j = 0;
             INTEGER(a)[i++] = INTEGER(s)[j++];
@@ -264,6 +289,8 @@ static SEXP rep3(SEXP s, R_xlen_t ns, R_xlen_t na)
     case REALSXP:
         for (i = 0, j = 0; i < na;)
         {
+            if (i % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             if (j >= ns)
                 j = 0;
             REAL(a)[i++] = REAL(s)[j++];
@@ -272,6 +299,8 @@ static SEXP rep3(SEXP s, R_xlen_t ns, R_xlen_t na)
     case CPLXSXP:
         for (i = 0, j = 0; i < na;)
         {
+            if (i % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             if (j >= ns)
                 j = 0;
             COMPLEX(a)[i++] = COMPLEX(s)[j++];
@@ -280,6 +309,8 @@ static SEXP rep3(SEXP s, R_xlen_t ns, R_xlen_t na)
     case RAWSXP:
         for (i = 0, j = 0; i < na;)
         {
+            if (i % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             if (j >= ns)
                 j = 0;
             RAW(a)[i++] = RAW(s)[j++];
@@ -288,6 +319,8 @@ static SEXP rep3(SEXP s, R_xlen_t ns, R_xlen_t na)
     case STRSXP:
         for (i = 0, j = 0; i < na;)
         {
+            if (i % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             if (j >= ns)
                 j = 0;
             SET_STRING_ELT(a, i++, STRING_ELT(s, j++));
@@ -297,6 +330,8 @@ static SEXP rep3(SEXP s, R_xlen_t ns, R_xlen_t na)
     case EXPRSXP:
         for (i = 0, j = 0; i < na;)
         {
+            if (i % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             if (j >= ns)
                 j = 0;
             SET_VECTOR_ELT(a, i++, duplicate(VECTOR_ELT(s, j++)));
@@ -453,11 +488,17 @@ static SEXP rep4(SEXP x, SEXP times, R_xlen_t len, int each, R_xlen_t nt)
     case LGLSXP:
         if (nt == 1)
             for (i = 0; i < len; i++)
+            {
+                if (i % NINTERRUPT == 0)
+                    R_CheckUserInterrupt();
                 LOGICAL(a)[i] = LOGICAL(x)[(i / each) % lx];
+            }
         else
         {
             for (i = 0, k = 0, k2 = 0; i < lx; i++)
             {
+                if (i % NINTERRUPT == 0)
+                    R_CheckUserInterrupt();
                 for (j = 0, sum = 0; j < each; j++)
                     sum += INTEGER(times)[k++];
                 for (k3 = 0; k3 < sum; k3++)
@@ -472,11 +513,17 @@ static SEXP rep4(SEXP x, SEXP times, R_xlen_t len, int each, R_xlen_t nt)
     case INTSXP:
         if (nt == 1)
             for (i = 0; i < len; i++)
+            {
+                if (i % NINTERRUPT == 0)
+                    R_CheckUserInterrupt();
                 INTEGER(a)[i] = INTEGER(x)[(i / each) % lx];
+            }
         else
         {
             for (i = 0, k = 0, k2 = 0; i < lx; i++)
             {
+                if (i % NINTERRUPT == 0)
+                    R_CheckUserInterrupt();
                 for (j = 0, sum = 0; j < each; j++)
                     sum += INTEGER(times)[k++];
                 for (k3 = 0; k3 < sum; k3++)
@@ -491,11 +538,17 @@ static SEXP rep4(SEXP x, SEXP times, R_xlen_t len, int each, R_xlen_t nt)
     case REALSXP:
         if (nt == 1)
             for (i = 0; i < len; i++)
+            {
+                if (i % NINTERRUPT == 0)
+                    R_CheckUserInterrupt();
                 REAL(a)[i] = REAL(x)[(i / each) % lx];
+            }
         else
         {
             for (i = 0, k = 0, k2 = 0; i < lx; i++)
             {
+                if (i % NINTERRUPT == 0)
+                    R_CheckUserInterrupt();
                 for (j = 0, sum = 0; j < each; j++)
                     sum += INTEGER(times)[k++];
                 for (k3 = 0; k3 < sum; k3++)
@@ -510,11 +563,17 @@ static SEXP rep4(SEXP x, SEXP times, R_xlen_t len, int each, R_xlen_t nt)
     case CPLXSXP:
         if (nt == 1)
             for (i = 0; i < len; i++)
+            {
+                if (i % NINTERRUPT == 0)
+                    R_CheckUserInterrupt();
                 COMPLEX(a)[i] = COMPLEX(x)[(i / each) % lx];
+            }
         else
         {
             for (i = 0, k = 0, k2 = 0; i < lx; i++)
             {
+                if (i % NINTERRUPT == 0)
+                    R_CheckUserInterrupt();
                 for (j = 0, sum = 0; j < each; j++)
                     sum += INTEGER(times)[k++];
                 for (k3 = 0; k3 < sum; k3++)
@@ -529,11 +588,17 @@ static SEXP rep4(SEXP x, SEXP times, R_xlen_t len, int each, R_xlen_t nt)
     case STRSXP:
         if (nt == 1)
             for (i = 0; i < len; i++)
+            {
+                if (i % NINTERRUPT == 0)
+                    R_CheckUserInterrupt();
                 SET_STRING_ELT(a, i, STRING_ELT(x, (i / each) % lx));
+            }
         else
         {
             for (i = 0, k = 0, k2 = 0; i < lx; i++)
             {
+                if (i % NINTERRUPT == 0)
+                    R_CheckUserInterrupt();
                 for (j = 0, sum = 0; j < each; j++)
                     sum += INTEGER(times)[k++];
                 for (k3 = 0; k3 < sum; k3++)
@@ -549,11 +614,17 @@ static SEXP rep4(SEXP x, SEXP times, R_xlen_t len, int each, R_xlen_t nt)
     case EXPRSXP:
         if (nt == 1)
             for (i = 0; i < len; i++)
+            {
+                if (i % NINTERRUPT == 0)
+                    R_CheckUserInterrupt();
                 SET_VECTOR_ELT(a, i, VECTOR_ELT(x, (i / each) % lx));
+            }
         else
         {
             for (i = 0, k = 0, k2 = 0; i < lx; i++)
             {
+                if (i % NINTERRUPT == 0)
+                    R_CheckUserInterrupt();
                 for (j = 0, sum = 0; j < each; j++)
                     sum += INTEGER(times)[k++];
                 for (k3 = 0; k3 < sum; k3++)
@@ -568,11 +639,17 @@ static SEXP rep4(SEXP x, SEXP times, R_xlen_t len, int each, R_xlen_t nt)
     case RAWSXP:
         if (nt == 1)
             for (i = 0; i < len; i++)
+            {
+                if (i % NINTERRUPT == 0)
+                    R_CheckUserInterrupt();
                 RAW(a)[i] = RAW(x)[(i / each) % lx];
+            }
         else
         {
             for (i = 0, k = 0, k2 = 0; i < lx; i++)
             {
+                if (i % NINTERRUPT == 0)
+                    R_CheckUserInterrupt();
                 for (j = 0, sum = 0; j < each; j++)
                     sum += INTEGER(times)[k++];
                 for (k3 = 0; k3 < sum; k3++)
@@ -918,7 +995,11 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             rby = (rto - rfrom) / (double)(lout - 1);
             for (i = 1; i < lout - 1; i++)
+            {
+                if (i % NINTERRUPT == 0)
+                    R_CheckUserInterrupt();
                 REAL(ans)[i] = rfrom + (double)i * rby;
+            }
         }
     }
     else if (to == R_MissingArg)
@@ -935,13 +1016,21 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             ans = allocVector(INTSXP, lout);
             for (i = 0; i < lout; i++)
+            {
+                if (i % NINTERRUPT == 0)
+                    R_CheckUserInterrupt();
                 INTEGER(ans)[i] = (int)(rfrom + (double)i * rby);
+            }
         }
         else
         {
             ans = allocVector(REALSXP, lout);
             for (i = 0; i < lout; i++)
+            {
+                if (i % NINTERRUPT == 0)
+                    R_CheckUserInterrupt();
                 REAL(ans)[i] = rfrom + (double)i * rby;
+            }
         }
     }
     else if (from == R_MissingArg)
@@ -955,13 +1044,21 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             ans = allocVector(INTSXP, lout);
             for (i = 0; i < lout; i++)
+            {
+                if (i % NINTERRUPT == 0)
+                    R_CheckUserInterrupt();
                 INTEGER(ans)[i] = (int)(rto - (double)(lout - 1 - i) * rby);
+            }
         }
         else
         {
             ans = allocVector(REALSXP, lout);
             for (i = 0; i < lout; i++)
+            {
+                if (i % NINTERRUPT == 0)
+                    R_CheckUserInterrupt();
                 REAL(ans)[i] = rto - (double)(lout - 1 - i) * rby;
+            }
         }
     }
     else
@@ -1010,7 +1107,11 @@ SEXP attribute_hidden do_seq_along(SEXP call, SEXP op, SEXP args, SEXP rho)
         ans = allocVector(REALSXP, len);
         double *p = REAL(ans);
         for (R_xlen_t i = 0; i < len; i++)
+        {
+            if (i % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             p[i] = (double)(i + 1);
+        }
     }
     else
 #endif
@@ -1018,7 +1119,11 @@ SEXP attribute_hidden do_seq_along(SEXP call, SEXP op, SEXP args, SEXP rho)
         ans = allocVector(INTSXP, len);
         int *p = INTEGER(ans);
         for (int i = 0; i < len; i++)
+        {
+            if (i % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             p[i] = i + 1;
+        }
     }
     return ans;
 }
@@ -1050,7 +1155,11 @@ SEXP attribute_hidden do_seq_len(SEXP call, SEXP op, SEXP args, SEXP rho)
         ans = allocVector(REALSXP, len);
         double *p = REAL(ans);
         for (R_xlen_t i = 0; i < len; i++)
+        {
+            if (i % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             p[i] = (double)(i + 1);
+        }
     }
     else
 #endif
@@ -1058,7 +1167,11 @@ SEXP attribute_hidden do_seq_len(SEXP call, SEXP op, SEXP args, SEXP rho)
         ans = allocVector(INTSXP, len);
         int *p = INTEGER(ans);
         for (int i = 0; i < len; i++)
+        {
+            if (i % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             p[i] = i + 1;
+        }
     }
     return ans;
 }
