@@ -64,6 +64,9 @@
 #include "arithmetic.h" /* complex_*  */
 #include <complex.h>
 
+/* interval at which to check interrupts, a guess */
+#define NINTERRUPT 10000000
+
 /* GCC has problems with header files on e.g. Solaris.
    That OS defines the imaginary type, but GCC does not.
    Probably needed elsewhere, e.g. AIX.
@@ -232,6 +235,8 @@ SEXP attribute_hidden complex_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
     case PLUSOP:
         mod_iterate(n1, n2, i1, i2)
         {
+            if (i % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             Rcomplex x1 = COMPLEX(s1)[i1], x2 = COMPLEX(s2)[i2];
             COMPLEX(ans)[i].r = x1.r + x2.r;
             COMPLEX(ans)[i].i = x1.i + x2.i;
@@ -240,6 +245,8 @@ SEXP attribute_hidden complex_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
     case MINUSOP:
         mod_iterate(n1, n2, i1, i2)
         {
+            if (i % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             Rcomplex x1 = COMPLEX(s1)[i1], x2 = COMPLEX(s2)[i2];
             COMPLEX(ans)[i].r = x1.r - x2.r;
             COMPLEX(ans)[i].i = x1.i - x2.i;
@@ -248,18 +255,24 @@ SEXP attribute_hidden complex_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
     case TIMESOP:
         mod_iterate(n1, n2, i1, i2)
         {
+            if (i % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             SET_C99_COMPLEX(COMPLEX(ans), i, C99_COMPLEX2(s1, i1) * C99_COMPLEX2(s2, i2));
         }
         break;
     case DIVOP:
         mod_iterate(n1, n2, i1, i2)
         {
+            if (i % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             SET_C99_COMPLEX(COMPLEX(ans), i, C99_COMPLEX2(s1, i1) / C99_COMPLEX2(s2, i2));
         }
         break;
     case POWOP:
         mod_iterate(n1, n2, i1, i2)
         {
+            if (i % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             SET_C99_COMPLEX(COMPLEX(ans), i, mycpow(C99_COMPLEX2(s1, i1), C99_COMPLEX2(s2, i2)));
         }
         break;
