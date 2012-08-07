@@ -235,7 +235,7 @@ SEXP attribute_hidden complex_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
     case PLUSOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if (i % NINTERRUPT == 0)
+            if ((i + 1) % NINTERRUPT == 0)
                 R_CheckUserInterrupt();
             Rcomplex x1 = COMPLEX(s1)[i1], x2 = COMPLEX(s2)[i2];
             COMPLEX(ans)[i].r = x1.r + x2.r;
@@ -245,7 +245,7 @@ SEXP attribute_hidden complex_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
     case MINUSOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if (i % NINTERRUPT == 0)
+            if ((i + 1) % NINTERRUPT == 0)
                 R_CheckUserInterrupt();
             Rcomplex x1 = COMPLEX(s1)[i1], x2 = COMPLEX(s2)[i2];
             COMPLEX(ans)[i].r = x1.r - x2.r;
@@ -255,7 +255,7 @@ SEXP attribute_hidden complex_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
     case TIMESOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if (i % NINTERRUPT == 0)
+            if ((i + 1) % NINTERRUPT == 0)
                 R_CheckUserInterrupt();
             SET_C99_COMPLEX(COMPLEX(ans), i, C99_COMPLEX2(s1, i1) * C99_COMPLEX2(s2, i2));
         }
@@ -263,7 +263,7 @@ SEXP attribute_hidden complex_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
     case DIVOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if (i % NINTERRUPT == 0)
+            if ((i + 1) % NINTERRUPT == 0)
                 R_CheckUserInterrupt();
             SET_C99_COMPLEX(COMPLEX(ans), i, C99_COMPLEX2(s1, i1) / C99_COMPLEX2(s2, i2));
         }
@@ -271,7 +271,7 @@ SEXP attribute_hidden complex_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
     case POWOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if (i % NINTERRUPT == 0)
+            if ((i + 1) % NINTERRUPT == 0)
                 R_CheckUserInterrupt();
             SET_C99_COMPLEX(COMPLEX(ans), i, mycpow(C99_COMPLEX2(s1, i1), C99_COMPLEX2(s2, i2)));
         }
