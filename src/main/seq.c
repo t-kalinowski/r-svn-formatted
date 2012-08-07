@@ -208,7 +208,7 @@ static SEXP rep2(SEXP s, SEXP ncopy)
         na += INTEGER(t)[i];
     }
 
-    int ni = na ? (NINTERRUPT * nc) / na : 1;
+    // int ni = na ? (NINTERRUPT * nc)/na : 1;
     PROTECT(a = allocVector(TYPEOF(s), na));
     n = 0;
     switch (TYPEOF(s))
@@ -216,8 +216,7 @@ static SEXP rep2(SEXP s, SEXP ncopy)
     case LGLSXP:
         for (i = 0; i < nc; i++)
         {
-            if (i % ni == 0)
-                R_CheckUserInterrupt();
+            // if (i % ni == 0) R_CheckUserInterrupt();
             for (j = 0; j < INTEGER(t)[i]; j++)
                 LOGICAL(a)[n++] = LOGICAL(s)[i];
         }
@@ -225,8 +224,7 @@ static SEXP rep2(SEXP s, SEXP ncopy)
     case INTSXP:
         for (i = 0; i < nc; i++)
         {
-            if (i % ni == 0)
-                R_CheckUserInterrupt();
+            // if (i % ni == 0) R_CheckUserInterrupt();
             for (j = 0; j < INTEGER(t)[i]; j++)
                 INTEGER(a)[n++] = INTEGER(s)[i];
         }
@@ -234,8 +232,7 @@ static SEXP rep2(SEXP s, SEXP ncopy)
     case REALSXP:
         for (i = 0; i < nc; i++)
         {
-            if (i % ni == 0)
-                R_CheckUserInterrupt();
+            // if (i % ni == 0) R_CheckUserInterrupt();
             for (j = 0; j < INTEGER(t)[i]; j++)
                 REAL(a)[n++] = REAL(s)[i];
         }
@@ -243,8 +240,7 @@ static SEXP rep2(SEXP s, SEXP ncopy)
     case CPLXSXP:
         for (i = 0; i < nc; i++)
         {
-            if (i % ni == 0)
-                R_CheckUserInterrupt();
+            // if (i % ni == 0) R_CheckUserInterrupt();
             for (j = 0; j < INTEGER(t)[i]; j++)
                 COMPLEX(a)[n++] = COMPLEX(s)[i];
         }
@@ -252,8 +248,7 @@ static SEXP rep2(SEXP s, SEXP ncopy)
     case STRSXP:
         for (i = 0; i < nc; i++)
         {
-            if (i % ni == 0)
-                R_CheckUserInterrupt();
+            // if (i % ni == 0) R_CheckUserInterrupt();
             for (j = 0; j < INTEGER(t)[i]; j++)
                 SET_STRING_ELT(a, n++, STRING_ELT(s, i));
         }
@@ -262,8 +257,7 @@ static SEXP rep2(SEXP s, SEXP ncopy)
     case EXPRSXP:
         for (i = 0; i < nc; i++)
         {
-            if (i % ni == 0)
-                R_CheckUserInterrupt();
+            // if (i % ni == 0) R_CheckUserInterrupt();
             for (j = 0; j < INTEGER(t)[i]; j++)
                 SET_VECTOR_ELT(a, n++, VECTOR_ELT(s, i));
         }
@@ -271,8 +265,7 @@ static SEXP rep2(SEXP s, SEXP ncopy)
     case RAWSXP:
         for (i = 0; i < nc; i++)
         {
-            if (i % ni == 0)
-                R_CheckUserInterrupt();
+            // if (i % ni == 0) R_CheckUserInterrupt();
             for (j = 0; j < INTEGER(t)[i]; j++)
                 RAW(a)[n++] = RAW(s)[i];
         }
