@@ -51,6 +51,9 @@ strsplit grep [g]sub [g]regexpr
 #include <config.h>
 #endif
 
+/* interval at which to check interrupts */
+#define NINTERRUPT 1000000
+
 #include <Defn.h>
 #include <R_ext/RS.h> /* for Calloc/Free */
 #include <ctype.h>
@@ -1050,6 +1053,8 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
     vmax = vmaxget();
     for (i = 0; i < n; i++)
     {
+        if ((i + 1) % NINTERRUPT == 0)
+            R_CheckUserInterrupt();
         LOGICAL(ind)[i] = 0;
         if (STRING_ELT(text, i) != NA_STRING)
         {
@@ -2000,6 +2005,8 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     vmax = vmaxget();
     for (i = 0; i < n; i++)
     {
+        if ((i + 1) % NINTERRUPT == 0)
+            R_CheckUserInterrupt();
         /* NA pattern was handled above */
         if (STRING_ELT(text, i) == NA_STRING)
         {
@@ -2971,6 +2978,8 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
         vmax = vmaxget();
         for (i = 0; i < n; i++)
         {
+            if ((i + 1) % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             if (STRING_ELT(text, i) == NA_STRING)
             {
                 INTEGER(matchlen)[i] = INTEGER(ans)[i] = NA_INTEGER;
@@ -3062,6 +3071,8 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
         vmax = vmaxget();
         for (i = 0; i < n; i++)
         {
+            if ((i + 1) % NINTERRUPT == 0)
+                R_CheckUserInterrupt();
             if (STRING_ELT(text, i) == NA_STRING)
             {
                 elt = gregexpr_NAInputAns();
@@ -3232,6 +3243,8 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
 
     for (i = 0; i < n; i++)
     {
+        if ((i + 1) % NINTERRUPT == 0)
+            R_CheckUserInterrupt();
         if (STRING_ELT(vec, i) == NA_STRING)
         {
             PROTECT(matchpos = ScalarInteger(NA_INTEGER));
