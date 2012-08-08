@@ -1,14 +1,14 @@
-/* A Bison parser, made by GNU Bison 2.3.  */
+/* A Bison parser, made by GNU Bison 2.4.2.  */
 
 /* Skeleton implementation for Bison's Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003, 2004, 2005, 2006
-   Free Software Foundation, Inc.
+      Copyright (C) 1984, 1989-1990, 2000-2006, 2009-2010 Free Software
+   Foundation, Inc.
 
-   This program is free software; you can redistribute it and/or modify
+   This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
-   any later version.
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -16,9 +16,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor,
-   Boston, MA 02110-1301, USA.  */
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 /* As a special exception, you may create a larger work that contains
    part or all of the Bison parser skeleton and distribute that work
@@ -47,7 +45,7 @@
 #define YYBISON 1
 
 /* Bison version.  */
-#define YYBISON_VERSION "2.3"
+#define YYBISON_VERSION "2.4.2"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -55,119 +53,18 @@
 /* Pure parsers.  */
 #define YYPURE 0
 
+/* Push parsers.  */
+#define YYPUSH 0
+
+/* Pull parsers.  */
+#define YYPULL 1
+
 /* Using locations.  */
 #define YYLSP_NEEDED 1
 
-/* Tokens.  */
-#ifndef YYTOKENTYPE
-#define YYTOKENTYPE
-/* Put the tokens into the symbol table, so that GDB and other debuggers
-   know about them.  */
-enum yytokentype
-{
-    END_OF_INPUT = 258,
-    ERROR = 259,
-    STR_CONST = 260,
-    NUM_CONST = 261,
-    NULL_CONST = 262,
-    SYMBOL = 263,
-    FUNCTION = 264,
-    INCOMPLETE_STRING = 265,
-    LEFT_ASSIGN = 266,
-    EQ_ASSIGN = 267,
-    RIGHT_ASSIGN = 268,
-    LBB = 269,
-    FOR = 270,
-    IN = 271,
-    IF = 272,
-    ELSE = 273,
-    WHILE = 274,
-    NEXT = 275,
-    BREAK = 276,
-    REPEAT = 277,
-    GT = 278,
-    GE = 279,
-    LT = 280,
-    LE = 281,
-    EQ = 282,
-    NE = 283,
-    AND = 284,
-    OR = 285,
-    AND2 = 286,
-    OR2 = 287,
-    NS_GET = 288,
-    NS_GET_INT = 289,
-    COMMENT = 290,
-    LINE_DIRECTIVE = 291,
-    SYMBOL_FORMALS = 292,
-    EQ_FORMALS = 293,
-    EQ_SUB = 294,
-    SYMBOL_SUB = 295,
-    SYMBOL_FUNCTION_CALL = 296,
-    SYMBOL_PACKAGE = 297,
-    COLON_ASSIGN = 298,
-    SLOT = 299,
-    LOW = 300,
-    TILDE = 301,
-    NOT = 302,
-    UNOT = 303,
-    SPECIAL = 304,
-    UPLUS = 305,
-    UMINUS = 306
-};
-#endif
-/* Tokens.  */
-#define END_OF_INPUT 258
-#define ERROR 259
-#define STR_CONST 260
-#define NUM_CONST 261
-#define NULL_CONST 262
-#define SYMBOL 263
-#define FUNCTION 264
-#define INCOMPLETE_STRING 265
-#define LEFT_ASSIGN 266
-#define EQ_ASSIGN 267
-#define RIGHT_ASSIGN 268
-#define LBB 269
-#define FOR 270
-#define IN 271
-#define IF 272
-#define ELSE 273
-#define WHILE 274
-#define NEXT 275
-#define BREAK 276
-#define REPEAT 277
-#define GT 278
-#define GE 279
-#define LT 280
-#define LE 281
-#define EQ 282
-#define NE 283
-#define AND 284
-#define OR 285
-#define AND2 286
-#define OR2 287
-#define NS_GET 288
-#define NS_GET_INT 289
-#define COMMENT 290
-#define LINE_DIRECTIVE 291
-#define SYMBOL_FORMALS 292
-#define EQ_FORMALS 293
-#define EQ_SUB 294
-#define SYMBOL_SUB 295
-#define SYMBOL_FUNCTION_CALL 296
-#define SYMBOL_PACKAGE 297
-#define COLON_ASSIGN 298
-#define SLOT 299
-#define LOW 300
-#define TILDE 301
-#define NOT 302
-#define UNOT 303
-#define SPECIAL 304
-#define UPLUS 305
-#define UMINUS 306
-
 /* Copy the first part of user declarations.  */
+
+/* Line 189 of yacc.c  */
 #line 1 "gram.y"
 
 /*
@@ -466,6 +363,9 @@ static int xxvalue(SEXP, int, YYLTYPE *);
 
 #define YYSTYPE SEXP
 
+/* Line 189 of yacc.c  */
+#line 362 "gram.c"
+
 /* Enabling traces.  */
 #ifndef YYDEBUG
 #define YYDEBUG 0
@@ -484,11 +384,70 @@ static int xxvalue(SEXP, int, YYLTYPE *);
 #define YYTOKEN_TABLE 1
 #endif
 
+/* Tokens.  */
+#ifndef YYTOKENTYPE
+#define YYTOKENTYPE
+/* Put the tokens into the symbol table, so that GDB and other debuggers
+   know about them.  */
+enum yytokentype
+{
+    END_OF_INPUT = 258,
+    ERROR = 259,
+    STR_CONST = 260,
+    NUM_CONST = 261,
+    NULL_CONST = 262,
+    SYMBOL = 263,
+    FUNCTION = 264,
+    INCOMPLETE_STRING = 265,
+    LEFT_ASSIGN = 266,
+    EQ_ASSIGN = 267,
+    RIGHT_ASSIGN = 268,
+    LBB = 269,
+    FOR = 270,
+    IN = 271,
+    IF = 272,
+    ELSE = 273,
+    WHILE = 274,
+    NEXT = 275,
+    BREAK = 276,
+    REPEAT = 277,
+    GT = 278,
+    GE = 279,
+    LT = 280,
+    LE = 281,
+    EQ = 282,
+    NE = 283,
+    AND = 284,
+    OR = 285,
+    AND2 = 286,
+    OR2 = 287,
+    NS_GET = 288,
+    NS_GET_INT = 289,
+    COMMENT = 290,
+    LINE_DIRECTIVE = 291,
+    SYMBOL_FORMALS = 292,
+    EQ_FORMALS = 293,
+    EQ_SUB = 294,
+    SYMBOL_SUB = 295,
+    SYMBOL_FUNCTION_CALL = 296,
+    SYMBOL_PACKAGE = 297,
+    COLON_ASSIGN = 298,
+    SLOT = 299,
+    LOW = 300,
+    TILDE = 301,
+    NOT = 302,
+    UNOT = 303,
+    SPECIAL = 304,
+    UPLUS = 305,
+    UMINUS = 306
+};
+#endif
+
 #if !defined YYSTYPE && !defined YYSTYPE_IS_DECLARED
 typedef int YYSTYPE;
+#define YYSTYPE_IS_TRIVIAL 1
 #define yystype YYSTYPE /* obsolescent; will be withdrawn */
 #define YYSTYPE_IS_DECLARED 1
-#define YYSTYPE_IS_TRIVIAL 1
 #endif
 
 #if !defined YYLTYPE && !defined YYLTYPE_IS_DECLARED
@@ -506,8 +465,8 @@ typedef struct YYLTYPE
 
 /* Copy the second part of user declarations.  */
 
-/* Line 216 of yacc.c.  */
-#line 509 "gram.c"
+/* Line 264 of yacc.c  */
+#line 468 "gram.c"
 
 #ifdef short
 #undef short
@@ -555,7 +514,7 @@ typedef short int yytype_int16;
 #define YYSIZE_MAXIMUM ((YYSIZE_T)-1)
 
 #ifndef YY_
-#if YYENABLE_NLS
+#if defined YYENABLE_NLS && YYENABLE_NLS
 #if ENABLE_NLS
 #include <libintl.h> /* INFRINGES ON USER NAME SPACE */
 #define YY_(msgid) dgettext("bison-runtime", msgid)
@@ -578,12 +537,12 @@ typedef short int yytype_int16;
 #define YYID(n) (n)
 #else
 #if (defined __STDC__ || defined __C99__FUNC__ || defined __cplusplus || defined _MSC_VER)
-static int YYID(int i)
+static int YYID(int yyi)
 #else
-static int YYID(i) int i;
+static int YYID(yyi) int yyi;
 #endif
 {
-    return i;
+    return yyi;
 }
 #endif
 
@@ -664,9 +623,9 @@ void free(void *);      /* INFRINGES ON USER NAME SPACE */
 
 /* A type that is properly aligned for any stack member.  */
 union yyalloc {
-    yytype_int16 yyss;
-    YYSTYPE yyvs;
-    YYLTYPE yyls;
+    yytype_int16 yyss_alloc;
+    YYSTYPE yyvs_alloc;
+    YYLTYPE yyls_alloc;
 };
 
 /* The size of the maximum gap between one aligned stack and the next.  */
@@ -697,12 +656,12 @@ union yyalloc {
    elements in the stack, and YYPTR gives the new location of the
    stack.  Advance YYPTR to a properly aligned location for the next
    stack.  */
-#define YYSTACK_RELOCATE(Stack)                                                                                        \
+#define YYSTACK_RELOCATE(Stack_alloc, Stack)                                                                           \
     do                                                                                                                 \
     {                                                                                                                  \
         YYSIZE_T yynewbytes;                                                                                           \
-        YYCOPY(&yyptr->Stack, Stack, yysize);                                                                          \
-        Stack = &yyptr->Stack;                                                                                         \
+        YYCOPY(&yyptr->Stack_alloc, Stack, yysize);                                                                    \
+        Stack = &yyptr->Stack_alloc;                                                                                   \
         yynewbytes = yystacksize * sizeof(*Stack) + YYSTACK_GAP_MAXIMUM;                                               \
         yyptr += yynewbytes / sizeof(*yyptr);                                                                          \
     } while (YYID(0))
@@ -1012,9 +971,18 @@ static const yytype_uint8 yystos[] = {
 
 /* Like YYERROR except do call yyerror.  This remains here temporarily
    to ease the transition to the new meaning of YYERROR, for GCC.
-   Once GCC version 2 has supplanted version 1, this can go.  */
+   Once GCC version 2 has supplanted version 1, this can go.  However,
+   YYFAIL appears to be in use.  Nevertheless, it is formally deprecated
+   in Bison 2.4.2's NEWS entry, where a plan to phase it out is
+   discussed.  */
 
 #define YYFAIL goto yyerrlab
+#if defined YYFAIL
+/* This is here to suppress warnings from the GCC cpp's
+   -Wunused-macros.  Normally we don't worry about that warning, but
+   some users do, and we want to make it easy for users to remove
+   YYFAIL uses, which will produce warnings from Bison 2.5.  */
+#endif
 
 #define YYRECOVERING() (!!yyerrstatus)
 
@@ -1066,7 +1034,7 @@ static const yytype_uint8 yystos[] = {
    we won't break user code: when these are the locations we know.  */
 
 #ifndef YY_LOCATION_PRINT
-#if YYLTYPE_IS_TRIVIAL
+#if defined YYLTYPE_IS_TRIVIAL && YYLTYPE_IS_TRIVIAL
 #define YY_LOCATION_PRINT(File, Loc)                                                                                   \
     fprintf(File, "%d.%d-%d.%d", (Loc).first_line, (Loc).first_column, (Loc).last_line, (Loc).last_column)
 #else
@@ -1169,15 +1137,18 @@ YYLTYPE const *const yylocationp;
 `------------------------------------------------------------------*/
 
 #if (defined __STDC__ || defined __C99__FUNC__ || defined __cplusplus || defined _MSC_VER)
-static void yy_stack_print(yytype_int16 *bottom, yytype_int16 *top)
+static void yy_stack_print(yytype_int16 *yybottom, yytype_int16 *yytop)
 #else
-static void yy_stack_print(bottom, top) yytype_int16 *bottom;
-yytype_int16 *top;
+static void yy_stack_print(yybottom, yytop) yytype_int16 *yybottom;
+yytype_int16 *yytop;
 #endif
 {
     YYFPRINTF(stderr, "Stack now");
-    for (; bottom <= top; ++bottom)
-        YYFPRINTF(stderr, " %d", *bottom);
+    for (; yybottom <= yytop; yybottom++)
+    {
+        int yybot = *yybottom;
+        YYFPRINTF(stderr, " %d", yybot);
+    }
     YYFPRINTF(stderr, "\n");
 }
 
@@ -1207,10 +1178,10 @@ int yyrule;
     /* The symbols being reduced.  */
     for (yyi = 0; yyi < yynrhs; yyi++)
     {
-        fprintf(stderr, "   $%d = ", yyi + 1);
+        YYFPRINTF(stderr, "   $%d = ", yyi + 1);
         yy_symbol_print(stderr, yyrhs[yyprhs[yyrule] + yyi], &(yyvsp[(yyi + 1) - (yynrhs)]),
                         &(yylsp[(yyi + 1) - (yynrhs)]));
-        fprintf(stderr, "\n");
+        YYFPRINTF(stderr, "\n");
     }
 }
 
@@ -1478,7 +1449,6 @@ YYLTYPE *yylocationp;
 }
 
 /* Prevent warnings from -Wmissing-prototypes.  */
-
 #ifdef YYPARSE_PARAM
 #if defined __STDC__ || defined __cplusplus
 int yyparse(void *YYPARSE_PARAM);
@@ -1493,20 +1463,21 @@ int yyparse();
 #endif
 #endif /* ! YYPARSE_PARAM */
 
-/* The look-ahead symbol.  */
+/* The lookahead symbol.  */
 int yychar;
 
-/* The semantic value of the look-ahead symbol.  */
+/* The semantic value of the lookahead symbol.  */
 YYSTYPE yylval;
+
+/* Location data for the lookahead symbol.  */
+YYLTYPE yylloc;
 
 /* Number of syntax errors so far.  */
 int yynerrs;
-/* Location data for the look-ahead symbol.  */
-YYLTYPE yylloc;
 
-/*----------.
-| yyparse.  |
-`----------*/
+/*-------------------------.
+| yyparse or yypush_parse.  |
+`-------------------------*/
 
 #ifdef YYPARSE_PARAM
 #if (defined __STDC__ || defined __C99__FUNC__ || defined __cplusplus || defined _MSC_VER)
@@ -1525,22 +1496,12 @@ int yyparse()
 {
 
     int yystate;
-    int yyn;
-    int yyresult;
     /* Number of tokens to shift before error messages enabled.  */
     int yyerrstatus;
-    /* Look-ahead token as an internal (translated) token number.  */
-    int yytoken = 0;
-#if YYERROR_VERBOSE
-    /* Buffer for error messages, and its allocated size.  */
-    char yymsgbuf[128];
-    char *yymsg = yymsgbuf;
-    YYSIZE_T yymsg_alloc = sizeof yymsgbuf;
-#endif
 
-    /* Three stacks and their tools:
-       `yyss': related to states,
-       `yyvs': related to semantic values,
+    /* The stacks and their tools:
+       `yyss': related to states.
+       `yyvs': related to semantic values.
        `yyls': related to locations.
 
        Refer to the stacks thru separate pointers, to allow yyoverflow
@@ -1548,33 +1509,51 @@ int yyparse()
 
     /* The state stack.  */
     yytype_int16 yyssa[YYINITDEPTH];
-    yytype_int16 *yyss = yyssa;
+    yytype_int16 *yyss;
     yytype_int16 *yyssp;
 
     /* The semantic value stack.  */
     YYSTYPE yyvsa[YYINITDEPTH];
-    YYSTYPE *yyvs = yyvsa;
+    YYSTYPE *yyvs;
     YYSTYPE *yyvsp;
 
     /* The location stack.  */
     YYLTYPE yylsa[YYINITDEPTH];
-    YYLTYPE *yyls = yylsa;
+    YYLTYPE *yyls;
     YYLTYPE *yylsp;
+
     /* The locations where the error started and ended.  */
     YYLTYPE yyerror_range[2];
 
-#define YYPOPSTACK(N) (yyvsp -= (N), yyssp -= (N), yylsp -= (N))
+    YYSIZE_T yystacksize;
 
-    YYSIZE_T yystacksize = YYINITDEPTH;
-
+    int yyn;
+    int yyresult;
+    /* Lookahead token as an internal (translated) token number.  */
+    int yytoken;
     /* The variables used to return semantic value and location from the
        action routines.  */
     YYSTYPE yyval;
     YYLTYPE yyloc;
 
+#if YYERROR_VERBOSE
+    /* Buffer for error messages, and its allocated size.  */
+    char yymsgbuf[128];
+    char *yymsg = yymsgbuf;
+    YYSIZE_T yymsg_alloc = sizeof yymsgbuf;
+#endif
+
+#define YYPOPSTACK(N) (yyvsp -= (N), yyssp -= (N), yylsp -= (N))
+
     /* The number of symbols on the RHS of the reduced rule.
        Keep to zero when no symbol should be popped.  */
     int yylen = 0;
+
+    yytoken = 0;
+    yyss = yyssa;
+    yyvs = yyvsa;
+    yyls = yylsa;
+    yystacksize = YYINITDEPTH;
 
     YYDPRINTF((stderr, "Starting parse\n"));
 
@@ -1587,14 +1566,14 @@ int yyparse()
        Waste one element of value and location stack
        so that they stay on the same level as the state stack.
        The wasted elements are never initialized.  */
-
     yyssp = yyss;
     yyvsp = yyvs;
     yylsp = yyls;
-#if YYLTYPE_IS_TRIVIAL
+
+#if defined YYLTYPE_IS_TRIVIAL && YYLTYPE_IS_TRIVIAL
     /* Initialize the default location before parsing starts.  */
     yylloc.first_line = yylloc.last_line = 1;
-    yylloc.first_column = yylloc.last_column = 0;
+    yylloc.first_column = yylloc.last_column = 1;
 #endif
 
     goto yysetstate;
@@ -1630,6 +1609,7 @@ yysetstate:
                be undefined if yyoverflow is a macro.  */
             yyoverflow(YY_("memory exhausted"), &yyss1, yysize * sizeof(*yyssp), &yyvs1, yysize * sizeof(*yyvsp),
                        &yyls1, yysize * sizeof(*yylsp), &yystacksize);
+
             yyls = yyls1;
             yyss = yyss1;
             yyvs = yyvs1;
@@ -1650,9 +1630,9 @@ yysetstate:
             union yyalloc *yyptr = (union yyalloc *)YYSTACK_ALLOC(YYSTACK_BYTES(yystacksize));
             if (!yyptr)
                 goto yyexhaustedlab;
-            YYSTACK_RELOCATE(yyss);
-            YYSTACK_RELOCATE(yyvs);
-            YYSTACK_RELOCATE(yyls);
+            YYSTACK_RELOCATE(yyss_alloc, yyss);
+            YYSTACK_RELOCATE(yyvs_alloc, yyvs);
+            YYSTACK_RELOCATE(yyls_alloc, yyls);
 #undef YYSTACK_RELOCATE
             if (yyss1 != yyssa)
                 YYSTACK_FREE(yyss1);
@@ -1672,6 +1652,9 @@ yysetstate:
 
     YYDPRINTF((stderr, "Entering state %d\n", yystate));
 
+    if (yystate == YYFINAL)
+        YYACCEPT;
+
     goto yybackup;
 
 /*-----------.
@@ -1680,16 +1663,16 @@ yysetstate:
 yybackup:
 
     /* Do appropriate processing given the current state.  Read a
-       look-ahead token if we need one and don't already have one.  */
+       lookahead token if we need one and don't already have one.  */
 
-    /* First try to decide what to do without reference to look-ahead token.  */
+    /* First try to decide what to do without reference to lookahead token.  */
     yyn = yypact[yystate];
     if (yyn == YYPACT_NINF)
         goto yydefault;
 
-    /* Not known => get a look-ahead token if don't already have one.  */
+    /* Not known => get a lookahead token if don't already have one.  */
 
-    /* YYCHAR is either YYEMPTY or YYEOF or a valid look-ahead symbol.  */
+    /* YYCHAR is either YYEMPTY or YYEOF or a valid lookahead symbol.  */
     if (yychar == YYEMPTY)
     {
         YYDPRINTF((stderr, "Reading a token: "));
@@ -1721,20 +1704,16 @@ yybackup:
         goto yyreduce;
     }
 
-    if (yyn == YYFINAL)
-        YYACCEPT;
-
     /* Count tokens shifted since error; after three, turn off error
        status.  */
     if (yyerrstatus)
         yyerrstatus--;
 
-    /* Shift the look-ahead token.  */
+    /* Shift the lookahead token.  */
     YY_SYMBOL_PRINT("Shifting", yytoken, &yylval, &yylloc);
 
-    /* Discard the shifted token unless it is eof.  */
-    if (yychar != YYEOF)
-        yychar = YYEMPTY;
+    /* Discard the shifted token.  */
+    yychar = YYEMPTY;
 
     yystate = yyn;
     *++yyvsp = yylval;
@@ -1773,6 +1752,8 @@ yyreduce:
     switch (yyn)
     {
     case 2:
+
+/* Line 1464 of yacc.c  */
 #line 333 "gram.y"
     {
         return 0;
@@ -1781,6 +1762,8 @@ yyreduce:
     break;
 
     case 3:
+
+/* Line 1464 of yacc.c  */
 #line 334 "gram.y"
     {
         return xxvalue(NULL, 2, NULL);
@@ -1789,6 +1772,8 @@ yyreduce:
     break;
 
     case 4:
+
+/* Line 1464 of yacc.c  */
 #line 335 "gram.y"
     {
         return xxvalue((yyvsp[(1) - (2)]), 3, &(yylsp[(1) - (2)]));
@@ -1797,6 +1782,8 @@ yyreduce:
     break;
 
     case 5:
+
+/* Line 1464 of yacc.c  */
 #line 336 "gram.y"
     {
         return xxvalue((yyvsp[(1) - (2)]), 4, &(yylsp[(1) - (2)]));
@@ -1805,6 +1792,8 @@ yyreduce:
     break;
 
     case 6:
+
+/* Line 1464 of yacc.c  */
 #line 337 "gram.y"
     {
         YYABORT;
@@ -1813,6 +1802,8 @@ yyreduce:
     break;
 
     case 7:
+
+/* Line 1464 of yacc.c  */
 #line 340 "gram.y"
     {
         (yyval) = (yyvsp[(1) - (1)]);
@@ -1821,6 +1812,8 @@ yyreduce:
     break;
 
     case 8:
+
+/* Line 1464 of yacc.c  */
 #line 341 "gram.y"
     {
         (yyval) = (yyvsp[(1) - (1)]);
@@ -1829,6 +1822,8 @@ yyreduce:
     break;
 
     case 9:
+
+/* Line 1464 of yacc.c  */
 #line 344 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -1837,6 +1832,8 @@ yyreduce:
     break;
 
     case 10:
+
+/* Line 1464 of yacc.c  */
 #line 347 "gram.y"
     {
         (yyval) = (yyvsp[(1) - (1)]);
@@ -1846,6 +1843,8 @@ yyreduce:
     break;
 
     case 11:
+
+/* Line 1464 of yacc.c  */
 #line 348 "gram.y"
     {
         (yyval) = (yyvsp[(1) - (1)]);
@@ -1855,6 +1854,8 @@ yyreduce:
     break;
 
     case 12:
+
+/* Line 1464 of yacc.c  */
 #line 349 "gram.y"
     {
         (yyval) = (yyvsp[(1) - (1)]);
@@ -1864,6 +1865,8 @@ yyreduce:
     break;
 
     case 13:
+
+/* Line 1464 of yacc.c  */
 #line 350 "gram.y"
     {
         (yyval) = (yyvsp[(1) - (1)]);
@@ -1873,6 +1876,8 @@ yyreduce:
     break;
 
     case 14:
+
+/* Line 1464 of yacc.c  */
 #line 352 "gram.y"
     {
         (yyval) = xxexprlist((yyvsp[(1) - (3)]), &(yylsp[(1) - (3)]), (yyvsp[(2) - (3)]));
@@ -1882,6 +1887,8 @@ yyreduce:
     break;
 
     case 15:
+
+/* Line 1464 of yacc.c  */
 #line 353 "gram.y"
     {
         (yyval) = xxparen((yyvsp[(1) - (3)]), (yyvsp[(2) - (3)]));
@@ -1891,6 +1898,8 @@ yyreduce:
     break;
 
     case 16:
+
+/* Line 1464 of yacc.c  */
 #line 355 "gram.y"
     {
         (yyval) = xxunary((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]));
@@ -1900,6 +1909,8 @@ yyreduce:
     break;
 
     case 17:
+
+/* Line 1464 of yacc.c  */
 #line 356 "gram.y"
     {
         (yyval) = xxunary((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]));
@@ -1909,6 +1920,8 @@ yyreduce:
     break;
 
     case 18:
+
+/* Line 1464 of yacc.c  */
 #line 357 "gram.y"
     {
         (yyval) = xxunary((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]));
@@ -1918,6 +1931,8 @@ yyreduce:
     break;
 
     case 19:
+
+/* Line 1464 of yacc.c  */
 #line 358 "gram.y"
     {
         (yyval) = xxunary((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]));
@@ -1927,6 +1942,8 @@ yyreduce:
     break;
 
     case 20:
+
+/* Line 1464 of yacc.c  */
 #line 359 "gram.y"
     {
         (yyval) = xxunary((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]));
@@ -1936,6 +1953,8 @@ yyreduce:
     break;
 
     case 21:
+
+/* Line 1464 of yacc.c  */
 #line 361 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -1945,6 +1964,8 @@ yyreduce:
     break;
 
     case 22:
+
+/* Line 1464 of yacc.c  */
 #line 362 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -1954,6 +1975,8 @@ yyreduce:
     break;
 
     case 23:
+
+/* Line 1464 of yacc.c  */
 #line 363 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -1963,6 +1986,8 @@ yyreduce:
     break;
 
     case 24:
+
+/* Line 1464 of yacc.c  */
 #line 364 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -1972,6 +1997,8 @@ yyreduce:
     break;
 
     case 25:
+
+/* Line 1464 of yacc.c  */
 #line 365 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -1981,6 +2008,8 @@ yyreduce:
     break;
 
     case 26:
+
+/* Line 1464 of yacc.c  */
 #line 366 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -1990,6 +2019,8 @@ yyreduce:
     break;
 
     case 27:
+
+/* Line 1464 of yacc.c  */
 #line 367 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -1999,6 +2030,8 @@ yyreduce:
     break;
 
     case 28:
+
+/* Line 1464 of yacc.c  */
 #line 368 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2008,6 +2041,8 @@ yyreduce:
     break;
 
     case 29:
+
+/* Line 1464 of yacc.c  */
 #line 369 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2017,6 +2052,8 @@ yyreduce:
     break;
 
     case 30:
+
+/* Line 1464 of yacc.c  */
 #line 370 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2026,6 +2063,8 @@ yyreduce:
     break;
 
     case 31:
+
+/* Line 1464 of yacc.c  */
 #line 371 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2035,6 +2074,8 @@ yyreduce:
     break;
 
     case 32:
+
+/* Line 1464 of yacc.c  */
 #line 372 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2044,6 +2085,8 @@ yyreduce:
     break;
 
     case 33:
+
+/* Line 1464 of yacc.c  */
 #line 373 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2053,6 +2096,8 @@ yyreduce:
     break;
 
     case 34:
+
+/* Line 1464 of yacc.c  */
 #line 374 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2062,6 +2107,8 @@ yyreduce:
     break;
 
     case 35:
+
+/* Line 1464 of yacc.c  */
 #line 375 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2071,6 +2118,8 @@ yyreduce:
     break;
 
     case 36:
+
+/* Line 1464 of yacc.c  */
 #line 376 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2080,6 +2129,8 @@ yyreduce:
     break;
 
     case 37:
+
+/* Line 1464 of yacc.c  */
 #line 377 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2089,6 +2140,8 @@ yyreduce:
     break;
 
     case 38:
+
+/* Line 1464 of yacc.c  */
 #line 378 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2098,6 +2151,8 @@ yyreduce:
     break;
 
     case 39:
+
+/* Line 1464 of yacc.c  */
 #line 379 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2107,6 +2162,8 @@ yyreduce:
     break;
 
     case 40:
+
+/* Line 1464 of yacc.c  */
 #line 380 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2116,6 +2173,8 @@ yyreduce:
     break;
 
     case 41:
+
+/* Line 1464 of yacc.c  */
 #line 382 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2125,6 +2184,8 @@ yyreduce:
     break;
 
     case 42:
+
+/* Line 1464 of yacc.c  */
 #line 383 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(3) - (3)]), (yyvsp[(1) - (3)]));
@@ -2134,6 +2195,8 @@ yyreduce:
     break;
 
     case 43:
+
+/* Line 1464 of yacc.c  */
 #line 385 "gram.y"
     {
         (yyval) = xxdefun((yyvsp[(1) - (6)]), (yyvsp[(3) - (6)]), (yyvsp[(6) - (6)]), &(yyloc));
@@ -2143,6 +2206,8 @@ yyreduce:
     break;
 
     case 44:
+
+/* Line 1464 of yacc.c  */
 #line 386 "gram.y"
     {
         (yyval) = xxfuncall((yyvsp[(1) - (4)]), (yyvsp[(3) - (4)]));
@@ -2153,6 +2218,8 @@ yyreduce:
     break;
 
     case 45:
+
+/* Line 1464 of yacc.c  */
 #line 387 "gram.y"
     {
         (yyval) = xxif((yyvsp[(1) - (3)]), (yyvsp[(2) - (3)]), (yyvsp[(3) - (3)]));
@@ -2162,6 +2229,8 @@ yyreduce:
     break;
 
     case 46:
+
+/* Line 1464 of yacc.c  */
 #line 388 "gram.y"
     {
         (yyval) = xxifelse((yyvsp[(1) - (5)]), (yyvsp[(2) - (5)]), (yyvsp[(3) - (5)]), (yyvsp[(5) - (5)]));
@@ -2171,6 +2240,8 @@ yyreduce:
     break;
 
     case 47:
+
+/* Line 1464 of yacc.c  */
 #line 389 "gram.y"
     {
         (yyval) = xxfor((yyvsp[(1) - (3)]), (yyvsp[(2) - (3)]), (yyvsp[(3) - (3)]));
@@ -2180,6 +2251,8 @@ yyreduce:
     break;
 
     case 48:
+
+/* Line 1464 of yacc.c  */
 #line 390 "gram.y"
     {
         (yyval) = xxwhile((yyvsp[(1) - (3)]), (yyvsp[(2) - (3)]), (yyvsp[(3) - (3)]));
@@ -2189,6 +2262,8 @@ yyreduce:
     break;
 
     case 49:
+
+/* Line 1464 of yacc.c  */
 #line 391 "gram.y"
     {
         (yyval) = xxrepeat((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]));
@@ -2198,6 +2273,8 @@ yyreduce:
     break;
 
     case 50:
+
+/* Line 1464 of yacc.c  */
 #line 392 "gram.y"
     {
         (yyval) = xxsubscript((yyvsp[(1) - (5)]), (yyvsp[(2) - (5)]), (yyvsp[(3) - (5)]));
@@ -2207,6 +2284,8 @@ yyreduce:
     break;
 
     case 51:
+
+/* Line 1464 of yacc.c  */
 #line 393 "gram.y"
     {
         (yyval) = xxsubscript((yyvsp[(1) - (4)]), (yyvsp[(2) - (4)]), (yyvsp[(3) - (4)]));
@@ -2216,6 +2295,8 @@ yyreduce:
     break;
 
     case 52:
+
+/* Line 1464 of yacc.c  */
 #line 394 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2226,6 +2307,8 @@ yyreduce:
     break;
 
     case 53:
+
+/* Line 1464 of yacc.c  */
 #line 395 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2236,6 +2319,8 @@ yyreduce:
     break;
 
     case 54:
+
+/* Line 1464 of yacc.c  */
 #line 396 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2245,6 +2330,8 @@ yyreduce:
     break;
 
     case 55:
+
+/* Line 1464 of yacc.c  */
 #line 397 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2254,6 +2341,8 @@ yyreduce:
     break;
 
     case 56:
+
+/* Line 1464 of yacc.c  */
 #line 398 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2264,6 +2353,8 @@ yyreduce:
     break;
 
     case 57:
+
+/* Line 1464 of yacc.c  */
 #line 399 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2274,6 +2365,8 @@ yyreduce:
     break;
 
     case 58:
+
+/* Line 1464 of yacc.c  */
 #line 400 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2283,6 +2376,8 @@ yyreduce:
     break;
 
     case 59:
+
+/* Line 1464 of yacc.c  */
 #line 401 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2292,6 +2387,8 @@ yyreduce:
     break;
 
     case 60:
+
+/* Line 1464 of yacc.c  */
 #line 402 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2301,6 +2398,8 @@ yyreduce:
     break;
 
     case 61:
+
+/* Line 1464 of yacc.c  */
 #line 403 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2310,6 +2409,8 @@ yyreduce:
     break;
 
     case 62:
+
+/* Line 1464 of yacc.c  */
 #line 404 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2320,6 +2421,8 @@ yyreduce:
     break;
 
     case 63:
+
+/* Line 1464 of yacc.c  */
 #line 405 "gram.y"
     {
         (yyval) = xxbinary((yyvsp[(2) - (3)]), (yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2329,6 +2432,8 @@ yyreduce:
     break;
 
     case 64:
+
+/* Line 1464 of yacc.c  */
 #line 406 "gram.y"
     {
         (yyval) = xxnxtbrk((yyvsp[(1) - (1)]));
@@ -2338,6 +2443,8 @@ yyreduce:
     break;
 
     case 65:
+
+/* Line 1464 of yacc.c  */
 #line 407 "gram.y"
     {
         (yyval) = xxnxtbrk((yyvsp[(1) - (1)]));
@@ -2347,6 +2454,8 @@ yyreduce:
     break;
 
     case 66:
+
+/* Line 1464 of yacc.c  */
 #line 411 "gram.y"
     {
         (yyval) = xxcond((yyvsp[(2) - (3)]));
@@ -2355,6 +2464,8 @@ yyreduce:
     break;
 
     case 67:
+
+/* Line 1464 of yacc.c  */
 #line 414 "gram.y"
     {
         (yyval) = xxifcond((yyvsp[(2) - (3)]));
@@ -2363,6 +2474,8 @@ yyreduce:
     break;
 
     case 68:
+
+/* Line 1464 of yacc.c  */
 #line 417 "gram.y"
     {
         (yyval) = xxforcond((yyvsp[(2) - (5)]), (yyvsp[(4) - (5)]));
@@ -2372,6 +2485,8 @@ yyreduce:
     break;
 
     case 69:
+
+/* Line 1464 of yacc.c  */
 #line 421 "gram.y"
     {
         (yyval) = xxexprlist0();
@@ -2381,6 +2496,8 @@ yyreduce:
     break;
 
     case 70:
+
+/* Line 1464 of yacc.c  */
 #line 422 "gram.y"
     {
         (yyval) = xxexprlist1((yyvsp[(1) - (1)]), &(yylsp[(1) - (1)]));
@@ -2389,6 +2506,8 @@ yyreduce:
     break;
 
     case 71:
+
+/* Line 1464 of yacc.c  */
 #line 423 "gram.y"
     {
         (yyval) = xxexprlist2((yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]), &(yylsp[(3) - (3)]));
@@ -2397,6 +2516,8 @@ yyreduce:
     break;
 
     case 72:
+
+/* Line 1464 of yacc.c  */
 #line 424 "gram.y"
     {
         (yyval) = (yyvsp[(1) - (2)]);
@@ -2406,6 +2527,8 @@ yyreduce:
     break;
 
     case 73:
+
+/* Line 1464 of yacc.c  */
 #line 425 "gram.y"
     {
         (yyval) = xxexprlist2((yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]), &(yylsp[(3) - (3)]));
@@ -2414,6 +2537,8 @@ yyreduce:
     break;
 
     case 74:
+
+/* Line 1464 of yacc.c  */
 #line 426 "gram.y"
     {
         (yyval) = (yyvsp[(1) - (2)]);
@@ -2422,6 +2547,8 @@ yyreduce:
     break;
 
     case 75:
+
+/* Line 1464 of yacc.c  */
 #line 429 "gram.y"
     {
         (yyval) = xxsublist1((yyvsp[(1) - (1)]));
@@ -2430,6 +2557,8 @@ yyreduce:
     break;
 
     case 76:
+
+/* Line 1464 of yacc.c  */
 #line 430 "gram.y"
     {
         (yyval) = xxsublist2((yyvsp[(1) - (4)]), (yyvsp[(4) - (4)]));
@@ -2438,6 +2567,8 @@ yyreduce:
     break;
 
     case 77:
+
+/* Line 1464 of yacc.c  */
 #line 433 "gram.y"
     {
         (yyval) = xxsub0();
@@ -2446,6 +2577,8 @@ yyreduce:
     break;
 
     case 78:
+
+/* Line 1464 of yacc.c  */
 #line 434 "gram.y"
     {
         (yyval) = xxsub1((yyvsp[(1) - (1)]), &(yylsp[(1) - (1)]));
@@ -2454,6 +2587,8 @@ yyreduce:
     break;
 
     case 79:
+
+/* Line 1464 of yacc.c  */
 #line 435 "gram.y"
     {
         (yyval) = xxsymsub0((yyvsp[(1) - (2)]), &(yylsp[(1) - (2)]));
@@ -2464,6 +2599,8 @@ yyreduce:
     break;
 
     case 80:
+
+/* Line 1464 of yacc.c  */
 #line 436 "gram.y"
     {
         (yyval) = xxsymsub1((yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]), &(yylsp[(1) - (3)]));
@@ -2474,6 +2611,8 @@ yyreduce:
     break;
 
     case 81:
+
+/* Line 1464 of yacc.c  */
 #line 437 "gram.y"
     {
         (yyval) = xxsymsub0((yyvsp[(1) - (2)]), &(yylsp[(1) - (2)]));
@@ -2483,6 +2622,8 @@ yyreduce:
     break;
 
     case 82:
+
+/* Line 1464 of yacc.c  */
 #line 438 "gram.y"
     {
         (yyval) = xxsymsub1((yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]), &(yylsp[(1) - (3)]));
@@ -2492,6 +2633,8 @@ yyreduce:
     break;
 
     case 83:
+
+/* Line 1464 of yacc.c  */
 #line 439 "gram.y"
     {
         (yyval) = xxnullsub0(&(yylsp[(1) - (2)]));
@@ -2501,6 +2644,8 @@ yyreduce:
     break;
 
     case 84:
+
+/* Line 1464 of yacc.c  */
 #line 440 "gram.y"
     {
         (yyval) = xxnullsub1((yyvsp[(3) - (3)]), &(yylsp[(1) - (3)]));
@@ -2510,6 +2655,8 @@ yyreduce:
     break;
 
     case 85:
+
+/* Line 1464 of yacc.c  */
 #line 443 "gram.y"
     {
         (yyval) = xxnullformal();
@@ -2518,6 +2665,8 @@ yyreduce:
     break;
 
     case 86:
+
+/* Line 1464 of yacc.c  */
 #line 444 "gram.y"
     {
         (yyval) = xxfirstformal0((yyvsp[(1) - (1)]));
@@ -2527,6 +2676,8 @@ yyreduce:
     break;
 
     case 87:
+
+/* Line 1464 of yacc.c  */
 #line 445 "gram.y"
     {
         (yyval) = xxfirstformal1((yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]));
@@ -2537,6 +2688,8 @@ yyreduce:
     break;
 
     case 88:
+
+/* Line 1464 of yacc.c  */
 #line 446 "gram.y"
     {
         (yyval) = xxaddformal0((yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]), &(yylsp[(3) - (3)]));
@@ -2546,6 +2699,8 @@ yyreduce:
     break;
 
     case 89:
+
+/* Line 1464 of yacc.c  */
 #line 448 "gram.y"
     {
         (yyval) = xxaddformal1((yyvsp[(1) - (5)]), (yyvsp[(3) - (5)]), (yyvsp[(5) - (5)]), &(yylsp[(3) - (5)]));
@@ -2556,6 +2711,8 @@ yyreduce:
     break;
 
     case 90:
+
+/* Line 1464 of yacc.c  */
 #line 451 "gram.y"
     {
         EatLines = 1;
@@ -2563,8 +2720,8 @@ yyreduce:
     }
     break;
 
-/* Line 1267 of yacc.c.  */
-#line 2450 "gram.c"
+/* Line 1464 of yacc.c  */
+#line 2607 "gram.c"
     default:
         break;
     }
@@ -2640,7 +2797,7 @@ yyerrlab:
 
     if (yyerrstatus == 3)
     {
-        /* If just tried and failed to reuse look-ahead token after an
+        /* If just tried and failed to reuse lookahead token after an
        error, discard it.  */
 
         if (yychar <= YYEOF)
@@ -2656,7 +2813,7 @@ yyerrlab:
         }
     }
 
-    /* Else will try to reuse look-ahead token after shifting the error
+    /* Else will try to reuse lookahead token after shifting the error
        token.  */
     goto yyerrlab1;
 
@@ -2711,14 +2868,11 @@ yyerrlab1:
         YY_STACK_PRINT(yyss, yyssp);
     }
 
-    if (yyn == YYFINAL)
-        YYACCEPT;
-
     *++yyvsp = yylval;
 
     yyerror_range[1] = yylloc;
     /* Using YYLLOC is tempting, but would change the location of
-       the look-ahead.  YYLOC is available though.  */
+       the lookahead.  YYLOC is available though.  */
     YYLLOC_DEFAULT(yyloc, (yyerror_range - 1), 2);
     *++yylsp = yyloc;
 
@@ -2742,7 +2896,7 @@ yyabortlab:
     yyresult = 1;
     goto yyreturn;
 
-#ifndef yyoverflow
+#if !defined(yyoverflow) || YYERROR_VERBOSE
 /*-------------------------------------------------.
 | yyexhaustedlab -- memory exhaustion comes here.  |
 `-------------------------------------------------*/
@@ -2753,7 +2907,7 @@ yyexhaustedlab:
 #endif
 
 yyreturn:
-    if (yychar != YYEOF && yychar != YYEMPTY)
+    if (yychar != YYEMPTY)
         yydestruct("Cleanup: discarding lookahead", yytoken, &yylval, &yylloc);
     /* Do not reclaim the symbols of the rule which action triggered
        this YYABORT or YYACCEPT.  */
@@ -2776,6 +2930,7 @@ yyreturn:
     return YYID(yyresult);
 }
 
+/* Line 1684 of yacc.c  */
 #line 453 "gram.y"
 
 /*----------------------------------------------------------------------------*/
@@ -4395,6 +4550,7 @@ static int SkipComment(void)
     int type = COMMENT;
 
     Rboolean maybeLine = (ParseState.xxcolno == 1);
+    Rboolean doSave;
 
     DECLARE_YYTEXT_BUFP(yyp);
 
@@ -4426,9 +4582,16 @@ static int SkipComment(void)
         _last_parsed = prevparse[prevpos];
     }
 
+    doSave = !maybeLine;
+
     while (c != '\n' && c != R_EOF)
     {
-        YYTEXT_PUSH(c, yyp);
+        // Comments can be any length; we only record the ones that fit in yytext.
+        if (doSave)
+        {
+            YYTEXT_PUSH(c, yyp);
+            doSave = (yyp - yytext) < sizeof(yytext) - 2;
+        }
         _last_column = ParseState.xxcolno;
         _last_parsed = ParseState.xxparseno;
         c = xxgetc();
@@ -4437,7 +4600,7 @@ static int SkipComment(void)
         EndOfFile = 2;
     incrementId();
     YYTEXT_PUSH('\0', yyp);
-    record_(_first_parsed, _first_column, _last_parsed, _last_column, type, identifier, maybeLine ? 0 : yytext);
+    record_(_first_parsed, _first_column, _last_parsed, _last_column, type, identifier, doSave ? yytext : 0);
     return c;
 }
 
