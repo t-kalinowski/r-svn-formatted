@@ -557,11 +557,6 @@ static SEXP logicalSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch
         {
             if (LOGICAL(s)[i % ns] == NA_LOGICAL)
                 INTEGER(indx)[count++] = NA_INTEGER;
-#ifdef LONG_VECTOR_SUPPORT_X
-            /**** is this possible given that large nmax is handled above? LT*/
-            else if (i >= R_SHORT_LEN_MAX)
-                error("logical subscript selected >= R_SHORT_LEN_MAX");
-#endif
             else
                 INTEGER(indx)[count++] = (int)(i + 1);
         }
@@ -676,9 +671,8 @@ static SEXP realSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch, S
     }
     if (max > nx)
     {
-#ifdef LONG_VECTOR_SUPPORT_X
-        /**** disabled this -- is this intended for the 32 bit case only? LT*/
-        if (max > R_SHORT_LEN_MAX)
+#ifndef LONG_VECTOR_SUPPORT
+        if (max > INT_MAX)
         {
             ECALL(call, _("subscript too large for 32-bit R"));
         }
