@@ -892,7 +892,8 @@ SEXP attribute_hidden do_aregexec(SEXP call, SEXP op, SEXP args, SEXP env)
     regmatch_t *pmatch;
     regaparams_t params;
     regamatch_t match;
-    int i, j, n, so, patlen;
+    int j, so, patlen;
+    R_xlen_t i, n;
     int rc, cflags = REG_EXTENDED;
 
     checkArity(op, args);
@@ -935,7 +936,7 @@ SEXP attribute_hidden do_aregexec(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isString(vec))
         error(_("invalid '%s' argument"), "text");
 
-    n = LENGTH(vec);
+    n = XLENGTH(vec);
 
     if (!useBytes)
     {
@@ -1009,6 +1010,8 @@ SEXP attribute_hidden do_aregexec(SEXP call, SEXP op, SEXP args, SEXP env)
 
     for (i = 0; i < n; i++)
     {
+        if ((i + 1) % NINTERRUPT == 0)
+            R_CheckUserInterrupt();
         if (STRING_ELT(vec, i) == NA_STRING)
         {
             PROTECT(matchpos = ScalarInteger(NA_INTEGER));
