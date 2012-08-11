@@ -1635,6 +1635,7 @@ SEXP attribute_hidden do_radixsort(SEXP call, SEXP op, SEXP args, SEXP rho)
                 REAL(ans)[--cnts[(tmp == NA_INTEGER) ? napos : off + tmp]] = (double)(i + 1);
             }
     }
+    else
 #endif
     {
         if (decreasing)
