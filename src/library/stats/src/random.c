@@ -52,7 +52,10 @@ SEXP Random1(SEXP args)
     else if (streql(dn, "rexp"))
         fn = &rexp;
     else if (streql(dn, "rgeom"))
+    {
+        type = INTSXP;
         fn = &rgeom;
+    }
     else if (streql(dn, "rpois"))
     {
         type = INTSXP;
