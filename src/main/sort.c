@@ -1539,7 +1539,7 @@ SEXP attribute_hidden do_rank(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 #include <R_ext/RS.h>
 
-/* also returns integers (a method for sort.list) */
+/* also returns integers/doubles (a method for sort.list) */
 SEXP attribute_hidden do_radixsort(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, ans;
