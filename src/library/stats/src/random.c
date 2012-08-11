@@ -45,6 +45,8 @@ SEXP Random1(SEXP args)
     R_xlen_t i, n, na;
     ran1 fn = NULL; /* -Wall */
     const char *dn = CHAR(STRING_ELT(getListElement(CAR(args), "name"), 0));
+    SEXPTYPE type = REALSXP;
+
     if (streql(dn, "rchisq"))
         fn = &rchisq;
     else if (streql(dn, "rexp"))
@@ -52,11 +54,17 @@ SEXP Random1(SEXP args)
     else if (streql(dn, "rgeom"))
         fn = &rgeom;
     else if (streql(dn, "rpois"))
+    {
+        type = INTSXP;
         fn = &rpois;
+    }
     else if (streql(dn, "rt"))
         fn = &rt;
     else if (streql(dn, "rsignrank"))
+    {
+        type = INTSXP;
         fn = &rsignrank;
+    }
     else
         error(_("invalid arguments"));
 
@@ -78,7 +86,7 @@ SEXP Random1(SEXP args)
     }
     else
         n = XLENGTH(CAR(args));
-    PROTECT(x = allocVector(REALSXP, n));
+    PROTECT(x = allocVector(type, n));
     if (n == 0)
     {
         UNPROTECT(1);
@@ -87,8 +95,12 @@ SEXP Random1(SEXP args)
     na = XLENGTH(CADR(args));
     if (na < 1)
     {
-        for (i = 0; i < n; i++)
-            REAL(x)[i] = NA_REAL;
+        if (type == INTSXP)
+            for (i = 0; i < n; i++)
+                INTEGER(x)[i] = NA_INTEGER;
+        else
+            for (i = 0; i < n; i++)
+                REAL(x)[i] = NA_REAL;
         warning(_("NAs produced"));
     }
     else
@@ -96,15 +108,37 @@ SEXP Random1(SEXP args)
         Rboolean naflag = FALSE;
         PROTECT(a = coerceVector(CADR(args), REALSXP));
         GetRNGstate();
-        double *ra = REAL(a), *rx = REAL(x);
+        double *ra = REAL(a);
         errno = 0;
-        for (R_xlen_t i = 0; i < n; i++)
+        if (type == INTSXP)
         {
-            if (i % NINTERRUPT)
-                R_CheckUserInterrupt();
-            rx[i] = fn(ra[i % na]);
-            if (ISNAN(rx[i]))
-                naflag = TRUE;
+            double rx;
+            int *ix = INTEGER(x);
+            for (R_xlen_t i = 0; i < n; i++)
+            {
+                if (i % NINTERRUPT)
+                    R_CheckUserInterrupt();
+                rx = fn(ra[i % na]);
+                if (ISNAN(rx))
+                {
+                    naflag = TRUE;
+                    ix[i] = NA_INTEGER;
+                }
+                else
+                    ix[i] = (int)rx;
+            }
+        }
+        else
+        {
+            double *rx = REAL(x);
+            for (R_xlen_t i = 0; i < n; i++)
+            {
+                if (i % NINTERRUPT)
+                    R_CheckUserInterrupt();
+                rx[i] = fn(ra[i % na]);
+                if (ISNAN(rx[i]))
+                    naflag = TRUE;
+            }
         }
         if (naflag)
             warning(_("NAs produced"));
@@ -123,10 +157,15 @@ SEXP Random2(SEXP args)
     R_xlen_t i, n, na, nb;
     ran2 fn = NULL; /* -Wall */
     const char *dn = CHAR(STRING_ELT(getListElement(CAR(args), "name"), 0));
+    SEXPTYPE type = REALSXP;
+
     if (streql(dn, "rbeta"))
         fn = &rbeta;
     else if (streql(dn, "rbinom"))
+    {
+        type = INTSXP;
         fn = &rbinom;
+    }
     else if (streql(dn, "rcauchy"))
         fn = &rcauchy;
     else if (streql(dn, "rf"))
@@ -138,7 +177,10 @@ SEXP Random2(SEXP args)
     else if (streql(dn, "rlogis"))
         fn = &rlogis;
     else if (streql(dn, "rnbinom"))
+    {
+        type = INTSXP;
         fn = &rnbinom;
+    }
     else if (streql(dn, "rnorm"))
         fn = &rnorm;
     else if (streql(dn, "runif"))
@@ -146,11 +188,16 @@ SEXP Random2(SEXP args)
     else if (streql(dn, "rweibull"))
         fn = &rweibull;
     else if (streql(dn, "rwilcox"))
+    {
+        type = INTSXP;
         fn = &rwilcox;
+    }
     else if (streql(dn, "rnchisq"))
         fn = &rnchisq;
     else if (streql(dn, "rnbinom_mu"))
+    {
         fn = &rnbinom_mu;
+    }
     else
         error(_("invalid arguments"));
 
@@ -172,7 +219,7 @@ SEXP Random2(SEXP args)
     }
     else
         n = XLENGTH(CAR(args));
-    PROTECT(x = allocVector(REALSXP, n));
+    PROTECT(x = allocVector(type, n));
     if (n == 0)
     {
         UNPROTECT(1);
@@ -182,6 +229,12 @@ SEXP Random2(SEXP args)
     nb = XLENGTH(CADDR(args));
     if (na < 1 || nb < 1)
     {
+        if (type == INTSXP)
+            for (i = 0; i < n; i++)
+                INTEGER(x)[i] = NA_INTEGER;
+        else
+            for (i = 0; i < n; i++)
+                REAL(x)[i] = NA_REAL;
         for (i = 0; i < n; i++)
             REAL(x)[i] = NA_REAL;
         warning(_("NAs produced"));
@@ -192,15 +245,38 @@ SEXP Random2(SEXP args)
         PROTECT(a = coerceVector(CADR(args), REALSXP));
         PROTECT(b = coerceVector(CADDR(args), REALSXP));
         GetRNGstate();
-        double *ra = REAL(a), *rb = REAL(b), *rx = REAL(x);
-        errno = 0;
-        for (R_xlen_t i = 0; i < n; i++)
+        double *ra = REAL(a), *rb = REAL(b);
+        if (type == INTSXP)
         {
-            if (i % NINTERRUPT)
-                R_CheckUserInterrupt();
-            rx[i] = fn(ra[i % na], rb[i % nb]);
-            if (ISNAN(rx[i]))
-                naflag = TRUE;
+            int *ix = INTEGER(x);
+            double rx;
+            errno = 0;
+            for (R_xlen_t i = 0; i < n; i++)
+            {
+                if (i % NINTERRUPT)
+                    R_CheckUserInterrupt();
+                rx = fn(ra[i % na], rb[i % nb]);
+                if (ISNAN(rx))
+                {
+                    naflag = TRUE;
+                    ix[i] = NA_INTEGER;
+                }
+                else
+                    ix[i] = (int)rx;
+            }
+        }
+        else
+        {
+            double *rx = REAL(x);
+            errno = 0;
+            for (R_xlen_t i = 0; i < n; i++)
+            {
+                if (i % NINTERRUPT)
+                    R_CheckUserInterrupt();
+                rx[i] = fn(ra[i % na], rb[i % nb]);
+                if (ISNAN(rx[i]))
+                    naflag = TRUE;
+            }
         }
         if (naflag)
             warning(_("NAs produced"));
@@ -237,7 +313,7 @@ SEXP Random3(SEXP args)
     }
     else
         n = XLENGTH(CAR(args));
-    PROTECT(x = allocVector(REALSXP, n));
+    PROTECT(x = allocVector(INTSXP, n));
     if (n == 0)
     {
         UNPROTECT(1);
@@ -258,7 +334,7 @@ SEXP Random3(SEXP args)
     if (na < 1 || nb < 1 || nc < 1)
     {
         for (i = 0; i < n; i++)
-            REAL(x)[i] = NA_REAL;
+            INTEGER(x)[i] = NA_INTEGER;
         warning(_("NAs produced"));
     }
     else
@@ -268,15 +344,21 @@ SEXP Random3(SEXP args)
         PROTECT(b = coerceVector(b, REALSXP));
         PROTECT(c = coerceVector(c, REALSXP));
         GetRNGstate();
-        double *ra = REAL(a), *rb = REAL(b), *rc = REAL(c), *rx = REAL(x);
+        double *ra = REAL(a), *rb = REAL(b), *rc = REAL(c), rx;
+        int *ix = INTEGER(x);
         errno = 0;
         for (R_xlen_t i = 0; i < n; i++)
         {
             if (i % NINTERRUPT)
                 R_CheckUserInterrupt();
-            rx[i] = fn(ra[i % na], rb[i % nb], rc[i % nc]);
-            if (ISNAN(rx[i]))
+            rx = fn(ra[i % na], rb[i % nb], rc[i % nc]);
+            if (ISNAN(rx))
+            {
                 naflag = TRUE;
+                ix[i] = NA_INTEGER;
+            }
+            else
+                ix[i] = (int)rx;
         }
         if (naflag)
             warning(_("NAs produced"));
