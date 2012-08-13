@@ -29,6 +29,7 @@
 #endif
 
 #include <Defn.h>
+#include <R_ext/Print.h>
 
 /* FIXME: envir.c keeps this private - it should probably go to Defn.h */
 #define FRAME_LOCK_MASK (1 << 14)
@@ -249,7 +250,7 @@ static void inspect_tree(int pre, SEXP v, int deep, int pvec)
     case REALSXP:
     case CPLXSXP:
     case EXPRSXP:
-        Rprintf("(len=%d, tl=%d)", LENGTH(v), TRUELENGTH(v));
+        Rprintf("(len=%ld, tl=%ld)", XLENGTH(v), XTRUELENGTH(v));
     }
     if (TYPEOF(v) == ENVSXP) /* NOTE: this is not a trivial OP since it involves looking up things
                 in the environment, so for a low-level debugging we may want to
@@ -274,54 +275,54 @@ static void inspect_tree(int pre, SEXP v, int deep, int pvec)
     switch (TYPEOF(v))
     { /* for native vectors print the first elements in-line */
     case LGLSXP:
-        if (LENGTH(v) > 0)
+        if (XLENGTH(v) > 0)
         {
             unsigned int i = 0;
-            while (i < LENGTH(v) && i < pvec)
+            while (i < XLENGTH(v) && i < pvec)
             {
                 Rprintf("%s%d", (i > 0) ? "," : " ", (int)LOGICAL(v)[i]);
                 i++;
             }
-            if (i < LENGTH(v))
+            if (i < XLENGTH(v))
                 Rprintf(",...");
         }
         break;
     case INTSXP:
-        if (LENGTH(v) > 0)
+        if (XLENGTH(v) > 0)
         {
             unsigned int i = 0;
-            while (i < LENGTH(v) && i < pvec)
+            while (i < XLENGTH(v) && i < pvec)
             {
                 Rprintf("%s%d", (i > 0) ? "," : " ", INTEGER(v)[i]);
                 i++;
             }
-            if (i < LENGTH(v))
+            if (i < XLENGTH(v))
                 Rprintf(",...");
         }
         break;
     case RAWSXP:
-        if (LENGTH(v) > 0)
+        if (XLENGTH(v) > 0)
         {
             unsigned int i = 0;
-            while (i < LENGTH(v) && i < pvec)
+            while (i < XLENGTH(v) && i < pvec)
             {
                 Rprintf("%s%02x", (i > 0) ? "," : " ", (int)((unsigned char)RAW(v)[i]));
                 i++;
             }
-            if (i < LENGTH(v))
+            if (i < XLENGTH(v))
                 Rprintf(",...");
         }
         break;
     case REALSXP:
-        if (LENGTH(v) > 0)
+        if (XLENGTH(v) > 0)
         {
             unsigned int i = 0;
-            while (i < LENGTH(v) && i < pvec)
+            while (i < XLENGTH(v) && i < pvec)
             {
                 Rprintf("%s%g", (i > 0) ? "," : " ", REAL(v)[i]);
                 i++;
             }
-            if (i < LENGTH(v))
+            if (i < XLENGTH(v))
                 Rprintf(",...");
         }
         break;
@@ -333,12 +334,12 @@ static void inspect_tree(int pre, SEXP v, int deep, int pvec)
         case VECSXP:
         case EXPRSXP: {
             unsigned int i = 0;
-            while (i < LENGTH(v) && i < pvec)
+            while (i < XLENGTH(v) && i < pvec)
             {
                 inspect_tree(pre + 2, VECTOR_ELT(v, i), deep - 1, pvec);
                 i++;
             }
-            if (i < LENGTH(v))
+            if (i < XLENGTH(v))
             {
                 pp(pre + 2);
                 Rprintf("...\n");
@@ -347,12 +348,12 @@ static void inspect_tree(int pre, SEXP v, int deep, int pvec)
         break;
         case STRSXP: {
             unsigned int i = 0;
-            while (i < LENGTH(v) && i < pvec)
+            while (i < XLENGTH(v) && i < pvec)
             {
                 inspect_tree(pre + 2, STRING_ELT(v, i), deep - 1, pvec);
                 i++;
             }
-            if (i < LENGTH(v))
+            if (i < XLENGTH(v))
             {
                 pp(pre + 2);
                 Rprintf("...\n");

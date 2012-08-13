@@ -514,18 +514,16 @@ SEXP attribute_hidden do_rowscols(SEXP call, SEXP op, SEXP args, SEXP rho)
 static void matprod(double *x, int nrx, int ncx, double *y, int nry, int ncy, double *z)
 {
     char *transa = "N", *transb = "N";
-    int i, j, k;
     double one = 1.0, zero = 0.0;
     long double sum;
     Rboolean have_na = FALSE;
+    R_xlen_t NRX = nrx, NRY = nry;
 
     if (nrx > 0 && ncx > 0 && nry > 0 && ncy > 0)
     {
         /* Don't trust the BLAS to handle NA/NaNs correctly: PR#4582
          * The test is only O(n) here.
-         * How about long vectors?
          */
-        R_xlen_t NRX = nrx, NRY = nry;
         for (R_xlen_t i = 0; i < NRX * ncx; i++)
             if (ISNAN(x[i]))
             {
@@ -541,20 +539,20 @@ static void matprod(double *x, int nrx, int ncx, double *y, int nry, int ncy, do
                 }
         if (have_na)
         {
-            for (i = 0; i < nrx; i++)
-                for (k = 0; k < ncy; k++)
+            for (int i = 0; i < nrx; i++)
+                for (int k = 0; k < ncy; k++)
                 {
                     sum = 0.0;
-                    for (j = 0; j < ncx; j++)
+                    for (int j = 0; j < ncx; j++)
                         sum += x[i + j * NRX] * y[j + k * NRY];
-                    z[i + k * nrx] = (double)sum;
+                    z[i + k * NRX] = (double)sum;
                 }
         }
         else
             F77_CALL(dgemm)(transa, transb, &nrx, &ncy, &ncx, &one, x, &nrx, y, &nry, &zero, z, &nrx);
     }
     else /* zero-extent operations should return zeroes */
-        for (i = 0; i < nrx * ncy; i++)
+        for (R_xlen_t i = 0; i < NRX * ncy; i++)
             z[i] = 0;
 }
 
@@ -562,7 +560,6 @@ static void cmatprod(Rcomplex *x, int nrx, int ncx, Rcomplex *y, int nry, int nc
 {
 #ifdef HAVE_FORTRAN_DOUBLE_COMPLEX
     char *transa = "N", *transb = "N";
-    int i;
     Rcomplex one, zero;
 
     one.r = 1.0;
@@ -573,7 +570,8 @@ static void cmatprod(Rcomplex *x, int nrx, int ncx, Rcomplex *y, int nry, int nc
     }
     else
     { /* zero-extent operations should return zeroes */
-        for (i = 0; i < nrx * ncy; i++)
+        R_xlen_t NRX = nrx;
+        for (R_xlen_t i = 0; i < NRX * ncy; i++)
             z[i].r = z[i].i = 0;
     }
 #else
@@ -611,17 +609,17 @@ static void symcrossprod(double *x, int nr, int nc, double *z)
 {
     char *trans = "T", *uplo = "U";
     double one = 1.0, zero = 0.0;
-    int i, j;
+    R_xlen_t NC = nc;
     if (nr > 0 && nc > 0)
     {
         F77_CALL(dsyrk)(uplo, trans, &nc, &nr, &one, x, &nr, &zero, z, &nc);
-        for (i = 1; i < nc; i++)
-            for (j = 0; j < i; j++)
-                z[i + nc * j] = z[j + nc * i];
+        for (int i = 1; i < nc; i++)
+            for (int j = 0; j < i; j++)
+                z[i + NC * j] = z[j + NC * i];
     }
     else
     { /* zero-extent operations should return zeroes */
-        for (i = 0; i < nc * nc; i++)
+        for (R_xlen_t i = 0; i < NC * NC; i++)
             z[i] = 0;
     }
 }
@@ -636,8 +634,8 @@ static void crossprod(double *x, int nrx, int ncx, double *y, int nry, int ncy, 
     }
     else
     { /* zero-extent operations should return zeroes */
-        int i;
-        for (i = 0; i < ncx * ncy; i++)
+        R_xlen_t NCX = ncx;
+        for (R_xlen_t i = 0; i < NCX * ncy; i++)
             z[i] = 0;
     }
 }
@@ -655,8 +653,8 @@ static void ccrossprod(Rcomplex *x, int nrx, int ncx, Rcomplex *y, int nry, int 
     }
     else
     { /* zero-extent operations should return zeroes */
-        int i;
-        for (i = 0; i < ncx * ncy; i++)
+        R_xlen_t NCX = ncx;
+        for (R_xlen_t i = 0; i < NCX * ncy; i++)
             z[i].r = z[i].i = 0;
     }
 }
@@ -665,17 +663,17 @@ static void symtcrossprod(double *x, int nr, int nc, double *z)
 {
     char *trans = "N", *uplo = "U";
     double one = 1.0, zero = 0.0;
-    int i, j;
     if (nr > 0 && nc > 0)
     {
         F77_CALL(dsyrk)(uplo, trans, &nr, &nc, &one, x, &nr, &zero, z, &nr);
-        for (i = 1; i < nr; i++)
-            for (j = 0; j < i; j++)
+        for (int i = 1; i < nr; i++)
+            for (int j = 0; j < i; j++)
                 z[i + nr * j] = z[j + nr * i];
     }
     else
     { /* zero-extent operations should return zeroes */
-        for (i = 0; i < nr * nr; i++)
+        R_xlen_t NR = nr;
+        for (R_xlen_t i = 0; i < NR * NR; i++)
             z[i] = 0;
     }
 }
@@ -690,8 +688,8 @@ static void tcrossprod(double *x, int nrx, int ncx, double *y, int nry, int ncy,
     }
     else
     { /* zero-extent operations should return zeroes */
-        int i;
-        for (i = 0; i < nrx * nry; i++)
+        R_xlen_t NRX = nrx;
+        for (R_xlen_t i = 0; i < NRX * nry; i++)
             z[i] = 0;
     }
 }
@@ -709,8 +707,8 @@ static void tccrossprod(Rcomplex *x, int nrx, int ncx, Rcomplex *y, int nry, int
     }
     else
     { /* zero-extent operations should return zeroes */
-        int i;
-        for (i = 0; i < nrx * nry; i++)
+        R_xlen_t NRX = nrx;
+        for (R_xlen_t i = 0; i < NRX * nry; i++)
             z[i].r = z[i].i = 0;
     }
 }
@@ -1472,7 +1470,7 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
             switch (type)
             {
             case REALSXP:
-                rx = REAL(x) + n * j;
+                rx = REAL(x) + (R_xlen_t)n * j;
                 if (keepNA)
                     for (sum = 0., i = 0; i < n; i++)
                         sum += *rx++;
@@ -1492,7 +1490,7 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
                 }
                 break;
             case INTSXP:
-                ix = INTEGER(x) + n * j;
+                ix = INTEGER(x) + (R_xlen_t)n * j;
                 for (cnt = 0, sum = 0., i = 0; i < n; i++, ix++)
                     if (*ix != NA_INTEGER)
                     {
@@ -1506,7 +1504,7 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
                     }
                 break;
             case LGLSXP:
-                ix = LOGICAL(x) + n * j;
+                ix = LOGICAL(x) + (R_xlen_t)n * j;
                 for (cnt = 0, sum = 0., i = 0; i < n; i++, ix++)
                     if (*ix != NA_LOGICAL)
                     {
@@ -1552,7 +1550,7 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
             switch (type)
             {
             case REALSXP:
-                rx = REAL(x) + n * j;
+                rx = REAL(x) + (R_xlen_t)n * j;
                 if (keepNA)
                     for (int i = 0; i < n; i++)
                         *ra++ += *rx++;
@@ -1566,7 +1564,7 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
                         }
                 break;
             case INTSXP:
-                ix = INTEGER(x) + n * j;
+                ix = INTEGER(x) + (R_xlen_t)n * j;
                 for (int i = 0; i < n; i++, ra++, ix++)
                     if (keepNA)
                     {
@@ -1583,7 +1581,7 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
                     }
                 break;
             case LGLSXP:
-                ix = LOGICAL(x) + n * j;
+                ix = LOGICAL(x) + (R_xlen_t)n * j;
                 for (int i = 0; i < n; i++, ra++, ix++)
                     if (keepNA)
                     {

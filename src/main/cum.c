@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2008  The R Core Team
+ *  Copyright (C) 1997--2012  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,10 +26,9 @@
 
 static SEXP cumsum(SEXP x, SEXP s)
 {
-    int i;
     long double sum = 0.;
     double *rx = REAL(x), *rs = REAL(s);
-    for (i = 0; i < length(x); i++)
+    for (R_xlen_t i = 0; i < xlength(x); i++)
     {
         if (ISNAN(rx[i]))
             break;
@@ -42,9 +41,9 @@ static SEXP cumsum(SEXP x, SEXP s)
 /* We need to ensure that overflow gives NA here */
 static SEXP icumsum(SEXP x, SEXP s)
 {
-    int i, *ix = INTEGER(x), *is = INTEGER(s);
+    int *ix = INTEGER(x), *is = INTEGER(s);
     double sum = 0.0;
-    for (i = 0; i < length(x); i++)
+    for (R_xlen_t i = 0; i < xlength(x); i++)
     {
         if (ix[i] == NA_INTEGER)
             break;
@@ -61,11 +60,10 @@ static SEXP icumsum(SEXP x, SEXP s)
 
 static SEXP ccumsum(SEXP x, SEXP s)
 {
-    int i;
     Rcomplex sum;
     sum.r = 0;
     sum.i = 0;
-    for (i = 0; i < length(x); i++)
+    for (R_xlen_t i = 0; i < xlength(x); i++)
     {
         sum.r += COMPLEX(x)[i].r;
         sum.i += COMPLEX(x)[i].i;
@@ -92,10 +90,9 @@ static SEXP cumprod(SEXP x, SEXP s)
 static SEXP ccumprod(SEXP x, SEXP s)
 {
     Rcomplex prod, tmp;
-    int i;
     prod.r = 1;
     prod.i = 0;
-    for (i = 0; i < length(x); i++)
+    for (R_xlen_t i = 0; i < xlength(x); i++)
     {
         tmp.r = prod.r;
         tmp.i = prod.i;
@@ -109,10 +106,9 @@ static SEXP ccumprod(SEXP x, SEXP s)
 
 static SEXP cummax(SEXP x, SEXP s)
 {
-    int i;
     double max, *rx = REAL(x), *rs = REAL(s);
     max = R_NegInf;
-    for (i = 0; i < length(x); i++)
+    for (R_xlen_t i = 0; i < xlength(x); i++)
     {
         if (ISNAN(rx[i]) || ISNAN(max))
             max = max + rx[i]; /* propagate NA and NaN */
@@ -125,10 +121,9 @@ static SEXP cummax(SEXP x, SEXP s)
 
 static SEXP cummin(SEXP x, SEXP s)
 {
-    int i;
     double min, *rx = REAL(x), *rs = REAL(s);
     min = R_PosInf; /* always positive, not NA */
-    for (i = 0; i < length(x); i++)
+    for (R_xlen_t i = 0; i < xlength(x); i++)
     {
         if (ISNAN(rx[i]) || ISNAN(min))
             min = min + rx[i]; /* propagate NA and NaN */
@@ -141,10 +136,10 @@ static SEXP cummin(SEXP x, SEXP s)
 
 static SEXP icummax(SEXP x, SEXP s)
 {
-    int i, *ix = INTEGER(x), *is = INTEGER(s);
+    int *ix = INTEGER(x), *is = INTEGER(s);
     int max = ix[0];
     is[0] = max;
-    for (i = 1; i < length(x); i++)
+    for (R_xlen_t i = 1; i < xlength(x); i++)
     {
         if (ix[i] == NA_INTEGER)
             break;
@@ -155,10 +150,10 @@ static SEXP icummax(SEXP x, SEXP s)
 
 static SEXP icummin(SEXP x, SEXP s)
 {
-    int i, *ix = INTEGER(x), *is = INTEGER(s);
+    int *ix = INTEGER(x), *is = INTEGER(s);
     int min = ix[0];
     is[0] = min;
-    for (i = 1; i < length(x); i++)
+    for (R_xlen_t i = 1; i < xlength(x); i++)
     {
         if (ix[i] == NA_INTEGER)
             break;
@@ -170,19 +165,20 @@ static SEXP icummin(SEXP x, SEXP s)
 SEXP attribute_hidden do_cum(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s, t, ans;
-    int i;
+    R_xlen_t i, n;
     checkArity(op, args);
     if (DispatchGroup("Math", call, op, args, env, &ans))
         return ans;
     if (isComplex(CAR(args)))
     {
         t = CAR(args);
-        PROTECT(s = allocVector(CPLXSXP, LENGTH(t)));
+        n = XLENGTH(t);
+        PROTECT(s = allocVector(CPLXSXP, n));
         setAttrib(s, R_NamesSymbol, getAttrib(t, R_NamesSymbol));
         UNPROTECT(1);
-        if (LENGTH(t) == 0)
+        if (n == 0)
             return s;
-        for (i = 0; i < length(t); i++)
+        for (i = 0; i < n; i++)
         {
             COMPLEX(s)[i].r = NA_REAL;
             COMPLEX(s)[i].i = NA_REAL;
@@ -206,12 +202,13 @@ SEXP attribute_hidden do_cum(SEXP call, SEXP op, SEXP args, SEXP env)
     else if ((isInteger(CAR(args)) || isLogical(CAR(args))) && PRIMVAL(op) != 2)
     {
         PROTECT(t = coerceVector(CAR(args), INTSXP));
-        PROTECT(s = allocVector(INTSXP, LENGTH(t)));
+        n = XLENGTH(t);
+        PROTECT(s = allocVector(INTSXP, n));
         setAttrib(s, R_NamesSymbol, getAttrib(t, R_NamesSymbol));
         UNPROTECT(2);
-        if (LENGTH(t) == 0)
+        if (n == 0)
             return s;
-        for (i = 0; i < LENGTH(t); i++)
+        for (i = 0; i < n; i++)
             INTEGER(s)[i] = NA_INTEGER;
         switch (PRIMVAL(op))
         {
@@ -231,12 +228,13 @@ SEXP attribute_hidden do_cum(SEXP call, SEXP op, SEXP args, SEXP env)
     else
     {
         PROTECT(t = coerceVector(CAR(args), REALSXP));
-        PROTECT(s = allocVector(REALSXP, LENGTH(t)));
+        n = XLENGTH(t);
+        PROTECT(s = allocVector(REALSXP, n));
         setAttrib(s, R_NamesSymbol, getAttrib(t, R_NamesSymbol));
         UNPROTECT(2);
-        if (LENGTH(t) == 0)
+        if (n == 0)
             return s;
-        for (i = 0; i < LENGTH(t); i++)
+        for (i = 0; i < n; i++)
             REAL(s)[i] = NA_REAL;
         switch (PRIMVAL(op))
         {
