@@ -144,8 +144,6 @@ SEXP convolveE(SEXP args)
 
 /* ----- Show arguments  ----- */
 
-#include <R_ext/PrtUtil.h>
-
 SEXP showArgs(SEXP args)
 {
     args = CDR(args); /* skip 'name' */
