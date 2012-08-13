@@ -3700,7 +3700,6 @@ SEXP attribute_hidden do_readLines(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         if (nread >= nn)
         {
-            /* FIXME, check for overflow */
             double dnn = 2. * nn;
             if (dnn > R_XLEN_T_MAX)
                 error("too many items");
