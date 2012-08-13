@@ -38,6 +38,7 @@
 #include <Fileio.h>
 #include <Rconnections.h>
 #include <errno.h>
+#include <Print.h>
 
 static R_INLINE int imin2(int x, int y)
 {
@@ -1959,7 +1960,6 @@ no_more_lines:
 }
 
 /* --------- write.table --------- */
-#include <Print.h>
 
 /* write.table(x, file, nr, nc, rnames, sep, eol, na, dec, quote, qstring)
    x is a matrix or data frame

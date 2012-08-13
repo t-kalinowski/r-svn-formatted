@@ -25,7 +25,8 @@
  *R)
  */
 #ifdef DEBUG_bratio
-#include <R_ext/PrtUtil.h>
+/* for REprintf */
+#include <R_ext/Print.h>
 #endif
 
 /* MM added R_D_LExp, so redefine here in terms of rexpm1 */
