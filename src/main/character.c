@@ -803,7 +803,7 @@ SEXP attribute_hidden do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
         error(_("non-character argument"));
     n = XLENGTH(x);
     PROTECT(y = allocVector(STRSXP, n));
-#if defined(Win32) || defined(__STDC_ISO_10646__) || defined(__APPLE_CC__)
+#if defined(Win32) || defined(__STDC_ISO_10646__) || defined(__APPLE_CC__) || defined(__FreeBSD__)
     /* utf8towcs is really to UCS-4/2 */
     for (i = 0; i < n; i++)
         if (getCharCE(STRING_ELT(x, i)) == CE_UTF8)
@@ -1208,7 +1208,7 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
         error("invalid '%s' argument", "x");
 
         /* utf8towcs is really to UCS-4/2 */
-#if defined(Win32) || defined(__STDC_ISO_10646__) || defined(__APPLE_CC__)
+#if defined(Win32) || defined(__STDC_ISO_10646__) || defined(__APPLE_CC__) || defined(__FreeBSD__)
     for (i = 0; i < n; i++)
         if (getCharCE(STRING_ELT(x, i)) == CE_UTF8)
             use_UTF8 = TRUE;
