@@ -26,6 +26,14 @@
  * bad precision & non-convergence in some cases (x ~= f, both LARGE)
  */
 
+#ifdef HAVE_LONG_DOUBLE
+#define EXP expl
+#define FABS fabsl
+#else
+#define EXP exp
+#define FABS fabs
+#endif
+
 double pnchisq(double x, double df, double ncp, int lower_tail, int log_p)
 {
     double ans;
@@ -70,7 +78,7 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta, double err
     double l_lam = -1., l_x = -1.; /* initialized for -Wall */
     int n;
     Rboolean lamSml, tSml, is_r, is_b, is_it;
-    long double ans, u, v, t, lt, lu = -1;
+    LDOUBLE ans, u, v, t, lt, lu = -1;
 
     static const double _dbl_min_exp = M_LN2 * DBL_MIN_EXP;
     /*= -708.3964 for IEEE double precision */
@@ -92,8 +100,8 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta, double err
 
     if (theta < 80)
     { /* use 110 for Inf, as ppois(110, 80/2, lower.tail=FALSE) is 2e-20 */
-        long double sum = 0, sum2 = 0, lambda = 0.5 * theta,
-                    pr = expl(-lambda); // does this need a feature test?
+        LDOUBLE sum = 0, sum2 = 0, lambda = 0.5 * theta,
+                pr = EXP(-lambda); // does this need a feature test?
         double ans;
         int i;
         /* we need to renormalize here: the result could be very close to 1 */
@@ -138,7 +146,7 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta, double err
 #endif
 
     if (f2 * DBL_EPSILON > 0.125 && /* very large f and x ~= f: probably needs */
-        fabsl(t = x2 - f2) <        /* another algorithm anyway */
+        FABS(t = x2 - f2) <         /* another algorithm anyway */
             sqrt(DBL_EPSILON) * f2)
     {
         /* evade cancellation error */
@@ -171,7 +179,7 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta, double err
     }
     else
     {
-        t = expl(lt);
+        t = EXP(lt);
 #ifdef DEBUG_pnch
         REprintf(", t=exp(lt)= %g\n", t);
 #endif
@@ -221,7 +229,7 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta, double err
 #ifdef DEBUG_pnch
                 REprintf(" n=%d; nomore underflow in u = exp(lu) ==> change\n", n);
 #endif
-                v = u = expl(lu); /* the first non-0 'u' */
+                v = u = EXP(lu); /* the first non-0 'u' */
                 lamSml = FALSE;
             }
         }
@@ -239,7 +247,7 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta, double err
 #ifdef DEBUG_pnch
                 REprintf("  n=%d; nomore underflow in t = exp(lt) ==> change\n", n);
 #endif
-                t = expl(lt); /* the first non-0 't' */
+                t = EXP(lt); /* the first non-0 't' */
                 tSml = FALSE;
             }
         }

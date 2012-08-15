@@ -515,7 +515,7 @@ static void matprod(double *x, int nrx, int ncx, double *y, int nry, int ncy, do
 {
     char *transa = "N", *transb = "N";
     double one = 1.0, zero = 0.0;
-    long double sum;
+    LDOUBLE sum;
     Rboolean have_na = FALSE;
     R_xlen_t NRX = nrx, NRY = nry;
 
@@ -577,7 +577,7 @@ static void cmatprod(Rcomplex *x, int nrx, int ncx, Rcomplex *y, int nry, int nc
 #else
     int i, j, k;
     double xij_r, xij_i, yjk_r, yjk_i;
-    long double sum_i, sum_r;
+    LDOUBLE sum_i, sum_r;
 
     R_xlen_t NRX = nrx, NRY = nry;
     for (i = 0; i < nrx; i++)
@@ -1466,7 +1466,7 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
             int cnt = n, i;
             int *ix;
             double *rx;
-            long double sum = 0.0;
+            LDOUBLE sum = 0.0;
             switch (type)
             {
             case REALSXP:
@@ -1530,15 +1530,15 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
         /* allocate scratch storage to allow accumulating by columns
            to improve cache hits */
         int *Cnt = NULL;
-        long double *rans;
+        LDOUBLE *rans;
         if (n <= 10000)
         {
-            R_CheckStack2(n * sizeof(long double));
-            rans = (long double *)alloca(n * sizeof(long double));
-            memset(rans, 0, n * sizeof(long double));
+            R_CheckStack2(n * sizeof(LDOUBLE));
+            rans = (LDOUBLE *)alloca(n * sizeof(LDOUBLE));
+            memset(rans, 0, n * sizeof(LDOUBLE));
         }
         else
-            rans = Calloc(n, long double);
+            rans = Calloc(n, LDOUBLE);
         if (!keepNA && OP == 3)
             Cnt = Calloc(n, int);
 
@@ -1546,7 +1546,7 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
         int *ix;
         for (j = 0; j < p; j++)
         {
-            long double *ra = rans;
+            LDOUBLE *ra = rans;
             switch (type)
             {
             case REALSXP:

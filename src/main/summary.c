@@ -75,7 +75,7 @@ static Rboolean isum(int *x, R_xlen_t n, int *value, Rboolean narm, SEXP call)
 
 static Rboolean rsum(double *x, R_xlen_t n, double *value, Rboolean narm)
 {
-    long double s = 0.0;
+    LDOUBLE s = 0.0;
     R_xlen_t i;
     Rboolean updated = FALSE;
 
@@ -95,7 +95,7 @@ static Rboolean rsum(double *x, R_xlen_t n, double *value, Rboolean narm)
 
 static Rboolean csum(Rcomplex *x, R_xlen_t n, Rcomplex *value, Rboolean narm)
 {
-    long double sr = 0.0, si = 0.0;
+    LDOUBLE sr = 0.0, si = 0.0;
     R_xlen_t i;
     Rboolean updated = FALSE;
 
@@ -324,7 +324,7 @@ static Rboolean iprod(int *x, R_xlen_t n, double *value, Rboolean narm)
 
 static Rboolean rprod(double *x, R_xlen_t n, double *value, Rboolean narm)
 {
-    long double s = 1.0;
+    LDOUBLE s = 1.0;
     R_xlen_t i;
     Rboolean updated = FALSE;
 
@@ -344,7 +344,7 @@ static Rboolean rprod(double *x, R_xlen_t n, double *value, Rboolean narm)
 
 static Rboolean cprod(Rcomplex *x, R_xlen_t n, Rcomplex *value, Rboolean narm)
 {
-    long double sr, si, tr, ti;
+    LDOUBLE sr, si, tr, ti;
     R_xlen_t i;
     Rboolean updated = FALSE;
     sr = 1;
@@ -429,7 +429,7 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (PRIMVAL(op) == 1)
     { /* mean */
-        long double s = 0., si = 0., t = 0., ti = 0.;
+        LDOUBLE s = 0., si = 0., t = 0., ti = 0.;
         R_xlen_t i, n = XLENGTH(CAR(args));
         SEXP x = CAR(args);
         switch (TYPEOF(x))
