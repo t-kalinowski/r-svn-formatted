@@ -2953,7 +2953,7 @@ static int (*ptr_getc)(void);
         {                                                                                                              \
             error(_("input buffer overflow at line %d"), ParseState.xxlineno);                                         \
         }                                                                                                              \
-        *(bp)++ = (c);                                                                                                 \
+        *(bp)++ = ((char)c);                                                                                           \
     } while (0);
 
 #define PUSHBACK_BUFSIZE 16
@@ -4709,7 +4709,7 @@ static int NumericValue(int c)
                     /* hide the L for the warning message */
                     *(yyp - 2) = '\0';
                     warning(_("non-integer value %s qualified with L; using numeric value"), yytext);
-                    *(yyp - 2) = c;
+                    *(yyp - 2) = (char)c;
                 }
             }
             asNumeric = 1;
