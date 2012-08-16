@@ -1414,18 +1414,15 @@ SEXP attribute_hidden do_aperm(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, ans = R_NilValue;
-    int OP, n, p, j, type;
+    int type;
     Rboolean NaRm, keepNA;
-#ifdef HAVE_OPENMP
-    int nthreads;
-#endif
 
     checkArity(op, args);
     x = CAR(args);
     args = CDR(args);
-    n = asInteger(CAR(args));
+    int n = asInteger(CAR(args));
     args = CDR(args);
-    p = asInteger(CAR(args));
+    int p = asInteger(CAR(args));
     args = CDR(args);
     NaRm = asLogical(CAR(args));
     if (n == NA_INTEGER || n < 0)
@@ -1436,7 +1433,7 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
         error(_("invalid '%s' argument"), "na.rm");
     keepNA = !NaRm;
 
-    OP = PRIMVAL(op);
+    int OP = PRIMVAL(op);
     switch (type = TYPEOF(x))
     {
     case LGLSXP:
@@ -1453,6 +1450,7 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
     { /* columns */
         PROTECT(ans = allocVector(REALSXP, p));
 #ifdef HAVE_OPENMP
+        int nthreads;
         /* This gives a spurious -Wunused-but-set-variable error */
         if (R_num_math_threads > 0)
             nthreads = R_num_math_threads;
@@ -1464,13 +1462,11 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
         for (int j = 0; j < p; j++)
         {
             int cnt = n, i;
-            int *ix;
-            double *rx;
             LDOUBLE sum = 0.0;
             switch (type)
             {
-            case REALSXP:
-                rx = REAL(x) + (R_xlen_t)n * j;
+            case REALSXP: {
+                double *rx = REAL(x) + (R_xlen_t)n * j;
                 if (keepNA)
                     for (sum = 0., i = 0; i < n; i++)
                         sum += *rx++;
@@ -1486,11 +1482,12 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
                         {
                             sum = NA_REAL;
                             break;
-                        }
+                        } // unused
                 }
                 break;
-            case INTSXP:
-                ix = INTEGER(x) + (R_xlen_t)n * j;
+            }
+            case INTSXP: {
+                int *ix = INTEGER(x) + (R_xlen_t)n * j;
                 for (cnt = 0, sum = 0., i = 0; i < n; i++, ix++)
                     if (*ix != NA_INTEGER)
                     {
@@ -1503,8 +1500,9 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
                         break;
                     }
                 break;
-            case LGLSXP:
-                ix = LOGICAL(x) + (R_xlen_t)n * j;
+            }
+            case LGLSXP: {
+                int *ix = LOGICAL(x) + (R_xlen_t)n * j;
                 for (cnt = 0, sum = 0., i = 0; i < n; i++, ix++)
                     if (*ix != NA_LOGICAL)
                     {
@@ -1517,6 +1515,7 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
                         break;
                     }
                 break;
+            }
             }
             if (OP == 1)
                 sum /= cnt; /* gives NaN for cnt = 0 */
@@ -1542,15 +1541,13 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (!keepNA && OP == 3)
             Cnt = Calloc(n, int);
 
-        double *rx;
-        int *ix;
-        for (j = 0; j < p; j++)
+        for (int j = 0; j < p; j++)
         {
             LDOUBLE *ra = rans;
             switch (type)
             {
-            case REALSXP:
-                rx = REAL(x) + (R_xlen_t)n * j;
+            case REALSXP: {
+                double *rx = REAL(x) + (R_xlen_t)n * j;
                 if (keepNA)
                     for (int i = 0; i < n; i++)
                         *ra++ += *rx++;
@@ -1563,8 +1560,9 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
                                 Cnt[i]++;
                         }
                 break;
-            case INTSXP:
-                ix = INTEGER(x) + (R_xlen_t)n * j;
+            }
+            case INTSXP: {
+                int *ix = INTEGER(x) + (R_xlen_t)n * j;
                 for (int i = 0; i < n; i++, ra++, ix++)
                     if (keepNA)
                     {
@@ -1580,8 +1578,9 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
                             Cnt[i]++;
                     }
                 break;
-            case LGLSXP:
-                ix = LOGICAL(x) + (R_xlen_t)n * j;
+            }
+            case LGLSXP: {
+                int *ix = LOGICAL(x) + (R_xlen_t)n * j;
                 for (int i = 0; i < n; i++, ra++, ix++)
                     if (keepNA)
                     {
@@ -1597,6 +1596,7 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
                             Cnt[i]++;
                     }
                 break;
+            }
             }
         }
         if (OP == 3)
