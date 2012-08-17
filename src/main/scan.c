@@ -680,11 +680,12 @@ static SEXP scanVector(SEXPTYPE type, int maxitems, int maxlines, int flush, SEX
         {
             /* enlarge the vector*/
             bns = ans;
-            blocksize = 2 * blocksize;
-            ans = allocVector(type, blocksize);
-            UNPROTECT(1);
-            PROTECT(ans);
-            copyVector(ans, bns);
+            if (blocksize > INT_MAX / 2) error(_("too many items");
+	    blocksize = 2 * blocksize;
+	    ans = allocVector(type, blocksize);
+	    UNPROTECT(1);
+	    PROTECT(ans);
+	    copyVector(ans, bns);
         }
         buffer = fillBuffer(type, strip, &bch, d, &strBuf);
         if (nprev == n && strlen(buffer) == 0 && ((blskip && bch == '\n') || bch == R_EOF))
@@ -856,17 +857,17 @@ static SEXP scanFrame(SEXP what, int maxitems, int maxlines, int flush, int fill
         }
         if (n == blksize && colsread == 0)
         {
-            blksize = 2 * blksize;
-            for (i = 0; i < nc; i++)
-            {
-                old = VECTOR_ELT(ans, i);
-                if (!isNull(old))
-                {
-                    new = allocVector(TYPEOF(old), blksize);
-                    copyVector(new, old);
-                    SET_VECTOR_ELT(ans, i, new);
-                }
-            }
+            if (blksize > INT_MAX / 2) error(_("too many items");
+	    blksize = 2 * blksize;
+	    for (i = 0; i < nc; i++) {
+                    old = VECTOR_ELT(ans, i);
+                    if (!isNull(old))
+                    {
+                        new = allocVector(TYPEOF(old), blksize);
+                        copyVector(new, old);
+                        SET_VECTOR_ELT(ans, i, new);
+                    }
+	    }
         }
 
         buffer = fillBuffer(TYPEOF(VECTOR_ELT(ans, ii)), strip, &bch, d, &buf);
