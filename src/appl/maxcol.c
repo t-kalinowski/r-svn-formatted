@@ -2,7 +2,7 @@
  *  R : A Computer Language for Statistical Data Analysis
 
  *  Copyright (C) 1994-9 W. N. Venables and B. D. Ripley
- *  Copyright (C) 2007-2007  The R Core Team
+ *  Copyright (C) 2007-12  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -40,7 +40,8 @@
 
 void R_max_col(double *matrix, int *nr, int *nc, int *maxes, int *ties_meth)
 {
-    int r, c, m, n_r = *nr;
+    int r, c, m;
+    size_t n_r = *nr; // for indexing like r + c * n_r
     double a, b, large;
     Rboolean isna, used_random = FALSE, do_rand = *ties_meth == 1;
 
