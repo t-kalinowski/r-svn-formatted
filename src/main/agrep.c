@@ -258,8 +258,7 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
     nmatches = 0;
     for (i = 0; i < n; i++)
     {
-        if ((i + 1) % NINTERRUPT == 0)
-            R_CheckUserInterrupt();
+        //	if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
         if (STRING_ELT(vec, i) == NA_STRING)
         {
             LOGICAL(ind)[i] = 0;
@@ -1010,8 +1009,7 @@ SEXP attribute_hidden do_aregexec(SEXP call, SEXP op, SEXP args, SEXP env)
 
     for (i = 0; i < n; i++)
     {
-        if ((i + 1) % NINTERRUPT == 0)
-            R_CheckUserInterrupt();
+        //	if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
         if (STRING_ELT(vec, i) == NA_STRING)
         {
             PROTECT(matchpos = ScalarInteger(NA_INTEGER));

@@ -731,8 +731,7 @@ static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
     case PLUSOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = INTEGER(s1)[i1];
             x2 = INTEGER(s2)[i2];
             if (x1 == NA_INTEGER || x2 == NA_INTEGER)
@@ -755,8 +754,7 @@ static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
     case MINUSOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = INTEGER(s1)[i1];
             x2 = INTEGER(s2)[i2];
             if (x1 == NA_INTEGER || x2 == NA_INTEGER)
@@ -779,8 +777,7 @@ static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
     case TIMESOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = INTEGER(s1)[i1];
             x2 = INTEGER(s2)[i2];
             if (x1 == NA_INTEGER || x2 == NA_INTEGER)
@@ -803,8 +800,7 @@ static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
     case DIVOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = INTEGER(s1)[i1];
             x2 = INTEGER(s2)[i2];
             if (x1 == NA_INTEGER || x2 == NA_INTEGER)
@@ -816,8 +812,7 @@ static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
     case POWOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             if ((x1 = INTEGER(s1)[i1]) == 1 || (x2 = INTEGER(s2)[i2]) == 0)
                 REAL(ans)[i] = 1.;
             else if (x1 == NA_INTEGER || x2 == NA_INTEGER)
@@ -831,8 +826,7 @@ static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
     case MODOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = INTEGER(s1)[i1];
             x2 = INTEGER(s2)[i2];
             if (x1 == NA_INTEGER || x2 == NA_INTEGER || x2 == 0)
@@ -848,8 +842,7 @@ static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
     case IDIVOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = INTEGER(s1)[i1];
             x2 = INTEGER(s2)[i2];
             /* This had x %/% 0 == 0 prior to 2.14.1, but
@@ -922,8 +915,7 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
             else
                 mod_iterate(n1, n2, i1, i2)
                 {
-                    if ((i + 1) % NINTERRUPT == 0)
-                        R_CheckUserInterrupt();
+                    //		    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
                     REAL(ans)[i] = REAL(s1)[i1] + REAL(s2)[i2];
                 }
         }
@@ -931,8 +923,7 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         {
             mod_iterate(n1, n2, i1, i2)
             {
-                if ((i + 1) % NINTERRUPT == 0)
-                    R_CheckUserInterrupt();
+                //	       if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
                 REAL(ans)[i] = R_INTEGER(s1, i1) + REAL(s2)[i2];
             }
         }
@@ -940,8 +931,7 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         {
             mod_iterate(n1, n2, i1, i2)
             {
-                if ((i + 1) % NINTERRUPT == 0)
-                    R_CheckUserInterrupt();
+                //	       if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
                 REAL(ans)[i] = REAL(s1)[i1] + R_INTEGER(s2, i2);
             }
         }
@@ -967,8 +957,7 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
             else
                 mod_iterate(n1, n2, i1, i2)
                 {
-                    if ((i + 1) % NINTERRUPT == 0)
-                        R_CheckUserInterrupt();
+                    //		    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
                     REAL(ans)[i] = REAL(s1)[i1] - REAL(s2)[i2];
                 }
         }
@@ -976,8 +965,7 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         {
             mod_iterate(n1, n2, i1, i2)
             {
-                if ((i + 1) % NINTERRUPT == 0)
-                    R_CheckUserInterrupt();
+                //	       if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
                 REAL(ans)[i] = R_INTEGER(s1, i1) - REAL(s2)[i2];
             }
         }
@@ -985,8 +973,7 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         {
             mod_iterate(n1, n2, i1, i2)
             {
-                if ((i + 1) % NINTERRUPT == 0)
-                    R_CheckUserInterrupt();
+                //	       if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
                 REAL(ans)[i] = REAL(s1)[i1] - R_INTEGER(s2, i2);
             }
         }
@@ -1012,8 +999,7 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
             else
                 mod_iterate(n1, n2, i1, i2)
                 {
-                    if ((i + 1) % NINTERRUPT == 0)
-                        R_CheckUserInterrupt();
+                    //		    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
                     REAL(ans)[i] = REAL(s1)[i1] * REAL(s2)[i2];
                 }
         }
@@ -1021,8 +1007,7 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         {
             mod_iterate(n1, n2, i1, i2)
             {
-                if ((i + 1) % NINTERRUPT == 0)
-                    R_CheckUserInterrupt();
+                //	       if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
                 REAL(ans)[i] = R_INTEGER(s1, i1) * REAL(s2)[i2];
             }
         }
@@ -1030,8 +1015,7 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         {
             mod_iterate(n1, n2, i1, i2)
             {
-                if ((i + 1) % NINTERRUPT == 0)
-                    R_CheckUserInterrupt();
+                //	       if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
                 REAL(ans)[i] = REAL(s1)[i1] * R_INTEGER(s2, i2);
             }
         }
@@ -1057,8 +1041,7 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
             else
                 mod_iterate(n1, n2, i1, i2)
                 {
-                    if ((i + 1) % NINTERRUPT == 0)
-                        R_CheckUserInterrupt();
+                    //		    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
                     REAL(ans)[i] = REAL(s1)[i1] / REAL(s2)[i2];
                 }
         }
@@ -1066,8 +1049,7 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         {
             mod_iterate(n1, n2, i1, i2)
             {
-                if ((i + 1) % NINTERRUPT == 0)
-                    R_CheckUserInterrupt();
+                //	       if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
                 REAL(ans)[i] = R_INTEGER(s1, i1) / REAL(s2)[i2];
             }
         }
@@ -1075,8 +1057,7 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         {
             mod_iterate(n1, n2, i1, i2)
             {
-                if ((i + 1) % NINTERRUPT == 0)
-                    R_CheckUserInterrupt();
+                //	       if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
                 REAL(ans)[i] = REAL(s1)[i1] / R_INTEGER(s2, i2);
             }
         }
@@ -1102,8 +1083,7 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
             else
                 mod_iterate(n1, n2, i1, i2)
                 {
-                    if ((i + 1) % NINTERRUPT == 0)
-                        R_CheckUserInterrupt();
+                    //	       if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
                     REAL(ans)[i] = R_POW(REAL(s1)[i1], REAL(s2)[i2]);
                 }
         }
@@ -1111,8 +1091,7 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         {
             mod_iterate(n1, n2, i1, i2)
             {
-                if ((i + 1) % NINTERRUPT == 0)
-                    R_CheckUserInterrupt();
+                //	       if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
                 REAL(ans)[i] = R_POW(R_INTEGER(s1, i1), REAL(s2)[i2]);
             }
         }
@@ -1120,8 +1099,7 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         {
             mod_iterate(n1, n2, i1, i2)
             {
-                if ((i + 1) % NINTERRUPT == 0)
-                    R_CheckUserInterrupt();
+                //	       if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
                 REAL(ans)[i] = R_POW(REAL(s1)[i1], R_INTEGER(s2, i2));
             }
         }
@@ -1131,8 +1109,7 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         {
             mod_iterate(n1, n2, i1, i2)
             {
-                if ((i + 1) % NINTERRUPT == 0)
-                    R_CheckUserInterrupt();
+                //	       if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
                 REAL(ans)[i] = myfmod(REAL(s1)[i1], REAL(s2)[i2]);
             }
         }
@@ -1140,8 +1117,7 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         {
             mod_iterate(n1, n2, i1, i2)
             {
-                if ((i + 1) % NINTERRUPT == 0)
-                    R_CheckUserInterrupt();
+                //	       if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
                 REAL(ans)[i] = myfmod(R_INTEGER(s1, i1), REAL(s2)[i2]);
             }
         }
@@ -1149,8 +1125,7 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         {
             mod_iterate(n1, n2, i1, i2)
             {
-                if ((i + 1) % NINTERRUPT == 0)
-                    R_CheckUserInterrupt();
+                //	       if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
                 REAL(ans)[i] = myfmod(REAL(s1)[i1], R_INTEGER(s2, i2));
             }
         }
@@ -1160,8 +1135,7 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         {
             mod_iterate(n1, n2, i1, i2)
             {
-                if ((i + 1) % NINTERRUPT == 0)
-                    R_CheckUserInterrupt();
+                //	       if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
                 REAL(ans)[i] = myfloor(REAL(s1)[i1], REAL(s2)[i2]);
             }
         }
@@ -1169,8 +1143,7 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         {
             mod_iterate(n1, n2, i1, i2)
             {
-                if ((i + 1) % NINTERRUPT == 0)
-                    R_CheckUserInterrupt();
+                //	       if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
                 REAL(ans)[i] = myfloor(R_INTEGER(s1, i1), REAL(s2)[i2]);
             }
         }
@@ -1178,8 +1151,7 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         {
             mod_iterate(n1, n2, i1, i2)
             {
-                if ((i + 1) % NINTERRUPT == 0)
-                    R_CheckUserInterrupt();
+                //	       if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
                 REAL(ans)[i] = myfloor(REAL(s1)[i1], R_INTEGER(s2, i2));
             }
         }
@@ -1433,8 +1405,7 @@ static SEXP math2(SEXP sa, SEXP sb, double (*f)(double, double), SEXP lcall)
 
     mod_iterate(na, nb, ia, ib)
     {
-        if ((i + 1) % NINTERRUPT == 0)
-            R_CheckUserInterrupt();
+        //	if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
         ai = a[ia];
         bi = b[ib];
         if_NA_Math2_set(y[i], ai, bi) else
@@ -1475,8 +1446,7 @@ static SEXP math2_1(SEXP sa, SEXP sb, SEXP sI, double (*f)(double, double, int),
 
     mod_iterate(na, nb, ia, ib)
     {
-        if ((i + 1) % NINTERRUPT == 0)
-            R_CheckUserInterrupt();
+        //	if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
         ai = a[ia];
         bi = b[ib];
         if_NA_Math2_set(y[i], ai, bi) else
@@ -1506,8 +1476,7 @@ static SEXP math2_2(SEXP sa, SEXP sb, SEXP sI1, SEXP sI2, double (*f)(double, do
 
     mod_iterate(na, nb, ia, ib)
     {
-        if ((i + 1) % NINTERRUPT == 0)
-            R_CheckUserInterrupt();
+        //	if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
         ai = a[ia];
         bi = b[ib];
         if_NA_Math2_set(y[i], ai, bi) else
@@ -1551,8 +1520,7 @@ static SEXP math2B(SEXP sa, SEXP sb, double (*f)(double, double, double *), SEXP
 
     mod_iterate(na, nb, ia, ib)
     {
-        if ((i + 1) % NINTERRUPT == 0)
-            R_CheckUserInterrupt();
+        //	if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
         ai = a[ia];
         bi = b[ib];
         if_NA_Math2_set(y[i], ai, bi) else
@@ -1861,8 +1829,7 @@ static SEXP math3_1(SEXP sa, SEXP sb, SEXP sc, SEXP sI, double (*f)(double, doub
 
     mod_iterate3(na, nb, nc, ia, ib, ic)
     {
-        if ((i + 1) % NINTERRUPT == 0)
-            R_CheckUserInterrupt();
+        //	if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
         ai = a[ia];
         bi = b[ib];
         ci = c[ic];
@@ -1893,8 +1860,7 @@ static SEXP math3_2(SEXP sa, SEXP sb, SEXP sc, SEXP sI, SEXP sJ, double (*f)(dou
 
     mod_iterate3(na, nb, nc, ia, ib, ic)
     {
-        if ((i + 1) % NINTERRUPT == 0)
-            R_CheckUserInterrupt();
+        //	if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
         ai = a[ia];
         bi = b[ib];
         ci = c[ic];
@@ -1935,8 +1901,7 @@ static SEXP math3B(SEXP sa, SEXP sb, SEXP sc, double (*f)(double, double, double
 
     mod_iterate3(na, nb, nc, ia, ib, ic)
     {
-        if ((i + 1) % NINTERRUPT == 0)
-            R_CheckUserInterrupt();
+        //	if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
         ai = a[ia];
         bi = b[ib];
         ci = c[ic];
@@ -2135,8 +2100,7 @@ static SEXP math4(SEXP sa, SEXP sb, SEXP sc, SEXP sd, double (*f)(double, double
 
     mod_iterate4(na, nb, nc, nd, ia, ib, ic, id)
     {
-        if ((i + 1) % NINTERRUPT == 0)
-            R_CheckUserInterrupt();
+        //	if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
         ai = a[ia];
         bi = b[ib];
         ci = c[ic];
@@ -2182,8 +2146,7 @@ static SEXP math4_1(SEXP sa, SEXP sb, SEXP sc, SEXP sd, SEXP sI, double (*f)(dou
 
     mod_iterate4(na, nb, nc, nd, ia, ib, ic, id)
     {
-        if ((i + 1) % NINTERRUPT == 0)
-            R_CheckUserInterrupt();
+        //	if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
         ai = a[ia];
         bi = b[ib];
         ci = c[ic];
@@ -2214,8 +2177,7 @@ static SEXP math4_2(SEXP sa, SEXP sb, SEXP sc, SEXP sd, SEXP sI, SEXP sJ,
 
     mod_iterate4(na, nb, nc, nd, ia, ib, ic, id)
     {
-        if ((i + 1) % NINTERRUPT == 0)
-            R_CheckUserInterrupt();
+        //	if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
         ai = a[ia];
         bi = b[ib];
         ci = c[ic];
@@ -2341,8 +2303,7 @@ static SEXP math5(SEXP sa, SEXP sb, SEXP sc, SEXP sd, SEXP se, double (*f)())
 
     mod_iterate5(na, nb, nc, nd, ne, ia, ib, ic, id, ie)
     {
-        if ((i + 1) % NINTERRUPT == 0)
-            R_CheckUserInterrupt();
+        //	if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
         ai = a[ia];
         bi = b[ib];
         ci = c[ic];

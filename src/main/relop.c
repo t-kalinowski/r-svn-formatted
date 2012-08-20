@@ -268,8 +268,7 @@ static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case EQOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = INTEGER(s1)[i1];
             x2 = INTEGER(s2)[i2];
             if (x1 == NA_INTEGER || x2 == NA_INTEGER)
@@ -281,8 +280,7 @@ static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case NEOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = INTEGER(s1)[i1];
             x2 = INTEGER(s2)[i2];
             if (x1 == NA_INTEGER || x2 == NA_INTEGER)
@@ -294,8 +292,7 @@ static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case LTOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = INTEGER(s1)[i1];
             x2 = INTEGER(s2)[i2];
             if (x1 == NA_INTEGER || x2 == NA_INTEGER)
@@ -307,8 +304,7 @@ static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case GTOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = INTEGER(s1)[i1];
             x2 = INTEGER(s2)[i2];
             if (x1 == NA_INTEGER || x2 == NA_INTEGER)
@@ -320,8 +316,7 @@ static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case LEOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = INTEGER(s1)[i1];
             x2 = INTEGER(s2)[i2];
             if (x1 == NA_INTEGER || x2 == NA_INTEGER)
@@ -333,8 +328,7 @@ static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case GEOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = INTEGER(s1)[i1];
             x2 = INTEGER(s2)[i2];
             if (x1 == NA_INTEGER || x2 == NA_INTEGER)
@@ -366,8 +360,7 @@ static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case EQOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
             if (ISNAN(x1) || ISNAN(x2))
@@ -379,8 +372,7 @@ static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case NEOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
             if (ISNAN(x1) || ISNAN(x2))
@@ -392,8 +384,7 @@ static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case LTOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
             if (ISNAN(x1) || ISNAN(x2))
@@ -405,8 +396,7 @@ static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case GTOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
             if (ISNAN(x1) || ISNAN(x2))
@@ -418,8 +408,7 @@ static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case LEOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
             if (ISNAN(x1) || ISNAN(x2))
@@ -431,8 +420,7 @@ static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case GEOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
             if (ISNAN(x1) || ISNAN(x2))
@@ -469,8 +457,7 @@ static SEXP complex_relop(RELOP_TYPE code, SEXP s1, SEXP s2, SEXP call)
     case EQOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = COMPLEX(s1)[i1];
             x2 = COMPLEX(s2)[i2];
             if (ISNAN(x1.r) || ISNAN(x1.i) || ISNAN(x2.r) || ISNAN(x2.i))
@@ -482,8 +469,7 @@ static SEXP complex_relop(RELOP_TYPE code, SEXP s1, SEXP s2, SEXP call)
     case NEOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = COMPLEX(s1)[i1];
             x2 = COMPLEX(s2)[i2];
             if (ISNAN(x1.r) || ISNAN(x1.i) || ISNAN(x2.r) || ISNAN(x2.i))
@@ -519,8 +505,7 @@ static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case EQOP:
         for (i = 0; i < n; i++)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             c1 = STRING_ELT(s1, i % n1);
             c2 = STRING_ELT(s2, i % n2);
             if (c1 == NA_STRING || c2 == NA_STRING)
@@ -532,8 +517,7 @@ static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case NEOP:
         for (i = 0; i < n; i++)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             c1 = STRING_ELT(s1, i % n1);
             c2 = STRING_ELT(s2, i % n2);
             if (c1 == NA_STRING || c2 == NA_STRING)
@@ -545,8 +529,7 @@ static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case LTOP:
         for (i = 0; i < n; i++)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             c1 = STRING_ELT(s1, i % n1);
             c2 = STRING_ELT(s2, i % n2);
             if (c1 == NA_STRING || c2 == NA_STRING)
@@ -567,8 +550,7 @@ static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case GTOP:
         for (i = 0; i < n; i++)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             c1 = STRING_ELT(s1, i % n1);
             c2 = STRING_ELT(s2, i % n2);
             if (c1 == NA_STRING || c2 == NA_STRING)
@@ -589,8 +571,7 @@ static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case LEOP:
         for (i = 0; i < n; i++)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             c1 = STRING_ELT(s1, i % n1);
             c2 = STRING_ELT(s2, i % n2);
             if (c1 == NA_STRING || c2 == NA_STRING)
@@ -611,8 +592,7 @@ static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case GEOP:
         for (i = 0; i < n; i++)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             c1 = STRING_ELT(s1, i % n1);
             c2 = STRING_ELT(s2, i % n2);
             if (c1 == NA_STRING || c2 == NA_STRING)
@@ -653,8 +633,7 @@ static SEXP raw_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case EQOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = RAW(s1)[i1];
             x2 = RAW(s2)[i2];
             LOGICAL(ans)[i] = (x1 == x2);
@@ -663,8 +642,7 @@ static SEXP raw_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case NEOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = RAW(s1)[i1];
             x2 = RAW(s2)[i2];
             LOGICAL(ans)[i] = (x1 != x2);
@@ -673,8 +651,7 @@ static SEXP raw_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case LTOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = RAW(s1)[i1];
             x2 = RAW(s2)[i2];
             LOGICAL(ans)[i] = (x1 < x2);
@@ -683,8 +660,7 @@ static SEXP raw_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case GTOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = RAW(s1)[i1];
             x2 = RAW(s2)[i2];
             LOGICAL(ans)[i] = (x1 > x2);
@@ -693,8 +669,7 @@ static SEXP raw_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case LEOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = RAW(s1)[i1];
             x2 = RAW(s2)[i2];
             LOGICAL(ans)[i] = (x1 <= x2);
@@ -703,8 +678,7 @@ static SEXP raw_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     case GEOP:
         mod_iterate(n1, n2, i1, i2)
         {
-            if ((i + 1) % NINTERRUPT == 0)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = RAW(s1)[i1];
             x2 = RAW(s2)[i2];
             LOGICAL(ans)[i] = (x1 >= x2);

@@ -119,8 +119,7 @@ SEXP Random1(SEXP args)
             int *ix = INTEGER(x);
             for (R_xlen_t i = 0; i < n; i++)
             {
-                if ((i + 1) % NINTERRUPT)
-                    R_CheckUserInterrupt();
+                //		if ((i+1) % NINTERRUPT) R_CheckUserInterrupt();
                 rx = fn(ra[i % na]);
                 if (ISNAN(rx))
                 {
@@ -136,8 +135,7 @@ SEXP Random1(SEXP args)
             double *rx = REAL(x);
             for (R_xlen_t i = 0; i < n; i++)
             {
-                if ((i + 1) % NINTERRUPT)
-                    R_CheckUserInterrupt();
+                //		if ((i+1) % NINTERRUPT) R_CheckUserInterrupt();
                 rx[i] = fn(ra[i % na]);
                 if (ISNAN(rx[i]))
                     naflag = TRUE;
@@ -256,8 +254,7 @@ SEXP Random2(SEXP args)
             errno = 0;
             for (R_xlen_t i = 0; i < n; i++)
             {
-                if ((i + 1) % NINTERRUPT)
-                    R_CheckUserInterrupt();
+                //		if ((i+1) % NINTERRUPT) R_CheckUserInterrupt();
                 rx = fn(ra[i % na], rb[i % nb]);
                 if (ISNAN(rx))
                 {
@@ -274,8 +271,7 @@ SEXP Random2(SEXP args)
             errno = 0;
             for (R_xlen_t i = 0; i < n; i++)
             {
-                if ((i + 1) % NINTERRUPT)
-                    R_CheckUserInterrupt();
+                //		if ((i+1) % NINTERRUPT) R_CheckUserInterrupt();
                 rx[i] = fn(ra[i % na], rb[i % nb]);
                 if (ISNAN(rx[i]))
                     naflag = TRUE;
@@ -352,8 +348,7 @@ SEXP Random3(SEXP args)
         errno = 0;
         for (R_xlen_t i = 0; i < n; i++)
         {
-            if ((i + 1) % NINTERRUPT)
-                R_CheckUserInterrupt();
+            //	    if ((i+1) % NINTERRUPT) R_CheckUserInterrupt();
             rx = fn(ra[i % na], rb[i % nb], rc[i % nc]);
             if (ISNAN(rx))
             {
@@ -399,8 +394,7 @@ SEXP Rmultinom(SEXP args)
     PROTECT(ans = allocMatrix(INTSXP, k, n)); /* k x n : natural for columnwise store */
     for (i = ik = 0; i < n; i++, ik += k)
     {
-        if ((i + 1) % NINTERRUPT)
-            R_CheckUserInterrupt();
+        //	if ((i+1) % NINTERRUPT) R_CheckUserInterrupt();
         rmultinom(size, REAL(prob), k, &INTEGER(ans)[ik]);
     }
     PutRNGstate();
