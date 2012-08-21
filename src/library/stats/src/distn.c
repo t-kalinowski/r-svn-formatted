@@ -137,6 +137,8 @@ static SEXP math2_2(SEXP sa, SEXP sb, SEXP sI1, SEXP sI2, double (*f)(double, do
 
 SEXP distn2(SEXP args)
 {
+    if (!isVectorList(CAR(args)))
+        error("incorrect usage");
     const char *dn = CHAR(STRING_ELT(getListElement(CAR(args), "name"), 0));
     args = CDR(args);
 
@@ -293,6 +295,8 @@ static SEXP math3_2(SEXP sa, SEXP sb, SEXP sc, SEXP sI, SEXP sJ, double (*f)(dou
 
 SEXP distn3(SEXP args)
 {
+    if (!isVectorList(CAR(args)))
+        error("incorrect usage");
     const char *dn = CHAR(STRING_ELT(getListElement(CAR(args), "name"), 0));
     args = CDR(args);
 
@@ -515,6 +519,8 @@ static SEXP math4_2(SEXP sa, SEXP sb, SEXP sc, SEXP sd, SEXP sI, SEXP sJ,
 
 SEXP distn4(SEXP args)
 {
+    if (!isVectorList(CAR(args)))
+        error("incorrect usage");
     const char *dn = CHAR(STRING_ELT(getListElement(CAR(args), "name"), 0));
     args = CDR(args);
 
