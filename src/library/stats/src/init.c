@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2001-2012   The R Core Team.
+ *  Copyright (C) 2001-12   The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -122,7 +122,6 @@ static const R_CMethodDef CEntries[] = {{"chisqsim", (DL_FUNC)&chisqsim, 11, chi
                                         {"Rsm_3", (DL_FUNC)&Rsm_3, 5},
                                         {"Rsm_S", (DL_FUNC)&Rsm_S, 5},
                                         {"tukeyline", (DL_FUNC)&tukeyline, 6},
-                                        {"dblcen", (DL_FUNC)&dblcen, 2},
                                         {"R_distance", (DL_FUNC)&R_distance, 7},
                                         {"acf", (DL_FUNC)&acf, 6},
                                         {"uni_pacf", (DL_FUNC)&uni_pacf, 3},
@@ -131,8 +130,6 @@ static const R_CMethodDef CEntries[] = {{"chisqsim", (DL_FUNC)&chisqsim, 11, chi
                                         {"multi_burg", (DL_FUNC)&multi_burg, 11},
                                         {"multi_yw", (DL_FUNC)&multi_yw, 10},
                                         {"R_intgrt_vec", (DL_FUNC)&R_intgrt_vec, 4},
-                                        {"filter1", (DL_FUNC)&filter1, 7},
-                                        {"filter2", (DL_FUNC)&filter2, 5},
                                         {"R_pp_sum", (DL_FUNC)&R_pp_sum, 4},
                                         {"HoltWinters", (DL_FUNC)&HoltWinters, 17},
                                         {"kmeans_Lloyd", (DL_FUNC)&kmeans_Lloyd, 9},
@@ -206,6 +203,7 @@ static const R_CallMethodDef CallEntries[] = {{"R_cutree", (DL_FUNC)&R_cutree, 2
                                               CALLDEF(filter3, 4),
                                               CALLDEF(filter4, 3),
                                               CALLDEF(lowess, 5),
+                                              CALLDEF(DoubleCentre, 1),
                                               {NULL, NULL, 0}};
 
 static const R_FortranMethodDef FortEntries[] = {FDEF(lowesw),

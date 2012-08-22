@@ -22,28 +22,30 @@
 
 /* Double Centering for Classical Multidimensional Scaling */
 
-void dblcen(double *a, int *na)
+/* NB: this does not duplicate A */
+SEXP DoubleCentre(SEXP A)
 {
-    double sum;
-    int n, i, j;
+    int i, j, n = nrows(A);
+    double *a = REAL(A), sum;
+    size_t N = n;
 
-    n = *na;
     for (i = 0; i < n; i++)
     {
         sum = 0;
         for (j = 0; j < n; j++)
-            sum += a[i + j * n];
+            sum += a[i + j * N];
         sum /= n;
         for (j = 0; j < n; j++)
-            a[i + j * n] -= sum;
+            a[i + j * N] -= sum;
     }
     for (j = 0; j < n; j++)
     {
         sum = 0;
         for (i = 0; i < n; i++)
-            sum += a[i + j * n];
+            sum += a[i + j * N];
         sum /= n;
         for (i = 0; i < n; i++)
-            a[i + j * n] -= sum;
+            a[i + j * N] -= sum;
     }
+    return A;
 }
