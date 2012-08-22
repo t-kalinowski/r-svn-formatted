@@ -355,7 +355,7 @@ static SEXP naokfind(SEXP args, int *len, int *naok, int *dup, DllReference *dll
         }
         else if (TAG(s) == PkgSymbol)
         {
-            dll->obj = CAR(s);
+            dll->obj = CAR(s); // really?
             if (TYPEOF(CAR(s)) == STRSXP)
             {
                 p = translateChar(STRING_ELT(CAR(s), 0));
@@ -385,6 +385,8 @@ static SEXP naokfind(SEXP args, int *len, int *naok, int *dup, DllReference *dll
                     strcpy(dll->DLLname, translateChar(STRING_ELT(VECTOR_ELT(CAR(s), 1), 0)));
                     dll->dll = (HINSTANCE)R_ExternalPtrAddr(VECTOR_ELT(s, 4));
                 }
+                else
+                    error("incorrect type (%s) of PACKAGE argument\n", type2char(TYPEOF(CAR(s))));
             }
         }
         else
