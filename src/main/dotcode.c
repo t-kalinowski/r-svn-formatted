@@ -47,8 +47,6 @@ static SEXP PkgSymbol = NULL;
 static SEXP EncSymbol = NULL;
 static SEXP CSingSymbol = NULL;
 
-/* Global variable that should go. Should actually be doing this in
-   a much more straightforward manner. */
 #include <Rdynpriv.h>
 enum
 {
@@ -219,6 +217,7 @@ static SEXP resolveNativeRoutine(SEXP args, DL_FUNC *fun, R_RegisteredNativeSymb
     }
     if (!*fun && dll.type == FILENAME && !strlen(dll.DLLname))
         errorcall(call, _("PACKAGE = \"\" is invalid"));
+
 #ifdef CHECK_CROSS_USAGE
     if (!*fun && dll.type == FILENAME && strcmp(dll.DLLname, "base"))
     {
