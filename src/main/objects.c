@@ -1110,7 +1110,9 @@ SEXP R_isMethodsDispatchOn(SEXP onOff)
     if (length(onOff) > 0)
     {
         onOffValue = asLogical(onOff);
-        if (onOffValue == FALSE)
+        if (onOffValue == NA_INTEGER)
+            error(_("'onOff' must be TRUE or FALSE"));
+        else if (onOffValue == FALSE)
             R_set_standardGeneric_ptr(0, 0);
         else if (NOT_METHODS_DISPATCH_PTR(old))
         {
@@ -1125,11 +1127,17 @@ SEXP R_isMethodsDispatchOn(SEXP onOff)
     return value;
 }
 
-/* simpler version for internal use */
-
+/* simpler version for internal use, in attrib.c and print.c */
 attribute_hidden Rboolean isMethodsDispatchOn(void)
 {
     return !NOT_METHODS_DISPATCH_PTR(R_standardGeneric_ptr);
+}
+
+attribute_hidden SEXP do_S4on(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    if (length(args) == 0)
+        return ScalarLogical(isMethodsDispatchOn());
+    return R_isMethodsDispatchOn(CAR(args));
 }
 
 static SEXP dispatchNonGeneric(SEXP name, SEXP env, SEXP fdef)
@@ -1659,16 +1667,21 @@ Rboolean attribute_hidden R_seemsOldStyleS4Object(SEXP object)
                                                                                                           : FALSE;
 }
 
+#if 0
 SEXP R_isS4Object(SEXP object)
 {
     /* wanted: return isS4(object) ? mkTrue() : mkFalse(); */
-    return IS_S4_OBJECT(object) ? mkTrue() : mkFalse();
-    ;
+    return IS_S4_OBJECT(object) ? mkTrue() : mkFalse(); ;
 }
+#endif
 
 SEXP R_setS4Object(SEXP object, SEXP onOff, SEXP do_complete)
 {
-    Rboolean flag = asLogical(onOff), complete = asInteger(do_complete);
+    int flag = asLogical(onOff), complete = asInteger(do_complete);
+    if (length(onOff) != 1 || flag == NA_INTEGER)
+        error("invalid '%s' argument", "flag");
+    if (complete == NA_INTEGER)
+        error("invalid '%s' argument", "complete");
     if (flag == IS_S4_OBJECT(object))
         return object;
     else

@@ -53,6 +53,7 @@ static const R_CallMethodDef CallEntries[] = {CALLDEF(R_M_setPrimitiveMethods, 5
                                               CALLDEF(Rf_allocS4Object, 0),
                                               CALLDEF(R_set_method_dispatch, 1),
                                               CALLDEF(R_get_primname, 1),
+                                              CALLDEF(new_object, 1),
                                               {NULL, NULL, 0}};
 
 void
