@@ -2686,10 +2686,12 @@ static int used = 0;
 static char names[NC][PATH_MAX];
 static char *ptr[NC];
 
-SEXP attribute_hidden R_lazyLoadDBflush(SEXP file)
+SEXP attribute_hidden do_lazyLoadDBflush(SEXP call, SEXP op, SEXP args, SEXP env)
 {
+    checkArity(op, args);
+
     int i;
-    const char *cfile = CHAR(STRING_ELT(file, 0));
+    const char *cfile = CHAR(STRING_ELT(CAR(args), 0));
 
     /* fprintf(stderr, "flushing file %s", cfile); */
     for (i = 0; i < used; i++)
@@ -2941,4 +2943,27 @@ SEXP attribute_hidden do_lazyLoadDBfetch(SEXP call, SEXP op, SEXP args, SEXP env
     }
     UNPROTECT(1);
     return val;
+}
+
+SEXP attribute_hidden do_getVarsFromFrame(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    checkArity(op, args);
+    return R_getVarsFromFrame(CAR(args), CADR(args), CADDR(args));
+}
+
+SEXP attribute_hidden do_lazyLoadDBinsertValue(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    checkArity(op, args);
+    SEXP value, file, ascii, compsxp, hook;
+    value = CAR(args);
+    args = CDR(args);
+    file = CAR(args);
+    args = CDR(args);
+    ascii = CAR(args);
+    args = CDR(args);
+    compsxp = CAR(args);
+    args = CDR(args);
+    hook = CAR(args);
+    args = CDR(args);
+    return R_lazyLoadDBinsertValue(value, file, ascii, compsxp, hook);
 }
