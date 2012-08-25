@@ -1645,7 +1645,7 @@ SEXP attribute_hidden do_matchcall(SEXP call, SEXP op, SEXP args, SEXP env)
         memset(REAL(X), 0, (size_t)(N) * sizeof(double));                                                              \
     } while (0)
 
-SEXP attribute_hidden Rrowsum_matrix(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SEXP snarm)
+static SEXP Rrowsum_matrix(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SEXP snarm)
 {
     SEXP matches, ans;
     int i, j, n, p, ng = 0, offset, offsetg, narm;
@@ -1719,7 +1719,7 @@ SEXP attribute_hidden Rrowsum_matrix(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SE
     return ans;
 }
 
-SEXP attribute_hidden Rrowsum_df(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SEXP snarm)
+static SEXP Rrowsum_df(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SEXP snarm)
 {
     SEXP matches, ans, col, xcol;
     int i, j, n, p, ng = 0, narm;
@@ -1791,6 +1791,15 @@ SEXP attribute_hidden Rrowsum_df(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SEXP s
     UNPROTECT(2); /*HashTable, matches*/
     UNPROTECT(1); /*ans*/
     return ans;
+}
+
+SEXP attribute_hidden do_rowsum(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    checkArity(op, args);
+    if (PRIMVAL(op) == 1)
+        return Rrowsum_df(CAR(args), CADR(args), CADDR(args), CADDDR(args), CAD4R(args));
+    else
+        return Rrowsum_matrix(CAR(args), CADR(args), CADDR(args), CADDDR(args), CAD4R(args));
 }
 
 /* returns 1-based duplicate no */
