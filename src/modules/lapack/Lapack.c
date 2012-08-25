@@ -1049,7 +1049,8 @@ static SEXP La_dgesv(SEXP A, SEXP Bin, SEXP tolin)
         UNPROTECT(1);
         PROTECT(B = allocMatrix(REALSXP, n, p));
         SEXP Bindn = getAttrib(Bin, R_DimNamesSymbol);
-        ##This is somewhat odd, but Matrix relies on dropping NULL dimnames if (!isNull(Adn) || !isNull(Bindn))
+        // This is somewhat odd, but Matrix relies on dropping NULL dimnames
+        if (!isNull(Adn) || !isNull(Bindn))
         {
             // rownames(ans) = colnames(A), colnames(ans) = colnames(Bin)
             Bdn = allocVector(VECSXP, 2);
