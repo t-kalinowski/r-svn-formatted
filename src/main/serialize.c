@@ -2876,6 +2876,7 @@ SEXP attribute_hidden R_getVarsFromFrame(SEXP vars, SEXP env, SEXP forcesxp)
     return val;
 }
 
+/* from connections.c */
 SEXP R_compress1(SEXP in);
 SEXP R_decompress1(SEXP in);
 SEXP R_compress2(SEXP in);
@@ -2966,4 +2967,27 @@ SEXP attribute_hidden do_lazyLoadDBinsertValue(SEXP call, SEXP op, SEXP args, SE
     hook = CAR(args);
     args = CDR(args);
     return R_lazyLoadDBinsertValue(value, file, ascii, compsxp, hook);
+}
+
+SEXP attribute_hidden do_serialize(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    checkArity(op, args);
+    if (PRIMVAL(op) == 2)
+        return R_unserialize(CAR(args), CADR(args));
+
+    SEXP object, icon, type, ver, fun;
+    object = CAR(args);
+    args = CDR(args);
+    icon = CAR(args);
+    args = CDR(args);
+    type = CAR(args);
+    args = CDR(args); // ascii or xdr
+    ver = CAR(args);
+    args = CDR(args);
+    fun = CAR(args);
+
+    if (PRIMVAL(op) == 1)
+        return R_serializeb(object, icon, type, ver, fun);
+    else
+        return R_serialize(object, icon, type, ver, fun);
 }
