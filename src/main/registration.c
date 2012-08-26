@@ -66,8 +66,6 @@ void bincode(double *x, int *n, double *breaks, int *nb, int *code, int *right, 
 
 static R_NativePrimitiveArgType bincode_t[] = {REALSXP, INTSXP, REALSXP, INTSXP, INTSXP, LGLSXP, LGLSXP, LGLSXP};
 
-static R_NativePrimitiveArgType R_pretty_t[] = {REALSXP, REALSXP, INTSXP, INTSXP, REALSXP, REALSXP, INTSXP};
-
 static R_NativePrimitiveArgType Rsockconnect_t[] = {INTSXP, STRSXP};
 static R_NativePrimitiveArgType Rsockopen_t[] = {INTSXP};
 static R_NativePrimitiveArgType Rsocklisten_t[] = {INTSXP, STRSXP, INTSXP};
@@ -80,8 +78,7 @@ static R_NativePrimitiveArgType Rsockwrite_t[] = {INTSXP, STRSXP, INTSXP, INTSXP
 #name, (DL_FUNC)&name, sizeof(name##_t) / sizeof(name##_t[0]), name##_t                                        \
     }
 
-static R_CMethodDef cMethods[] = {CDEF(bincode), // remove after R 2.15.2
-                                  CDEF(R_pretty),
+static R_CMethodDef cMethods[] = {CDEF(bincode),                                 // remove after R 2.15.2
                                   {"str_signif", (DL_FUNC)&str_signif, 8, NULL}, // mutable first arg
 
                                   /* Sockets */
