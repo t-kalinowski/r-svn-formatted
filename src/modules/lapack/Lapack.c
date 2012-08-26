@@ -1053,7 +1053,7 @@ static SEXP La_dgesv(SEXP A, SEXP Bin, SEXP tolin)
                 SET_VECTOR_ELT(Bdn, 0, VECTOR_ELT(Adn, 1));
             if (!isNull(Bindn))
                 SET_VECTOR_ELT(Bdn, 1, VECTOR_ELT(Bindn, 1));
-            if (!isNull(VECTOR_ELT(Bdn, 0)) && !isNull(VECTOR_ELT(Bdn, 1)))
+            if (!isNull(VECTOR_ELT(Bdn, 0)) || !isNull(VECTOR_ELT(Bdn, 1)))
                 setAttrib(B, R_DimNamesSymbol, Bdn);
         }
     }
