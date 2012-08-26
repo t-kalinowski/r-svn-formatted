@@ -78,8 +78,7 @@ static R_NativePrimitiveArgType Rsockwrite_t[] = {INTSXP, STRSXP, INTSXP, INTSXP
 #name, (DL_FUNC)&name, sizeof(name##_t) / sizeof(name##_t[0]), name##_t                                        \
     }
 
-static R_CMethodDef cMethods[] = {CDEF(bincode),                                 // remove after R 2.15.2
-                                  {"str_signif", (DL_FUNC)&str_signif, 8, NULL}, // mutable first arg
+static R_CMethodDef cMethods[] = {CDEF(bincode), // remove after R 2.15.2
 
                                   /* Sockets */
                                   CDEF(Rsockconnect),
