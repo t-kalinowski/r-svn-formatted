@@ -78,6 +78,10 @@ int trio_vsnprintf(char *buffer, size_t bufferSize, const char *format, va_list 
 
 extern int R_OutputCon; /* from connections.c */
 
+#ifndef min
+#define min(a, b) (((a) < (b)) ? (a) : (b))
+#endif
+
 #define BUFSIZE 8192 /* used by Rprintf etc */
 
 /* Only if ierr < 0 or not is currently used */
@@ -155,7 +159,7 @@ const char *EncodeInteger(int x, int w)
     if (x == NA_INTEGER)
         snprintf(buff, NB, "%*s", w, CHAR(R_print.na_string));
     else
-        snprintf(buff, NB, "%*d", w, x);
+        snprintf(buff, NB, "%*d", min(w, (NB - 1)), x);
     buff[NB - 1] = '\0';
     return buff;
 }
@@ -209,18 +213,18 @@ const char *EncodeReal(double x, int w, int d, int e, char cdec)
     {
         if (d)
         {
-            sprintf(fmt, "%%#%d.%de", w, d);
+            sprintf(fmt, "%%#%d.%de", min(w, (NB - 1)), d);
             snprintf(buff, NB, fmt, x);
         }
         else
         {
-            sprintf(fmt, "%%%d.%de", w, d);
+            sprintf(fmt, "%%%d.%de", min(w, (NB - 1)), d);
             snprintf(buff, NB, fmt, x);
         }
     }
     else
     { /* e = 0 */
-        sprintf(fmt, "%%%d.%df", w, d);
+        sprintf(fmt, "%%%d.%df", min(w, (NB - 1)), d);
         snprintf(buff, NB, fmt, x);
     }
     buff[NB - 1] = '\0';
@@ -256,18 +260,18 @@ attribute_hidden const char *EncodeReal2(double x, int w, int d, int e)
     {
         if (d)
         {
-            sprintf(fmt, "%%#%d.%de", w, d);
+            sprintf(fmt, "%%#%d.%de", min(w, (NB - 1)), d);
             snprintf(buff, NB, fmt, x);
         }
         else
         {
-            sprintf(fmt, "%%%d.%de", w, d);
+            sprintf(fmt, "%%%d.%de", min(w, (NB - 1)), d);
             snprintf(buff, NB, fmt, x);
         }
     }
     else
     { /* e = 0 */
-        sprintf(fmt, "%%#%d.%df", w, d);
+        sprintf(fmt, "%%#%d.%df", min(w, (NB - 1)), d);
         snprintf(buff, NB, fmt, x);
     }
     buff[NB - 1] = '\0';
