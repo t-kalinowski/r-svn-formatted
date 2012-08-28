@@ -74,6 +74,7 @@ static char La_rcond_type(const char *typstr)
 static SEXP La_svd(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP vt)
 {
     int *xdims, n, p, lwork, info = 0;
+    SEXP val, nm;
 
     if (!(isString(jobu) && isString(jobv)))
         error(_("'jobu' and 'jobv' must be character strings"));
@@ -114,8 +115,8 @@ static SEXP La_svd(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP vt)
             error(_("error code %d from Lapack routine '%s'"), info, "dgesdd");
     }
 
-    SEXP val = PROTECT(allocVector(VECSXP, 3));
-    SEXP nm = PROTECT(allocVector(STRSXP, 3));
+    val = PROTECT(allocVector(VECSXP, 3));
+    nm = PROTECT(allocVector(STRSXP, 3));
     SET_STRING_ELT(nm, 0, mkChar("d"));
     SET_STRING_ELT(nm, 1, mkChar("u"));
     SET_STRING_ELT(nm, 2, mkChar("vt"));
@@ -132,7 +133,7 @@ static SEXP La_rs(SEXP x, SEXP only_values)
 {
     int *xdims, n, lwork, info = 0, ov;
     char jobv[1], uplo[1], range[1];
-    SEXP values, z = R_NilValue;
+    SEXP values, ret, nm, z = R_NilValue;
     double *work, *rx, *rvalues, tmp, *rz = NULL;
     int liwork, *iwork, itmp, m;
     double vl = 0.0, vu = 0.0, abstol = 0.0;
@@ -185,7 +186,6 @@ static SEXP La_rs(SEXP x, SEXP only_values)
     if (info != 0)
         error(_("error code %d from Lapack routine '%s'"), info, "dsyevr");
 
-    SEXP ret, nm;
     if (!ov)
     {
         ret = PROTECT(allocVector(VECSXP, 2));
@@ -242,6 +242,7 @@ static SEXP La_rg(SEXP x, SEXP only_values)
     int i, n, lwork, info, *xdims, ov;
     double *work, *wR, *wI, *left, *right, *xvals, tmp;
     char jobVL[1], jobVR[1];
+    SEXP ret, nm, val;
 
     xdims = INTEGER(coerceVector(getAttrib(x, R_DimSymbol), INTSXP));
     n = xdims[0];
@@ -283,27 +284,28 @@ static SEXP La_rg(SEXP x, SEXP only_values)
             complexValues = TRUE;
             break;
         }
-    SEXP ret = PROTECT(allocVector(VECSXP, 2));
-    SEXP nm = PROTECT(allocVector(STRSXP, 2));
+    ret = PROTECT(allocVector(VECSXP, 2));
+    nm = PROTECT(allocVector(STRSXP, 2));
     SET_STRING_ELT(nm, 0, mkChar("values"));
     SET_STRING_ELT(nm, 1, mkChar("vectors"));
     setAttrib(ret, R_NamesSymbol, nm);
     SET_VECTOR_ELT(ret, 1, R_NilValue);
     if (complexValues)
     {
-        SEXP val = allocVector(CPLXSXP, n);
+        val = allocVector(CPLXSXP, n);
         for (i = 0; i < n; i++)
         {
             COMPLEX(val)[i].r = wR[i];
             COMPLEX(val)[i].i = wI[i];
         }
         SET_VECTOR_ELT(ret, 0, val);
+
         if (vectors)
             SET_VECTOR_ELT(ret, 1, unscramble(wI, n, right));
     }
     else
     {
-        SEXP val = allocVector(REALSXP, n);
+        val = allocVector(REALSXP, n);
         for (i = 0; i < n; i++)
             REAL(val)[i] = wR[i];
         SET_VECTOR_ELT(ret, 0, val);
@@ -322,7 +324,7 @@ static SEXP La_rg(SEXP x, SEXP only_values)
 /* norm() except for 2-norm */
 static SEXP La_dlange(SEXP A, SEXP type)
 {
-    SEXP x;
+    SEXP x, val;
     int *xdims, m, n, nprot = 0;
     double *work = NULL;
     char typNorm[] = {'\0', '\0'};
@@ -348,7 +350,7 @@ static SEXP La_dlange(SEXP A, SEXP type)
 
     typNorm[0] = La_norm_type(CHAR(asChar(type)));
 
-    SEXP val = PROTECT(allocVector(REALSXP, 1));
+    val = PROTECT(allocVector(REALSXP, 1));
     nprot++;
     if (*typNorm == 'I')
         work = (double *)R_alloc(m, sizeof(double));
@@ -633,21 +635,20 @@ static SEXP La_qr_cmplx(SEXP Ain)
     int i, m, n, *Adims, info, lwork;
     Rcomplex *work, tmp;
     double *rwork;
+    SEXP val, nm, jpvt, tau, rank, A;
 
     if (!(isMatrix(Ain) && isComplex(Ain)))
         error(_("'a' must be a complex matrix"));
-    SEXP Adn = getAttrib(Ain, R_DimNamesSymbol);
-    Adims = INTEGER(coerceVector(getAttrib(Ain, R_DimSymbol), INTSXP));
+    PROTECT(A = duplicate(Ain));
+    Adims = INTEGER(coerceVector(getAttrib(A, R_DimSymbol), INTSXP));
     m = Adims[0];
     n = Adims[1];
-    SEXP A = PROTECT(allocMatrix(CPLXSXP, m, n));
-    Memcpy(COMPLEX(A), COMPLEX(Ain), (size_t)m * n);
     rwork = (double *)R_alloc(2 * (size_t)n, sizeof(double));
 
-    SEXP jpvt = PROTECT(allocVector(INTSXP, n));
+    jpvt = PROTECT(allocVector(INTSXP, n));
     for (i = 0; i < n; i++)
         INTEGER(jpvt)[i] = 0;
-    SEXP tau = PROTECT(allocVector(CPLXSXP, m < n ? m : n));
+    tau = PROTECT(allocVector(CPLXSXP, m < n ? m : n));
     lwork = -1;
     F77_CALL(zgeqp3)(&m, &n, COMPLEX(A), &m, INTEGER(jpvt), COMPLEX(tau), &tmp, &lwork, rwork, &info);
     if (info != 0)
@@ -657,30 +658,19 @@ static SEXP La_qr_cmplx(SEXP Ain)
     F77_CALL(zgeqp3)(&m, &n, COMPLEX(A), &m, INTEGER(jpvt), COMPLEX(tau), work, &lwork, rwork, &info);
     if (info != 0)
         error(_("error code %d from Lapack routine '%s'"), info, "zgeqp3");
-    SEXP val = PROTECT(allocVector(VECSXP, 4));
-    SEXP nm = PROTECT(allocVector(STRSXP, 4));
+    val = PROTECT(allocVector(VECSXP, 4));
+    nm = PROTECT(allocVector(STRSXP, 4));
+    rank = PROTECT(ScalarInteger(m < n ? m : n));
     SET_STRING_ELT(nm, 0, mkChar("qr"));
     SET_STRING_ELT(nm, 1, mkChar("rank"));
     SET_STRING_ELT(nm, 2, mkChar("qraux"));
     SET_STRING_ELT(nm, 3, mkChar("pivot"));
     setAttrib(val, R_NamesSymbol, nm);
-    // Fix up dimnames(A)
-    if (!isNull(Adn))
-    {
-        SEXP Adn2 = duplicate(Adn);
-        SEXP cn = VECTOR_ELT(Adn, 1), cn2 = VECTOR_ELT(Adn2, 1);
-        if (!isNull(cn))
-        { // pivot them
-            for (int j = 0; j < n; j++)
-                SET_STRING_ELT(cn2, j, STRING_ELT(cn, INTEGER(jpvt)[j] - 1));
-        }
-        setAttrib(A, R_DimNamesSymbol, Adn2);
-    }
     SET_VECTOR_ELT(val, 0, A);
-    SET_VECTOR_ELT(val, 1, ScalarInteger(m < n ? m : n));
+    SET_VECTOR_ELT(val, 1, rank);
     SET_VECTOR_ELT(val, 2, tau);
     SET_VECTOR_ELT(val, 3, jpvt);
-    UNPROTECT(5);
+    UNPROTECT(6);
     return val;
 #else
     error(_("Fortran complex functions are not available on this platform"));
@@ -693,14 +683,14 @@ static SEXP qr_coef_cmplx(SEXP Q, SEXP Bin)
 {
 #ifdef HAVE_FORTRAN_DOUBLE_COMPLEX
     int n, nrhs, lwork, info, k, *Bdims, *Qdims;
-    SEXP qr = VECTOR_ELT(Q, 0), tau = VECTOR_ELT(Q, 2);
+    SEXP B, qr = VECTOR_ELT(Q, 0), tau = VECTOR_ELT(Q, 2);
     Rcomplex *work, tmp;
 
     k = LENGTH(tau);
     if (!(isMatrix(Bin) && isComplex(Bin)))
         error(_("'b' must be a complex matrix"));
 
-    SEXP B = PROTECT(duplicate(Bin));
+    PROTECT(B = duplicate(Bin));
     Qdims = INTEGER(coerceVector(getAttrib(qr, R_DimSymbol), INTSXP));
     n = Qdims[0];
     Bdims = INTEGER(coerceVector(getAttrib(Bin, R_DimSymbol), INTSXP));
@@ -732,7 +722,7 @@ static SEXP qr_qy_cmplx(SEXP Q, SEXP Bin, SEXP trans)
 {
 #ifdef HAVE_FORTRAN_DOUBLE_COMPLEX
     int n, nrhs, lwork, info, k, *Bdims, *Qdims, tr;
-    SEXP qr = VECTOR_ELT(Q, 0), tau = VECTOR_ELT(Q, 2);
+    SEXP B, qr = VECTOR_ELT(Q, 0), tau = VECTOR_ELT(Q, 2);
     Rcomplex *work, tmp;
 
     k = LENGTH(tau);
@@ -742,7 +732,7 @@ static SEXP qr_qy_cmplx(SEXP Q, SEXP Bin, SEXP trans)
     if (tr == NA_LOGICAL)
         error(_("invalid '%s' argument"), "trans");
 
-    SEXP B = PROTECT(duplicate(Bin));
+    PROTECT(B = duplicate(Bin));
     Qdims = INTEGER(coerceVector(getAttrib(qr, R_DimSymbol), INTSXP));
     n = Qdims[0];
     Bdims = INTEGER(coerceVector(getAttrib(B, R_DimSymbol), INTSXP));
@@ -771,6 +761,8 @@ static SEXP qr_qy_cmplx(SEXP Q, SEXP Bin, SEXP trans)
 static SEXP La_svd_cmplx(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v)
 {
 #ifdef HAVE_FORTRAN_DOUBLE_COMPLEX
+    SEXP val, nm;
+
     if (!(isString(jobu) && isString(jobv)))
         error(_("'jobu' and 'jobv' must be character strings"));
     int *xdims = INTEGER(coerceVector(getAttrib(x, R_DimSymbol), INTSXP));
@@ -810,8 +802,8 @@ static SEXP La_svd_cmplx(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v)
      &ldv, work, &lwork, rwork, &info);
     if (info != 0)
         error(_("error code %d from Lapack routine '%s'"), info, "zgesvd");
-    SEXP val = PROTECT(allocVector(VECSXP, 3));
-    SEXP nm = PROTECT(allocVector(STRSXP, 3));
+    val = PROTECT(allocVector(VECSXP, 3));
+    nm = PROTECT(allocVector(STRSXP, 3));
     SET_STRING_ELT(nm, 0, mkChar("d"));
     SET_STRING_ELT(nm, 1, mkChar("u"));
     SET_STRING_ELT(nm, 2, mkChar("vt"));
@@ -833,6 +825,7 @@ static SEXP La_rs_cmplx(SEXP xin, SEXP only_values)
 #ifdef HAVE_FORTRAN_DOUBLE_COMPLEX
     int *xdims, n, lwork, info, ov;
     char jobv[1], uplo[1];
+    SEXP values, ret, nm, x;
     Rcomplex *work, *rx, tmp;
     double *rwork, *rvalues;
 
@@ -849,10 +842,10 @@ static SEXP La_rs_cmplx(SEXP xin, SEXP only_values)
     else
         jobv[0] = 'V';
 
-    SEXP x = PROTECT(allocMatrix(CPLXSXP, n, n));
+    PROTECT(x = allocMatrix(CPLXSXP, n, n));
     rx = COMPLEX(x);
     Memcpy(rx, COMPLEX(xin), (size_t)n * n);
-    SEXP values = PROTECT(allocVector(REALSXP, n));
+    PROTECT(values = allocVector(REALSXP, n));
     rvalues = REAL(values);
 
     rwork = (double *)R_alloc((3 * (size_t)n - 2) > 1 ? 3 * (size_t)n - 2 : 1, sizeof(double));
@@ -866,7 +859,6 @@ static SEXP La_rs_cmplx(SEXP xin, SEXP only_values)
     F77_CALL(zheev)(jobv, uplo, &n, rx, &n, rvalues, work, &lwork, rwork, &info);
     if (info != 0)
         error(_("error code %d from Lapack routine '%s'"), info, "zheev");
-    SEXP ret, nm;
     if (!ov)
     {
         ret = PROTECT(allocVector(VECSXP, 2));
@@ -1141,20 +1133,19 @@ static SEXP La_qr(SEXP Ain)
 {
     int i, m, n, *Adims, info, lwork;
     double *work, tmp;
+    SEXP val, nm, jpvt, tau, rank, A;
 
     if (!(isMatrix(Ain) && isReal(Ain)))
         error(_("'a' must be a numeric matrix"));
-    SEXP Adn = getAttrib(Ain, R_DimNamesSymbol);
-    Adims = INTEGER(coerceVector(getAttrib(Ain, R_DimSymbol), INTSXP));
+    PROTECT(A = duplicate(Ain));
+    Adims = INTEGER(coerceVector(getAttrib(A, R_DimSymbol), INTSXP));
     m = Adims[0];
     n = Adims[1];
-    SEXP A = PROTECT(allocMatrix(REALSXP, m, n));
-    Memcpy(REAL(A), REAL(Ain), (size_t)m * n);
 
-    SEXP jpvt = PROTECT(allocVector(INTSXP, n));
+    jpvt = PROTECT(allocVector(INTSXP, n));
     for (i = 0; i < n; i++)
         INTEGER(jpvt)[i] = 0;
-    SEXP tau = PROTECT(allocVector(REALSXP, m < n ? m : n));
+    tau = PROTECT(allocVector(REALSXP, m < n ? m : n));
     lwork = -1;
     F77_CALL(dgeqp3)(&m, &n, REAL(A), &m, INTEGER(jpvt), REAL(tau), &tmp, &lwork, &info);
     if (info < 0)
@@ -1164,30 +1155,19 @@ static SEXP La_qr(SEXP Ain)
     F77_CALL(dgeqp3)(&m, &n, REAL(A), &m, INTEGER(jpvt), REAL(tau), work, &lwork, &info);
     if (info < 0)
         error(_("error code %d from Lapack routine '%s'"), info, "dgeqp3");
-    SEXP val = PROTECT(allocVector(VECSXP, 4));
-    SEXP nm = PROTECT(allocVector(STRSXP, 4));
+    val = PROTECT(allocVector(VECSXP, 4));
+    nm = PROTECT(allocVector(STRSXP, 4));
+    rank = PROTECT(ScalarInteger(m < n ? m : n));
     SET_STRING_ELT(nm, 0, mkChar("qr"));
     SET_STRING_ELT(nm, 1, mkChar("rank"));
     SET_STRING_ELT(nm, 2, mkChar("qraux"));
     SET_STRING_ELT(nm, 3, mkChar("pivot"));
     setAttrib(val, R_NamesSymbol, nm);
-    // Fix up dimnames(A)
-    if (!isNull(Adn))
-    {
-        SEXP Adn2 = duplicate(Adn);
-        SEXP cn = VECTOR_ELT(Adn, 1), cn2 = VECTOR_ELT(Adn2, 1);
-        if (!isNull(cn))
-        { // pivot them
-            for (int j = 0; j < n; j++)
-                SET_STRING_ELT(cn2, j, STRING_ELT(cn, INTEGER(jpvt)[j] - 1));
-        }
-        setAttrib(A, R_DimNamesSymbol, Adn2);
-    }
     SET_VECTOR_ELT(val, 0, A);
-    SET_VECTOR_ELT(val, 1, ScalarInteger(m < n ? m : n));
+    SET_VECTOR_ELT(val, 1, rank);
     SET_VECTOR_ELT(val, 2, tau);
     SET_VECTOR_ELT(val, 3, jpvt);
-    UNPROTECT(5);
+    UNPROTECT(6);
     return val;
 }
 
@@ -1195,14 +1175,14 @@ static SEXP La_qr(SEXP Ain)
 static SEXP qr_coef_real(SEXP Q, SEXP Bin)
 {
     int n, nrhs, lwork, info, k, *Bdims, *Qdims;
-    SEXP qr = VECTOR_ELT(Q, 0), tau = VECTOR_ELT(Q, 2);
+    SEXP B, qr = VECTOR_ELT(Q, 0), tau = VECTOR_ELT(Q, 2);
     double *work, tmp;
 
     k = LENGTH(tau);
     if (!(isMatrix(Bin) && isReal(Bin)))
         error(_("'b' must be a numeric matrix"));
 
-    SEXP B = PROTECT(duplicate(Bin));
+    PROTECT(B = duplicate(Bin));
     Qdims = INTEGER(coerceVector(getAttrib(qr, R_DimSymbol), INTSXP));
     n = Qdims[0];
     Bdims = INTEGER(coerceVector(getAttrib(B, R_DimSymbol), INTSXP));
@@ -1229,7 +1209,7 @@ static SEXP qr_coef_real(SEXP Q, SEXP Bin)
 static SEXP qr_qy_real(SEXP Q, SEXP Bin, SEXP trans)
 {
     int n, nrhs, lwork, info, k, *Bdims, *Qdims, tr;
-    SEXP qr = VECTOR_ELT(Q, 0), tau = VECTOR_ELT(Q, 2);
+    SEXP B, qr = VECTOR_ELT(Q, 0), tau = VECTOR_ELT(Q, 2);
     double *work, tmp;
 
     k = LENGTH(tau);
@@ -1239,7 +1219,7 @@ static SEXP qr_qy_real(SEXP Q, SEXP Bin, SEXP trans)
     if (tr == NA_LOGICAL)
         error(_("invalid '%s' argument"), "trans");
 
-    SEXP B = PROTECT(duplicate(Bin));
+    PROTECT(B = duplicate(Bin));
     Qdims = INTEGER(coerceVector(getAttrib(qr, R_DimSymbol), INTSXP));
     n = Qdims[0];
     Bdims = INTEGER(coerceVector(getAttrib(B, R_DimSymbol), INTSXP));
@@ -1264,13 +1244,14 @@ static SEXP det_ge_real(SEXP Ain, SEXP logarithm)
 {
     int i, n, *Adims, info, *jpvt, sign, useLog;
     double modulus = 0.0; /* -Wall */
+    SEXP val, nm, A;
 
     if (!(isMatrix(Ain) && isReal(Ain)))
         error(_("'a' must be a numeric matrix"));
     useLog = asLogical(logarithm);
     if (useLog == NA_LOGICAL)
         error(_("argument 'logarithm' must be logical"));
-    SEXP A = PROTECT(duplicate(Ain));
+    PROTECT(A = duplicate(Ain));
     Adims = INTEGER(coerceVector(getAttrib(A, R_DimSymbol), INTSXP));
     n = Adims[0];
     if (Adims[1] != n)
@@ -1321,8 +1302,8 @@ static SEXP det_ge_real(SEXP Ain, SEXP logarithm)
             }
         }
     }
-    SEXP val = PROTECT(allocVector(VECSXP, 2));
-    SEXP nm = PROTECT(allocVector(STRSXP, 2));
+    val = PROTECT(allocVector(VECSXP, 2));
+    nm = PROTECT(allocVector(STRSXP, 2));
     SET_STRING_ELT(nm, 0, mkChar("modulus"));
     SET_STRING_ELT(nm, 1, mkChar("sign"));
     setAttrib(val, R_NamesSymbol, nm);
