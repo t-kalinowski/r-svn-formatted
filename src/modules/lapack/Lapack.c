@@ -18,9 +18,7 @@
  *  http://www.r-project.org/Licenses/
  */
 
-/* <UTF8> All chars are ASCII */
-
-/* Interface routines, callable from R using .Call, for Lapack code */
+/* Interface routines, callable from R using .Internal, for Lapack code */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -72,6 +70,7 @@ static char La_rcond_type(const char *typstr)
     return typup; /* 'O' or 'I' */
 }
 
+/* La.svd, called from svd */
 static SEXP La_svd(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP vt)
 {
     int *xdims, n, p, lwork, info = 0;
@@ -129,6 +128,7 @@ static SEXP La_svd(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP vt)
     return val;
 }
 
+/* Real, symmetric case of eigen */
 static SEXP La_rs(SEXP x, SEXP only_values)
 {
     int *xdims, n, lwork, info = 0, ov;
@@ -235,6 +235,7 @@ static SEXP unscramble(const double *imaginary, int n, const double *vecs)
     return s;
 }
 
+/* Real, general case of eigen */
 static SEXP La_rg(SEXP x, SEXP only_values)
 {
     Rboolean vectors, complexValues;
@@ -320,6 +321,7 @@ static SEXP La_rg(SEXP x, SEXP only_values)
     return ret;
 }
 
+/* norm() except for 2-norm */
 static SEXP La_dlange(SEXP A, SEXP type)
 {
     SEXP x, val;
@@ -359,6 +361,7 @@ static SEXP La_dlange(SEXP A, SEXP type)
 }
 
 /* ------------------------------------------------------------ */
+/* Real case of rcond, for general matrices */
 static SEXP La_dgecon(SEXP A, SEXP norm)
 {
     SEXP x, val;
@@ -420,6 +423,7 @@ static SEXP La_dgecon(SEXP A, SEXP norm)
     return val;
 }
 
+/* Real case of kappa.tri (and also rcond for a triangular matrix) */
 static SEXP La_dtrcon(SEXP A, SEXP norm)
 {
     SEXP x, val;
@@ -463,6 +467,7 @@ static SEXP La_dtrcon(SEXP A, SEXP norm)
     return val;
 }
 
+/* Complex case of rcond, for general matrices */
 static SEXP La_zgecon(SEXP A, SEXP norm)
 {
 #ifdef HAVE_FORTRAN_DOUBLE_COMPLEX
@@ -516,6 +521,7 @@ static SEXP La_zgecon(SEXP A, SEXP norm)
 #endif
 }
 
+/* Complex case of kappa.tri (and also rcond for a triangular matrix) */
 static SEXP La_ztrcon(SEXP A, SEXP norm)
 {
 #ifdef HAVE_FORTRAN_DOUBLE_COMPLEX
@@ -550,8 +556,8 @@ static SEXP La_ztrcon(SEXP A, SEXP norm)
 #endif
 }
 
-// see the comments in La_dgesv
-static SEXP La_zgesv(SEXP A, SEXP Bin)
+/* Complex case of solve.default: see the comments in La_solve */
+static SEXP La_solve_cmplx(SEXP A, SEXP Bin)
 {
 #ifdef HAVE_FORTRAN_DOUBLE_COMPLEX
     int n, p, info, *ipiv, *Adims, *Bdims;
@@ -622,7 +628,8 @@ static SEXP La_zgesv(SEXP A, SEXP Bin)
 #endif
 }
 
-static SEXP La_zgeqp3(SEXP Ain)
+/* Complex case of qr.default */
+static SEXP La_qr_cmplx(SEXP Ain)
 {
 #ifdef HAVE_FORTRAN_DOUBLE_COMPLEX
     int i, m, n, *Adims, info, lwork;
@@ -632,10 +639,12 @@ static SEXP La_zgeqp3(SEXP Ain)
 
     if (!(isMatrix(Ain) && isComplex(Ain)))
         error(_("'a' must be a complex matrix"));
-    PROTECT(A = duplicate(Ain));
+    SEXP Adn = getAttrib(Ain, R_DimNamesSymbol);
     Adims = INTEGER(coerceVector(getAttrib(A, R_DimSymbol), INTSXP));
     m = Adims[0];
     n = Adims[1];
+    PROTECT(A = allocMatrix(CPLXSXP, m, n));
+    Memcpy(COMPLEX(A), COMPLEX(Ain), (size_t)m * n);
     rwork = (double *)R_alloc(2 * (size_t)n, sizeof(double));
 
     jpvt = PROTECT(allocVector(INTSXP, n));
@@ -659,6 +668,18 @@ static SEXP La_zgeqp3(SEXP Ain)
     SET_STRING_ELT(nm, 2, mkChar("qraux"));
     SET_STRING_ELT(nm, 3, mkChar("pivot"));
     setAttrib(val, R_NamesSymbol, nm);
+    // Fix up dimnames(A)
+    if (!isNull(Adn))
+    {
+        SEXP Adn2 = duplicate(Adn);
+        SEXP cn = VECTOR_ELT(Adn, 1), cn2 = VECTOR_ELT(Adn2, 1);
+        if (!isNull(cn))
+        { // pivot them
+            for (int j = 0; j < n; j++)
+                SET_STRING_ELT(cn2, j, STRING_ELT(cn, INTEGER(jpvt)[j] - 1));
+        }
+        setAttrib(A, R_DimNamesSymbol, Adn2);
+    }
     SET_VECTOR_ELT(val, 0, A);
     SET_VECTOR_ELT(val, 1, rank);
     SET_VECTOR_ELT(val, 2, tau);
@@ -671,6 +692,7 @@ static SEXP La_zgeqp3(SEXP Ain)
 #endif
 }
 
+/* Complex case of qr_coef */
 static SEXP qr_coef_cmplx(SEXP Q, SEXP Bin)
 {
 #ifdef HAVE_FORTRAN_DOUBLE_COMPLEX
@@ -709,6 +731,7 @@ static SEXP qr_coef_cmplx(SEXP Q, SEXP Bin)
 #endif
 }
 
+/* Complex case of qr.qy and qr.qty */
 static SEXP qr_qy_cmplx(SEXP Q, SEXP Bin, SEXP trans)
 {
 #ifdef HAVE_FORTRAN_DOUBLE_COMPLEX
@@ -810,6 +833,7 @@ static SEXP La_svd_cmplx(SEXP jobu, SEXP jobv, SEXP x, SEXP s, SEXP u, SEXP v)
 #endif
 }
 
+/* Complex, symmetric case of eigen */
 static SEXP La_rs_cmplx(SEXP xin, SEXP only_values)
 {
 #ifdef HAVE_FORTRAN_DOUBLE_COMPLEX
@@ -872,6 +896,7 @@ static SEXP La_rs_cmplx(SEXP xin, SEXP only_values)
 #endif
 }
 
+/* Complex, general case of eigen */
 static SEXP La_rg_cmplx(SEXP x, SEXP only_values)
 {
 #ifdef HAVE_FORTRAN_DOUBLE_COMPLEX
@@ -1040,7 +1065,8 @@ static SEXP La_chol2inv(SEXP A, SEXP size)
 
 /* ------------------------------------------------------------ */
 
-static SEXP La_dgesv(SEXP A, SEXP Bin, SEXP tolin)
+/* Real case of solve.default */
+static SEXP La_solve(SEXP A, SEXP Bin, SEXP tolin)
 {
     int n, p, info, *ipiv, *Adims, *Bdims;
     double *avals, anorm, rcond, tol = asReal(tolin), *work;
@@ -1116,7 +1142,8 @@ static SEXP La_dgesv(SEXP A, SEXP Bin, SEXP tolin)
     return B;
 }
 
-static SEXP La_dgeqp3(SEXP Ain)
+/* Real case of qr.default */
+static SEXP La_qr(SEXP Ain)
 {
     int i, m, n, *Adims, info, lwork;
     double *work, tmp;
@@ -1124,10 +1151,12 @@ static SEXP La_dgeqp3(SEXP Ain)
 
     if (!(isMatrix(Ain) && isReal(Ain)))
         error(_("'a' must be a numeric matrix"));
-    PROTECT(A = duplicate(Ain));
-    Adims = INTEGER(coerceVector(getAttrib(A, R_DimSymbol), INTSXP));
+    SEXP Adn = getAttrib(Ain, R_DimNamesSymbol);
+    Adims = INTEGER(coerceVector(getAttrib(Ain, R_DimSymbol), INTSXP));
     m = Adims[0];
     n = Adims[1];
+    PROTECT(A = allocMatrix(REALSXP, m, n));
+    Memcpy(REAL(A), REAL(Ain), (size_t)m * n);
 
     jpvt = PROTECT(allocVector(INTSXP, n));
     for (i = 0; i < n; i++)
@@ -1150,6 +1179,18 @@ static SEXP La_dgeqp3(SEXP Ain)
     SET_STRING_ELT(nm, 2, mkChar("qraux"));
     SET_STRING_ELT(nm, 3, mkChar("pivot"));
     setAttrib(val, R_NamesSymbol, nm);
+    // Fix up dimnames(A)
+    if (!isNull(Adn))
+    {
+        SEXP Adn2 = duplicate(Adn);
+        SEXP cn = VECTOR_ELT(Adn, 1), cn2 = VECTOR_ELT(Adn2, 1);
+        if (!isNull(cn))
+        { // pivot them
+            for (int j = 0; j < n; j++)
+                SET_STRING_ELT(cn2, j, STRING_ELT(cn, INTEGER(jpvt)[j] - 1));
+        }
+        setAttrib(A, R_DimNamesSymbol, Adn2);
+    }
     SET_VECTOR_ELT(val, 0, A);
     SET_VECTOR_ELT(val, 1, rank);
     SET_VECTOR_ELT(val, 2, tau);
@@ -1158,6 +1199,7 @@ static SEXP La_dgeqp3(SEXP Ain)
     return val;
 }
 
+/* Real case of qr.coef */
 static SEXP qr_coef_real(SEXP Q, SEXP Bin)
 {
     int n, nrhs, lwork, info, k, *Bdims, *Qdims;
@@ -1191,6 +1233,7 @@ static SEXP qr_coef_real(SEXP Q, SEXP Bin)
     return B;
 }
 
+/* Real case of qr.qy and qr.aty */
 static SEXP qr_qy_real(SEXP Q, SEXP Bin, SEXP trans)
 {
     int n, nrhs, lwork, info, k, *Bdims, *Qdims, tr;
@@ -1307,7 +1350,7 @@ static SEXP mod_do_lapack(SEXP call, SEXP op, SEXP args, SEXP env)
     switch (PRIMVAL(op))
     {
     case 0:
-        ans = La_zgeqp3(CAR(args));
+        ans = La_qr_cmplx(CAR(args));
         break;
     case 1:
         ans = La_rs(CAR(args), CADR(args));
@@ -1343,14 +1386,14 @@ static SEXP mod_do_lapack(SEXP call, SEXP op, SEXP args, SEXP env)
         ans = La_ztrcon(CAR(args), CADR(args));
         break;
     case 11:
-        ans = La_zgesv(CAR(args), CADR(args));
+        ans = La_solve_cmplx(CAR(args), CADR(args));
         break;
 
     case 100:
-        ans = La_dgesv(CAR(args), CADR(args), CADDR(args));
+        ans = La_solve(CAR(args), CADR(args), CADDR(args));
         break;
     case 101:
-        ans = La_dgeqp3(CAR(args));
+        ans = La_qr(CAR(args));
         break;
 
     case 200:
