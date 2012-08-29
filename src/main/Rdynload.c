@@ -801,16 +801,6 @@ DL_FUNC attribute_hidden R_dlsym(DllInfo *info, char const *name, R_RegisteredNa
 /* that have been loaded contains the symbol name and */
 /* returns a pointer to that symbol upon success. */
 
-/*
-  In the future, this will receive an additional argument
-  which will specify the nature of the symbol expected by the
-  caller, specifically whether it is for a .C(), .Call(),
-  .Fortran(), .External(), generic, etc. invocation. This will
-  reduce the pool of possible symbols in the case of an object
-  that registers its routines.
-  This is currently done via the value in symbol.
- */
-
 DL_FUNC R_FindSymbol(char const *name, char const *pkg, R_RegisteredNativeSymbol *symbol)
 {
     DL_FUNC fcnptr = (DL_FUNC)NULL;
