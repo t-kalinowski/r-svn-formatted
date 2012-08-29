@@ -347,37 +347,30 @@ static SEXP La_rg(SEXP x, SEXP only_values)
 /* norm() except for 2-norm */
 static SEXP La_dlange(SEXP A, SEXP type)
 {
-    SEXP x;
-    int *xdims, m, n, nprot = 0;
+    int *xdims, m, n, nprot = 1;
     double *work = NULL;
     char typNorm[] = {'\0', '\0'};
 
+    if (!isMatrix(A))
+        error(_("'A' must be a numeric matrix"));
     if (!isString(type))
         error(_("'type' must be a character string"));
-    if (!isReal(A) && isNumeric(A))
+    if (!isReal(A))
     {
-        x = PROTECT(coerceVector(A, REALSXP));
+        A = PROTECT(coerceVector(A, REALSXP));
         nprot++;
     }
-    else
-        x = A;
-    if (!(isMatrix(x) && isReal(x)))
-    {
-        UNPROTECT(nprot);
-        error(_("'A' must be a numeric matrix"));
-    }
 
-    xdims = INTEGER(coerceVector(getAttrib(x, R_DimSymbol), INTSXP));
+    xdims = INTEGER(coerceVector(getAttrib(A, R_DimSymbol), INTSXP));
     m = xdims[0];
     n = xdims[1]; /* m x n  matrix {using Lapack naming convention} */
 
     typNorm[0] = La_norm_type(CHAR(asChar(type)));
 
     SEXP val = PROTECT(allocVector(REALSXP, 1));
-    nprot++;
     if (*typNorm == 'I')
         work = (double *)R_alloc(m, sizeof(double));
-    REAL(val)[0] = F77_CALL(dlange)(typNorm, &m, &n, REAL(x), &m, work);
+    REAL(val)[0] = F77_CALL(dlange)(typNorm, &m, &n, REAL(A), &m, work);
 
     UNPROTECT(nprot);
     return val;
@@ -387,37 +380,34 @@ static SEXP La_dlange(SEXP A, SEXP type)
 /* Real case of rcond, for general matrices */
 static SEXP La_dgecon(SEXP A, SEXP norm)
 {
-    SEXP x, val;
     int *xdims, m, n, info, *iwork;
     double anorm, *work;
     char typNorm[] = {'\0', '\0'};
 
+    if (!isMatrix(A))
+        error(_("'A' must be a numeric matrix"));
     if (!isString(norm))
         error(_("'norm' must be a character string"));
-    if (!isReal(A) && isNumeric(A))
-        x = PROTECT(coerceVector(A, REALSXP));
+    if (!isReal(A))
+        A = coerceVector(A, REALSXP);
     else
-        x = PROTECT(duplicate(A)); /* will be overwritten by LU */
-    if (!(isMatrix(x) && isReal(x)))
-    {
-        UNPROTECT(1);
-        error(_("'A' must be a numeric matrix"));
-    }
+        A = duplicate(A); /* will be overwritten by LU */
+    PROTECT(A);
 
-    xdims = INTEGER(coerceVector(getAttrib(x, R_DimSymbol), INTSXP));
+    xdims = INTEGER(coerceVector(getAttrib(A, R_DimSymbol), INTSXP));
     m = xdims[0];
     n = xdims[1];
 
     typNorm[0] = La_rcond_type(CHAR(asChar(norm)));
 
-    val = PROTECT(allocVector(REALSXP, 1));
+    SEXP val = PROTECT(allocVector(REALSXP, 1));
     work = (double *)R_alloc((*typNorm == 'I' && m > 4 * (size_t)n) ? m : 4 * (size_t)n, sizeof(double));
     iwork = (int *)R_alloc(m, sizeof(int));
 
-    anorm = F77_CALL(dlange)(typNorm, &m, &n, REAL(x), &m, work);
+    anorm = F77_CALL(dlange)(typNorm, &m, &n, REAL(A), &m, work);
 
-    /* Compute the LU-decomposition and overwrite 'x' with result :*/
-    F77_CALL(dgetrf)(&m, &n, REAL(x), &m, iwork, &info);
+    /* Compute the LU-decomposition and overwrite 'A' with result :*/
+    F77_CALL(dgetrf)(&m, &n, REAL(A), &m, iwork, &info);
     if (info)
     {
         if (info < 0)
@@ -438,7 +428,7 @@ static SEXP La_dgecon(SEXP A, SEXP norm)
         }
     }
     F77_CALL(dgecon)
-    (typNorm, &n, REAL(x), &n, &anorm,
+    (typNorm, &n, REAL(A), &n, &anorm,
      /* rcond = */ REAL(val), work, iwork, &info);
     UNPROTECT(2);
     if (info)
@@ -449,25 +439,19 @@ static SEXP La_dgecon(SEXP A, SEXP norm)
 /* Real case of kappa.tri (and also rcond for a triangular matrix) */
 static SEXP La_dtrcon(SEXP A, SEXP norm)
 {
-    SEXP x, val;
     int *xdims, n, nprot = 0, info;
     char typNorm[] = {'\0', '\0'};
 
+    if (!isMatrix(A))
+        error(_("'A' must be a numeric matrix"));
     if (!isString(norm))
         error(_("'norm' must be a character string"));
-    if (!isReal(A) && isNumeric(A))
+    if (!isReal(A))
     {
         nprot++;
-        x = PROTECT(coerceVector(A, REALSXP));
+        A = PROTECT(coerceVector(A, REALSXP));
     }
-    else
-        x = A; /* no copy needed */
-    if (!(isMatrix(x) && isReal(x)))
-    {
-        UNPROTECT(nprot);
-        error(_("'A' must be a numeric matrix"));
-    }
-    xdims = INTEGER(coerceVector(getAttrib(x, R_DimSymbol), INTSXP));
+    xdims = INTEGER(coerceVector(getAttrib(A, R_DimSymbol), INTSXP));
     n = xdims[0];
     if (n != xdims[1])
     {
@@ -478,10 +462,10 @@ static SEXP La_dtrcon(SEXP A, SEXP norm)
     typNorm[0] = La_rcond_type(CHAR(asChar(norm)));
 
     nprot++;
-    val = PROTECT(allocVector(REALSXP, 1));
+    SEXP val = PROTECT(allocVector(REALSXP, 1));
 
     F77_CALL(dtrcon)
-    (typNorm, "U", "N", &n, REAL(x), &n, REAL(val),
+    (typNorm, "U", "N", &n, REAL(A), &n, REAL(val),
      /* work : */ (double *)R_alloc(3 * (size_t)n, sizeof(double)),
      /* iwork: */ (int *)R_alloc(n, sizeof(int)), &info);
     UNPROTECT(nprot);
@@ -494,7 +478,6 @@ static SEXP La_dtrcon(SEXP A, SEXP norm)
 static SEXP La_zgecon(SEXP A, SEXP norm)
 {
 #ifdef HAVE_FORTRAN_DOUBLE_COMPLEX
-    SEXP val;
     Rcomplex *avals; /* copy of A, to be modified */
     int *dims, n, info;
     double anorm, *rwork;
@@ -511,7 +494,7 @@ static SEXP La_zgecon(SEXP A, SEXP norm)
 
     typNorm[0] = La_rcond_type(CHAR(asChar(norm)));
 
-    val = PROTECT(allocVector(REALSXP, 1));
+    SEXP val = PROTECT(allocVector(REALSXP, 1));
 
     rwork = (double *)R_alloc(2 * (size_t)n, sizeof(Rcomplex));
     anorm = F77_CALL(zlange)(typNorm, &n, &n, COMPLEX(A), &n, rwork);
