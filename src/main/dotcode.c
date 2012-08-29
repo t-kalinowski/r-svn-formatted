@@ -224,19 +224,23 @@ static SEXP resolveNativeRoutine(SEXP args, DL_FUNC *fun, R_RegisteredNativeSymb
            passed in  */
         args = pkgtrim(args, &dll);
     }
-    if (!*fun && dll.type == FILENAME && !strlen(dll.DLLname))
+
+    /* We were given a symbol (or an address), so we are done. */
+    if (*fun)
+        return args;
+
+    if (dll.type == FILENAME && !strlen(dll.DLLname))
         errorcall(call, _("PACKAGE = \"\" is invalid"));
 
 #ifdef CHECK_CROSS_USAGE
-    if (!*fun && dll.type == FILENAME && strcmp(dll.DLLname, "base"))
+    if (dll.type == FILENAME && strcmp(dll.DLLname, "base"))
     {
         if (strlen(ns) && strcmp(dll.DLLname, ns) && !(streql(dll.DLLname, "BioC_graph") && streql(ns, "graph")))
             warningcall(call, "using PACKAGE = \"%s\" from namespace '%s'", dll.DLLname, ns);
     }
 #endif
 
-    /* Make up the load symbol and look it up. */
-
+    /* Make up the load symbol */
     if (TYPEOF(op) == STRSXP)
     {
         p = translateChar(STRING_ELT(op, 0));
@@ -252,58 +256,55 @@ static SEXP resolveNativeRoutine(SEXP args, DL_FUNC *fun, R_RegisteredNativeSymb
         }
     }
 
-    if (!*fun)
+    if (dll.type != FILENAME && strlen(ns))
     {
-        if (dll.type != FILENAME && strlen(ns))
-        {
-            /* no PACKAGE= arg, so see if we can identify a DLL
-               from the namespace defining the function */
-            *fun = R_FindNativeSymbolFromDLL(buf, &dll, symbol, env2);
+        /* no PACKAGE= arg, so see if we can identify a DLL
+           from the namespace defining the function */
+        *fun = R_FindNativeSymbolFromDLL(buf, &dll, symbol, env2);
+        if (*fun)
+            return args;
 #ifdef CHECK_NAMSPACE_RESOLUTION
-            if (!*fun)
-                warningcall(call, "\"%s\" not resolved from current namespace (%s)", buf, ns);
+        warningcall(call, "\"%s\" not resolved from current namespace (%s)", buf, ns);
 #endif
-            /* need to continue if the namespace search failed */
-        }
-
-        /* NB: the actual conversion to the symbol is done in
-           R_dlsym in Rdynload.c.  That prepends an underscore (usually),
-           and may append one or more underscores.
-        */
-
-        if (!*fun && !(*fun = R_FindSymbol(buf, dll.DLLname, symbol)))
-        {
-            if (strlen(dll.DLLname))
-            {
-                switch (symbol->type)
-                {
-                case R_C_SYM:
-                    errorcall(call, _("\"%s\" not available for %s() for package \"%s\""), buf, ".C", dll.DLLname);
-                    break;
-                case R_FORTRAN_SYM:
-                    errorcall(call, _("\"%s\" not available for %s() for package \"%s\""), buf, ".Fortran",
-                              dll.DLLname);
-                    break;
-                case R_CALL_SYM:
-                    errorcall(call, _("\"%s\" not available for %s() for package \"%s\""), buf, ".Call", dll.DLLname);
-                    break;
-                case R_EXTERNAL_SYM:
-                    errorcall(call, _("\"%s\" not available for %s() for package \"%s\""), buf, ".External",
-                              dll.DLLname);
-                    break;
-                case R_ANY_SYM:
-                    errorcall(call, _("%s symbol name \"%s\" not in DLL for package \"%s\""), "C/Fortran", buf,
-                              dll.DLLname);
-                    break;
-                }
-            }
-            else
-                errorcall(call, _("%s symbol name \"%s\" not in load table"),
-                          symbol->type == R_FORTRAN_SYM ? "Fortran" : "C", buf);
-        }
+        /* need to continue if the namespace search failed */
     }
 
-    return args;
+    /* NB: the actual conversion to the symbol is done in
+       R_dlsym in Rdynload.c.  That prepends an underscore (usually),
+       and may append one or more underscores.
+    */
+
+    *fun = R_FindSymbol(buf, dll.DLLname, symbol);
+    if (*fun)
+        return args;
+
+    /* so we've failed and bail out */
+    if (strlen(dll.DLLname))
+    {
+        switch (symbol->type)
+        {
+        case R_C_SYM:
+            errorcall(call, _("\"%s\" not available for %s() for package \"%s\""), buf, ".C", dll.DLLname);
+            break;
+        case R_FORTRAN_SYM:
+            errorcall(call, _("\"%s\" not available for %s() for package \"%s\""), buf, ".Fortran", dll.DLLname);
+            break;
+        case R_CALL_SYM:
+            errorcall(call, _("\"%s\" not available for %s() for package \"%s\""), buf, ".Call", dll.DLLname);
+            break;
+        case R_EXTERNAL_SYM:
+            errorcall(call, _("\"%s\" not available for %s() for package \"%s\""), buf, ".External", dll.DLLname);
+            break;
+        case R_ANY_SYM:
+            errorcall(call, _("%s symbol name \"%s\" not in DLL for package \"%s\""), "C/Fortran", buf, dll.DLLname);
+            break;
+        }
+    }
+    else
+        errorcall(call, _("%s symbol name \"%s\" not in load table"), symbol->type == R_FORTRAN_SYM ? "Fortran" : "C",
+                  buf);
+
+    return args; /* -Wall */
 }
 
 static Rboolean checkNativeType(int targetType, int actualType)
