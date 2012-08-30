@@ -1719,15 +1719,15 @@ static SEXP Rrowsum_matrix(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SEXP snarm)
     return ans;
 }
 
-static SEXP Rrowsum_df(SEXP x, SEXP g, SEXP uniqueg, SEXP snarm)
+static SEXP Rrowsum_df(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SEXP snarm)
 {
     SEXP matches, ans, col, xcol;
-    int i, j, n, ng = 0, narm;
+    int i, j, n, p, ng = 0, narm;
     HashData data;
     data.nomatch = 0;
 
     n = LENGTH(g);
-    int p = length(x);
+    p = INTEGER(ncol)[0];
     ng = length(uniqueg);
     narm = asLogical(snarm);
     if (narm == NA_LOGICAL)
@@ -1795,32 +1795,11 @@ static SEXP Rrowsum_df(SEXP x, SEXP g, SEXP uniqueg, SEXP snarm)
 
 SEXP attribute_hidden do_rowsum(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP ans;
     checkArity(op, args);
     if (PRIMVAL(op) == 1)
-    {
-        ans = Rrowsum_df(CAR(args), CADR(args), CADDR(args), CADDDR(args));
-        SEXP ugroup = coerceVector(CADDR(args), STRSXP);
-        setAttrib(ans, R_RowNamesSymbol, ugroup);
-        classgets(ans, mkString("data.frame"));
-    }
+        return Rrowsum_df(CAR(args), CADR(args), CADDR(args), CADDDR(args), CAD4R(args));
     else
-    {
-        /* R code had
-           dimnames(rval) <- list(as.character(ugroup), dimnames(x)[[2L]])
-        */
-        ans = Rrowsum_matrix(CAR(args), CADR(args), CADDR(args), CADDDR(args), CAD4R(args));
-        PROTECT(ans);
-        SEXP nm = PROTECT(allocVector(VECSXP, 2));
-        SEXP ugroup = PROTECT(coerceVector(CADDDR(args), STRSXP));
-        SET_VECTOR_ELT(nm, 0, ugroup);
-        SEXP nm2 = getAttrib(CAR(args), R_DimNamesSymbol);
-        if (length(nm2) >= 2)
-            SET_VECTOR_ELT(nm, 1, VECTOR_ELT(nm2, 1));
-        setAttrib(ans, R_DimNamesSymbol, nm);
-        UNPROTECT(3);
-    }
-    return ans;
+        return Rrowsum_matrix(CAR(args), CADR(args), CADDR(args), CADDDR(args), CAD4R(args));
 }
 
 /* returns 1-based duplicate no */
