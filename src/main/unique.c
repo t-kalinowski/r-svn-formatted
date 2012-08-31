@@ -1634,30 +1634,33 @@ SEXP attribute_hidden do_matchcall(SEXP call, SEXP op, SEXP args, SEXP env)
 #include <memory.h>
 #endif
 /* int and double zeros are all bits off */
-#define ZEROINT(X, N, I)                                                                                               \
+#define ZEROINT(X, N)                                                                                                  \
     do                                                                                                                 \
     {                                                                                                                  \
         memset(INTEGER(X), 0, (size_t)(N) * sizeof(int));                                                              \
     } while (0)
-#define ZERODBL(X, N, I)                                                                                               \
+#define ZERODBL(X, N)                                                                                                  \
     do                                                                                                                 \
     {                                                                                                                  \
         memset(REAL(X), 0, (size_t)(N) * sizeof(double));                                                              \
     } while (0)
 
-static SEXP Rrowsum_matrix(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SEXP snarm)
+static SEXP Rrowsum_matrix(SEXP x, SEXP g, SEXP uniqueg, SEXP snarm)
 {
     SEXP matches, ans;
-    int i, j, n, p, ng = 0, offset, offsetg, narm;
+    int n, p, ng, offset = 0, offsetg = 0, narm;
     HashData data;
     data.nomatch = 0;
 
     n = LENGTH(g);
-    p = INTEGER(ncol)[0];
     ng = length(uniqueg);
     narm = asLogical(snarm);
     if (narm == NA_LOGICAL)
         error("'na.rm' must be TRUE or FALSE");
+    if (isMatrix(x))
+        p = ncols(x);
+    else
+        p = 1;
 
     HashTableSetup(uniqueg, &data, NA_INTEGER);
     PROTECT(data.HashTable);
@@ -1666,16 +1669,13 @@ static SEXP Rrowsum_matrix(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SEXP snarm)
 
     PROTECT(ans = allocMatrix(TYPEOF(x), ng, p));
 
-    offset = 0;
-    offsetg = 0;
-
     switch (TYPEOF(x))
     {
     case REALSXP:
-        ZERODBL(ans, ng * p, i);
-        for (i = 0; i < p; i++)
+        ZERODBL(ans, ng * p);
+        for (int i = 0; i < p; i++)
         {
-            for (j = 0; j < n; j++)
+            for (int j = 0; j < n; j++)
                 if (!narm || !ISNAN(REAL(x)[j + offset]))
                     REAL(ans)[INTEGER(matches)[j] - 1 + offsetg] += REAL(x)[j + offset];
             offset += n;
@@ -1683,10 +1683,10 @@ static SEXP Rrowsum_matrix(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SEXP snarm)
         }
         break;
     case INTSXP:
-        ZEROINT(ans, ng * p, i);
-        for (i = 0; i < p; i++)
+        ZEROINT(ans, ng * p);
+        for (int i = 0; i < p; i++)
         {
-            for (j = 0; j < n; j++)
+            for (int j = 0; j < n; j++)
             {
                 if (INTEGER(x)[j + offset] == NA_INTEGER)
                 {
@@ -1719,15 +1719,15 @@ static SEXP Rrowsum_matrix(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SEXP snarm)
     return ans;
 }
 
-static SEXP Rrowsum_df(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SEXP snarm)
+static SEXP Rrowsum_df(SEXP x, SEXP g, SEXP uniqueg, SEXP snarm)
 {
     SEXP matches, ans, col, xcol;
-    int i, j, n, p, ng = 0, narm;
+    int n, p, ng, narm;
     HashData data;
     data.nomatch = 0;
 
     n = LENGTH(g);
-    p = INTEGER(ncol)[0];
+    p = LENGTH(x);
     ng = length(uniqueg);
     narm = asLogical(snarm);
     if (narm == NA_LOGICAL)
@@ -1740,7 +1740,7 @@ static SEXP Rrowsum_df(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SEXP snarm)
 
     PROTECT(ans = allocVector(VECSXP, p));
 
-    for (i = 0; i < p; i++)
+    for (int i = 0; i < p; i++)
     {
         xcol = VECTOR_ELT(x, i);
         if (!isNumeric(xcol))
@@ -1749,8 +1749,8 @@ static SEXP Rrowsum_df(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SEXP snarm)
         {
         case REALSXP:
             PROTECT(col = allocVector(REALSXP, ng));
-            ZERODBL(col, ng, i);
-            for (j = 0; j < n; j++)
+            ZERODBL(col, ng);
+            for (int j = 0; j < n; j++)
                 if (!narm || !ISNAN(REAL(xcol)[j]))
                     REAL(col)[INTEGER(matches)[j] - 1] += REAL(xcol)[j];
             SET_VECTOR_ELT(ans, i, col);
@@ -1758,8 +1758,8 @@ static SEXP Rrowsum_df(SEXP x, SEXP ncol, SEXP g, SEXP uniqueg, SEXP snarm)
             break;
         case INTSXP:
             PROTECT(col = allocVector(INTSXP, ng));
-            ZEROINT(col, ng, i);
-            for (j = 0; j < n; j++)
+            ZEROINT(col, ng);
+            for (int j = 0; j < n; j++)
             {
                 if (INTEGER(xcol)[j] == NA_INTEGER)
                 {
@@ -1797,9 +1797,9 @@ SEXP attribute_hidden do_rowsum(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     if (PRIMVAL(op) == 1)
-        return Rrowsum_df(CAR(args), CADR(args), CADDR(args), CADDDR(args), CAD4R(args));
+        return Rrowsum_df(CAR(args), CADR(args), CADDR(args), CADDDR(args));
     else
-        return Rrowsum_matrix(CAR(args), CADR(args), CADDR(args), CADDDR(args), CAD4R(args));
+        return Rrowsum_matrix(CAR(args), CADR(args), CADDR(args), CADDDR(args));
 }
 
 /* returns 1-based duplicate no */
