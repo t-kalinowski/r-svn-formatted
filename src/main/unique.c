@@ -1629,23 +1629,13 @@ SEXP attribute_hidden do_matchcall(SEXP call, SEXP op, SEXP args, SEXP env)
     return rval;
 }
 
-#include <string.h>
-#ifdef _AIX /*some people just have to be different */
+#include <R_ext/RS.h> /* for Memzero */
+
+#ifdef _AIX /*some people just have to be different: is this still needed? */
 #include <memory.h>
 #endif
-/* int and double zeros are all bits off */
-#define ZEROINT(X, N)                                                                                                  \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        memset(INTEGER(X), 0, (size_t)(N) * sizeof(int));                                                              \
-    } while (0)
-#define ZERODBL(X, N)                                                                                                  \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        memset(REAL(X), 0, (size_t)(N) * sizeof(double));                                                              \
-    } while (0)
 
-static SEXP Rrowsum_matrix(SEXP x, SEXP g, SEXP uniqueg, SEXP snarm)
+static SEXP rowsum(SEXP x, SEXP g, SEXP uniqueg, SEXP snarm, SEXP rn)
 {
     SEXP matches, ans;
     int n, p, ng, offset = 0, offsetg = 0, narm;
@@ -1672,7 +1662,7 @@ static SEXP Rrowsum_matrix(SEXP x, SEXP g, SEXP uniqueg, SEXP snarm)
     switch (TYPEOF(x))
     {
     case REALSXP:
-        ZERODBL(ans, ng * p);
+        Memzero(REAL(ans), ng * p);
         for (int i = 0; i < p; i++)
         {
             for (int j = 0; j < n; j++)
@@ -1683,7 +1673,7 @@ static SEXP Rrowsum_matrix(SEXP x, SEXP g, SEXP uniqueg, SEXP snarm)
         }
         break;
     case INTSXP:
-        ZEROINT(ans, ng * p);
+        Memzero(INTEGER(ans), ng * p);
         for (int i = 0; i < p; i++)
         {
             for (int j = 0; j < n; j++)
@@ -1711,15 +1701,20 @@ static SEXP Rrowsum_matrix(SEXP x, SEXP g, SEXP uniqueg, SEXP snarm)
         }
         break;
     default:
-        error(_("non-numeric matrix in rowsum(): this cannot happen"));
+        error("non-numeric matrix in rowsum(): this should not happen");
     }
+    SEXP dn = allocVector(VECSXP, 2), dn2, dn3;
+    setAttrib(ans, R_DimNamesSymbol, dn);
+    SET_VECTOR_ELT(dn, 0, rn);
+    dn2 = getAttrib(x, R_DimNamesSymbol);
+    if (length(dn2 = getAttrib(x, R_DimNamesSymbol)) >= 2 && !isNull(dn3 = VECTOR_ELT(dn2, 1)))
+        SET_VECTOR_ELT(dn, 1, dn3);
 
-    UNPROTECT(2); /*HashTable, matches*/
-    UNPROTECT(1); /*ans*/
+    UNPROTECT(3); /* HashTable, matches, ans */
     return ans;
 }
 
-static SEXP Rrowsum_df(SEXP x, SEXP g, SEXP uniqueg, SEXP snarm)
+static SEXP rowsum_df(SEXP x, SEXP g, SEXP uniqueg, SEXP snarm)
 {
     SEXP matches, ans, col, xcol;
     int n, p, ng, narm;
@@ -1749,7 +1744,7 @@ static SEXP Rrowsum_df(SEXP x, SEXP g, SEXP uniqueg, SEXP snarm)
         {
         case REALSXP:
             PROTECT(col = allocVector(REALSXP, ng));
-            ZERODBL(col, ng);
+            Memzero(REAL(col), ng);
             for (int j = 0; j < n; j++)
                 if (!narm || !ISNAN(REAL(xcol)[j]))
                     REAL(col)[INTEGER(matches)[j] - 1] += REAL(xcol)[j];
@@ -1758,7 +1753,7 @@ static SEXP Rrowsum_df(SEXP x, SEXP g, SEXP uniqueg, SEXP snarm)
             break;
         case INTSXP:
             PROTECT(col = allocVector(INTSXP, ng));
-            ZEROINT(col, ng);
+            Memzero(INTEGER(col), ng);
             for (int j = 0; j < n; j++)
             {
                 if (INTEGER(xcol)[j] == NA_INTEGER)
@@ -1788,8 +1783,7 @@ static SEXP Rrowsum_df(SEXP x, SEXP g, SEXP uniqueg, SEXP snarm)
     }
     namesgets(ans, getAttrib(x, R_NamesSymbol));
 
-    UNPROTECT(2); /*HashTable, matches*/
-    UNPROTECT(1); /*ans*/
+    UNPROTECT(3); /* HashTable, matches, ans */
     return ans;
 }
 
@@ -1797,9 +1791,9 @@ SEXP attribute_hidden do_rowsum(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     if (PRIMVAL(op) == 1)
-        return Rrowsum_df(CAR(args), CADR(args), CADDR(args), CADDDR(args));
+        return rowsum_df(CAR(args), CADR(args), CADDR(args), CADDDR(args));
     else
-        return Rrowsum_matrix(CAR(args), CADR(args), CADDR(args), CADDDR(args));
+        return rowsum(CAR(args), CADR(args), CADDR(args), CADDDR(args), CAD4R(args));
 }
 
 /* returns 1-based duplicate no */
