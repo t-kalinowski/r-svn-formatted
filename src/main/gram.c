@@ -3765,6 +3765,26 @@ static void initData(void)
     growData();
 }
 
+/* We need to be careful with our protections.  Objects protected with an
+   index have to go on the stack before anything that is unprotected
+   with UNPROTECT_PTR, because that shifts the locations of later items.
+   But they also can't go into loops, because that could blow up the
+   protection stack.  So we separate the allocation and initialization. */
+
+static void ParseContextAlloc(void)
+{
+    PROTECT_WITH_INDEX(data = R_NilValue, &DATA_INDEX);
+    PROTECT_WITH_INDEX(text = R_NilValue, &TEXT_INDEX);
+    PROTECT_WITH_INDEX(ids = R_NilValue, &ID_INDEX);
+}
+
+static void ParseContextClear(void)
+{
+    REPROTECT(data = R_NilValue, DATA_INDEX);
+    REPROTECT(text = R_NilValue, TEXT_INDEX);
+    REPROTECT(ids = R_NilValue, ID_INDEX);
+}
+
 static void ParseContextInit(void)
 {
     R_ParseContextLast = 0;
@@ -3772,23 +3792,15 @@ static void ParseContextInit(void)
 
     colon = 0;
 
+    /* Clear the data, text and ids to NULL */
+    ParseContextClear();
+
     /* starts the identifier counter*/
     initId();
 
     id_size = 0;
-    PROTECT_WITH_INDEX(data = R_NilValue, &DATA_INDEX);
-    PROTECT_WITH_INDEX(text = R_NilValue, &TEXT_INDEX);
     initData();
-
-    PROTECT_WITH_INDEX(ids = R_NilValue, &ID_INDEX);
     growID(15 * NLINES);
-}
-
-static void ParseContextDone(void)
-{
-    UNPROTECT_PTR(data);
-    UNPROTECT_PTR(text);
-    UNPROTECT_PTR(ids);
 }
 
 static SEXP R_Parse1(ParseStatus *status)
@@ -3826,15 +3838,18 @@ static int file_getc(void)
 /* used in main.c */
 attribute_hidden SEXP R_Parse1File(FILE *fp, int gencode, ParseStatus *status, SrcRefState *state)
 {
+    int savestack;
     UseSrcRefState(state);
+    savestack = R_PPStackTop;
+    ParseContextAlloc();
     ParseInit();
     ParseContextInit();
     GenerateCode = gencode;
     fp_parse = fp;
     ptr_getc = file_getc;
     R_Parse1(status);
+    R_PPStackTop = savestack;
     PutSrcRefState(state);
-    ParseContextDone();
     return R_CurrentExpr;
 }
 
@@ -3849,7 +3864,11 @@ static int buffer_getc(void)
 attribute_hidden SEXP R_Parse1Buffer(IoBuffer *buffer, int gencode, ParseStatus *status)
 {
     Rboolean keepSource = FALSE;
+    int savestack;
+
     R_InitSrcRefState(&ParseState);
+    savestack = R_PPStackTop;
+    ParseContextAlloc();
     if (gencode)
     {
         keepSource = asLogical(GetOption1(install("keep.source")));
@@ -3887,10 +3906,9 @@ attribute_hidden SEXP R_Parse1Buffer(IoBuffer *buffer, int gencode, ParseStatus 
             setAttrib(ParseState.Original, R_ClassSymbol, class);
             UNPROTECT(1);
         }
-        UNPROTECT_PTR(SrcRefs);
     }
+    R_PPStackTop = savestack;
     R_FinalizeSrcRefState(&ParseState);
-    ParseContextDone();
     return R_CurrentExpr;
 }
 
@@ -3903,14 +3921,15 @@ static int text_getc(void)
 
 static SEXP R_Parse(int n, ParseStatus *status, SEXP srcfile)
 {
-    volatile int savestack;
+    int savestack;
     int i;
     SEXP t, rval;
 
     R_InitSrcRefState(&ParseState);
+    savestack = R_PPStackTop;
+    ParseContextAlloc();
 
     ParseContextInit();
-    savestack = R_PPStackTop;
     PROTECT(t = NewList());
 
     REPROTECT(ParseState.SrcFile = srcfile, ParseState.SrcFileProt);
@@ -3961,7 +3980,6 @@ finish:
     }
     R_PPStackTop = savestack; /* UNPROTECT lots! */
     R_FinalizeSrcRefState(&ParseState);
-    ParseContextDone();
     *status = PARSE_OK;
     return rval;
 }
@@ -4036,13 +4054,14 @@ attribute_hidden SEXP R_ParseBuffer(IoBuffer *buffer, int n, ParseStatus *status
     SEXP rval, t;
     char *bufp, buf[CONSOLE_BUFFER_SIZE];
     int c, i, prompt_type = 1;
-    volatile int savestack;
+    int savestack;
 
     R_IoBufferWriteReset(buffer);
     buf[0] = '\0';
     bufp = buf;
     R_InitSrcRefState(&ParseState);
     savestack = R_PPStackTop;
+    ParseContextAlloc();
     PROTECT(t = NewList());
 
     GenerateCode = 1;
@@ -4081,7 +4100,7 @@ attribute_hidden SEXP R_ParseBuffer(IoBuffer *buffer, int n, ParseStatus *status
         ParseContextInit();
         R_Parse1(status);
         rval = R_CurrentExpr;
-        ParseContextDone();
+        ParseContextClear();
 
         switch (*status)
         {
