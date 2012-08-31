@@ -1534,7 +1534,7 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             R_CheckStack2(n * sizeof(LDOUBLE));
             rans = (LDOUBLE *)alloca(n * sizeof(LDOUBLE));
-            memset(rans, 0, n * sizeof(LDOUBLE));
+            Memzero(rans, n);
         }
         else
             rans = Calloc(n, LDOUBLE);

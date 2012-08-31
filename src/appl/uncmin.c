@@ -200,13 +200,9 @@ static void mvmlts(int nr, int n, double *a, double *x, double *y)
     {
         sum = 0.;
         for (j = 0; j <= i; ++j)
-        {
             sum += a[i + j * nr] * x[j];
-        }
         for (j = i + 1; j < n; ++j)
-        {
             sum += a[j + i * nr] * x[j];
-        }
         y[i] = sum;
     }
 } /* mvmlts */
@@ -233,7 +229,7 @@ static void lltslv(int nr, int n, double *a, double *x, double *b)
     int job = 0, info;
 
     if (x != b)
-        Memcpy(x, b, (size_t)n);
+        Memcpy(x, b, n);
     F77_CALL(dtrsl)(a, &nr, &n, x, &job, &info);
     job = 10;
     F77_CALL(dtrsl)(a, &nr, &n, x, &job, &info);
