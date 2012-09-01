@@ -286,20 +286,20 @@ attribute_hidden SEXP Rsockconnect(SEXP sport, SEXP shost)
         (*ptr->sockconnect)(&port, host);
     else
         error(_("socket routines cannot be loaded"));
-    return ScalarInteger(port);
+    return ScalarInteger(port); // The socket number
 }
 
-attribute_hidden SEXP Rsockread(SEXP sport, SEXP smaxlen)
+attribute_hidden SEXP Rsockread(SEXP ssock, SEXP smaxlen)
 {
-    if (length(sport) != 1)
+    if (length(ssock) != 1)
         error("invalid 'socket' argument");
-    int port = asInteger(sport), maxlen = asInteger(smaxlen);
+    int sock = asInteger(ssock), maxlen = asInteger(smaxlen);
     char buf[maxlen + 1], *abuf[1];
     abuf[0] = buf;
     if (!initialized)
         internet_Init();
     if (initialized > 0)
-        (*ptr->sockread)(&port, abuf, &maxlen);
+        (*ptr->sockread)(&sock, abuf, &maxlen);
     else
         error(_("socket routines cannot be loaded"));
     SEXP ans = PROTECT(allocVector(STRSXP, 1));
@@ -308,18 +308,18 @@ attribute_hidden SEXP Rsockread(SEXP sport, SEXP smaxlen)
     return ans;
 }
 
-attribute_hidden SEXP Rsockclose(SEXP sport)
+attribute_hidden SEXP Rsockclose(SEXP ssock)
 {
-    if (length(sport) != 1)
+    if (length(ssock) != 1)
         error("invalid 'socket' argument");
-    int port = asInteger(sport);
+    int sock = asInteger(ssock);
     if (!initialized)
         internet_Init();
     if (initialized > 0)
-        (*ptr->sockclose)(&port);
+        (*ptr->sockclose)(&sock);
     else
         error(_("socket routines cannot be loaded"));
-    return ScalarLogical(port);
+    return ScalarLogical(sock);
 }
 
 attribute_hidden SEXP Rsockopen(SEXP sport)
@@ -333,23 +333,23 @@ attribute_hidden SEXP Rsockopen(SEXP sport)
         (*ptr->sockopen)(&port);
     else
         error(_("socket routines cannot be loaded"));
-    return ScalarInteger(port);
+    return ScalarInteger(port); // The socket number
 }
 
-attribute_hidden SEXP Rsocklisten(SEXP sport)
+attribute_hidden SEXP Rsocklisten(SEXP ssock)
 {
-    if (length(sport) != 1)
+    if (length(ssock) != 1)
         error("invalid 'socket' argument");
-    int port = asInteger(sport), len = 256;
+    int sock = asInteger(ssock), len = 256;
     char buf[257], *abuf[1];
     abuf[0] = buf;
     if (!initialized)
         internet_Init();
     if (initialized > 0)
-        (*ptr->socklisten)(&port, abuf, &len);
+        (*ptr->socklisten)(&sock, abuf, &len);
     else
         error(_("socket routines cannot be loaded"));
-    SEXP ans = PROTECT(ScalarInteger(port));
+    SEXP ans = PROTECT(ScalarInteger(sock)); // The socket being listened on
     SEXP host = PROTECT(allocVector(STRSXP, 1));
     SET_STRING_ELT(host, 0, mkChar(buf));
     setAttrib(ans, install("host"), host);
@@ -357,18 +357,18 @@ attribute_hidden SEXP Rsocklisten(SEXP sport)
     return ans;
 }
 
-attribute_hidden SEXP Rsockwrite(SEXP sport, SEXP sstring)
+attribute_hidden SEXP Rsockwrite(SEXP ssock, SEXP sstring)
 {
-    if (length(sport) != 1)
+    if (length(ssock) != 1)
         error("invalid 'socket' argument");
-    int port = asInteger(sport), start = 0, end, len;
+    int sock = asInteger(ssock), start = 0, end, len;
     char *buf = (char *)translateChar(STRING_ELT(sstring, 0)), *abuf[1];
     end = len = strlen(buf);
     abuf[0] = buf;
     if (!initialized)
         internet_Init();
     if (initialized > 0)
-        (*ptr->sockwrite)(&port, abuf, &start, &end, &len);
+        (*ptr->sockwrite)(&sock, abuf, &start, &end, &len);
     else
         error(_("socket routines cannot be loaded"));
     return ScalarInteger(len);
@@ -384,5 +384,32 @@ attribute_hidden int Rsockselect(int nsock, int *insockfd, int *ready, int *writ
     {
         error(_("socket routines cannot be loaded"));
         return 0;
+    }
+}
+
+attribute_hidden SEXP do_sock(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    SEXP ans = R_NilValue; /* -Wall */
+    checkArity(op, args);
+    switch (PRIMVAL(op))
+    {
+    case 0:
+        ans = Rsockconnect(CAR(args), CADR(args));
+        break;
+    case 1:
+        ans = Rsockopen(CAR(args));
+        break;
+    case 2:
+        ans = Rsocklisten(CAR(args));
+        break;
+    case 3:
+        ans = Rsockclose(CAR(args));
+        break;
+    case 4:
+        ans = Rsockread(CAR(args), CADR(args));
+        break;
+    case 5:
+        ans = Rsockwrite(CAR(args), CADR(args));
+        break;
     }
 }
