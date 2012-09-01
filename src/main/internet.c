@@ -273,7 +273,7 @@ SEXP attribute_hidden do_stopHTTPD(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 }
 
-attribute_hidden SEXP Rsockconnect(SEXP sport, SEXP shost)
+static SEXP Rsockconnect(SEXP sport, SEXP shost)
 {
     if (length(sport) != 1)
         error("invalid 'socket' argument");
@@ -289,7 +289,7 @@ attribute_hidden SEXP Rsockconnect(SEXP sport, SEXP shost)
     return ScalarInteger(port); // The socket number
 }
 
-attribute_hidden SEXP Rsockread(SEXP ssock, SEXP smaxlen)
+static SEXP Rsockread(SEXP ssock, SEXP smaxlen)
 {
     if (length(ssock) != 1)
         error("invalid 'socket' argument");
@@ -308,7 +308,7 @@ attribute_hidden SEXP Rsockread(SEXP ssock, SEXP smaxlen)
     return ans;
 }
 
-attribute_hidden SEXP Rsockclose(SEXP ssock)
+static SEXP Rsockclose(SEXP ssock)
 {
     if (length(ssock) != 1)
         error("invalid 'socket' argument");
@@ -322,7 +322,7 @@ attribute_hidden SEXP Rsockclose(SEXP ssock)
     return ScalarLogical(sock);
 }
 
-attribute_hidden SEXP Rsockopen(SEXP sport)
+static SEXP Rsockopen(SEXP sport)
 {
     if (length(sport) != 1)
         error("invalid 'port' argument");
@@ -336,7 +336,7 @@ attribute_hidden SEXP Rsockopen(SEXP sport)
     return ScalarInteger(port); // The socket number
 }
 
-attribute_hidden SEXP Rsocklisten(SEXP ssock)
+static SEXP Rsocklisten(SEXP ssock)
 {
     if (length(ssock) != 1)
         error("invalid 'socket' argument");
@@ -357,7 +357,7 @@ attribute_hidden SEXP Rsocklisten(SEXP ssock)
     return ans;
 }
 
-attribute_hidden SEXP Rsockwrite(SEXP ssock, SEXP sstring)
+static SEXP Rsockwrite(SEXP ssock, SEXP sstring)
 {
     if (length(ssock) != 1)
         error("invalid 'socket' argument");
@@ -412,4 +412,5 @@ attribute_hidden SEXP do_sock(SEXP call, SEXP op, SEXP args, SEXP env)
         ans = Rsockwrite(CAR(args), CADR(args));
         break;
     }
+    return ans;
 }
