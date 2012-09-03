@@ -72,7 +72,7 @@ static double *std_rWishart_factor(double nu, int p, int upper, double ans[])
  *
  * @return
  */
-SEXP R_rWishart(SEXP ns, SEXP nuP, SEXP scal)
+SEXP rWishart(SEXP ns, SEXP nuP, SEXP scal)
 {
     SEXP ans;
     int *dims = INTEGER(getAttrib(scal, R_DimSymbol)), info, n = asInteger(ns), psqr;
