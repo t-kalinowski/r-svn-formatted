@@ -27,17 +27,9 @@
 #include "ctest.h"
 #include "stats.h"
 
-/*
-  Removed the non-local variable `double ***w' and moved to R_alloc from
-  Calloc.
-  The tests for whether the memory was allocated have been discarded as
-  R_alloc will throw an error.
-  The .C() will handle the vmaxget() and vmaxset().
- */
-
-static double ***w_init(Sint m, Sint n)
+static double ***w_init(int m, int n)
 {
-    Sint i;
+    int i;
     double ***w;
 
     w = (double ***)R_alloc(m + 1, sizeof(double **));
@@ -87,9 +79,9 @@ static double cansari(int k, int m, int n, double ***w)
   However, apparently users know about it.
   And indeed, package `exactRankTests' uses it.
  */
-void dansari(Sint *len, double *x, Sint *m, Sint *n)
+void dansari(int *len, double *x, int *m, int *n)
 {
-    Sint i;
+    int i;
     double ***w;
 
     w = w_init(*m, *n);
@@ -100,13 +92,13 @@ void dansari(Sint *len, double *x, Sint *m, Sint *n)
         }
         else
         {
-            x[i] = cansari((Sint)x[i], (Sint)*m, (Sint)*n, w) / choose(*m + *n, *m);
+            x[i] = cansari((int)x[i], *m, *n, w) / choose(*m + *n, *m);
         }
 }
 
-void pansari(Sint *len, double *x, Sint *m, Sint *n)
+void pansari(int *len, double *x, int *m, int *n)
 {
-    Sint i, j, l, u;
+    int i, j, l, u;
     double c, p, q;
     double ***w;
 
@@ -126,16 +118,16 @@ void pansari(Sint *len, double *x, Sint *m, Sint *n)
             p = 0;
             for (j = l; j <= q; j++)
             {
-                p += cansari((Sint)j, (Sint)*m, (Sint)*n, w);
+                p += cansari(j, *m, *n, w);
             }
             x[i] = p / c;
         }
     }
 }
 
-void qansari(Sint *len, double *x, Sint *m, Sint *n)
+void qansari(int *len, double *x, int *m, int *n)
 {
-    Sint i, l, u;
+    int i, l, u;
     double c, p, xi;
     double ***w;
 
@@ -158,7 +150,7 @@ void qansari(Sint *len, double *x, Sint *m, Sint *n)
             int q = 0;
             for (;;)
             {
-                p += cansari(q, (Sint)*m, (Sint)*n, w) / c;
+                p += cansari(q, *m, *n, w) / c;
                 if (p >= xi)
                     break;
                 q++;

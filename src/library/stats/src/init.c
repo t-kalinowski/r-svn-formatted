@@ -94,7 +94,6 @@ static const R_CMethodDef CEntries[] = {{"chisqsim", (DL_FUNC)&chisqsim, 11, chi
                                         {"prho", (DL_FUNC)&prho, 5, prho_t},
                                         {"qansari", (DL_FUNC)&qansari, 4, qansari_t},
                                         {"swilk2", (DL_FUNC)&swilk, 6, swilk_t},
-                                        {"BDRksmooth", (DL_FUNC)&BDRksmooth, 8},
                                         {"loess_raw", (DL_FUNC)&loess_raw, 24},
                                         {"loess_dfit", (DL_FUNC)&loess_dfit, 13},
                                         {"loess_dfitse", (DL_FUNC)&loess_dfitse, 16},
@@ -189,6 +188,7 @@ static const R_CallMethodDef CallEntries[] = {{"R_cutree", (DL_FUNC)&R_cutree, 2
                                               CALLDEF(pSmirnov2x, 3),
                                               CALLDEF(pKolmogorov2x, 2),
                                               CALLDEF(pKS2, 2),
+                                              CALLDEF(ksmooth, 5),
                                               {NULL, NULL, 0}};
 
 static const R_FortranMethodDef FortEntries[] = {FDEF(lowesw),
