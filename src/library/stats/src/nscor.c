@@ -26,8 +26,6 @@
 
 #include <Rmath.h>
 
-#include "ctest.h"
-
 #define nstep 721 /* = nrow(work) */
 
 void nscor1(double *s, int *n, int *n2, double *work, int *ifault)

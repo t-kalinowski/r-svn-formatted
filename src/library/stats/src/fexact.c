@@ -34,8 +34,6 @@
 #include <stdio.h>
 #include <limits.h>
 
-#include "ctest.h"
-
 static void f2xact(int nrow, int ncol, int *table, int ldtabl, double *expect, double *percnt, double *emin,
                    double *prt, double *pre, double *fact, int *ico, int *iro, int *kyy, int *idif, int *irn, int *key,
                    int *ldkey, int *ipoin, double *stp, int *ldstp, int *ifrq, double *LP, double *SP, double *tm,
@@ -2178,3 +2176,15 @@ L30:
 }
 
 #endif /* not USING_R */
+
+#include <Rinternals.h>
+
+SEXP Fexact(SEXP x, SEXP pars, SEXP work, SEXP smult)
+{
+    int nr = nrows(x), nc = ncols(x), ws = asInteger(work), mult = asInteger(smult);
+    pars = PROTECT(coerceVector(pars, REALSXP));
+    double p, prt, *rp = REAL(pars);
+    fexact(&nr, &nc, INTEGER(x), &nr, rp, rp + 1, rp + 2, &prt, &p, &ws, &mult);
+    UNPROTECT(1);
+    return ScalarReal(p);
+}
