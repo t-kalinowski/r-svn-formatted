@@ -1209,6 +1209,7 @@ SEXP install(const char *name)
     return (sym);
 }
 
+#define CHECK_INTERNALS 1
 /*  do_internal - This is the code for .Internal(). */
 
 SEXP attribute_hidden do_internal(SEXP call, SEXP op, SEXP args, SEXP env)
