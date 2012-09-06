@@ -60,10 +60,10 @@ static SEXP CSingSymbol = NULL;
 // Odd: 'type' is really this enum
 enum
 {
+    NOT_DEFINED,
     FILENAME,
     DLL_HANDLE,
-    R_OBJECT,
-    NOT_DEFINED
+    R_OBJECT
 };
 typedef struct
 {
@@ -187,7 +187,13 @@ static SEXP resolveNativeRoutine(SEXP args, DL_FUNC *fun, R_RegisteredNativeSymb
     SEXP op;
     const char *p;
     char *q;
-    DllReference dll = {"", NULL, NULL, NOT_DEFINED};
+    DllReference dll;
+    /* This is used as shorthand for 'all' in R_FindSymbol, but
+       should never be supplied */
+    strcpy(dll.DLLname, "");
+    dll.dll = NULL;
+    dll.obj = NULL;
+    dll.type = NOT_DEFINED;
 
     // find if we were called from a namespace
     SEXP env2 = ENCLOS(env);
@@ -205,9 +211,6 @@ static SEXP resolveNativeRoutine(SEXP args, DL_FUNC *fun, R_RegisteredNativeSymb
     /* We know this is ok because do_dotCode is entered */
     /* with its arguments evaluated. */
 
-    /* This is used as shorthand for 'all' in R_FindSymbol, but
-       should never be supplied */
-    strcpy(dll.DLLname, "");
     if (symbol->type == R_C_SYM || symbol->type == R_FORTRAN_SYM)
     {
         /* And that also looks for PACKAGE = */
