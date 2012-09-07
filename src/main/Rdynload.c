@@ -123,8 +123,9 @@
 #endif
 
 #ifdef CACHE_DLL_SYM /* Used on Windows */
-/* keep a record of symbols that have been found */
-R_CPFun CPFun[100];
+#define MAX_CACHE 100
+/* keep a record of symbols that have been found, about 70 bytes each */
+R_CPFun CPFun[MAX_CACHE];
 int nCPFun = 0;
 #endif
 
@@ -824,7 +825,7 @@ DL_FUNC R_FindSymbol(char const *name, char const *pkg, R_RegisteredNativeSymbol
                 if (symbol)
                     symbol->dll = LoadedDLL + i;
 #ifdef CACHE_DLL_SYM
-                if (strlen(pkg) <= 20 && strlen(name) <= 40 && nCPFun < 100 && (!symbol || !symbol->symbol.c))
+                if (strlen(pkg) <= 20 && strlen(name) <= 40 && nCPFun < MAX_CACHE && (!symbol || !symbol->symbol.c))
                 {
                     strcpy(CPFun[nCPFun].pkg, LoadedDLL[i].name);
                     strcpy(CPFun[nCPFun].name, name);
