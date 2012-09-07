@@ -39,8 +39,6 @@ static const R_CMethodDef CEntries[] = {{"loess_raw", (DL_FUNC)&loess_raw, 24},
                                         {"HoltWinters", (DL_FUNC)&HoltWinters, 17},
                                         {"kmeans_Lloyd", (DL_FUNC)&kmeans_Lloyd, 9},
                                         {"kmeans_MacQueen", (DL_FUNC)&kmeans_MacQueen, 9},
-                                        {"signrank_free", (DL_FUNC)&stats_signrank_free, 0},
-                                        {"wilcox_free", (DL_FUNC)&stats_wilcox_free, 0},
                                         {NULL, NULL, 0}};
 
 #define CALLDEF(name, n)                                                                                               \
@@ -278,6 +276,9 @@ static const R_ExternalMethodDef ExtEntries[] = {EXTDEF(compcases, -1),
                                                  {"qnf", (DL_FUNC)&distn4, 5},
 
                                                  {"rmultinom", (DL_FUNC)&Rmultinom, 3},
+
+                                                 {"signrank_free", (DL_FUNC)&stats_signrank_free, 0},
+                                                 {"wilcox_free", (DL_FUNC)&stats_wilcox_free, 0},
                                                  {NULL, NULL, 0}};
 
 void attribute_visible R_init_stats(DllInfo *dll)

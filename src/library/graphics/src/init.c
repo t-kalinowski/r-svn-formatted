@@ -27,12 +27,16 @@
 #include "graphics.h"
 #include <R_ext/Rdynload.h>
 
-static const R_CallMethodDef CallEntries[] = {{"C_contourDef", (DL_FUNC)&C_contourDef, 0},
-                                              {"C_StemLeaf", (DL_FUNC)&C_StemLeaf, 4},
-                                              {"C_BinCount", (DL_FUNC)&C_BinCount, 4},
-                                              {NULL, NULL, 0}};
+#define CALLDEF(name, n)                                                                                               \
+    {                                                                                                                  \
+#name, (DL_FUNC)&name, n                                                                                       \
+    }
 
-static R_CMethodDef CEntries[] = {{"unregisterBase", (DL_FUNC)unregisterBase, 0}, {NULL, NULL, 0}};
+static const R_CallMethodDef CallEntries[] = {CALLDEF(C_contourDef, 0),
+                                              CALLDEF(C_StemLeaf, 4),
+                                              CALLDEF(C_BinCount, 4),
+                                              CALLDEF(RunregisterBase, 0),
+                                              {NULL, NULL, 0}};
 
 #define EXTDEF(name, n)                                                                                                \
     {                                                                                                                  \
@@ -58,7 +62,7 @@ void
 #endif
     R_init_graphics(DllInfo *dll)
 {
-    R_registerRoutines(dll, CEntries, CallEntries, NULL, ExtEntries);
+    R_registerRoutines(dll, NULL, CallEntries, NULL, ExtEntries);
     R_useDynamicSymbols(dll, FALSE);
     R_forceSymbols(dll, TRUE);
     registerBase();
