@@ -83,7 +83,7 @@ static SEXP La_svd(SEXP jobu, SEXP x, SEXP s, SEXP u, SEXP vt)
 
     /* work on a copy of x  */
     double *xvals;
-    if (TYPEOF(x) != REALSXP)
+    if (!isReal(x))
     {
         x = coerceVector(x, REALSXP);
         xvals = REAL(x);
@@ -160,7 +160,7 @@ static SEXP La_rs(SEXP x, SEXP only_values)
         jobv[0] = 'V';
 
     /* work on a copy of x, since LAPACK trashes it */
-    if (TYPEOF(x) != REALSXP)
+    if (!isReal(x))
     {
         x = coerceVector(x, REALSXP);
         rx = REAL(x);
@@ -264,7 +264,7 @@ static SEXP La_rg(SEXP x, SEXP only_values)
         error(_("'x' must be a square numeric matrix"));
 
     /* work on a copy of x */
-    if (TYPEOF(x) != REALSXP)
+    if (!isReal(x))
     {
         x = coerceVector(x, REALSXP);
         xvals = REAL(x);
@@ -388,11 +388,7 @@ static SEXP La_dgecon(SEXP A, SEXP norm)
         error(_("'A' must be a numeric matrix"));
     if (!isString(norm))
         error(_("'norm' must be a character string"));
-    if (!isReal(A))
-        A = coerceVector(A, REALSXP);
-    else
-        A = duplicate(A); /* will be overwritten by LU */
-    PROTECT(A);
+    A = PROTECT(isReal(A) ? duplicate(A) : coerceVector(A, REALSXP));
 
     xdims = INTEGER(coerceVector(getAttrib(A, R_DimSymbol), INTSXP));
     m = xdims[0];
@@ -716,7 +712,7 @@ static SEXP qr_coef_cmplx(SEXP Q, SEXP Bin)
     if (!isMatrix(Bin))
         error(_("'b' must be a complex matrix"));
 
-    if (TYPEOF(Bin) != REALSXP)
+    if (!isReal(Bin))
         B = PROTECT(coerceVector(Bin, CPLXSXP));
     else
         B = PROTECT(duplicate(Bin));
@@ -761,7 +757,7 @@ static SEXP qr_qy_cmplx(SEXP Q, SEXP Bin, SEXP trans)
     if (tr == NA_LOGICAL)
         error(_("invalid '%s' argument"), "trans");
 
-    if (TYPEOF(Bin) != REALSXP)
+    if (!isReal(Bin))
         B = PROTECT(coerceVector(Bin, CPLXSXP));
     else
         B = PROTECT(duplicate(Bin));
@@ -983,7 +979,7 @@ static SEXP La_chol(SEXP A, SEXP pivot, SEXP stol)
     if (!isMatrix(A))
         error(_("'a' must be a numeric matrix"));
 
-    SEXP ans = PROTECT((TYPEOF(A) == REALSXP) ? duplicate(A) : coerceVector(A, REALSXP));
+    SEXP ans = PROTECT(isReal(A) ? duplicate(A) : coerceVector(A, REALSXP));
     SEXP adims = getAttrib(A, R_DimSymbol);
     if (TYPEOF(adims) != INTSXP)
         error("non-integer dims");
@@ -1170,7 +1166,7 @@ static SEXP La_solve(SEXP A, SEXP Bin, SEXP tolin)
     int *ipiv = (int *)R_alloc(n, sizeof(int));
 
     /* work on a copy of A */
-    if (TYPEOF(A) != REALSXP)
+    if (!isReal(A))
     {
         A = coerceVector(A, REALSXP);
         avals = REAL(A);
@@ -1211,7 +1207,7 @@ static SEXP La_qr(SEXP Ain)
     m = Adims[0];
     n = Adims[1];
     SEXP A;
-    if (TYPEOF(Ain) != REALSXP)
+    if (!isReal(Ain))
     {
         A = PROTECT(coerceVector(Ain, REALSXP));
     }
@@ -1273,10 +1269,7 @@ static SEXP qr_coef_real(SEXP Q, SEXP Bin)
     if (!isMatrix(Bin))
         error(_("'b' must be a numeric matrix"));
 
-    if (TYPEOF(Bin) != REALSXP)
-        B = PROTECT(coerceVector(Bin, REALSXP));
-    else
-        B = PROTECT(duplicate(Bin));
+    B = PROTECT(isReal(Bin) ? duplicate(Bin) : coerceVector(Bin, REALSXP));
 
     n = INTEGER(coerceVector(getAttrib(qr, R_DimSymbol), INTSXP))[0];
     Bdims = INTEGER(coerceVector(getAttrib(B, R_DimSymbol), INTSXP));
@@ -1313,10 +1306,7 @@ static SEXP qr_qy_real(SEXP Q, SEXP Bin, SEXP trans)
     if (tr == NA_LOGICAL)
         error(_("invalid '%s' argument"), "trans");
 
-    if (TYPEOF(Bin) != REALSXP)
-        B = PROTECT(coerceVector(Bin, REALSXP));
-    else
-        B = PROTECT(duplicate(Bin));
+    B = PROTECT(isReal(Bin) ? duplicate(Bin) : coerceVector(Bin, REALSXP));
     n = INTEGER(coerceVector(getAttrib(qr, R_DimSymbol), INTSXP))[0];
     Bdims = INTEGER(coerceVector(getAttrib(B, R_DimSymbol), INTSXP));
     if (Bdims[0] != n)
@@ -1338,22 +1328,20 @@ static SEXP qr_qy_real(SEXP Q, SEXP Bin, SEXP trans)
 /* TODO : add  a *complex* version, using  LAPACK ZGETRF() */
 static SEXP det_ge_real(SEXP Ain, SEXP logarithm)
 {
-    int i, n, *Adims, info, *jpvt, sign, useLog;
+    int info, sign = 1, useLog = asLogical(logarithm);
     double modulus = 0.0; /* -Wall */
 
     if (!isMatrix(Ain))
         error(_("'a' must be a numeric matrix"));
-    useLog = asLogical(logarithm);
     if (useLog == NA_LOGICAL)
         error(_("argument 'logarithm' must be logical"));
-    SEXP A = PROTECT((TYPEOF(Ain) == REALSXP) ? duplicate(Ain) : coerceVector(Ain, REALSXP));
-    Adims = INTEGER(coerceVector(getAttrib(Ain, R_DimSymbol), INTSXP));
-    n = Adims[0];
+    SEXP A = PROTECT(isReal(Ain) ? duplicate(Ain) : coerceVector(Ain, REALSXP));
+    int *Adims = INTEGER(coerceVector(getAttrib(Ain, R_DimSymbol), INTSXP));
+    int n = Adims[0];
     if (Adims[1] != n)
         error(_("'a' must be a square matrix"));
-    jpvt = (int *)R_alloc(n, sizeof(int));
+    int *jpvt = (int *)R_alloc(n, sizeof(int));
     F77_CALL(dgetrf)(&n, &n, REAL(A), &n, jpvt, &info);
-    sign = 1;
     if (info < 0)
         error(_("error code %d from Lapack routine '%s'"), info, "dgetrf");
     else if (info > 0)
@@ -1369,14 +1357,14 @@ static SEXP det_ge_real(SEXP Ain, SEXP logarithm)
     }
     else
     {
-        for (i = 0; i < n; i++)
+        for (int i = 0; i < n; i++)
             if (jpvt[i] != (i + 1))
                 sign = -sign;
         if (useLog)
         {
             modulus = 0.0;
             size_t N1 = n + 1;
-            for (i = 0; i < n; i++)
+            for (int i = 0; i < n; i++)
             {
                 double dii = REAL(A)[i * N1]; /* ith diagonal element */
                 modulus += log(dii < 0 ? -dii : dii);
@@ -1388,7 +1376,7 @@ static SEXP det_ge_real(SEXP Ain, SEXP logarithm)
         {
             modulus = 1.0;
             size_t N1 = n + 1;
-            for (i = 0; i < n; i++)
+            for (int i = 0; i < n; i++)
                 modulus *= REAL(A)[i * N1];
             if (modulus < 0)
             {
