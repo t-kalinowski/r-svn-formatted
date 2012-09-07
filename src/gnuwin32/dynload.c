@@ -93,7 +93,9 @@ static void fixPath(char *path)
 
 static HINSTANCE R_loadLibrary(const char *path, int asLocal, int now, const char *search);
 static DL_FUNC getRoutine(DllInfo *info, char const *name);
+#ifdef CACHE_DLL_SYM
 static void R_deleteCachedSymbols(DllInfo *dll);
+#endif
 
 static void R_getDLLError(char *buf, int len);
 static void GetFullDLLPath(SEXP call, char *buf, const char *path);
@@ -110,13 +112,16 @@ void InitFunctionHashing()
     R_osDynSymbol->closeLibrary = closeLibrary;
     R_osDynSymbol->getError = R_getDLLError;
 
+#ifdef CACHE_DLL_SYM
     R_osDynSymbol->deleteCachedSymbols = R_deleteCachedSymbols;
     R_osDynSymbol->lookupCachedSymbol = Rf_lookupCachedSymbol;
+#endif
 
     R_osDynSymbol->fixPath = fixPath;
     R_osDynSymbol->getFullDLLPath = GetFullDLLPath;
 }
 
+#ifdef CACHE_DLL_SYM
 static void R_deleteCachedSymbols(DllInfo *dll)
 {
     int i;
@@ -133,6 +138,7 @@ static void R_deleteCachedSymbols(DllInfo *dll)
                 nCPFun--;
         }
 }
+#endif
 
 #ifndef _MCW_EM
 _CRTIMP unsigned int __cdecl _controlfp(unsigned int unNew, unsigned int unMask);
