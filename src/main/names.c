@@ -1247,13 +1247,13 @@ SEXP attribute_hidden do_internal(SEXP call, SEXP op, SEXP args, SEXP env)
                 break;
         }
         const char *fn = CHAR(PRINTNAME(fun));
-        if (!strlen(ns) && strcmp(fn, "getRegisteredNamespace"))
-            errorcall(call, ".Internal(%s()) not called from a base namespace\n", fn);
         // nspackloader.R contained a .Internal call, so need this
         // until all packages have been re-installed.
+        if (!strlen(ns) && strcmp(fn, "getRegisteredNamespace"))
+            errorcall(call, ".Internal(%s()) not called from a base namespace\n", fn);
         if (strlen(ns)
 #if CHECK_INTERNALS < 2
-            && strcmp(fn, "getRegisteredNamespace") && strcmp(ns, "methods")
+            && strcmp(ns, "Matrix")
 #endif
             && strcmp(ns, "base") && strcmp(ns, "tools") && strcmp(ns, "utils") && strcmp(ns, "compiler"))
             errorcall(call, ".Internal(%s()) called from namespace '%s'\n", fn, ns);
