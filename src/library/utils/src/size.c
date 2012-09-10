@@ -24,7 +24,7 @@
 #include <config.h>
 #endif
 
-#include "Defn.h"
+#include <Defn.h>
 
 /* A count of the memory used by an object. The following assumptions
    are made.
@@ -147,14 +147,13 @@ static R_size_t objectsize(SEXP s)
     }
     else
         cnt += sizeof(SEXPREC);
-    /* add in attributes: these are fake for CHARXPs */
+    /* add in attributes: these are fake for CHARSXPs */
     if (TYPEOF(s) != CHARSXP)
         cnt += objectsize(ATTRIB(s));
     return (cnt);
 }
 
-SEXP attribute_hidden do_objectsize(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP objectSize(SEXP x)
 {
-    checkArity(op, args);
-    return ScalarReal((double)objectsize(CAR(args)));
+    return ScalarReal((double)objectsize(x));
 }

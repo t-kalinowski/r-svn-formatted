@@ -1936,7 +1936,8 @@ static void HashTableSetup1(SEXP x, HashData *d)
         INTEGER(d->HashTable)[i] = NIL;
 }
 
-SEXP attribute_hidden csduplicated(SEXP x)
+/* used in utils */
+SEXP csduplicated(SEXP x)
 {
     SEXP ans;
     int n;
