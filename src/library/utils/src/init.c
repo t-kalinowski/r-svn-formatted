@@ -44,6 +44,7 @@ static const R_CallMethodDef CallEntries[] = {CALLDEF(crc64, 1),
                                               CALLDEF(sockopen, 1),
                                               CALLDEF(socklisten, 1),
                                               CALLDEF(sockwrite, 2),
+
                                               {NULL, NULL, 0}};
 
 #define EXTDEF(name, n)                                                                                                \
@@ -52,11 +53,11 @@ static const R_CallMethodDef CallEntries[] = {CALLDEF(crc64, 1),
     }
 
 static const R_ExternalMethodDef ExtEntries[] = {
-    EXTDEF(unzip, 7),       EXTDEF(Rprof, 4),       EXTDEF(Rprofmem, 3),
+    EXTDEF(unzip, 7),       EXTDEF(Rprof, 4),         EXTDEF(Rprofmem, 3),
 
-    EXTDEF(countfields, 6), EXTDEF(typecvt, 4),     EXTDEF(readtablehead, 6), EXTDEF(writetable, 11),
+    EXTDEF(countfields, 6), EXTDEF(readtablehead, 6), EXTDEF(typeconvert, 4), EXTDEF(writetable, 11),
 
-    EXTDEF(addhistory, 1),  EXTDEF(loadhistory, 1), EXTDEF(savehistory, 1),
+    EXTDEF(addhistory, 1),  EXTDEF(loadhistory, 1),   EXTDEF(savehistory, 1),
 
     {NULL, NULL, 0}};
 
