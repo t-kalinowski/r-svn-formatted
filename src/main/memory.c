@@ -3784,7 +3784,7 @@ int attribute_hidden(IS_CACHED)(SEXP x)
 
 #ifndef R_MEMORY_PROFILING
 
-SEXP attribute_hidden do_Rprofmem(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP do_Rprofmem(SEXP args)
 {
     error(_("memory profiling is not available on this system"));
     return R_NilValue; /* not reached */
@@ -3862,13 +3862,12 @@ static void R_InitMemReporting(SEXP filename, int append, R_size_t threshold)
     return;
 }
 
-SEXP attribute_hidden do_Rprofmem(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP do_Rprofmem(SEXP args)
 {
     SEXP filename;
     R_size_t threshold;
     int append_mode;
 
-    checkArity(op, args);
     if (!isString(CAR(args)) || (LENGTH(CAR(args))) != 1)
         error(_("invalid '%s' argument"), "filename");
     append_mode = asLogical(CADR(args));

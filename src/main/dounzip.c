@@ -331,7 +331,7 @@ static SEXP ziplist(const char *zipname)
     return ans;
 }
 
-SEXP attribute_hidden do_unzip(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP Runzip(SEXP args)
 {
     SEXP fn, ans, names = R_NilValue;
     char zipname[PATH_MAX], dest[PATH_MAX];
