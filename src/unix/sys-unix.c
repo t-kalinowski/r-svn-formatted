@@ -31,6 +31,7 @@
 #endif
 
 #include <Defn.h>
+#include <Internal.h>
 #include <Fileio.h>
 #include <Rmath.h> /* for fround */
 #include "Runix.h"

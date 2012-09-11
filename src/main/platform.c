@@ -38,6 +38,7 @@
 #endif
 
 #include <Defn.h>
+#include <Internal.h>
 #include <Rinterface.h>
 #include <Fileio.h>
 #include <R_ext/Applic.h> /* machar */

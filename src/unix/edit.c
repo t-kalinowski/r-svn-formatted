@@ -26,6 +26,7 @@
 #endif
 
 #include "Defn.h"
+#include <Internal.h>
 #include "Print.h"
 #include "Fileio.h"
 #include "Parse.h"
