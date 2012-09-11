@@ -53,11 +53,14 @@ static const R_CallMethodDef CallEntries[] = {CALLDEF(crc64, 1),
     }
 
 static const R_ExternalMethodDef ExtEntries[] = {
-    EXTDEF(download, 5),    EXTDEF(unzip, 7),         EXTDEF(Rprof, 4),       EXTDEF(Rprofmem, 3),
+    EXTDEF(download, 5),     EXTDEF(unzip, 7),         EXTDEF(Rprof, 4),       EXTDEF(Rprofmem, 3),
 
-    EXTDEF(countfields, 6), EXTDEF(readtablehead, 6), EXTDEF(typeconvert, 4), EXTDEF(writetable, 11),
+    EXTDEF(countfields, 6),  EXTDEF(readtablehead, 6), EXTDEF(typeconvert, 4), EXTDEF(writetable, 11),
 
-    EXTDEF(addhistory, 1),  EXTDEF(loadhistory, 1),   EXTDEF(savehistory, 1),
+    EXTDEF(addhistory, 1),   EXTDEF(loadhistory, 1),   EXTDEF(savehistory, 1),
+
+    EXTDEF(dataentry, 2),    EXTDEF(dataviewer, 2),    EXTDEF(edit, 4),        EXTDEF(fileedit, 3),
+    EXTDEF(flushconsole, 0), EXTDEF(selectlist, 4),
 
     {NULL, NULL, 0}};
 
