@@ -21,12 +21,18 @@
 #include <Rinternals.h>
 
 /* from src/main/internet.c */
+SEXP Rdownload(SEXP args);
 SEXP Rsockconnect(SEXP sport, SEXP shost);
 SEXP Rsockread(SEXP sport, SEXP smaxlen);
 SEXP Rsockclose(SEXP sport);
 SEXP Rsockopen(SEXP sport);
 SEXP Rsocklisten(SEXP sport);
 SEXP Rsockwrite(SEXP sport, SEXP sstring);
+
+SEXP download(SEXP args)
+{
+    return Rdownload(CDR(args));
+}
 
 SEXP sockconnect(SEXP sport, SEXP shost)
 {

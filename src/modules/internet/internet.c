@@ -287,7 +287,7 @@ static void doneprogressbar(void *data)
 
 #define CPBUFSIZE 65536
 #define IBUFSIZE 4096
-static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
+static SEXP in_do_download(SEXP args)
 {
     SEXP scmd, sfile, smode, sheaders, agentFun;
     const char *url, *file, *mode, *headers;
@@ -297,7 +297,6 @@ static SEXP in_do_download(SEXP call, SEXP op, SEXP args, SEXP env)
     int pc;
 #endif
 
-    checkArity(op, args);
     scmd = CAR(args);
     args = CDR(args);
     if (!isString(scmd) || length(scmd) < 1)
