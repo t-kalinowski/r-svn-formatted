@@ -49,9 +49,19 @@ extern Rboolean useaqua; /* from src/unix/system.c */
 
    There's another one in src/main/systutils.c, ptr_CocoaSystem .
 
+extern SEXP (*ptr_do_packagemanger)(SEXP, SEXP, SEXP, SEXP);
+extern SEXP (*ptr_do_datamanger)(SEXP, SEXP, SEXP, SEXP);
+extern SEXP (*ptr_do_browsepkgs)(SEXP, SEXP, SEXP, SEXP);
+extern SEXP (*ptr_do_wsbrowser)(SEXP, SEXP, SEXP, SEXP);
+extern SEXP (*ptr_do_hsbrowser)(SEXP, SEXP, SEXP, SEXP);
+extern SEXP (*ptr_do_dataentry)(SEXP, SEXP, SEXP, SEXP);
+extern SEXP (*ptr_do_selectlist)(SEXP, SEXP, SEXP, SEXP);
+extern void (*ptr_do_flushconsole)();
 */
-DL_FUNC ptr_do_wsbrowser, ptr_GetQuartzParameters, ptr_do_dataentry, ptr_do_browsepkgs, ptr_do_datamanger,
-    ptr_do_packagemanger, ptr_do_flushconsole, ptr_do_hsbrowser, ptr_do_selectlist;
+
+DL_FUNC ptr_do_wsbrowser, ptr_GetQuartzParameters,
+    //    ptr_do_dataentry, ptr_do_selectlist,
+    ptr_do_browsepkgs, ptr_do_datamanger, ptr_do_packagemanger, ptr_do_flushconsole, ptr_do_hsbrowser;
 
 int (*ptr_Raqua_CustomPrint)(const char *, SEXP);
 
@@ -82,20 +92,6 @@ QuartzFunctions_t *getQuartzFunctions(void)
 SEXP do_wsbrowser(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     return ptr_do_wsbrowser(call, op, args, env);
-}
-
-#ifdef HAVE_X11
-extern SEXP X11_do_dataentry(SEXP call, SEXP op, SEXP args, SEXP rho); /* from src/unix/X11.c */
-#endif
-
-SEXP do_dataentry(SEXP call, SEXP op, SEXP args, SEXP env)
-{
-    if (useaqua)
-        return ptr_do_dataentry(call, op, args, env);
-#ifdef HAVE_X11
-    else
-        return X11_do_dataentry(call, op, args, env);
-#endif
 }
 
 SEXP do_browsepkgs(SEXP call, SEXP op, SEXP args, SEXP env)
@@ -151,12 +147,3 @@ SEXP do_aqua_custom_print(SEXP call, SEXP op, SEXP args, SEXP env)
     return rv;
 }
 #endif
-
-SEXP do_selectlist(SEXP call, SEXP op, SEXP args, SEXP env)
-{
-#ifdef HAVE_AQUA
-    if (ptr_do_selectlist)
-        return ptr_do_selectlist(call, op, args, env);
-#endif
-    return R_NilValue;
-}
