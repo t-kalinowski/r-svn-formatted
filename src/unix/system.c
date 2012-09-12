@@ -49,6 +49,7 @@
 
 #include "Fileio.h"
 
+// This creates the interface pointers in this file
 #define __SYSTEM__
 #define R_INTERFACE_PTRS 1
 #include <Rinterface.h>
@@ -121,8 +122,8 @@ int R_ChooseFile(int _new, char *buf, int len)
 void R_setStartTime(void); /* in sys-unix.c */
 
 #ifdef HAVE_AQUA
-/*  this should be a global variable as it used in unix/devQuartz.c
-    and in main/sysutils.c
+/*  this should be a global variable as it used in unix/aqua.c
+    and main/sysutils.c (for system).
 */
 Rboolean useaqua = FALSE;
 #endif
