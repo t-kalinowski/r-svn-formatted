@@ -48,6 +48,7 @@ static const R_CallMethodDef CallEntries[] = {CALLDEF(crc64, 1),
 
 #ifdef Win32
                                               CALLDEF(winver, 0),
+                                              CALLDEF(dllversion, 1),
                                               CALLDEF(getClipboardFormats, 0),
                                               CALLDEF(readClipboard, 2),
                                               CALLDEF(writeClipboard, 2),
@@ -55,6 +56,10 @@ static const R_CallMethodDef CallEntries[] = {CALLDEF(crc64, 1),
                                               CALLDEF(getWindowTitle, 0),
                                               CALLDEF(setWindowTitle, 1),
                                               CALLDEF(setStatusBar, 1),
+                                              CALLDEF(chooseFiles, 5),
+                                              CALLDEF(chooseDir, 2),
+                                              CALLDEF(getWindowsHandle, 1),
+                                              CALLDEF(getWindowsHandles, 2),
 #endif
 
                                               {NULL, NULL, 0}};
@@ -96,6 +101,7 @@ static const R_ExternalMethodDef ExtEntries[] = {EXTDEF(download, 5),
                                                  EXTDEF(winMenuDel, 2),
 
                                                  EXTDEF(readRegistry, 4),
+                                                 EXTDEF(arrangeWindows, 4),
 #endif
 
                                                  {NULL, NULL, 0}};
