@@ -195,11 +195,11 @@ static int mkVerbEnv();
 #define YYSTYPE SEXP
 
 /* Line 189 of yacc.c  */
-#line 204 "gramLatex.c"
+#line 206 "gramLatex.c"
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
-#define YYDEBUG 1
+#define YYDEBUG 0
 #endif
 
 /* Enabling verbose error messages.  */
@@ -256,7 +256,7 @@ typedef struct YYLTYPE
 /* Copy the second part of user declarations.  */
 
 /* Line 264 of yacc.c  */
-#line 269 "gramLatex.c"
+#line 271 "gramLatex.c"
 
 #ifdef short
 #undef short
@@ -1057,7 +1057,7 @@ YYLTYPE *yylocationp;
     };
 
 /* Line 1009 of yacc.c  */
-#line 1211 "gramLatex.c"
+#line 1213 "gramLatex.c"
     break;
     case 6: /* "TEXT" */
 
@@ -1068,7 +1068,7 @@ YYLTYPE *yylocationp;
     };
 
 /* Line 1009 of yacc.c  */
-#line 1220 "gramLatex.c"
+#line 1222 "gramLatex.c"
     break;
     case 7: /* "COMMENT" */
 
@@ -1079,7 +1079,7 @@ YYLTYPE *yylocationp;
     };
 
 /* Line 1009 of yacc.c  */
-#line 1229 "gramLatex.c"
+#line 1231 "gramLatex.c"
     break;
     case 8: /* "BEGIN" */
 
@@ -1090,7 +1090,7 @@ YYLTYPE *yylocationp;
     };
 
 /* Line 1009 of yacc.c  */
-#line 1238 "gramLatex.c"
+#line 1240 "gramLatex.c"
     break;
     case 9: /* "END" */
 
@@ -1101,7 +1101,7 @@ YYLTYPE *yylocationp;
     };
 
 /* Line 1009 of yacc.c  */
-#line 1247 "gramLatex.c"
+#line 1249 "gramLatex.c"
     break;
 
     default:
@@ -1618,7 +1618,7 @@ yyreduce:
     break;
 
 /* Line 1464 of yacc.c  */
-#line 1720 "gramLatex.c"
+#line 1722 "gramLatex.c"
     default:
         break;
     }
