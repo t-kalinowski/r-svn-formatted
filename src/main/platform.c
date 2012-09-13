@@ -1710,6 +1710,7 @@ SEXP attribute_hidden do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 #endif
 
+#if 0
 static void chmod_one(const char *name)
 {
     DIR *dir;
@@ -1722,13 +1723,11 @@ static void chmod_one(const char *name)
 #endif
 #ifndef Win32
     mode_t mask = S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR, /* 0644 */
-        dirmask = mask | S_IXUSR | S_IXGRP | S_IXOTH;    /* 0755 */
+	dirmask = mask | S_IXUSR | S_IXGRP | S_IXOTH; /* 0755 */
 #endif
 
-    if (streql(name, ".") || streql(name, ".."))
-        return;
-    if (!R_FileExists(name))
-        return;
+    if (streql(name, ".") || streql(name, "..")) return;
+    if (!R_FileExists(name)) return;
 #ifdef Win32
     _stati64(name, &sb);
     chmod(name, _S_IWRITE);
@@ -1736,30 +1735,25 @@ static void chmod_one(const char *name)
     stat(name, &sb);
     chmod(name, (sb.st_mode | mask) & dirmask);
 #endif
-    if ((sb.st_mode & S_IFDIR) > 0)
-    { /* a directory */
+    if ((sb.st_mode & S_IFDIR) > 0) { /* a directory */
 #ifndef Win32
-        chmod(name, dirmask);
+	chmod(name, dirmask);
 #endif
-        if ((dir = opendir(name)) != NULL)
-        {
-            while ((de = readdir(dir)))
-            {
-                if (streql(de->d_name, ".") || streql(de->d_name, ".."))
-                    continue;
-                size_t n = strlen(name);
-                if (name[n - 1] == R_FileSep[0])
-                    snprintf(p, PATH_MAX, "%s%s", name, de->d_name);
-                else
-                    snprintf(p, PATH_MAX, "%s%s%s", name, R_FileSep, de->d_name);
-                chmod_one(p);
-            }
-            closedir(dir);
-        }
-        else
-        {
-            /* we were unable to read a dir */
-        }
+	if ((dir = opendir(name)) != NULL) {
+	    while ((de = readdir(dir))) {
+		if (streql(de->d_name, ".") || streql(de->d_name, ".."))
+		    continue;
+		size_t n = strlen(name);
+		if (name[n-1] == R_FileSep[0])
+		    snprintf(p, PATH_MAX, "%s%s", name, de->d_name);
+		else
+		    snprintf(p, PATH_MAX, "%s%s%s", name, R_FileSep, de->d_name);
+		chmod_one(p);
+	    }
+	    closedir(dir);
+	} else { 
+	    /* we were unable to read a dir */
+	}
     }
 }
 
@@ -1770,12 +1764,13 @@ SEXP attribute_hidden do_dirchmod(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP dr;
     checkArity(op, args);
     dr = CAR(args);
-    if (!isString(dr) || length(dr) != 1)
-        error(_("invalid '%s' argument"), "dir");
+    if(!isString(dr) || length(dr) != 1)
+	error(_("invalid '%s' argument"), "dir");
     chmod_one(translateChar(STRING_ELT(dr, 0)));
 
     return R_NilValue;
 }
+#endif
 
 SEXP attribute_hidden do_getlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
