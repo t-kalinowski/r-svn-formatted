@@ -120,6 +120,7 @@ static const R_ExternalMethodDef ExtEntries[] = {EXTDEF(PicTeX, 6),
                                                  EXTDEF(colors, 0),
                                                  EXTDEF(col2rgb, 1),
                                                  EXTDEF(palette, 1),
+                                                 EXTDEF(devAskNewPage, 1),
 
 #ifdef WIN32
                                                  EXTDEF(devga, 19),
