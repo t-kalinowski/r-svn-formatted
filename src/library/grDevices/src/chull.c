@@ -133,7 +133,7 @@ static void split(int n, double *x, int m, int *in, int ii, int jj, int s, int *
     }
 }
 
-static void chull(int *n, double *x, int *m, int *in, int *ia, int *ib, int *ih, int *nh, int *il)
+static void in_chull(int *n, double *x, int *m, int *in, int *ia, int *ib, int *ih, int *nh, int *il)
 {
 /* this subroutine determines which of the m points of array
  x whose subscripts are in array in are vertices of the
@@ -454,7 +454,7 @@ Finis:
 } /* chull */
 
 #include <Rinternals.h>
-SEXP C_chull(SEXP x)
+SEXP chull(SEXP x)
 {
     // x is a two-column matrix
     int n = nrows(x), nh;
@@ -465,7 +465,7 @@ SEXP C_chull(SEXP x)
     x = PROTECT(coerceVector(x, REALSXP));
     if (TYPEOF(x) != REALSXP)
         error("'x' is not numeric");
-    chull(&n, REAL(x), &n, in, ih + n, ih + 2 * n, ih, &nh, ih + 3 * n);
+    in_chull(&n, REAL(x), &n, in, ih + n, ih + 2 * n, ih, &nh, ih + 3 * n);
     SEXP ans = allocVector(INTSXP, nh);
     int *ians = INTEGER(ans);
     for (int i = 0; i < nh; i++)

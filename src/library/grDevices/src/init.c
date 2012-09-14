@@ -75,7 +75,7 @@ static const R_CallMethodDef CallEntries[] = {
     CALLDEF(CIDFontInUse, 2),
     CALLDEF(R_CreateAtVector, 4),
     CALLDEF(R_GAxisPars, 3),
-    CALLDEF(C_chull, 1),
+    CALLDEF(chull, 1),
 #ifndef WIN32
     CALLDEF(makeQuartzDefault, 0),
     CALLDEF(cairoProps, 1),
@@ -87,18 +87,46 @@ static const R_CallMethodDef CallEntries[] = {
 #name, (DL_FUNC)&name, n                                                                                       \
     }
 
-static const R_ExternalMethodDef ExtEntries[] = {
-    EXTDEF(PicTeX, 6),    EXTDEF(PostScript, 16), EXTDEF(XFig, 11),          EXTDEF(PDF, 16),
-    EXTDEF(devCairo, 10), EXTDEF(devcap, 1),      EXTDEF(devcapture, 1),     EXTDEF(devcontrol, 1),
-    EXTDEF(devcopy, 1),   EXTDEF(devcur, 0),      EXTDEF(devdisplaylist, 0), EXTDEF(devholdflush, 1),
-    EXTDEF(devnext, 1),   EXTDEF(devoff, 1),      EXTDEF(devprev, 1),        EXTDEF(devset, 1),
-    EXTDEF(devsize, 0),
+static const R_ExternalMethodDef ExtEntries[] = {EXTDEF(PicTeX, 6),
+                                                 EXTDEF(PostScript, 16),
+                                                 EXTDEF(XFig, 11),
+                                                 EXTDEF(PDF, 16),
+                                                 EXTDEF(devCairo, 10),
+                                                 EXTDEF(devcap, 1),
+                                                 EXTDEF(devcapture, 1),
+                                                 EXTDEF(devcontrol, 1),
+                                                 EXTDEF(devcopy, 1),
+                                                 EXTDEF(devcur, 0),
+                                                 EXTDEF(devdisplaylist, 0),
+                                                 EXTDEF(devholdflush, 1),
+                                                 EXTDEF(devnext, 1),
+                                                 EXTDEF(devoff, 1),
+                                                 EXTDEF(devprev, 1),
+                                                 EXTDEF(devset, 1),
+                                                 EXTDEF(devsize, 0),
+                                                 EXTDEF(savePlot, 3),
+                                                 EXTDEF(contourLines, 5),
+                                                 EXTDEF(getSnapshot, 0),
+                                                 EXTDEF(playSnapshot, 1),
+                                                 EXTDEF(getGraphicsEvent, 1),
+                                                 EXTDEF(getGraphicsEventEnv, 1),
+                                                 EXTDEF(setGraphicsEventEnv, 2),
+                                                 EXTDEF(rgb, 6),
+                                                 EXTDEF(RGB2hsv, 1),
+                                                 EXTDEF(hsv, 4),
+                                                 EXTDEF(hcl, 5),
+                                                 EXTDEF(gray, 1),
+                                                 EXTDEF(colors, 0),
+                                                 EXTDEF(col2rgb, 1),
+                                                 EXTDEF(palette, 1),
+
 #ifdef WIN32
-    EXTDEF(devga, 19),    EXTDEF(savePlot, 3),
+                                                 EXTDEF(devga, 19),
 #else
-    EXTDEF(Quartz, 12),   EXTDEF(X11, 17),        EXTDEF(savePlot, 3),
+                                                 EXTDEF(Quartz, 12),
+                                                 EXTDEF(X11, 17),
 #endif
-    {NULL, NULL, 0}};
+                                                 {NULL, NULL, 0}};
 
 void R_init_grDevices(DllInfo *dll)
 {
