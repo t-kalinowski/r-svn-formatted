@@ -60,6 +60,9 @@ static const R_CallMethodDef CallEntries[] = {CALLDEF(crc64, 1),
                                               CALLDEF(chooseDir, 2),
                                               CALLDEF(getWindowsHandle, 1),
                                               CALLDEF(getWindowsHandles, 2),
+                                              CALLDEF(loadRconsole, 1),
+                                              CALLDEF(memsize, 1),
+                                              CALLDEF(shortpath, 1),
 #endif
 
                                               {NULL, NULL, 0}};
