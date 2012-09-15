@@ -94,10 +94,12 @@ void R_ResetConsole(void)
 {
     ptr_R_ResetConsole();
 }
+#ifndef HAVE_AQUA
 void R_FlushConsole(void)
 {
     ptr_R_FlushConsole();
 }
+#endif
 void R_ClearerrConsole(void)
 {
     ptr_R_ClearerrConsole();
@@ -126,6 +128,16 @@ void R_setStartTime(void); /* in sys-unix.c */
     and main/sysutils.c (for system).
 */
 Rboolean useaqua = FALSE;
+// This should have been fixed a long time ago ....
+#include <R_ext/Rdynload.h>
+DL_FUNC ptr_do_flushconsole;
+void R_FlushConsole(void)
+{
+    if (ptr_do_flushconsole)
+        ptr_do_flushconsole();
+    else
+        ptr_R_FlushConsole();
+}
 #endif
 
 void R_setupHistory()
@@ -285,7 +297,7 @@ int Rf_initialize_R(int ac, char **av)
             else if (!strcmp(p, "aqua") || !strcmp(p, "AQUA"))
                 useaqua = TRUE; // not allowed from R.sh
             else if (!strcmp(p, "cocoa") || !strcmp(p, "Cocoa"))
-                useaqua = TRUE; // not allowed from R.sh
+                useaqua = TRUE; // but 'cocaa' is used by R.app
 #endif
             else if (!strcmp(p, "X11") || !strcmp(p, "x11"))
                 useX11 = TRUE;
