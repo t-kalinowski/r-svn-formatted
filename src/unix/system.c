@@ -124,10 +124,9 @@ int R_ChooseFile(int _new, char *buf, int len)
 void R_setStartTime(void); /* in sys-unix.c */
 
 #ifdef HAVE_AQUA
-/*  this should be a global variable as it used in unix/aqua.c
-    and main/sysutils.c (for system).
-*/
+/*  used here and in main/sysutils.c (for system). */
 Rboolean useaqua = FALSE;
+
 // This should have been fixed a long time ago ....
 // Finally in Sep 2012 R.app sets ptr_R_FlushConsole
 #include <R_ext/Rdynload.h>
@@ -325,16 +324,17 @@ int Rf_initialize_R(int ac, char **av)
     if (useX11)
         R_GUIType = "X11";
 #endif /* HAVE_X11 */
+
 #ifdef HAVE_AQUA
     if (useaqua)
         R_GUIType = "AQUA";
 #endif
+
 #ifdef HAVE_TCLTK
     if (useTk)
-    {
         R_GUIType = "Tk";
-    }
 #endif
+
     R_common_command_line(&ac, av, Rp);
     while (--ac)
     {
