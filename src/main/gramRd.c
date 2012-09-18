@@ -4899,7 +4899,7 @@ static void con_cleanup(void *data)
  If there is text then that is read and the other arguments are ignored.
 */
 
-SEXP attribute_hidden do_parseRd(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP do_parseRd(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP s = R_NilValue, source;
     Rconnection con;
@@ -4912,7 +4912,6 @@ SEXP attribute_hidden do_parseRd(SEXP call, SEXP op, SEXP args, SEXP env)
     yydebug = 1;
 #endif
 
-    checkArity(op, args);
     R_ParseError = 0;
     R_ParseErrorMsg[0] = '\0';
 
@@ -4967,15 +4966,13 @@ SEXP attribute_hidden do_parseRd(SEXP call, SEXP op, SEXP args, SEXP env)
  .Internal( deparseRd(element, state) )
 */
 
-SEXP attribute_hidden do_deparseRd(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP do_deparseRd(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP e, state, result;
     int outlen, *statevals, quoteBraces, inRComment;
     const char *c;
     char *outbuf, *out, lookahead;
     Rboolean escape;
-
-    checkArity(op, args);
 
     e = CAR(args);
     args = CDR(args);

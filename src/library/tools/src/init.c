@@ -51,12 +51,22 @@ static const R_CallMethodDef CallEntries[] = {CALLDEF(codeFilesAppend, 2),
                                               CALLDEF(stopHTTPD, 0),
                                               {NULL, NULL, 0}};
 
+#define EXTDEF(name, n)                                                                                                \
+    {                                                                                                                  \
+#name, (DL_FUNC)&name, n                                                                                       \
+    }
+static const R_ExternalMethodDef ExtEntries[] = {EXTDEF(C_parseLatex, 4),
+                                                 EXTDEF(C_parseRd, 7),
+                                                 EXTDEF(C_deparseRd, 2),
+
+                                                 {NULL, NULL, 0}};
+
 void
 #ifdef HAVE_VISIBILITY_ATTRIBUTE
     __attribute__((visibility("default")))
 #endif
     R_init_tools(DllInfo *dll)
 {
-    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+    R_registerRoutines(dll, NULL, CallEntries, NULL, ExtEntries);
     R_useDynamicSymbols(dll, FALSE);
 }
