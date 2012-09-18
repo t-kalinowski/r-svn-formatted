@@ -23,8 +23,6 @@
 
 /* This file provides support for R.app, the OS X front end */
 
-#ifdef HAVE_AQUA
-
 #include <Defn.h>
 #include <Internal.h>
 
@@ -62,9 +60,13 @@ int (*ptr_Raqua_CustomPrint)(const char *, SEXP);
    grDevices.dll */
 QuartzFunctions_t *getQuartzFunctions(void)
 {
-    static QuartzFunctions_t *qfn;
-    if (qfn)
-        return qfn;
+    /* presumably this was intended to cache the result.
+       But,
+       - it was never used
+       - it would be unsafe as the namespace could be unloaded/reloaded
+    static QuartzFunctions_t* qfn;
+    if (qfn) return qfn;
+    */
 
     QuartzFunctions_t *(*fn)(void);
     fn = (QuartzFunctions_t * (*)(void)) R_FindSymbol("getQuartzAPI", "grDevices", NULL);
@@ -80,5 +82,3 @@ QuartzFunctions_t *getQuartzFunctions(void)
     }
     return fn();
 }
-
-#endif
