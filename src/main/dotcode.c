@@ -165,7 +165,7 @@ static void checkValidSymbolId(SEXP op, SEXP call, DL_FUNC *fun, R_RegisteredNat
         return;
     }
 
-    errorcall(call, _("'name' must be a string (of length 1) or native symbol reference"));
+    errorcall(call, _("first argument must be a string (of length 1) or native symbol reference"));
     return; /* not reached */
 }
 
