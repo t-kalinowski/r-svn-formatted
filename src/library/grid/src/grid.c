@@ -3428,13 +3428,14 @@ SEXP L_stringMetric(SEXP label)
     currentgp = gridStateElement(dd, GSS_GPAR);
     getViewportTransform(currentvp, dd, &vpWidthCM, &vpHeightCM, transform, &rotationAngle);
     getViewportContext(currentvp, &vpc);
-    /* The label can be a string or an expression
+    /* The label can be a string or an expression: is protected.
      */
-    PROTECT(txt = label);
+    txt = label;
     if (isSymbol(txt) || isLanguage(txt))
         txt = coerceVector(txt, EXPRSXP);
     else if (!isExpression(txt))
         txt = coerceVector(txt, STRSXP);
+    PROTECT(txt);
     n = LENGTH(txt);
     vmax = vmaxget();
     PROTECT(ascent = allocVector(REALSXP, n));
