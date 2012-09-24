@@ -310,7 +310,7 @@ SEXP attribute_hidden do_substr(SEXP call, SEXP op, SEXP args, SEXP env)
     if (len > 0)
     {
         if (!isInteger(sa) || !isInteger(so) || k == 0 || l == 0)
-            error(_("invalid substring argument(s)"));
+            error(_("invalid substring arguments"));
 
         for (i = 0; i < len; i++)
         {
@@ -428,7 +428,7 @@ SEXP attribute_hidden do_substrgets(SEXP call, SEXP op, SEXP args, SEXP env)
     if (len > 0)
     {
         if (!isInteger(sa) || !isInteger(so) || k == 0 || l == 0)
-            error(_("invalid substring argument(s)"));
+            error(_("invalid substring arguments"));
 
         v = LENGTH(value);
         if (!isString(value) || v == 0)
