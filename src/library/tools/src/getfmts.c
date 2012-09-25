@@ -164,6 +164,7 @@ SEXP getfmts(SEXP format)
         }
     } /* end for ( each chunk ) */
 
+    res = xlengthgets(res, maxlen);
     UNPROTECT(1);
-    return xlengthgets(res, maxlen);
+    return res;
 }
