@@ -1047,6 +1047,8 @@ SEXP attribute_hidden do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else if (isString(CAR(args)))
         domain = translateChar(STRING_ELT(CAR(args), 0));
+    else if (isLogical(CAR(args)) && LENGTH(CAR(args)) == 1 && LOGICAL(CAR(args))[0] == NA_LOGICAL)
+        ;
     else
         errorcall(call, _("invalid '%s' value"), "domain");
 
@@ -1164,6 +1166,8 @@ SEXP attribute_hidden do_ngettext(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else if (isString(sdom))
         domain = CHAR(STRING_ELT(sdom, 0));
+    else if (isLogical(sdom) && LENGTH(sdom) == 1 && LOGICAL(sdom)[0] == NA_LOGICAL)
+        ;
     else
         errorcall(call, _("invalid '%s' value"), "domain");
 
