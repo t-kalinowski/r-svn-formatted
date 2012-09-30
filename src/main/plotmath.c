@@ -312,7 +312,7 @@ static double TeX(TEXPAR which, pGEcontext gc, pGEDevDesc dd)
     case xi13: /* big_op_spacing5 */
         return 0.15 * XHeight(gc, dd);
     default: /* never happens (enum type) */
-        error(_("invalid `which' in TeX"));
+        error("invalid `which' in C function TeX");
         return 0; /*-Wall*/
     }
 }

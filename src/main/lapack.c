@@ -36,7 +36,7 @@ static void La_Init(void)
     if (!res)
         return;
     if (!ptr->do_lapack)
-        error(_("lapack routines cannot be accessed in module"));
+        error(_("LAPACK routines cannot be accessed in module"));
     initialized = 1;
     return;
 }
@@ -50,7 +50,7 @@ SEXP attribute_hidden do_lapack(SEXP call, SEXP op, SEXP args, SEXP env)
         return (*ptr->do_lapack)(call, op, args, env);
     else
     {
-        error(_("lapack routines cannot be loaded"));
+        error(_("LAPACK routines cannot be loaded"));
         return R_NilValue;
     }
 }

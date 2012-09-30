@@ -1095,7 +1095,7 @@ attribute_hidden int F77_NAME(dblep0)(const char *label, int *nchar, double *dat
         nc = (int)strlen(label);
     if (nc > 255)
     {
-        warning(_("invalid character length in dblepr"));
+        warning(_("invalid character length in 'dblepr'"));
         nc = 0;
     }
     else if (nc > 0)
@@ -1117,7 +1117,7 @@ attribute_hidden int F77_NAME(intpr0)(const char *label, int *nchar, int *data, 
         nc = (int)strlen(label);
     if (nc > 255)
     {
-        warning(_("invalid character length in intpr"));
+        warning(_("invalid character length in 'intpr'"));
         nc = 0;
     }
     else if (nc > 0)
@@ -1140,7 +1140,7 @@ attribute_hidden int F77_NAME(realp0)(const char *label, int *nchar, float *data
         nc = (int)strlen(label);
     if (nc > 255)
     {
-        warning(_("invalid character length in realpr"));
+        warning(_("invalid character length in 'realpr'"));
         nc = 0;
     }
     else if (nc > 0)
@@ -1153,7 +1153,7 @@ attribute_hidden int F77_NAME(realp0)(const char *label, int *nchar, float *data
     {
         ddata = (double *)malloc(nd * sizeof(double));
         if (!ddata)
-            error(_("memory allocation error in realpr"));
+            error(_("memory allocation error in 'realpr'"));
         for (k = 0; k < nd; k++)
             ddata[k] = (double)data[k];
         printRealVector(ddata, nd, 1);

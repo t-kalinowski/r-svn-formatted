@@ -476,9 +476,9 @@ static Rboolean compute_open_spline(int n, double *x, double *y, double *s, Rboo
     ypoints = NULL;
 
     if (repEnds && n < 2)
-        error(_("There must be at least two control points"));
+        error(_("there must be at least two control points"));
     if (!repEnds && n < 4)
-        error(_("There must be at least four control points"));
+        error(_("there must be at least four control points"));
 
     if (repEnds)
     {

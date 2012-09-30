@@ -260,7 +260,7 @@ static void pcreate(const char *cmd, cetype_t enc, int newconsole, int visible, 
         CloseHandle(dupERR);
     }
     if (!ret)
-        snprintf(RunError, 500, _("CreateProcess failed to run '%s'"), ecmd);
+        snprintf(RunError, 500, _("'CreateProcess' failed to run '%s'"), ecmd);
     else
         CloseHandle(pi->hThread);
     free(ecmd);

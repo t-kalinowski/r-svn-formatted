@@ -149,16 +149,16 @@ void parseError(SEXP call, int linenum)
         switch (len)
         {
         case 0:
-            error(_("%s%d:%d: %s"), filename, linenum, R_ParseErrorCol, R_ParseErrorMsg);
+            error("%s%d:%d: %s", filename, linenum, R_ParseErrorCol, R_ParseErrorMsg);
             break;
         case 1: // replaces use of %n
             width = sprintf(buffer, "%d: ", R_ParseContextLine);
-            error(_("%s%d:%d: %s\n%d: %s\n%*s"), filename, linenum, R_ParseErrorCol, R_ParseErrorMsg,
-                  R_ParseContextLine, CHAR(STRING_ELT(context, 0)), width + R_ParseErrorCol, "^");
+            error("%s%d:%d: %s\n%d: %s\n%*s", filename, linenum, R_ParseErrorCol, R_ParseErrorMsg, R_ParseContextLine,
+                  CHAR(STRING_ELT(context, 0)), width + R_ParseErrorCol, "^");
             break;
         default:
             width = sprintf(buffer, "%d:", R_ParseContextLine);
-            error(_("%s%d:%d: %s\n%d: %s\n%d: %s\n%*s"), filename, linenum, R_ParseErrorCol, R_ParseErrorMsg,
+            error("%s%d:%d: %s\n%d: %s\n%d: %s\n%*s", filename, linenum, R_ParseErrorCol, R_ParseErrorMsg,
                   R_ParseContextLine - 1, CHAR(STRING_ELT(context, len - 2)), R_ParseContextLine,
                   CHAR(STRING_ELT(context, len - 1)), width + R_ParseErrorCol, "^");
             break;
@@ -169,13 +169,13 @@ void parseError(SEXP call, int linenum)
         switch (len)
         {
         case 0:
-            error(_("%s"), R_ParseErrorMsg);
+            error("%s", R_ParseErrorMsg);
             break;
         case 1:
-            error(_("%s in \"%s\""), R_ParseErrorMsg, CHAR(STRING_ELT(context, 0)));
+            error("%s in \"%s\"", R_ParseErrorMsg, CHAR(STRING_ELT(context, 0)));
             break;
         default:
-            error(_("%s in:\n\"%s\n%s\""), R_ParseErrorMsg, CHAR(STRING_ELT(context, len - 2)),
+            error("%s in:\n\"%s\n%s\"", R_ParseErrorMsg, CHAR(STRING_ELT(context, len - 2)),
                   CHAR(STRING_ELT(context, len - 1)));
             break;
         }

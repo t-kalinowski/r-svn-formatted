@@ -352,14 +352,14 @@ static SEXP naokfind(SEXP args, int *len, int *naok, int *dup, DllReference *dll
             *naok = asLogical(CAR(s));
             /* SETCDR(prev, s = CDR(s)); */
             if (naokused++ == 1)
-                warning(_("NAOK used more than once"));
+                warning(_("'%s' used more than once"), "NAOK");
         }
         else if (TAG(s) == DupSymbol)
         {
             *dup = asLogical(CAR(s));
             /* SETCDR(prev, s = CDR(s)); */
             if (dupused++ == 1)
-                warning(_("DUP used more than once"));
+                warning(_("'%s' used more than once"), "DUP");
         }
         else if (TAG(s) == PkgSymbol)
         {
@@ -372,7 +372,7 @@ static SEXP naokfind(SEXP args, int *len, int *naok, int *dup, DllReference *dll
                 dll->type = FILENAME;
                 strcpy(dll->DLLname, p);
                 if (pkgused++ > 1)
-                    warning(_("PACKAGE used more than once"));
+                    warning(_("'%s' used more than once"), "PACKAGE");
                 /* More generally, this should allow us to process
                    any additional arguments and not insist that PACKAGE
                    be the last argument.
@@ -446,7 +446,7 @@ static SEXP pkgtrim(SEXP args, DllReference *dll)
         if (ss == R_NilValue && TAG(s) == PkgSymbol)
         {
             if (pkgused++ == 1)
-                warning(_("PACKAGE used more than once"));
+                warning(_("'%s' used more than once"), "PACKAGE");
             setDLLname(s, dll->DLLname);
             dll->type = FILENAME;
             return R_NilValue;
@@ -454,7 +454,7 @@ static SEXP pkgtrim(SEXP args, DllReference *dll)
         if (TAG(ss) == PkgSymbol)
         {
             if (pkgused++ == 1)
-                warning(_("PACKAGE used more than once"));
+                warning(_("'%s' used more than once"), "PACKAGE");
             setDLLname(ss, dll->DLLname);
             dll->type = FILENAME;
             SETCDR(s, CDR(ss));
@@ -1062,7 +1062,7 @@ SEXP attribute_hidden do_Externalgr(SEXP call, SEXP op, SEXP args, SEXP env)
     if (GErecording(call, dd))
     { // which is record && call != R_NilValue
         if (!GEcheckState(dd))
-            errorcall(call, _("Invalid graphics state"));
+            errorcall(call, _("invalid graphics state"));
         GErecordGraphicOperation(op, args, dd);
     }
     UNPROTECT(1);
@@ -1080,7 +1080,7 @@ SEXP attribute_hidden do_dotcallgr(SEXP call, SEXP op, SEXP args, SEXP env)
     if (GErecording(call, dd))
     {
         if (!GEcheckState(dd))
-            errorcall(call, _("Invalid graphics state"));
+            errorcall(call, _("invalid graphics state"));
         GErecordGraphicOperation(op, args, dd);
     }
     UNPROTECT(1);
@@ -1277,7 +1277,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
                the conversions.  Also, in the future, we may just
                attempt to coerce the value to the appropriate
                type. */
-            errorcall(call, _("Wrong type for argument %d in call to %s"), na + 1, symName);
+            errorcall(call, _("wrong type for argument %d in call to %s"), na + 1, symName);
         }
         int nprotect = 0, targetType = checkTypes ? checkTypes[na] : 0;
         R_xlen_t n;
@@ -1534,7 +1534,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
             break;
         case VECSXP:
             if (Fort)
-                error(_("invalid mode to pass to Fortran (arg %d)"), na + 1);
+                error(_("invalid mode (%s) to pass to Fortran (arg %d)"), type2char(t), na + 1);
                 /* Used read-only, so this is safe */
 #ifdef USE_RINTERNALS
             cargs[na] = (void *)DATAPTR(s);
@@ -1551,7 +1551,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
         case SPECIALSXP:
         case ENVSXP:
             if (Fort)
-                error(_("invalid mode (%s) to pass to Fortran (arg %d)"), type2char(TYPEOF(s)), na + 1);
+                error(_("invalid mode (%s) to pass to Fortran (arg %d)"), type2char(t), na + 1);
             cargs[na] = (void *)s;
             break;
         case NILSXP:
@@ -2311,11 +2311,11 @@ void call_R(char *func, long nargs, void **arguments, char **modes, long *length
     int i, j, n;
 
     if (!isFunction((SEXP)func))
-        error(_("invalid function in call_R"));
+        error("invalid function in call_R");
     if (nargs < 0)
-        error(_("invalid argument count in call_R"));
+        error("invalid argument count in call_R");
     if (nres < 0)
-        error(_("invalid return value count in call_R"));
+        error("invalid return value count in call_R");
     PROTECT(pcall = call = allocList((int)nargs + 1));
     SET_TYPEOF(call, LANGSXP);
     SETCAR(pcall, (SEXP)func);

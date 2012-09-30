@@ -2133,14 +2133,14 @@ static void clp_writeout(Rconnection con)
         GlobalUnlock(hglb);
         if (!OpenClipboard(NULL) || !EmptyClipboard())
         {
-            warning(_("Unable to open the clipboard"));
+            warning(_("unable to open the clipboard"));
             GlobalFree(hglb);
         }
         else
         {
             if (!SetClipboardData(CF_TEXT, hglb))
             {
-                warning(_("Unable to write to the clipboard"));
+                warning(_("unable to write to the clipboard"));
                 GlobalFree(hglb);
             }
             CloseClipboard();
@@ -3587,7 +3587,7 @@ int Rconn_getline(Rconnection con, char *buf, int bufsize)
     while ((c = Rconn_fgetc(con)) != R_EOF)
     {
         if (nbuf + 1 >= bufsize)
-            error(_("Line longer than buffer size"));
+            error(_("line longer than buffer size"));
         if (c != '\n')
         {
             buf[++nbuf] = (char)c;
@@ -3604,7 +3604,7 @@ int Rconn_getline(Rconnection con, char *buf, int bufsize)
     if (nbuf >= 0 && buf[nbuf])
     {
         if (nbuf + 1 >= bufsize)
-            error(_("Line longer than buffer size"));
+            error(_("line longer than buffer size"));
         buf[++nbuf] = '\0';
     }
     return (nbuf);
@@ -4974,13 +4974,13 @@ void con_pushback(Rconnection con, Rboolean newLine, char *line)
         q = (char **)malloc(sizeof(char *));
     }
     if (!q)
-        error(_("could not allocate space for pushBack"));
+        error(_("could not allocate space for pushback"));
     else
         con->PushBack = q;
     q += nexists;
     *q = (char *)malloc(strlen(line) + 1 + newLine);
     if (!(*q))
-        error(_("could not allocate space for pushBack"));
+        error(_("could not allocate space for pushback"));
     strcpy(*q, line);
     if (newLine)
         strcat(*q, "\n");
@@ -5018,7 +5018,7 @@ SEXP attribute_hidden do_pushback(SEXP call, SEXP op, SEXP args, SEXP env)
         else
             q = (char **)malloc(n * sizeof(char *));
         if (!q)
-            error(_("could not allocate space for pushBack"));
+            error(_("could not allocate space for pushback"));
         con->PushBack = q;
         q += nexists;
         for (i = 0; i < n; i++)
@@ -5026,7 +5026,7 @@ SEXP attribute_hidden do_pushback(SEXP call, SEXP op, SEXP args, SEXP env)
             p = translateChar(STRING_ELT(stext, n - i - 1));
             *q = (char *)malloc(strlen(p) + 1 + newLine);
             if (!(*q))
-                error(_("could not allocate space for pushBack"));
+                error(_("could not allocate space for pushback"));
             strcpy(*q, p);
             if (newLine)
                 strcat(*q, "\n");
@@ -5843,7 +5843,7 @@ SEXP attribute_hidden do_gzcon(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (incon->isGzcon)
     {
-        warning(_("this is already a gzcon connection"));
+        warning(_("this is already a 'gzcon' connection"));
         return CAR(args);
     }
     m = incon->mode;
@@ -5857,7 +5857,7 @@ SEXP attribute_hidden do_gzcon(SEXP call, SEXP op, SEXP args, SEXP rho)
         warning(_("using a text-mode 'file' connection may not work correctly"));
 
     else if (strcmp(incon->class, "textConnection") == 0 && strcmp(m, "w") == 0)
-        error(_("cannot create a gzcon connection from a writable textConnection; maybe use rawConnection"));
+        error(_("cannot create a 'gzcon' connection from a writable textConnection; maybe use rawConnection"));
 
     new = (Rconnection)malloc(sizeof(struct Rconn));
     if (!new)

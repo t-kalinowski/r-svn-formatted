@@ -402,7 +402,7 @@ SEXP Runzip(SEXP args)
             break;
         case UNZ_PARAMERROR:
         case UNZ_INTERNALERROR:
-            warning(_("internal error in unz code"));
+            warning("internal error in 'unz' code");
             break;
         case -200:
             warning(_("write error in extracting from zip file"));
@@ -447,7 +447,7 @@ static Rboolean unz_open(Rconnection con)
     p = Rf_strrchr(path, ':');
     if (!p)
     {
-        warning(_("invalid description of unz connection"));
+        warning(_("invalid description of 'unz' connection"));
         return FALSE;
     }
     *p = '\0';
@@ -530,12 +530,12 @@ Rconnection attribute_hidden R_newunz(const char *description, const char *const
     Rconnection new;
     new = (Rconnection)malloc(sizeof(struct Rconn));
     if (!new)
-        error(_("allocation of unz connection failed"));
+        error(_("allocation of 'unz' connection failed"));
     new->class = (char *)malloc(strlen("unz") + 1);
     if (!new->class)
     {
         free(new);
-        error(_("allocation of unz connection failed"));
+        error(_("allocation of 'unz' connection failed"));
     }
     strcpy(new->class, "unz");
     new->description = (char *)malloc(strlen(description) + 1);
@@ -543,7 +543,7 @@ Rconnection attribute_hidden R_newunz(const char *description, const char *const
     {
         free(new->class);
         free(new);
-        error(_("allocation of unz connection failed"));
+        error(_("allocation of 'unz' connection failed"));
     }
     init_con(new, description, CE_NATIVE, mode);
 
@@ -563,7 +563,7 @@ Rconnection attribute_hidden R_newunz(const char *description, const char *const
         free(new->description);
         free(new->class);
         free(new);
-        error(_("allocation of unz connection failed"));
+        error(_("allocation of 'unz' connection failed"));
     }
     return new;
 }

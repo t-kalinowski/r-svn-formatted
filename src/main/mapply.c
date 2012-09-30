@@ -46,7 +46,7 @@ SEXP attribute_hidden do_mapply(SEXP call, SEXP op, SEXP args, SEXP rho)
             longest = lengths[i];
     }
     if (zero && longest)
-        error(_("Zero-length inputs cannot be mixed with those of non-zero length"));
+        error(_("zero-length inputs cannot be mixed with those of non-zero length"));
 
     counters = (R_xlen_t *)R_alloc(m, sizeof(R_xlen_t));
     memset(counters, 0, m * sizeof(R_xlen_t));

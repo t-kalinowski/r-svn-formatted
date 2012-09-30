@@ -1433,7 +1433,7 @@ static SEXP subDots(SEXP rho)
     dots = findVar(R_DotsSymbol, rho);
 
     if (dots == R_UnboundValue)
-        error(_("... used in a situation where it doesn't exist"));
+        error(_("... used in a situation where it does not exist"));
 
     if (dots == R_MissingArg)
         return dots;
@@ -1945,7 +1945,7 @@ SEXP csduplicated(SEXP x)
     HashData data;
 
     if (TYPEOF(x) != STRSXP)
-        error(_("csduplicated not called on a STRSXP"));
+        error("C function 'csduplicated' not called on a STRSXP");
     n = LENGTH(x);
     HashTableSetup1(x, &data);
     PROTECT(data.HashTable);

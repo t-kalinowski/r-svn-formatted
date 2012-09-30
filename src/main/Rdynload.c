@@ -499,7 +499,7 @@ static DllInfo *AddDLL(const char *path, int asLocal, int now, const char *DLLse
     DeleteDLL(path);
     if (CountDLL == MAX_NUM_DLLS)
     {
-        strcpy(DLLerror, _("Maximal number of DLLs reached..."));
+        strcpy(DLLerror, _("`maximal number of DLLs reached..."));
         return NULL;
     }
 
@@ -1171,7 +1171,7 @@ static SEXP createRSymbolObject(SEXP sname, DL_FUNC f, R_RegisteredNativeSymbol 
             break;
         default:
             /* Something unintended has happened if we get here. */
-            error(_("Unimplemented type %d in createRSymbolObject"), symbol->type);
+            error(_("unimplemented type %d in 'createRSymbolObject'"), symbol->type);
             break;
         }
         SET_VECTOR_ELT(sym, 3, tmp = ScalarInteger(nargs));
