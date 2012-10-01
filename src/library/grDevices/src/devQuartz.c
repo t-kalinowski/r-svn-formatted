@@ -1573,7 +1573,7 @@ SEXP Quartz(SEXP args)
         dpi = 0;
 
     if (ISNAN(width) || ISNAN(height) || width <= 0.0 || height <= 0.0)
-        error(_("invalid Quartz device size"));
+        error(_("invalid quartz() device size"));
 
     if (type)
     {
@@ -1607,7 +1607,7 @@ SEXP Quartz(SEXP args)
         pDevDesc dev = calloc(1, sizeof(DevDesc));
 
         if (!dev)
-            error(_("Unable to create device description."));
+            error(_("unable to create device description"));
 
         QuartzParameters_t qpar = {
             sizeof(qpar), mtype,  file, title, -1.0, -1.0, width, height, ps, family, antialias ? QPFLAG_ANTIALIAS : 0,
@@ -1656,7 +1656,7 @@ SEXP Quartz(SEXP args)
         {
             vmaxset(vmax);
             free(dev);
-            error(_("Unable to create Quartz device target, given type may not be supported."));
+            error(_("unable to create quartz() device target, given type may not be supported"));
         }
         const char *devname = "quartz_off_screen";
         if (streql(type, "") || streql(type, "native") || streql(type, "cocoa") || streql(type, "carbon"))

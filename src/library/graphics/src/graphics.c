@@ -1951,7 +1951,7 @@ pGEDevDesc GNewPlot(Rboolean recording)
     dpptr(dd)->valid = gpptr(dd)->valid = FALSE;
     if (!validOuterMargins(dd))
     {
-        G_ERR_MSG(_("outer margins too large (fig.region too small)"));
+        G_ERR_MSG(_("outer margins too large (figure region too small)"));
     }
     else if (!validFigureRegion(dd))
     {
@@ -2012,7 +2012,7 @@ void GAxisPars(double *min, double *max, int *n, Rboolean log, int axis)
     if(fabs(*max - *min) < (t_ = fmax2(fabs(*max), fabs(*min)))* tmp2) {
 	/* Treat this case somewhat similar to the (min ~= max) case above */
 	/* Too much accuracy here just shows machine differences */
-	warning(_("relative range of values =%4.0f * EPS, is small (axis %d)")
+	warning(_("relative range of values (%4.0f * EPS) is small (axis %d)")
 		/*"to compute accurately"*/,
 		fabs(*max - *min) / (t_*DBL_EPSILON), axis);
 
@@ -2358,7 +2358,7 @@ void copyGPar(GPar *source, GPar *dest)
 void GRestore(pGEDevDesc dd)
 {
     if (NoDevices())
-        error(_("No graphics device is active"));
+        error(_("no graphics device is active"));
     copyGPar(dpptr(dd), gpptr(dd));
 }
 
@@ -2975,7 +2975,7 @@ void GPolygon(int n, double *x, double *y, int coords, int bg, int fg, pGEDevDes
     xx = (double *)R_alloc(n, sizeof(double));
     yy = (double *)R_alloc(n, sizeof(double));
     if (!xx || !yy)
-        error(_("unable to allocate memory (in GPolygon)"));
+        error("unable to allocate memory (in GPolygon)");
     for (i = 0; i < n; i++)
     {
         xx[i] = x[i];
@@ -3013,7 +3013,7 @@ void GPolyline(int n, double *x, double *y, int coords, pGEDevDesc dd)
     xx = (double *)R_alloc(n, sizeof(double));
     yy = (double *)R_alloc(n, sizeof(double));
     if (!xx || !yy)
-        error(_("unable to allocate memory (in GPolygon)"));
+        error("unable to allocate memory (in GPolyline)");
     for (i = 0; i < n; i++)
     {
         xx[i] = x[i];
@@ -3578,7 +3578,7 @@ void GMMathText(SEXP str, int side, double line, int outer, double at, int las, 
     double ascent, descent, width;
     GMetricInfo('M', &ascent, &descent, &width, DEVICE, dd);
     if ((ascent == 0) && (descent == 0) && (width == 0))
-        error(_("Metric information not available for this device"));
+        error(_("metric information not available for this device"));
 
     xadj = gpptr(dd)->adj;
 

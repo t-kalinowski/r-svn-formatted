@@ -637,7 +637,7 @@ SEXP mc_kill(SEXP sPid, SEXP sSig)
     int pid = asInteger(sPid);
     int sig = asInteger(sSig);
     if (kill((pid_t)pid, sig))
-        error(_("mckill failed"));
+        error(_("'mckill' failed"));
     return ScalarLogical(1);
 }
 
@@ -645,10 +645,10 @@ SEXP mc_exit(SEXP sRes)
 {
     int res = asInteger(sRes);
 #ifdef MC_DEBUG
-    Dprintf("child %d: mcexit called\n", getpid());
+    Dprintf("child %d: 'mcexit' called\n", getpid());
 #endif
     if (is_master)
-        error(_("mcexit can only be used in a child process"));
+        error(_("'mcexit' can only be used in a child process"));
     if (master_fd != -1)
     { /* send 0 to signify that we're leaving */
         size_t len = 0;
@@ -673,7 +673,7 @@ SEXP mc_exit(SEXP sRes)
     Dprintf("child %d: exiting\n", getpid());
 #endif
     exit(res);
-    error(_("mcexit failed"));
+    error(_("'mcexit' failed"));
     return R_NilValue;
 }
 
@@ -697,7 +697,7 @@ SEXP mc_exit(SEXP sRes)
 SEXP mc_affinity(SEXP req)
 {
     if (req != R_NilValue && TYPEOF(req) != INTSXP && TYPEOF(req) != REALSXP)
-        error(_("Invalid CPU affinity specification"));
+        error(_("invalid CPU affinity specification"));
     if (TYPEOF(req) == REALSXP)
         req = coerceVector(req, INTSXP);
     if (TYPEOF(req) == INTSXP)
@@ -708,7 +708,7 @@ SEXP mc_affinity(SEXP req)
             if (v[i] > max_cpu)
                 max_cpu = v[i];
             if (v[i] < 1)
-                error(_("Invalid CPU affinity specification"));
+                error(_("invalid CPU affinity specification"));
         }
         /* These are both one-based */
         if (max_cpu <= CPU_SETSIZE)
@@ -722,7 +722,7 @@ SEXP mc_affinity(SEXP req)
         else
         {
 #ifndef CPU_ALLOC
-            error(_("Requested CPU set is too large for this system"));
+            error(_("requested CPU set is too large for this system"));
 #else
             size_t css = CPU_ALLOC_SIZE(max_cpu);
             cpu_set_t *cs = CPU_ALLOC(max_cpu);
@@ -746,7 +746,7 @@ SEXP mc_affinity(SEXP req)
         if (sched_getaffinity(0, sizeof(cs), &cs))
         {
             if (req == R_NilValue)
-                error(_("Retrieving CPU affinity set failed"));
+                error(_("retrieving CPU affinity set failed"));
             return R_NilValue;
         }
         else

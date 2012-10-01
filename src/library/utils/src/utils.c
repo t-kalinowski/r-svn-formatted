@@ -98,7 +98,7 @@ SEXP nsl(SEXP hostname)
         }
         else
         {
-            warning(_("unknown format returned by gethostbyname"));
+            warning(_("unknown format returned by 'gethostbyname'"));
         }
         ans = mkString(ip);
     }

@@ -321,7 +321,7 @@ SEXP FixupVFont(SEXP vfont)
             error(_("invalid '%s' value"), "vfont");
         typeface = INTEGER(vf)[0];
         if (typeface < 1 || typeface > 8)
-            error(_("invalid 'vfont' value [typeface]"));
+            error(_("invalid 'vfont' value [typeface %d]"), typeface);
         /* For each of the typefaces {1..8}, there are several fontindices
            available; how many depends on the typeface.
            The possible combinations are "given" in ./g_fontdb.c
@@ -967,7 +967,7 @@ SEXP C_axis(SEXP args)
     PROTECT(padj = coerceVector(CAR(args), REALSXP));
     npadj = length(padj);
     if (npadj <= 0)
-        error(_("zero length 'padj' specified"));
+        error(_("zero-length '%s' specified"), "padj");
 
     /* Now we process all the remaining inline par values:
        we need to do it now as x/yaxp are retrieved next.
@@ -1998,14 +1998,14 @@ SEXP C_path(SEXP args)
     xx = (double *)R_alloc(nx, sizeof(double));
     yy = (double *)R_alloc(nx, sizeof(double));
     if (!xx || !yy)
-        error(_("unable to allocate memory (in GPath)"));
+        error("unable to allocate memory (in GPath)");
     for (i = 0; i < nx; i++)
     {
         xx[i] = REAL(sx)[i];
         yy[i] = REAL(sy)[i];
         GConvert(&(xx[i]), &(yy[i]), USER, DEVICE, dd);
         if (!(R_FINITE(xx[i]) && R_FINITE(yy[i])))
-            error(_("invalid x or y (in GPath)"));
+            error("invalid 'x' or 'y' (in 'GPath')");
     }
 
     if (INTEGER(lty)[0] == NA_INTEGER)
@@ -2317,7 +2317,7 @@ SEXP C_text(SEXP args)
         txt = coerceVector(txt, STRSXP);
     PROTECT(txt);
     if (length(txt) <= 0)
-        error(_("zero length 'labels'"));
+        error(_("zero-length '%s' specified"), "labels");
     args = CDR(args);
 
     PROTECT(adj = CAR(args));
@@ -2634,14 +2634,14 @@ SEXP C_mtext(SEXP args)
     PROTECT(text);
     n = ntext = length(text);
     if (ntext <= 0)
-        error(_("zero length 'text' specified"));
+        error(_("zero-length '%s' specified"), "text");
     args = CDR(args);
 
     /* Arg2 : side= */
     PROTECT(side = coerceVector(CAR(args), INTSXP));
     nside = length(side);
     if (nside <= 0)
-        error(_("zero length 'side' specified"));
+        error(_("zero-length '%s' specified"), "side");
     if (n < nside)
         n = nside;
     args = CDR(args);
@@ -2650,7 +2650,7 @@ SEXP C_mtext(SEXP args)
     PROTECT(line = coerceVector(CAR(args), REALSXP));
     nline = length(line);
     if (nline <= 0)
-        error(_("zero length 'line' specified"));
+        error(_("zero-length '%s' specified"), "line");
     if (n < nline)
         n = nline;
     args = CDR(args);
@@ -2660,7 +2660,7 @@ SEXP C_mtext(SEXP args)
     PROTECT(outer = coerceVector(CAR(args), INTSXP));
     nouter = length(outer);
     if (nouter <= 0)
-        error(_("zero length 'outer' specified"));
+        error(_("zero-length '%s' specified"), "outer");
     if (n < nouter)
         n = nouter;
     args = CDR(args);
@@ -2669,7 +2669,7 @@ SEXP C_mtext(SEXP args)
     PROTECT(at = coerceVector(CAR(args), REALSXP));
     nat = length(at);
     if (nat <= 0)
-        error(_("zero length 'at' specified"));
+        error(_("zero-length '%s' specified"), "at");
     if (n < nat)
         n = nat;
     args = CDR(args);
@@ -2678,7 +2678,7 @@ SEXP C_mtext(SEXP args)
     PROTECT(adj = coerceVector(CAR(args), REALSXP));
     nadj = length(adj);
     if (nadj <= 0)
-        error(_("zero length 'adj' specified"));
+        error(_("zero-length '%s' specified"), "adj");
     if (n < nadj)
         n = nadj;
     args = CDR(args);
@@ -2687,7 +2687,7 @@ SEXP C_mtext(SEXP args)
     PROTECT(padj = coerceVector(CAR(args), REALSXP));
     npadj = length(padj);
     if (npadj <= 0)
-        error(_("zero length 'padj' specified"));
+        error(_("zero-length '%s' specified"), "padj");
     if (n < npadj)
         n = npadj;
     args = CDR(args);
@@ -2696,7 +2696,7 @@ SEXP C_mtext(SEXP args)
     PROTECT(cex = FixupCex(CAR(args), 1.0));
     ncex = length(cex);
     if (ncex <= 0)
-        error(_("zero length 'cex' specified"));
+        error(_("zero-length '%s' specified"), "cex");
     if (n < ncex)
         n = ncex;
     args = CDR(args);
@@ -2706,7 +2706,7 @@ SEXP C_mtext(SEXP args)
     PROTECT(col = FixupCol(rawcol, R_TRANWHITE));
     ncol = length(col);
     if (ncol <= 0)
-        error(_("zero length 'col' specified"));
+        error(_("zero-length '%s' specified"), "col");
     if (n < ncol)
         n = ncol;
     args = CDR(args);
@@ -2715,7 +2715,7 @@ SEXP C_mtext(SEXP args)
     PROTECT(font = FixupFont(CAR(args), NA_INTEGER));
     nfont = length(font);
     if (nfont <= 0)
-        error(_("zero length 'font' specified"));
+        error(_("zero-length '%s' specified"), "font");
     if (n < nfont)
         n = nfont;
     args = CDR(args);
@@ -3344,7 +3344,7 @@ SEXP C_locator(SEXP call, SEXP op, SEXP args, SEXP rho)
 
         n = asInteger(CAR(args));
         if (n <= 0 || n == NA_INTEGER)
-            error(_("invalid number of points in locator()"));
+            error(_("invalid number of points in %s"), "locator()");
         args = CDR(args);
         if (isString(CAR(args)) && LENGTH(CAR(args)) == 1)
             stype = CAR(args);
@@ -3495,7 +3495,7 @@ SEXP C_identify(SEXP call, SEXP op, SEXP args, SEXP rho)
         args = CDR(args);
         atpen = asLogical(CAR(args));
         if (npts <= 0 || npts == NA_INTEGER)
-            error(_("invalid number of points in identify()"));
+            error(_("invalid number of points in %s"), "identify()");
         if (!isReal(x) || !isReal(y) || !isString(l) || !isReal(Offset))
             error(_("incorrect argument type"));
         if (tol <= 0 || ISNAN(tol))
@@ -3506,7 +3506,7 @@ SEXP C_identify(SEXP call, SEXP op, SEXP args, SEXP rho)
             error(_("invalid '%s' value"), "atpen");
         nl = LENGTH(l);
         if (nl <= 0)
-            error(_("zero length 'labels'"));
+            error(_("zero-length '%s' specified"), "labels");
         n = LENGTH(x);
         if (n != LENGTH(y))
             error(_("different argument lengths"));
@@ -4210,11 +4210,11 @@ SEXP C_symbols(SEXP args)
             error(_("invalid thermometers data (need 3 or 4 columns)"));
         SymbolRange(REAL(p) + 2 * nr /* <-- pointer arith*/, nr, &pmax, &pmin);
         if (pmax < pmin)
-            error(_("invalid thermometers[,%s]"), (nc == 4) ? "3:4" : "3");
+            error(_("invalid 'thermometers[, %s]'"), (nc == 4) ? "3:4" : "3");
         if (pmin < 0. || pmax > 1.) /* S-PLUS has an error here */
-            warning(_("thermometers[,%s] not in [0,1] -- may look funny"), (nc == 4) ? "3:4" : "3");
+            warning(_("'thermometers[, %s]' not in [0,1] -- may look funny"), (nc == 4) ? "3:4" : "3");
         if (!SymbolRange(REAL(p), 2 * nr, &pmax, &pmin))
-            error(_("invalid thermometers[,1:2]"));
+            error(_("invalid 'thermometers[, 1:2]'"));
         for (i = 0; i < nr; i++)
         {
             xx = REAL(x)[i];
@@ -4259,7 +4259,7 @@ SEXP C_symbols(SEXP args)
         break;
     case 6: /* boxplots (wid, hei, loWhsk, upWhsk, medProp) */
         if (nc != 5)
-            error(_("invalid boxplots data (need 5 columns)"));
+            error(_("invalid 'boxplots' data (need 5 columns)"));
         pmax = -DBL_MAX;
         pmin = DBL_MAX;
         for (i = 0; i < nr; i++)
@@ -4271,9 +4271,9 @@ SEXP C_symbols(SEXP args)
                 pmin = p4;
         }
         if (pmin < 0. || pmax > 1.) /* S-PLUS has an error here */
-            warning(_("boxplots[,5] outside [0,1] -- may look funny"));
+            warning(_("'boxplots[, 5]' outside [0,1] -- may look funny"));
         if (!SymbolRange(REAL(p), 4 * nr, &pmax, &pmin))
-            error(_("invalid boxplots[, 1:4]"));
+            error(_("invalid 'boxplots[, 1:4]'"));
         for (i = 0; i < nr; i++)
         {
             xx = REAL(x)[i];
@@ -4395,7 +4395,7 @@ SEXP C_xspline(SEXP args)
     xx = (double *)R_alloc(nx, sizeof(double));
     yy = (double *)R_alloc(nx, sizeof(double));
     if (!xx || !yy)
-        error(_("unable to allocate memory (in xspline)"));
+        error("unable to allocate memory (in xspline)");
     for (i = 0; i < nx; i++)
     {
         xx[i] = x[i];

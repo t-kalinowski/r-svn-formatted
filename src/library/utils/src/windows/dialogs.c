@@ -234,7 +234,7 @@ SEXP winMenuNames(SEXP call, SEXP op, SEXP args, SEXP env)
 
     args = CDR(args);
     if (CharacterMode != RGui)
-        errorcall(call, _("Menu functions can only be used in the GUI"));
+        errorcall(call, _("menu functions can only be used in the GUI"));
 
     nmenus = numwinmenus();
 
@@ -259,7 +259,7 @@ SEXP winMenuItems(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
 
     if (CharacterMode != RGui)
-        errorcall(call, _("Menu functions can only be used in the GUI"));
+        errorcall(call, _("menu functions can only be used in the GUI"));
 
     mname = CAR(args);
     if (!isString(mname) || length(mname) != 1)
@@ -297,7 +297,7 @@ SEXP winMenuAdd(SEXP call, SEXP op, SEXP args, SEXP env)
 
     args = CDR(args);
     if (CharacterMode != RGui)
-        errorcall(call, _("Menu functions can only be used in the GUI"));
+        errorcall(call, _("menu functions can only be used in the GUI"));
     smenu = CAR(args);
     if (!isString(smenu) || length(smenu) != 1)
         error(_("invalid '%s' argument"), "menuname");
@@ -334,7 +334,7 @@ SEXP winMenuDel(SEXP call, SEXP op, SEXP args, SEXP env)
 
     args = CDR(args);
     if (CharacterMode != RGui)
-        errorcall(call, _("Menu functions can only be used in the GUI"));
+        errorcall(call, _("menu functions can only be used in the GUI"));
     smenu = CAR(args);
     if (!isString(smenu) || length(smenu) != 1)
         error(_("invalid '%s' argument"), "menuname");

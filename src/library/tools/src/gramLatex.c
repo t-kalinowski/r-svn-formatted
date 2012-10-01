@@ -2233,11 +2233,6 @@ static void yyerror(const char *s)
     char ParseErrorMsg[PARSE_ERROR_SIZE];
     SEXP filename;
     char ParseErrorFilename[PARSE_ERROR_SIZE];
-#if 0
- /* these are just here to trigger the internationalization */
-    _("input"); 	
-    _("macro");
-#endif
 
     if (!strncmp(s, yyunexpected, sizeof yyunexpected - 1))
     {
