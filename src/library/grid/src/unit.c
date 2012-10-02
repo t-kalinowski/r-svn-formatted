@@ -288,7 +288,7 @@ double pureNullUnitValue(SEXP unit, int index)
             }
         }
         else
-            error(_("Unimplemented unit function"));
+            error(_("unimplemented unit function"));
     }
     else if (isUnitList(unit))
     {
@@ -447,7 +447,7 @@ int pureNullUnitArithmetic(SEXP unit, int index, pGEDevDesc dd)
         }
     }
     else
-        error(_("Unimplemented unit function"));
+        error(_("unimplemented unit function"));
     return result;
 }
 
@@ -876,7 +876,7 @@ double transform(double value, int unit, SEXP data, double scalemin, double scal
         result = evaluateNullUnit(result, thisCM, nullLMode, nullAMode);
         break;
     default:
-        error(_("Illegal unit or unit not yet implemented"));
+        error(_("invalid unit or unit not yet implemented"));
     }
     /*
      * For physical units, scale the result by GSS_SCALE (a "zoom" factor)
@@ -1124,7 +1124,7 @@ double transformXArithmetic(SEXP x, int index, LViewportContext vpc, const pGEco
         }
     }
     else
-        error(_("Unimplemented unit function"));
+        error(_("unimplemented unit function"));
     return result;
 }
 
@@ -1182,7 +1182,7 @@ double transformYArithmetic(SEXP y, int index, LViewportContext vpc, const pGEco
         }
     }
     else
-        error(_("Unimplemented unit function"));
+        error(_("unimplemented unit function"));
     return result;
 }
 
@@ -1240,7 +1240,7 @@ double transformWidthArithmetic(SEXP width, int index, LViewportContext vpc, con
         }
     }
     else
-        error(_("Unimplemented unit function"));
+        error(_("unimplemented unit function"));
     return result;
 }
 
@@ -1298,7 +1298,7 @@ double transformHeightArithmetic(SEXP height, int index, LViewportContext vpc, c
         }
     }
     else
-        error(_("Unimplemented unit function"));
+        error(_("unimplemented unit function"));
     return result;
 }
 
@@ -1461,7 +1461,7 @@ double transformFromINCHES(double value, int unit, const pGEcontext gc, double t
     case L_GROBHEIGHT:
     case L_NULL:
     default:
-        error(_("Illegal unit or unit not yet implemented"));
+        error(_("invalid unit or unit not yet implemented"));
     }
     /*
      * For physical units, reverse the scale by GSS_SCALE (a "zoom" factor)
@@ -1638,12 +1638,12 @@ SEXP validUnits(SEXP units)
         }
         else
         {
-            error(_("Units must be character"));
+            error(_("'units' must be character"));
         }
     }
     else
     {
-        error(_("Units must be of length > 0"));
+        error(_("'units' must be of length > 0"));
     }
     return answer;
 }
