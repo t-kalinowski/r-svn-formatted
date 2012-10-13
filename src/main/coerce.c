@@ -2549,7 +2549,6 @@ SEXP attribute_hidden do_docall(SEXP call, SEXP op, SEXP args, SEXP rho)
 #else
         SETCAR(c, mkPROMISE(VECTOR_ELT(args, i), rho));
         SET_PRVALUE(CAR(c), VECTOR_ELT(args, i));
-        * /
 #endif
         if (ItemName(names, (int)i) != R_NilValue)
             SET_TAG(c, install(translateChar(ItemName(names, i))));
