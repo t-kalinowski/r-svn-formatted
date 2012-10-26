@@ -119,10 +119,6 @@
 #define HAVE_DYNAMIC_LOADING
 #endif
 
-#ifdef __APPLE_CC__
-#define HAVE_DYNAMIC_LOADING
-#endif
-
 #ifdef CACHE_DLL_SYM /* Used on Windows */
 #define MAX_CACHE 100
 /* keep a record of symbols that have been found, about 70 bytes each */
