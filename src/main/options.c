@@ -144,6 +144,18 @@ int GetOptionDigits(void)
     return d;
 }
 
+int GetOptionCutoff(void)
+{
+    int w;
+    w = asInteger(GetOption1(install("deparse.cutoff")));
+    if (w == NA_INTEGER || w <= 0)
+    {
+        warning(_("invalid 'deparse.cutoff', used 60"));
+        w = 60;
+    }
+    return w;
+}
+
 Rboolean Rf_GetOptionDeviceAsk(void)
 {
     int ask;
@@ -233,9 +245,9 @@ void attribute_hidden InitOptions(void)
     char *p;
 
 #ifdef HAVE_RL_COMPLETION_MATCHES
-    PROTECT(v = val = allocList(16));
+    PROTECT(v = val = allocList(17));
 #else
-    PROTECT(v = val = allocList(15));
+    PROTECT(v = val = allocList(16));
 #endif
 
     SET_TAG(v, install("prompt"));
@@ -252,6 +264,10 @@ void attribute_hidden InitOptions(void)
 
     SET_TAG(v, install("width"));
     SETCAR(v, ScalarInteger(80));
+    v = CDR(v);
+
+    SET_TAG(v, install("deparse.cutoff"));
+    SETCAR(v, ScalarInteger(60));
     v = CDR(v);
 
     SET_TAG(v, install("digits"));
@@ -421,6 +437,11 @@ SEXP attribute_hidden do_options(SEXP call, SEXP op, SEXP args, SEXP rho)
                 k = asInteger(argi);
                 if (k < R_MIN_WIDTH_OPT || k > R_MAX_WIDTH_OPT)
                     error(_("invalid 'width' parameter, allowed %d...%d"), R_MIN_WIDTH_OPT, R_MAX_WIDTH_OPT);
+                SET_VECTOR_ELT(value, i, SetOption(tag, ScalarInteger(k)));
+            }
+            else if (streql(CHAR(namei), "deparse.cutoff"))
+            {
+                k = asInteger(argi);
                 SET_VECTOR_ELT(value, i, SetOption(tag, ScalarInteger(k)));
             }
             else if (streql(CHAR(namei), "digits"))

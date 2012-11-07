@@ -186,6 +186,13 @@ SEXP deparse1(SEXP call, Rboolean abbrev, int opts)
     return deparse1WithCutoff(call, abbrev, DEFAULT_Cutoff, backtick, opts, -1);
 }
 
+/* used for language objects in print() */
+SEXP deparse1w(SEXP call, Rboolean abbrev, int opts)
+{
+    Rboolean backtick = TRUE;
+    return deparse1WithCutoff(call, abbrev, R_print.cutoff, backtick, opts, -1);
+}
+
 static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff, Rboolean backtick, int opts, int nlines)
 {
     /* Arg. abbrev:
