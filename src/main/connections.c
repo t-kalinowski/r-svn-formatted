@@ -602,6 +602,11 @@ static Rboolean file_open(Rconnection con)
             Rf_utf8towcs(wname, name, n + 1);
             mbstowcs(wmode, con->mode, 10);
             fp = _wfopen(wname, wmode);
+            if (!fp)
+            {
+                warning(_("cannot open file '%ls': %s"), wname, strerror(errno));
+                return FALSE;
+            }
         }
         else
 #endif
@@ -1152,6 +1157,11 @@ static Rboolean pipe_open(Rconnection con)
         Rf_utf8towcs(wname, con->description, n + 1);
         mbstowcs(wmode, con->mode, 10);
         fp = _wpopen(wname, wmode);
+        if (!fp)
+        {
+            warning(_("cannot pipe() cmd '%ls': %s"), wname, strerror(errno));
+            return FALSE;
+        }
     }
     else
 #endif
