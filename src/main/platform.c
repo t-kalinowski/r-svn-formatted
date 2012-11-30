@@ -1009,7 +1009,7 @@ static SEXP filename(const char *dir, const char *file)
 #include <tre/tre.h>
 
 static void list_files(const char *dnp, const char *stem, int *count, SEXP *pans, Rboolean allfiles, Rboolean recursive,
-                       const regex_t *reg, int *countmax, PROTECT_INDEX idx, Rboolean idirs)
+                       const regex_t *reg, int *countmax, PROTECT_INDEX idx, Rboolean idirs, Rboolean allowdots)
 {
     DIR *dir;
     struct dirent *de;
@@ -1027,6 +1027,7 @@ static void list_files(const char *dnp, const char *stem, int *count, SEXP *pans
         {
             if (allfiles || !R_HiddenFile(de->d_name))
             {
+                Rboolean not_dot = strcmp(de->d_name, ".") && strcmp(de->d_name, "..");
                 if (recursive)
                 {
 #ifdef Win32
@@ -1044,16 +1045,20 @@ static void list_files(const char *dnp, const char *stem, int *count, SEXP *pans
 #endif
                     if ((sb.st_mode & S_IFDIR) > 0)
                     {
-                        if (strcmp(de->d_name, ".") && strcmp(de->d_name, ".."))
+                        if (not_dot)
                         {
-                            if (idirs && (!reg || tre_regexec(reg, de->d_name, 0, NULL, 0) == 0))
+                            if (idirs)
                             {
-                                if (*count == *countmax - 1)
-                                {
-                                    *countmax *= 2;
-                                    REPROTECT(*pans = lengthgets(*pans, *countmax), idx);
-                                }
-                                SET_STRING_ELT(*pans, (*count)++, filename(stem, de->d_name));
+#define IF_MATCH_ADD_TO_ANS                                                                                            \
+    if (!reg || tre_regexec(reg, de->d_name, 0, NULL, 0) == 0)                                                         \
+    {                                                                                                                  \
+        if (*count == *countmax - 1)                                                                                   \
+        {                                                                                                              \
+            *countmax *= 2;                                                                                            \
+            REPROTECT(*pans = lengthgets(*pans, *countmax), idx);                                                      \
+        }                                                                                                              \
+        SET_STRING_ELT(*pans, (*count)++, filename(stem, de->d_name));                                                 \
+    }
                             }
                             if (stem)
                             {
@@ -1068,81 +1073,79 @@ static void list_files(const char *dnp, const char *stem, int *count, SEXP *pans
                             }
                             else
                                 strcpy(stem2, de->d_name);
-                            list_files(p, stem2, count, pans, allfiles, recursive, reg, countmax, idx, idirs);
+                            list_files(p, stem2, count, pans, allfiles, recursive, reg, countmax, idx, idirs,
+                                       allowdots);
                         }
                         continue;
                     }
-                }
-                if (!reg || tre_regexec(reg, de->d_name, 0, NULL, 0) == 0)
-                {
-                    if (*count == *countmax - 1)
-                    {
-                        *countmax *= 2;
-                        REPROTECT(*pans = lengthgets(*pans, *countmax), idx);
-                    }
-                    SET_STRING_ELT(*pans, (*count)++, filename(stem, de->d_name));
-                }
+                } // end if(recursive)
+
+                if (not_dot || allowdots)
+                    IF_MATCH_ADD_TO_ANS
             }
         }
         closedir(dir);
     }
 }
+#undef IF_MATCH_ADD_TO_ANS
 
 SEXP attribute_hidden do_listfiles(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    PROTECT_INDEX idx;
-    SEXP d, p, ans;
-    int i, allfiles, fullnames, count, pattern, recursive, igcase, flags, idirs;
-    const char *dnp;
-    regex_t reg;
     int countmax = 128;
 
     checkArity(op, args);
-    d = CAR(args);
+    SEXP d = CAR(args);
     args = CDR(args);
     if (!isString(d))
         error(_("invalid '%s' argument"), "directory");
-    p = CAR(args);
+    SEXP p = CAR(args);
     args = CDR(args);
-    pattern = 0;
+    int pattern = 0;
     if (isString(p) && length(p) >= 1 && STRING_ELT(p, 0) != NA_STRING)
         pattern = 1;
     else if (!isNull(p) && !(isString(p) && length(p) < 1))
         error(_("invalid '%s' argument"), "pattern");
-    allfiles = asLogical(CAR(args));
+    int allfiles = asLogical(CAR(args));
     args = CDR(args);
     if (allfiles == NA_LOGICAL)
         error(_("invalid '%s' argument"), "all.files");
-    fullnames = asLogical(CAR(args));
+    int fullnames = asLogical(CAR(args));
     args = CDR(args);
     if (fullnames == NA_LOGICAL)
         error(_("invalid '%s' argument"), "full.names");
-    recursive = asLogical(CAR(args));
+    int recursive = asLogical(CAR(args));
     args = CDR(args);
     if (recursive == NA_LOGICAL)
         error(_("invalid '%s' argument"), "recursive");
-    igcase = asLogical(CAR(args));
+    int igcase = asLogical(CAR(args));
     args = CDR(args);
     if (igcase == NA_LOGICAL)
         error(_("invalid '%s' argument"), "ignore.case");
-    idirs = asLogical(CAR(args));
+    int idirs = asLogical(CAR(args));
+    args = CDR(args);
     if (idirs == NA_LOGICAL)
         error(_("invalid '%s' argument"), "include.dirs");
-    flags = REG_EXTENDED;
+    int nodots = asLogical(CAR(args));
+    if (nodots == NA_LOGICAL)
+        error(_("invalid '%s' argument"), "no..");
+
+    int flags = REG_EXTENDED;
     if (igcase)
         flags |= REG_ICASE;
-
+    regex_t reg;
     if (pattern && tre_regcomp(&reg, translateChar(STRING_ELT(p, 0)), flags))
         error(_("invalid 'pattern' regular expression"));
+    PROTECT_INDEX idx;
+    SEXP ans;
     PROTECT_WITH_INDEX(ans = allocVector(STRSXP, countmax), &idx);
-    count = 0;
-    for (i = 0; i < LENGTH(d); i++)
+    int count = 0;
+    for (int i = 0; i < LENGTH(d); i++)
     {
         if (STRING_ELT(d, i) == NA_STRING)
             continue;
-        dnp = R_ExpandFileName(translateChar(STRING_ELT(d, i)));
+        const char *dnp = R_ExpandFileName(translateChar(STRING_ELT(d, i)));
         list_files(dnp, fullnames ? dnp : NULL, &count, &ans, allfiles, recursive, pattern ? &reg : NULL, &countmax,
-                   idx, idirs);
+                   idx, idirs, /* allowdots = */ !nodots);
     }
     REPROTECT(ans = lengthgets(ans, count), idx);
     if (pattern)
@@ -1735,7 +1738,7 @@ static void chmod_one(const char *name)
 		chmod_one(p);
 	    }
 	    closedir(dir);
-	} else { 
+	} else {
 	    /* we were unable to read a dir */
 	}
     }
