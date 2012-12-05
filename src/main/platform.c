@@ -1031,13 +1031,12 @@ static void list_files(const char *dnp, const char *stem, int *count, SEXP *pans
                 if (recursive)
                 {
 #ifdef Win32
-                    if (strlen(dnp) == 2 && dnp[1] == ':')
+                    if (strlen(dnp) == 2 && dnp[1] == ':') // e.g. "C:"
                         snprintf(p, PATH_MAX, "%s%s", dnp, de->d_name);
                     else
-                        snprintf(p, PATH_MAX, "%s%s%s", dnp, R_FileSep, de->d_name);
-#else
-                    snprintf(p, PATH_MAX, "%s%s%s", dnp, R_FileSep, de->d_name);
 #endif
+                        snprintf(p, PATH_MAX, "%s%s%s", dnp, R_FileSep, de->d_name);
+
 #ifdef Windows
                     _stati64(p, &sb);
 #else
@@ -1059,6 +1058,7 @@ static void list_files(const char *dnp, const char *stem, int *count, SEXP *pans
         }                                                                                                              \
         SET_STRING_ELT(*pans, (*count)++, filename(stem, de->d_name));                                                 \
     }
+                                IF_MATCH_ADD_TO_ANS
                             }
                             if (stem)
                             {
@@ -1066,13 +1066,12 @@ static void list_files(const char *dnp, const char *stem, int *count, SEXP *pans
                                 if (strlen(stem) == 2 && stem[1] == ':')
                                     snprintf(stem2, PATH_MAX, "%s%s", stem, de->d_name);
                                 else
-                                    snprintf(stem2, PATH_MAX, "%s%s%s", stem, R_FileSep, de->d_name);
-#else
-                                snprintf(stem2, PATH_MAX, "%s%s%s", stem, R_FileSep, de->d_name);
 #endif
+                                    snprintf(stem2, PATH_MAX, "%s%s%s", stem, R_FileSep, de->d_name);
                             }
                             else
                                 strcpy(stem2, de->d_name);
+
                             list_files(p, stem2, count, pans, allfiles, recursive, reg, countmax, idx, idirs,
                                        allowdots);
                         }
@@ -1083,7 +1082,8 @@ static void list_files(const char *dnp, const char *stem, int *count, SEXP *pans
                 if (not_dot || allowdots)
                     IF_MATCH_ADD_TO_ANS
             }
-        }
+
+        } // end while()
         closedir(dir);
     }
 }
@@ -1095,14 +1095,14 @@ SEXP attribute_hidden do_listfiles(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
     SEXP d = CAR(args);
-    args = CDR(args);
+    args = CDR(args); // d := directory = path
     if (!isString(d))
-        error(_("invalid '%s' argument"), "directory");
+        error(_("invalid '%s' argument"), "path");
     SEXP p = CAR(args);
     args = CDR(args);
-    int pattern = 0;
+    Rboolean pattern = FALSE;
     if (isString(p) && length(p) >= 1 && STRING_ELT(p, 0) != NA_STRING)
-        pattern = 1;
+        pattern = TRUE;
     else if (!isNull(p) && !(isString(p) && length(p) < 1))
         error(_("invalid '%s' argument"), "pattern");
     int allfiles = asLogical(CAR(args));
