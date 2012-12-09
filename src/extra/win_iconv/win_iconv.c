@@ -112,7 +112,7 @@ static int win_iconv_open(rec_iconv_t *cd, const char *tocode, const char *fromc
 static int win_iconv_close(iconv_t cd);
 static size_t win_iconv(iconv_t cd, const char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft);
 
-static int load_mlang();
+static int load_mlang(void);
 static int make_csconv(const char *name, csconv_t *cv);
 static int name_to_codepage(const char *name);
 static uint utf16_to_ucs4(const ushort *wbuf);
@@ -663,7 +663,7 @@ static ISCONVERTINETSTRINGAVAILABLE IsConvertINetStringAvailable;
 static LCIDTORFC1766A LcidToRfc1766A;
 static RFC1766TOLCIDA Rfc1766ToLcidA;
 
-static int load_mlang()
+static int load_mlang(void)
 {
     HMODULE h;
     if (ConvertINetString != NULL)
@@ -760,8 +760,15 @@ static size_t win_iconv(iconv_t _cd, const char **inbuf, size_t *inbytesleft, ch
             outsize = cd->to.flush(&cd->to, (uchar *)*outbuf, *outbytesleft);
             if (outsize == -1)
             {
-                cd->to.mode = tomode;
-                return (size_t)(-1);
+                if ((cd->to.flags & FLAG_IGNORE) && errno != E2BIG)
+                {
+                    outsize = 0;
+                }
+                else
+                {
+                    cd->to.mode = tomode;
+                    return (size_t)(-1);
+                }
             }
             *outbuf += outsize;
             *outbytesleft -= outsize;
@@ -780,8 +787,17 @@ static size_t win_iconv(iconv_t _cd, const char **inbuf, size_t *inbytesleft, ch
         insize = cd->from.mbtowc(&cd->from, (const uchar *)*inbuf, *inbytesleft, wbuf, &wsize);
         if (insize == -1)
         {
-            cd->from.mode = frommode;
-            return (size_t)(-1);
+            if (cd->to.flags & FLAG_IGNORE)
+            {
+                cd->from.mode = frommode;
+                insize = 1;
+                wsize = 0;
+            }
+            else
+            {
+                cd->from.mode = frommode;
+                return (size_t)(-1);
+            }
         }
 
         if (wsize == 0)
@@ -822,9 +838,17 @@ static size_t win_iconv(iconv_t _cd, const char **inbuf, size_t *inbytesleft, ch
         outsize = cd->to.wctomb(&cd->to, wbuf, wsize, (uchar *)*outbuf, *outbytesleft);
         if (outsize == -1)
         {
-            cd->from.mode = frommode;
-            cd->to.mode = tomode;
-            return (size_t)(-1);
+            if ((cd->to.flags & FLAG_IGNORE) && errno != E2BIG)
+            {
+                cd->to.mode = tomode;
+                outsize = 0;
+            }
+            else
+            {
+                cd->from.mode = frommode;
+                cd->to.mode = tomode;
+                return (size_t)(-1);
+            }
         }
 
         *inbuf += insize;
