@@ -30,7 +30,6 @@ SEXP attribute_hidden do_mapply(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP f = CAR(args), varyingArgs = CADR(args), constantArgs = CADDR(args);
     int m, zero = 0;
     R_xlen_t *lengths, *counters, longest = 0;
-    static SEXP length_op = NULL;
 
     m = length(varyingArgs);
     SEXP vnames = PROTECT(getAttrib(varyingArgs, R_NamesSymbol));
@@ -42,30 +41,15 @@ SEXP attribute_hidden do_mapply(SEXP call, SEXP op, SEXP args, SEXP rho)
         SEXP tmp1 = VECTOR_ELT(varyingArgs, i);
         lengths[i] = xlength(tmp1);
         if (isObject(tmp1))
-        { // possibly dispatch on length():
-            /* Cache the .Primitive for 'length' for DispatchOrEval to use. */
+        { // possibly dispatch on length()
+            /* Cache the .Primitive: unclear caching is worthwhile. */
+            static SEXP length_op = NULL;
             if (length_op == NULL)
-            {
-                length_op = eval(install("length"), R_BaseEnv);
-                if (TYPEOF(length_op) != BUILTINSXP)
-                {
-                    length_op = NULL;
-                    error("'length' is not a BUILTIN");
-                }
-                R_PreserveObject(length_op); // should not be needed
-            }
+                length_op = R_Primitive("length");
             // DispatchOrEval() needs 'args' to be a pairlist
             SEXP ans, tmp2 = PROTECT(list1(tmp1));
-            if (DispatchOrEval(call, length_op, "length", tmp2, rho, &ans, 0, 1)) // result could be double and long
-                switch (TYPEOF(ans))
-                {
-                case REALSXP:
-                    lengths[i] = (R_xlen_t)REAL(ans)[0];
-                    break;
-                default:
-                    lengths[i] = (R_xlen_t)asInteger(ans);
-                    break;
-                }
+            if (DispatchOrEval(call, length_op, "length", tmp2, rho, &ans, 0, 1))
+                lengths[i] = (R_xlen_t)(TYPEOF(ans) == REALSXP ? REAL(ans)[0] : asInteger(ans));
             UNPROTECT(1);
         }
         if (lengths[i] == 0)
