@@ -122,7 +122,7 @@ SEXP do_col2RGB(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             col = str2col(CHAR(STRING_ELT(colors, i)), bg);
             if (col == BG_NEEDED)
-                col = bg = dpptr(GEcurrentDevice())->bg;
+                error("col2rgb(\"0\") is deprecated");
             icol = (unsigned int)col;
             INTEGER(ans)[i4 + 0] = R_RED(icol);
             INTEGER(ans)[i4 + 1] = R_GREEN(icol);
@@ -142,7 +142,7 @@ SEXP do_col2RGB(SEXP call, SEXP op, SEXP args, SEXP env)
             else
                 col = R_ColorTable[(unsigned int)(col - 1) % R_ColorTableSize];
             if (col == BG_NEEDED)
-                col = bg = dpptr(GEcurrentDevice())->bg;
+                error("col2rgb(0) is defunct");
             icol = (unsigned int)col;
             INTEGER(ans)[i4 + 0] = R_RED(icol);
             INTEGER(ans)[i4 + 1] = R_GREEN(icol);
