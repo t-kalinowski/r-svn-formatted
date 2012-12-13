@@ -122,7 +122,7 @@ SEXP do_col2RGB(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             col = str2col(CHAR(STRING_ELT(colors, i)), bg);
             if (col == BG_NEEDED)
-                error("col2rgb(\"0\") is deprecated");
+                error("col2rgb(\"0\") is defunct");
             icol = (unsigned int)col;
             INTEGER(ans)[i4 + 0] = R_RED(icol);
             INTEGER(ans)[i4 + 1] = R_GREEN(icol);
@@ -1178,7 +1178,10 @@ static double str2col(const char *s, double bg)
        Looks like it was an artefact of conversion in col2rgb().
     */
     else if (isdigit((int)s[0]))
+    {
+        warning("specification of colors in the palette by a string is deprecated");
         return number2col(s, bg);
+    }
     else
         return name2col(s);
 }
