@@ -34,7 +34,7 @@
 
 static unsigned int rgb2col(const char *);
 
-static double str2col(const char *s, double bg);
+static double str2col(const char *s);
 
 static int R_ColorTableSize;
 static unsigned int R_ColorTable[COLOR_TABLE_SIZE];
@@ -71,14 +71,24 @@ static unsigned int char2col(const char *s)
         return name2col(s);
 }
 
-/* This is in package grDevices, but mixes up the base graphics concept
-   of a background colour */
+static unsigned int num2col(int col)
+{
+    unsigned int res = R_TRANWHITE;
+    if (col == NA_INTEGER)
+        ;
+    else if (col <= 0)
+        error("a color number must be strictly positive");
+    else
+        res = R_ColorTable[(unsigned int)(col - 1) % R_ColorTableSize];
+    return res;
+}
+
 SEXP do_col2RGB(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* colorname, "#rrggbb" or "col.number" to (r,g,b) conversion */
 
     SEXP colors, ans, names, dmns;
-    double col, bg;
+    double col;
     unsigned int icol;
     int n, i, i4;
 
@@ -107,23 +117,11 @@ SEXP do_col2RGB(SEXP call, SEXP op, SEXP args, SEXP env)
         SET_VECTOR_ELT(dmns, 1, names);
     setAttrib(ans, R_DimNamesSymbol, dmns);
 
-    /* avoid looking up the background unless we will need it;
-       this may avoid opening a new window.  Unfortunately, there is no
-       unavailable colour, so we work with doubles and convert at the
-       last minute */
-
-#define BG_NEEDED -1.0
-
-    bg = BG_NEEDED;
-
     if (isString(colors))
     {
         for (i = i4 = 0; i < n; i++, i4 += 4)
         {
-            col = str2col(CHAR(STRING_ELT(colors, i)), bg);
-            if (col == BG_NEEDED)
-                error("col2rgb(\"0\") is defunct");
-            icol = (unsigned int)col;
+            icol = (unsigned int)str2col(CHAR(STRING_ELT(colors, i)));
             INTEGER(ans)[i4 + 0] = R_RED(icol);
             INTEGER(ans)[i4 + 1] = R_GREEN(icol);
             INTEGER(ans)[i4 + 2] = R_BLUE(icol);
@@ -136,14 +134,14 @@ SEXP do_col2RGB(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             col = INTEGER(colors)[i];
             if (col == NA_INTEGER)
-                col = R_TRANWHITE;
+                icol = R_TRANWHITE;
             else if (col == 0)
-                col = bg;
-            else
-                col = R_ColorTable[(unsigned int)(col - 1) % R_ColorTableSize];
-            if (col == BG_NEEDED)
+            {
                 error("col2rgb(0) is defunct");
-            icol = (unsigned int)col;
+                icol = R_TRANWHITE; // -Wall
+            }
+            else
+                icol = num2col(col);
             INTEGER(ans)[i4 + 0] = R_RED(icol);
             INTEGER(ans)[i4 + 1] = R_GREEN(icol);
             INTEGER(ans)[i4 + 2] = R_BLUE(icol);
@@ -1107,19 +1105,6 @@ unsigned int attribute_hidden name2col(const char *nm)
     return 0; /* never occurs but avoid compiler warnings */
 }
 
-static double number2col(const char *nm, double bg)
-{
-    int indx;
-    char *ptr;
-    indx = (int)strtod(nm, &ptr);
-    if (*ptr)
-        error(_("invalid color specification '%s'"), nm);
-    if (indx == 0)
-        return bg;
-    else
-        return R_ColorTable[(indx - 1) % R_ColorTableSize];
-}
-
 static char ColBuf[10];
 
 /* Internal to External Color Representation */
@@ -1169,7 +1154,7 @@ const char *col2name(unsigned int col)
     }
 }
 
-static double str2col(const char *s, double bg)
+static double str2col(const char *s)
 {
     if (s[0] == '#')
         return rgb2col(s);
@@ -1187,13 +1172,13 @@ static double str2col(const char *s, double bg)
 /* in GraphicsEngine.h */
 unsigned int R_GE_str2col(const char *s)
 {
-    return (unsigned int)str2col(s, R_TRANWHITE);
+    return (unsigned int)str2col(s);
 }
 
 /* Convert a sexp element to an R color desc */
 /* We Assume that Checks Have Been Done */
 
-/* used in grid/src/gpar.c */
+/* used in grid/src/gpar.c with bg = R_TRANWHITE */
 /* in GraphicsEngine.h */
 unsigned int RGBpar3(SEXP x, int i, unsigned int bg)
 {
@@ -1201,7 +1186,7 @@ unsigned int RGBpar3(SEXP x, int i, unsigned int bg)
     switch (TYPEOF(x))
     {
     case STRSXP:
-        return (unsigned int)str2col(CHAR(STRING_ELT(x, i)), bg);
+        return (unsigned int)str2col(CHAR(STRING_ELT(x, i)));
     case LGLSXP:
         indx = LOGICAL(x)[i];
         if (indx == NA_LOGICAL)
