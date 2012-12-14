@@ -3019,7 +3019,7 @@ double GEExpressionWidth(SEXP expr, pGEcontext gc, pGEDevDesc dd)
      */
     mathContext mc;
     mc.BaseCex = gc->cex;
-    mc.BoxColor = name2col("pink");
+    mc.BoxColor = 4291543295U; // name2col("pink");
     mc.CurrentStyle = STYLE_D;
     /*
      * Some "empty" values.  Will be filled in after BBox is calc'ed
@@ -3056,7 +3056,7 @@ double GEExpressionHeight(SEXP expr, pGEcontext gc, pGEDevDesc dd)
      */
     mathContext mc;
     mc.BaseCex = gc->cex;
-    mc.BoxColor = name2col("pink");
+    mc.BoxColor = 4291543295U; // name2col("pink");
     mc.CurrentStyle = STYLE_D;
     /*
      * Some "empty" values.  Will be filled in after BBox is calc'ed
@@ -3091,7 +3091,7 @@ void GEExpressionMetric(SEXP expr, const pGEcontext gc, double *ascent, double *
      */
     mathContext mc;
     mc.BaseCex = gc->cex;
-    mc.BoxColor = name2col("pink");
+    mc.BoxColor = 4291543295U; // name2col("pink");
     mc.CurrentStyle = STYLE_D;
     /*
      * Some "empty" values.  Will be filled in after BBox is calc'ed
@@ -3134,7 +3134,7 @@ void GEMathText(double x, double y, SEXP expr, double xc, double yc, double rot,
      * Build a "drawing context" for the current expression
      */
     mc.BaseCex = gc->cex;
-    mc.BoxColor = name2col("pink");
+    mc.BoxColor = 4291543295U; // name2col("pink");
     mc.CurrentStyle = STYLE_D;
 
     /*
