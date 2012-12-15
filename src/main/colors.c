@@ -109,8 +109,6 @@ typedef struct colorDataBaseEntry
     unsigned int code; /* Internal R Color Code */
 } ColorDataBaseEntry;
 
-static int ColorDataBaseSize = 657;
-
 static ColorDataBaseEntry ColorDataBase[] = {
     /* name		rgb         code */
     {"white", "#FFFFFF", 0xffffffff},
@@ -813,12 +811,11 @@ SEXP do_palette(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP do_colors(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP ans;
     int n;
 
     for (n = 0; ColorDataBase[n].name != NULL; n++)
         ;
-    PROTECT(ans = allocVector(STRSXP, n));
+    SEXP ans = PROTECT(allocVector(STRSXP, n));
     for (n = 0; ColorDataBase[n].name != NULL; n++)
         SET_STRING_ELT(ans, n, mkChar(ColorDataBase[n].name));
     UNPROTECT(1);
@@ -1010,7 +1007,8 @@ unsigned int RGBpar3(SEXP x, int i, unsigned int bg)
         warning(_("supplied color is neither numeric nor character"));
         return bg;
     }
-    //    if (indx < 0) error(_("numerical color values must be >= 0"));
+    if (indx < 0)
+        error(_("numerical color values must be >= 0, found %d"), indx);
     if (indx == 0)
         return bg;
     else
@@ -1027,15 +1025,14 @@ unsigned int RGBpar(SEXP x, int i)
 
 void attribute_hidden InitColors(void)
 {
-    int i;
 
     /* Initialize the Color Database: we now pre-compute this
-    for(i = 0 ; ColorDataBase[i].name ; i++)
+    for(int i = 0 ; ColorDataBase[i].name ; i++)
     ColorDataBase[i].code = rgb2col(ColorDataBase[i].rgb);
-    ColorDataBaseSize = i;
     */
 
     /* Install Default Palette */
+    int i;
     for (i = 0; DefaultPalette[i]; i++)
         Palette[i] = name2col(DefaultPalette[i]);
     PaletteSize = i;
