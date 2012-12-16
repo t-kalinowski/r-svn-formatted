@@ -80,6 +80,8 @@ static const R_CallMethodDef CallEntries[] = {CALLDEF(Type1FontInUse, 2),
                                               CALLDEF(hsv, 4),
                                               CALLDEF(hcl, 5),
                                               CALLDEF(col2rgb, 2),
+                                              CALLDEF(colors, 0),
+                                              CALLDEF(palette, 1),
 
 #ifndef WIN32
                                               CALLDEF(makeQuartzDefault, 0),
@@ -119,8 +121,6 @@ static const R_ExternalMethodDef ExtEntries[] = {EXTDEF(PicTeX, 6),
                                                  EXTDEF(getGraphicsEvent, 1),
                                                  EXTDEF(getGraphicsEventEnv, 1),
                                                  EXTDEF(setGraphicsEventEnv, 2),
-                                                 EXTDEF(colors, 0),
-                                                 EXTDEF(palette, 1),
                                                  EXTDEF(devAskNewPage, 1),
 
 #ifdef WIN32
@@ -133,6 +133,7 @@ static const R_ExternalMethodDef ExtEntries[] = {EXTDEF(PicTeX, 6),
 
 void R_init_grDevices(DllInfo *dll)
 {
+    initPalette();
     R_registerRoutines(dll, CEntries, CallEntries, NULL, ExtEntries);
     R_useDynamicSymbols(dll, FALSE);
     // Uh, oh, R.app looks up symbols ....
