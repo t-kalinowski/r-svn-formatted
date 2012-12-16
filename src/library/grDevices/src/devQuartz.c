@@ -1056,34 +1056,31 @@ static double RQuartz_StrWidth(const char *text, CTXDESC)
     if (!ctx)
         NOCTXR(strlen(text) * 10.0); /* for sanity reasons */
     RQuartz_SetFont(ctx, gc, xd);
-    {
-        CGFontRef font = CGContextGetFont(ctx);
-        float aScale = (float)((gc->cex * gc->ps * xd->tscale) / CGFontGetUnitsPerEm(font));
-        UniChar *buffer;
-        CGGlyph *glyphs;
-        int *advances;
-        int Free = 0, len, i;
-        CFStringRef str = text2unichar(gc, dd, text, &buffer, &Free);
-        if (!str)
-            return 0.0; /* invalid text contents */
-        len = CFStringGetLength(str);
-        /* FIXME: check allocations */
-        glyphs = malloc(sizeof(CGGlyph) * len);
-        advances = malloc(sizeof(int) * len);
-        CGFontGetGlyphsForUnichars(font, buffer, glyphs, len);
-        CGFontGetGlyphAdvances(font, glyphs, len, advances);
-        {
-            float width = 0.0; /* aScale*CGFontGetLeading(CGContextGetFont(ctx)); */
-            for (i = 0; i < len; i++)
-                width += aScale * advances[i];
-            free(advances);
-            free(glyphs);
-            if (Free)
-                free(buffer);
-            CFRelease(str);
-            return width;
-        }
-    }
+
+    CGFontRef font = CGContextGetFont(ctx);
+    float aScale = (float)((gc->cex * gc->ps * xd->tscale) / CGFontGetUnitsPerEm(font));
+    UniChar *buffer;
+    CGGlyph *glyphs;
+    int *advances;
+    int Free = 0, len;
+    CFStringRef str = text2unichar(gc, dd, text, &buffer, &Free);
+    if (!str)
+        return 0.0; /* invalid text contents */
+    len = (int)CFStringGetLength(str);
+    /* FIXME: check allocations */
+    glyphs = malloc(sizeof(CGGlyph) * len);
+    advances = malloc(sizeof(int) * len);
+    CGFontGetGlyphsForUnichars(font, buffer, glyphs, len);
+    CGFontGetGlyphAdvances(font, glyphs, len, advances);
+    float width = 0.0; /* aScale*CGFontGetLeading(CGContextGetFont(ctx)); */
+    for (int i = 0; i < len; i++)
+        width += aScale * advances[i];
+    free(advances);
+    free(glyphs);
+    if (Free)
+        free(buffer);
+    CFRelease(str);
+    return width;
 }
 
 static void RQuartz_Text(double x, double y, const char *text, double rot, double hadj, CTXDESC)
@@ -1220,13 +1217,9 @@ static void RQuartz_Raster(unsigned int *raster, int w, int h, double x, double 
     CGContextRotateCTM(ctx, rot * M_PI / 180.0);
     /* Determine interpolation method */
     if (interpolate)
-    {
         CGContextSetInterpolationQuality(ctx, kCGInterpolationDefault);
-    }
     else
-    {
         CGContextSetInterpolationQuality(ctx, kCGInterpolationNone);
-    }
     /* Draw the quartz image */
     CGContextDrawImage(ctx, CGRectMake(0, 0, width, height), img);
     CGContextRestoreGState(ctx);
@@ -1286,10 +1279,15 @@ static void RQuartz_Polyline(int n, double *x, double *y, CTXDESC)
         NOCTX;
     SET(RQUARTZ_STROKE | RQUARTZ_LINE);
 
-    /* CGContextStrokeLineSegments turned out to be a bad idea due to Leopard restarting dashes for each segment.
-     * CGContextAddLineToPoint is fast enough. The only remaining porblem is that Quartz seems to restart dashes at
-     * segment breakup points. We should make the segments break-up an optional feature and possibly fix the underlying
-     * problem (software rendering). */
+    /* CGContextStrokeLineSegments turned out to be a bad idea due to
+       Leopard restarting dashes for each segment.
+       CGContextAddLineToPoint is fast enough.
+       The only remaining problem is that Quartz seems to restart
+       dashes at segment breakup points. We should make the segments
+       break-up an optional feature and possibly fix the underlying
+       problem (software rendering).
+    */
+
     while (i < n)
     {
         int j = i + max_segments;
@@ -1458,7 +1456,8 @@ QuartzDesc_t QuartzCarbon_DeviceCreate(pDevDesc dd, QuartzFunctions_t *fn, Quart
     WHAT = CDR(WHAT)
 
 /* C version of the Quartz call (experimental)
-   Quartz descriptor on success, NULL on failure. if errorCode is not NULL, it will contain the error code on exit */
+   Quartz descriptor on success, NULL on failure.
+   If errorCode is not NULL, it will contain the error code on exit */
 QuartzDesc_t Quartz_C(QuartzParameters_t *par, quartz_create_fn_t q_create, int *errorCode)
 {
     if (!q_create || !par)
@@ -1697,18 +1696,18 @@ extern kern_return_t bootstrap_info(mach_port_t,                               /
                                     bool_array_t *, mach_msg_type_number_t *); /* active */
 
 /* returns 1 if window server session service
- (com.apple.windowserver.session) is present in the boostrap
- namespace (pre-Lion) or when a current session is present, active
- and there is no SSH_CONNECTION (Lion and later).
- returns 0 if an error occurred or the service is not
- present. For all practical purposes this returns 1 only if run
- interactively via LS. Although ssh to a machine that has a running
- session for the same user will allow a WS connection, this function
- will still return 0 in that case.
- NOTE: on Mac OS X 10.5 we are currently NOT searching the parent
- namespaces. This is currently OK, because the session service will
- be registered in the session namespace which is the last in the
- chain. However, this could change in the future.
+   (com.apple.windowserver.session) is present in the boostrap
+   namespace (pre-Lion) or when a current session is present, active
+   and there is no SSH_CONNECTION (Lion and later).
+   returns 0 if an error occurred or the service is not
+   present. For all practical purposes this returns 1 only if run
+   interactively via LS. Although ssh to a machine that has a running
+   session for the same user will allow a WS connection, this function
+   will still return 0 in that case.
+   NOTE: on Mac OS X 10.5 we are currently NOT searching the parent
+   namespaces. This is currently OK, because the session service will
+   be registered in the session namespace which is the last in the
+   chain. However, this could change in the future.
  */
 static int has_wss()
 {
@@ -1756,10 +1755,13 @@ static int has_wss()
     else
     {
         /* On Mac OS X 10.7 (Lion) and higher two things changed:
-           a) there is no com.apple.windowserver.session anymore so the above will fail
-           b) every process has now the full bootstrap info, so in fact even remote
-              connections will be able to run on-screen tasks if the user is logged in
-           So we need to add some heuristics to decide when the user actually wants Quartz ... */
+           a) there is no com.apple.windowserver.session anymore
+           so the above will fail
+           b) every process has now the full bootstrap info,
+           so in fact even remote connections will be able to
+           run on-screen tasks if the user is logged in
+           So we need to add some heuristics to decide when the user
+           actually wants Quartz ... */
         /* check user's session */
         CFDictionaryRef dict = CGSessionCopyCurrentDictionary();
         if (dict)
