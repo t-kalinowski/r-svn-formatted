@@ -28,9 +28,6 @@
 #include <ctype.h>
 #include <limits.h> /* required for MB_LEN_MAX */
 
-/* Formerly in headers, but only used in some devices */
-typedef unsigned int rcolor;
-
 #include <wchar.h>
 #include <wctype.h>
 static void mbcsToSbcs(const char *in, char *out, const char *encoding, int enc);
