@@ -63,6 +63,7 @@ static const R_CallMethodDef CallEntries[] = {CALLDEF(crc64, 1),
                                               CALLDEF(loadRconsole, 1),
                                               CALLDEF(memsize, 1),
                                               CALLDEF(shortpath, 1),
+                                              CALLDEF(processevents, 0),
 #endif
 
                                               {NULL, NULL, 0}};
