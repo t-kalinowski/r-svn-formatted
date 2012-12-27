@@ -161,6 +161,8 @@ static SEXP UserMacroLookup(const char *);
 static SEXP InstallKeywords();
 static SEXP NewList(void);
 static SEXP makeSrcref(YYLTYPE *, SEXP);
+static int xxgetc();
+static int xxungetc(int);
 
 /* Flags used to mark need for postprocessing in the dynamicFlag attribute */
 
@@ -170,19 +172,26 @@ static SEXP makeSrcref(YYLTYPE *, SEXP);
 
 /* Internal lexer / parser state variables */
 
-static int xxinRString, xxQuoteLine, xxQuoteCol;
-static int xxinEqn;
-static int xxNewlineInString;
-static int xxgetc();
-static int xxungetc(int);
-static int xxlineno, xxbyteno, xxcolno;
-static int xxmode, xxitemType, xxbraceDepth; /* context for lexer */
-static int xxDebugTokens;                    /* non-zero causes debug output to R console */
-static const char *xxBasename;               /* basename of file for error messages */
-static SEXP Value;
-static int xxinitvalue;
 static char const yyunknown[] = "unknown macro"; /* our message, not bison's */
-static SEXP xxMacroList; /* A hashed environment containing all the standard and user-defined macro names */
+
+typedef struct ParseState ParseState;
+struct ParseState
+{
+    int xxinRString, xxQuoteLine, xxQuoteCol;
+    int xxinEqn;
+    int xxNewlineInString;
+    int xxlineno, xxbyteno, xxcolno;
+    int xxmode, xxitemType, xxbraceDepth; /* context for lexer */
+    int xxDebugTokens;                    /* non-zero causes debug output to R console */
+    const char *xxBasename;               /* basename of file for error messages */
+    SEXP Value;
+    int xxinitvalue;
+    SEXP xxMacroList; /* A hashed environment containing all the standard and user-defined macro names */
+    ParseState *prevState;
+};
+
+static Rboolean busy = FALSE;
+static ParseState parseState;
 
 #define RLIKE 1 /* Includes R strings; xxinRString holds the opening quote char, or 0 outside a string */
 #define LATEXLIKE 2
@@ -227,7 +236,7 @@ static int mkComment(int);
 #define YYSTYPE SEXP
 
 /* Line 189 of yacc.c  */
-#line 241 "gramRd.c"
+#line 247 "gramRd.c"
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
@@ -321,7 +330,7 @@ typedef struct YYLTYPE
 /* Copy the second part of user declarations.  */
 
 /* Line 264 of yacc.c  */
-#line 339 "gramRd.c"
+#line 345 "gramRd.c"
 
 #ifdef short
 #undef short
@@ -582,10 +591,10 @@ static const yytype_int8 yyrhs[] = {
 
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] = {
-    0,   200, 200, 201, 202, 205, 208, 211, 212, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227,
-    229, 230, 232, 233, 234, 235, 236, 237, 238, 239, 240, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253,
-    254, 255, 256, 257, 258, 260, 261, 262, 263, 265, 267, 269, 271, 273, 276, 279, 284, 286, 287, 296, 298, 300, 304,
-    305, 307, 309, 313, 314, 316, 319, 321, 323, 325, 327, 329, 331, 333, 335, 337, 338, 339, 340, 341, 343};
+    0,   206, 206, 207, 208, 211, 214, 217, 218, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233,
+    235, 236, 238, 239, 240, 241, 242, 243, 244, 245, 246, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259,
+    260, 261, 262, 263, 264, 266, 267, 268, 269, 271, 273, 275, 277, 279, 282, 285, 290, 292, 293, 302, 304, 306, 310,
+    311, 313, 315, 319, 320, 322, 325, 327, 329, 331, 333, 335, 337, 339, 341, 343, 344, 345, 346, 347, 349};
 #endif
 
 #if YYDEBUG || YYERROR_VERBOSE || YYTOKEN_TABLE
@@ -1307,596 +1316,596 @@ YYLTYPE *yylocationp;
     case 5: /* "SECTIONHEADER" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1551 "gramRd.c"
+#line 1557 "gramRd.c"
     break;
     case 6: /* "RSECTIONHEADER" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1560 "gramRd.c"
+#line 1566 "gramRd.c"
     break;
     case 7: /* "VSECTIONHEADER" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1569 "gramRd.c"
+#line 1575 "gramRd.c"
     break;
     case 8: /* "SECTIONHEADER2" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1578 "gramRd.c"
+#line 1584 "gramRd.c"
     break;
     case 9: /* "RCODEMACRO" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1587 "gramRd.c"
+#line 1593 "gramRd.c"
     break;
     case 10: /* "SEXPR" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1596 "gramRd.c"
+#line 1602 "gramRd.c"
     break;
     case 12: /* "LATEXMACRO" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1605 "gramRd.c"
+#line 1611 "gramRd.c"
     break;
     case 13: /* "VERBMACRO" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1614 "gramRd.c"
+#line 1620 "gramRd.c"
     break;
     case 14: /* "OPTMACRO" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1623 "gramRd.c"
+#line 1629 "gramRd.c"
     break;
     case 15: /* "ESCAPE" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1632 "gramRd.c"
+#line 1638 "gramRd.c"
     break;
     case 16: /* "LISTSECTION" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1641 "gramRd.c"
+#line 1647 "gramRd.c"
     break;
     case 17: /* "ITEMIZE" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1650 "gramRd.c"
+#line 1656 "gramRd.c"
     break;
     case 18: /* "DESCRIPTION" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1659 "gramRd.c"
+#line 1665 "gramRd.c"
     break;
     case 19: /* "NOITEM" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1668 "gramRd.c"
+#line 1674 "gramRd.c"
     break;
     case 20: /* "LATEXMACRO2" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1677 "gramRd.c"
+#line 1683 "gramRd.c"
     break;
     case 21: /* "VERBMACRO2" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1686 "gramRd.c"
+#line 1692 "gramRd.c"
     break;
     case 22: /* "VERBLATEX" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1695 "gramRd.c"
+#line 1701 "gramRd.c"
     break;
     case 23: /* "LATEXMACRO3" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1704 "gramRd.c"
+#line 1710 "gramRd.c"
     break;
     case 24: /* "NEWCOMMAND" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1713 "gramRd.c"
+#line 1719 "gramRd.c"
     break;
     case 25: /* "USERMACRO" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1722 "gramRd.c"
+#line 1728 "gramRd.c"
     break;
     case 26: /* "USERMACRO1" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1731 "gramRd.c"
+#line 1737 "gramRd.c"
     break;
     case 27: /* "USERMACRO2" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1740 "gramRd.c"
+#line 1746 "gramRd.c"
     break;
     case 28: /* "USERMACRO3" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1749 "gramRd.c"
+#line 1755 "gramRd.c"
     break;
     case 29: /* "USERMACRO4" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1758 "gramRd.c"
+#line 1764 "gramRd.c"
     break;
     case 30: /* "USERMACRO5" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1767 "gramRd.c"
+#line 1773 "gramRd.c"
     break;
     case 31: /* "USERMACRO6" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1776 "gramRd.c"
+#line 1782 "gramRd.c"
     break;
     case 32: /* "USERMACRO7" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1785 "gramRd.c"
+#line 1791 "gramRd.c"
     break;
     case 33: /* "USERMACRO8" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1794 "gramRd.c"
+#line 1800 "gramRd.c"
     break;
     case 34: /* "USERMACRO9" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1803 "gramRd.c"
+#line 1809 "gramRd.c"
     break;
     case 35: /* "IFDEF" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1812 "gramRd.c"
+#line 1818 "gramRd.c"
     break;
     case 36: /* "ENDIF" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1821 "gramRd.c"
+#line 1827 "gramRd.c"
     break;
     case 37: /* "TEXT" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1830 "gramRd.c"
+#line 1836 "gramRd.c"
     break;
     case 38: /* "RCODE" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1839 "gramRd.c"
+#line 1845 "gramRd.c"
     break;
     case 39: /* "VERB" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1848 "gramRd.c"
+#line 1854 "gramRd.c"
     break;
     case 40: /* "COMMENT" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1857 "gramRd.c"
+#line 1863 "gramRd.c"
     break;
     case 41: /* "UNKNOWN" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1866 "gramRd.c"
+#line 1872 "gramRd.c"
     break;
     case 42: /* "STARTFILE" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1875 "gramRd.c"
+#line 1881 "gramRd.c"
     break;
     case 43: /* "STARTFRAGMENT" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1884 "gramRd.c"
+#line 1890 "gramRd.c"
     break;
     case 54: /* "ArgItems" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1893 "gramRd.c"
+#line 1899 "gramRd.c"
     break;
     case 58: /* "LatexArg" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1902 "gramRd.c"
+#line 1908 "gramRd.c"
     break;
     case 63: /* "RLikeArg2" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1911 "gramRd.c"
+#line 1917 "gramRd.c"
     break;
     case 65: /* "VerbatimArg1" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1920 "gramRd.c"
+#line 1926 "gramRd.c"
     break;
     case 66: /* "VerbatimArg2" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1929 "gramRd.c"
+#line 1935 "gramRd.c"
     break;
     case 67: /* "IfDefTarget" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1938 "gramRd.c"
+#line 1944 "gramRd.c"
     break;
     case 68: /* "goLatexLike" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1947 "gramRd.c"
+#line 1953 "gramRd.c"
     break;
     case 69: /* "goRLike" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1956 "gramRd.c"
+#line 1962 "gramRd.c"
     break;
     case 70: /* "goRLike2" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1965 "gramRd.c"
+#line 1971 "gramRd.c"
     break;
     case 71: /* "goOption" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1974 "gramRd.c"
+#line 1980 "gramRd.c"
     break;
     case 72: /* "goVerbatim" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1983 "gramRd.c"
+#line 1989 "gramRd.c"
     break;
     case 73: /* "goVerbatim1" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 1992 "gramRd.c"
+#line 1998 "gramRd.c"
     break;
     case 74: /* "goVerbatim2" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 2001 "gramRd.c"
+#line 2007 "gramRd.c"
     break;
     case 75: /* "goItem0" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 2010 "gramRd.c"
+#line 2016 "gramRd.c"
     break;
     case 76: /* "goItem2" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 2019 "gramRd.c"
+#line 2025 "gramRd.c"
     break;
     case 78: /* "Option" */
 
 /* Line 1009 of yacc.c  */
-#line 188 "gramRd.y"
+#line 194 "gramRd.y"
     {
         UNPROTECT_PTR((*yyvaluep));
     };
 
 /* Line 1009 of yacc.c  */
-#line 2028 "gramRd.c"
+#line 2034 "gramRd.c"
     break;
 
     default:
@@ -2210,7 +2219,7 @@ yyreduce:
     case 2:
 
 /* Line 1464 of yacc.c  */
-#line 200 "gramRd.y"
+#line 206 "gramRd.y"
     {
         xxsavevalue((yyvsp[(2) - (3)]), &(yyloc));
         UNPROTECT_PTR((yyvsp[(1) - (3)]));
@@ -2222,7 +2231,7 @@ yyreduce:
     case 3:
 
 /* Line 1464 of yacc.c  */
-#line 201 "gramRd.y"
+#line 207 "gramRd.y"
     {
         xxsavevalue((yyvsp[(2) - (3)]), &(yyloc));
         UNPROTECT_PTR((yyvsp[(1) - (3)]));
@@ -2234,9 +2243,9 @@ yyreduce:
     case 4:
 
 /* Line 1464 of yacc.c  */
-#line 202 "gramRd.y"
+#line 208 "gramRd.y"
     {
-        PROTECT(Value = R_NilValue);
+        PROTECT(parseState.Value = R_NilValue);
         YYABORT;
         ;
     }
@@ -2245,7 +2254,7 @@ yyreduce:
     case 5:
 
 /* Line 1464 of yacc.c  */
-#line 205 "gramRd.y"
+#line 211 "gramRd.y"
     {
         (yyval) = (yyvsp[(2) - (2)]);
         UNPROTECT_PTR((yyvsp[(1) - (2)]));
@@ -2256,7 +2265,7 @@ yyreduce:
     case 6:
 
 /* Line 1464 of yacc.c  */
-#line 208 "gramRd.y"
+#line 214 "gramRd.y"
     {
         (yyval) = (yyvsp[(1) - (1)]);
         ;
@@ -2266,7 +2275,7 @@ yyreduce:
     case 7:
 
 /* Line 1464 of yacc.c  */
-#line 211 "gramRd.y"
+#line 217 "gramRd.y"
     {
         (yyval) = xxnewlist((yyvsp[(1) - (1)]));
         ;
@@ -2276,7 +2285,7 @@ yyreduce:
     case 8:
 
 /* Line 1464 of yacc.c  */
-#line 212 "gramRd.y"
+#line 218 "gramRd.y"
     {
         (yyval) = xxlist((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]));
         ;
@@ -2286,7 +2295,7 @@ yyreduce:
     case 9:
 
 /* Line 1464 of yacc.c  */
-#line 214 "gramRd.y"
+#line 220 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), STATIC, &(yyloc));
         ;
@@ -2296,7 +2305,7 @@ yyreduce:
     case 10:
 
 /* Line 1464 of yacc.c  */
-#line 215 "gramRd.y"
+#line 221 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), HAS_SEXPR, &(yyloc));
         ;
@@ -2306,7 +2315,7 @@ yyreduce:
     case 11:
 
 /* Line 1464 of yacc.c  */
-#line 216 "gramRd.y"
+#line 222 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), STATIC, &(yyloc));
         ;
@@ -2316,7 +2325,7 @@ yyreduce:
     case 12:
 
 /* Line 1464 of yacc.c  */
-#line 217 "gramRd.y"
+#line 223 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), STATIC, &(yyloc));
         ;
@@ -2326,7 +2335,7 @@ yyreduce:
     case 13:
 
 /* Line 1464 of yacc.c  */
-#line 218 "gramRd.y"
+#line 224 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), STATIC, &(yyloc));
         ;
@@ -2336,7 +2345,7 @@ yyreduce:
     case 14:
 
 /* Line 1464 of yacc.c  */
-#line 219 "gramRd.y"
+#line 225 "gramRd.y"
     {
         (yyval) = xxmarkup2((yyvsp[(1) - (3)]), (yyvsp[(2) - (3)]), (yyvsp[(3) - (3)]), 2, STATIC, &(yyloc));
         ;
@@ -2346,7 +2355,7 @@ yyreduce:
     case 15:
 
 /* Line 1464 of yacc.c  */
-#line 220 "gramRd.y"
+#line 226 "gramRd.y"
     {
         (yyval) = xxmarkup2((yyvsp[(1) - (4)]), (yyvsp[(2) - (4)]), (yyvsp[(3) - (4)]), 2, HAS_IFDEF, &(yyloc));
         UNPROTECT_PTR((yyvsp[(4) - (4)]));
@@ -2357,7 +2366,7 @@ yyreduce:
     case 16:
 
 /* Line 1464 of yacc.c  */
-#line 221 "gramRd.y"
+#line 227 "gramRd.y"
     {
         (yyval) = xxmarkup2((yyvsp[(1) - (4)]), (yyvsp[(2) - (4)]), (yyvsp[(3) - (4)]), 2, HAS_IFDEF, &(yyloc));
         ;
@@ -2367,7 +2376,7 @@ yyreduce:
     case 17:
 
 /* Line 1464 of yacc.c  */
-#line 222 "gramRd.y"
+#line 228 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]), HAS_SEXPR, &(yyloc));
         xxpopMode((yyvsp[(2) - (3)]));
@@ -2378,7 +2387,7 @@ yyreduce:
     case 18:
 
 /* Line 1464 of yacc.c  */
-#line 223 "gramRd.y"
+#line 229 "gramRd.y"
     {
         (yyval) = xxOptionmarkup((yyvsp[(1) - (4)]), (yyvsp[(3) - (4)]), (yyvsp[(4) - (4)]), HAS_SEXPR, &(yyloc));
         xxpopMode((yyvsp[(2) - (4)]));
@@ -2389,7 +2398,7 @@ yyreduce:
     case 19:
 
 /* Line 1464 of yacc.c  */
-#line 224 "gramRd.y"
+#line 230 "gramRd.y"
     {
         (yyval) = xxtag((yyvsp[(1) - (1)]), COMMENT, &(yyloc));
         ;
@@ -2399,7 +2408,7 @@ yyreduce:
     case 20:
 
 /* Line 1464 of yacc.c  */
-#line 225 "gramRd.y"
+#line 231 "gramRd.y"
     {
         (yyval) = xxtag((yyvsp[(1) - (1)]), TEXT, &(yyloc));
         ;
@@ -2409,7 +2418,7 @@ yyreduce:
     case 21:
 
 /* Line 1464 of yacc.c  */
-#line 226 "gramRd.y"
+#line 232 "gramRd.y"
     {
         (yyval) = (yyvsp[(1) - (1)]);
         ;
@@ -2419,7 +2428,7 @@ yyreduce:
     case 22:
 
 /* Line 1464 of yacc.c  */
-#line 227 "gramRd.y"
+#line 233 "gramRd.y"
     {
         (yyval) = (yyvsp[(2) - (2)]);
         ;
@@ -2429,7 +2438,7 @@ yyreduce:
     case 23:
 
 /* Line 1464 of yacc.c  */
-#line 229 "gramRd.y"
+#line 235 "gramRd.y"
     {
         (yyval) = xxnewlist((yyvsp[(1) - (1)]));
         ;
@@ -2439,7 +2448,7 @@ yyreduce:
     case 24:
 
 /* Line 1464 of yacc.c  */
-#line 230 "gramRd.y"
+#line 236 "gramRd.y"
     {
         (yyval) = xxlist((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]));
         ;
@@ -2449,7 +2458,7 @@ yyreduce:
     case 25:
 
 /* Line 1464 of yacc.c  */
-#line 232 "gramRd.y"
+#line 238 "gramRd.y"
     {
         (yyval) = xxtag((yyvsp[(1) - (1)]), TEXT, &(yyloc));
         ;
@@ -2459,7 +2468,7 @@ yyreduce:
     case 26:
 
 /* Line 1464 of yacc.c  */
-#line 233 "gramRd.y"
+#line 239 "gramRd.y"
     {
         (yyval) = xxtag((yyvsp[(1) - (1)]), RCODE, &(yyloc));
         ;
@@ -2469,7 +2478,7 @@ yyreduce:
     case 27:
 
 /* Line 1464 of yacc.c  */
-#line 234 "gramRd.y"
+#line 240 "gramRd.y"
     {
         (yyval) = xxtag((yyvsp[(1) - (1)]), VERB, &(yyloc));
         ;
@@ -2479,7 +2488,7 @@ yyreduce:
     case 28:
 
 /* Line 1464 of yacc.c  */
-#line 235 "gramRd.y"
+#line 241 "gramRd.y"
     {
         (yyval) = xxtag((yyvsp[(1) - (1)]), COMMENT, &(yyloc));
         ;
@@ -2489,7 +2498,7 @@ yyreduce:
     case 29:
 
 /* Line 1464 of yacc.c  */
-#line 236 "gramRd.y"
+#line 242 "gramRd.y"
     {
         (yyval) = xxtag((yyvsp[(1) - (1)]), UNKNOWN, &(yyloc));
         yyerror(yyunknown);
@@ -2500,7 +2509,7 @@ yyreduce:
     case 30:
 
 /* Line 1464 of yacc.c  */
-#line 237 "gramRd.y"
+#line 243 "gramRd.y"
     {
         (yyval) = xxmarkup(R_NilValue, (yyvsp[(1) - (1)]), STATIC, &(yyloc));
         ;
@@ -2510,7 +2519,7 @@ yyreduce:
     case 31:
 
 /* Line 1464 of yacc.c  */
-#line 238 "gramRd.y"
+#line 244 "gramRd.y"
     {
         (yyval) = (yyvsp[(1) - (1)]);
         ;
@@ -2520,7 +2529,7 @@ yyreduce:
     case 32:
 
 /* Line 1464 of yacc.c  */
-#line 239 "gramRd.y"
+#line 245 "gramRd.y"
     {
         (yyval) = (yyvsp[(1) - (1)]);
         ;
@@ -2530,7 +2539,7 @@ yyreduce:
     case 33:
 
 /* Line 1464 of yacc.c  */
-#line 240 "gramRd.y"
+#line 246 "gramRd.y"
     {
         (yyval) = (yyvsp[(2) - (2)]);
         ;
@@ -2540,7 +2549,7 @@ yyreduce:
     case 34:
 
 /* Line 1464 of yacc.c  */
-#line 242 "gramRd.y"
+#line 248 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), STATIC, &(yyloc));
         ;
@@ -2550,7 +2559,7 @@ yyreduce:
     case 35:
 
 /* Line 1464 of yacc.c  */
-#line 243 "gramRd.y"
+#line 249 "gramRd.y"
     {
         (yyval) = xxmarkup2((yyvsp[(1) - (3)]), (yyvsp[(2) - (3)]), (yyvsp[(3) - (3)]), 2, STATIC, &(yyloc));
         ;
@@ -2560,7 +2569,7 @@ yyreduce:
     case 36:
 
 /* Line 1464 of yacc.c  */
-#line 244 "gramRd.y"
+#line 250 "gramRd.y"
     {
         (yyval) =
             xxmarkup3((yyvsp[(1) - (4)]), (yyvsp[(2) - (4)]), (yyvsp[(3) - (4)]), (yyvsp[(4) - (4)]), STATIC, &(yyloc));
@@ -2571,7 +2580,7 @@ yyreduce:
     case 37:
 
 /* Line 1464 of yacc.c  */
-#line 245 "gramRd.y"
+#line 251 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), STATIC, &(yyloc));
         ;
@@ -2581,7 +2590,7 @@ yyreduce:
     case 38:
 
 /* Line 1464 of yacc.c  */
-#line 246 "gramRd.y"
+#line 252 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), STATIC, &(yyloc));
         ;
@@ -2591,7 +2600,7 @@ yyreduce:
     case 39:
 
 /* Line 1464 of yacc.c  */
-#line 247 "gramRd.y"
+#line 253 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]), STATIC, &(yyloc));
         xxpopMode((yyvsp[(2) - (3)]));
@@ -2602,7 +2611,7 @@ yyreduce:
     case 40:
 
 /* Line 1464 of yacc.c  */
-#line 248 "gramRd.y"
+#line 254 "gramRd.y"
     {
         (yyval) = xxOptionmarkup((yyvsp[(1) - (4)]), (yyvsp[(3) - (4)]), (yyvsp[(4) - (4)]), STATIC, &(yyloc));
         xxpopMode((yyvsp[(2) - (4)]));
@@ -2613,7 +2622,7 @@ yyreduce:
     case 41:
 
 /* Line 1464 of yacc.c  */
-#line 249 "gramRd.y"
+#line 255 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), STATIC, &(yyloc));
         ;
@@ -2623,7 +2632,7 @@ yyreduce:
     case 42:
 
 /* Line 1464 of yacc.c  */
-#line 250 "gramRd.y"
+#line 256 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]), HAS_SEXPR, &(yyloc));
         xxpopMode((yyvsp[(2) - (3)]));
@@ -2634,7 +2643,7 @@ yyreduce:
     case 43:
 
 /* Line 1464 of yacc.c  */
-#line 251 "gramRd.y"
+#line 257 "gramRd.y"
     {
         (yyval) = xxOptionmarkup((yyvsp[(1) - (4)]), (yyvsp[(3) - (4)]), (yyvsp[(4) - (4)]), HAS_SEXPR, &(yyloc));
         xxpopMode((yyvsp[(2) - (4)]));
@@ -2645,7 +2654,7 @@ yyreduce:
     case 44:
 
 /* Line 1464 of yacc.c  */
-#line 252 "gramRd.y"
+#line 258 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), STATIC, &(yyloc));
         ;
@@ -2655,7 +2664,7 @@ yyreduce:
     case 45:
 
 /* Line 1464 of yacc.c  */
-#line 253 "gramRd.y"
+#line 259 "gramRd.y"
     {
         (yyval) = xxmarkup2((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), R_NilValue, 1, STATIC, &(yyloc));
         ;
@@ -2665,7 +2674,7 @@ yyreduce:
     case 46:
 
 /* Line 1464 of yacc.c  */
-#line 254 "gramRd.y"
+#line 260 "gramRd.y"
     {
         (yyval) = xxmarkup2((yyvsp[(1) - (3)]), (yyvsp[(2) - (3)]), (yyvsp[(3) - (3)]), 2, STATIC, &(yyloc));
         ;
@@ -2675,7 +2684,7 @@ yyreduce:
     case 47:
 
 /* Line 1464 of yacc.c  */
-#line 255 "gramRd.y"
+#line 261 "gramRd.y"
     {
         (yyval) = xxmarkup((yyvsp[(1) - (1)]), R_NilValue, STATIC, &(yyloc));
         ;
@@ -2685,7 +2694,7 @@ yyreduce:
     case 48:
 
 /* Line 1464 of yacc.c  */
-#line 256 "gramRd.y"
+#line 262 "gramRd.y"
     {
         (yyval) = xxmarkup2((yyvsp[(1) - (4)]), (yyvsp[(2) - (4)]), (yyvsp[(3) - (4)]), 2, HAS_IFDEF, &(yyloc));
         UNPROTECT_PTR((yyvsp[(4) - (4)]));
@@ -2696,7 +2705,7 @@ yyreduce:
     case 49:
 
 /* Line 1464 of yacc.c  */
-#line 257 "gramRd.y"
+#line 263 "gramRd.y"
     {
         (yyval) = xxmarkup2((yyvsp[(1) - (4)]), (yyvsp[(2) - (4)]), (yyvsp[(3) - (4)]), 2, HAS_IFDEF, &(yyloc));
         ;
@@ -2706,7 +2715,7 @@ yyreduce:
     case 50:
 
 /* Line 1464 of yacc.c  */
-#line 258 "gramRd.y"
+#line 264 "gramRd.y"
     {
         (yyval) = xxmarkup2((yyvsp[(1) - (3)]), (yyvsp[(2) - (3)]), (yyvsp[(3) - (3)]), 2, STATIC, &(yyloc));
         ;
@@ -2716,7 +2725,7 @@ yyreduce:
     case 51:
 
 /* Line 1464 of yacc.c  */
-#line 260 "gramRd.y"
+#line 266 "gramRd.y"
     {
         (yyval) = xxnewcommand((yyvsp[(1) - (3)]), (yyvsp[(2) - (3)]), (yyvsp[(3) - (3)]), &(yyloc));
         ;
@@ -2726,7 +2735,7 @@ yyreduce:
     case 52:
 
 /* Line 1464 of yacc.c  */
-#line 261 "gramRd.y"
+#line 267 "gramRd.y"
     {
         (yyval) = xxusermacro((yyvsp[(1) - (1)]), xxnewlist(NULL), &(yyloc));
         ;
@@ -2736,7 +2745,7 @@ yyreduce:
     case 53:
 
 /* Line 1464 of yacc.c  */
-#line 262 "gramRd.y"
+#line 268 "gramRd.y"
     {
         (yyval) = xxusermacro((yyvsp[(1) - (2)]), xxnewlist((yyvsp[(2) - (2)])), &(yyloc));
         ;
@@ -2746,7 +2755,7 @@ yyreduce:
     case 54:
 
 /* Line 1464 of yacc.c  */
-#line 264 "gramRd.y"
+#line 270 "gramRd.y"
     {
         (yyval) = xxusermacro((yyvsp[(1) - (3)]), xxnewlist2((yyvsp[(2) - (3)]), (yyvsp[(3) - (3)])), &(yyloc));
         ;
@@ -2756,7 +2765,7 @@ yyreduce:
     case 55:
 
 /* Line 1464 of yacc.c  */
-#line 266 "gramRd.y"
+#line 272 "gramRd.y"
     {
         (yyval) = xxusermacro((yyvsp[(1) - (4)]),
                               xxnewlist3((yyvsp[(2) - (4)]), (yyvsp[(3) - (4)]), (yyvsp[(4) - (4)])), &(yyloc));
@@ -2767,7 +2776,7 @@ yyreduce:
     case 56:
 
 /* Line 1464 of yacc.c  */
-#line 268 "gramRd.y"
+#line 274 "gramRd.y"
     {
         (yyval) = xxusermacro(
             (yyvsp[(1) - (5)]),
@@ -2779,7 +2788,7 @@ yyreduce:
     case 57:
 
 /* Line 1464 of yacc.c  */
-#line 270 "gramRd.y"
+#line 276 "gramRd.y"
     {
         (yyval) = xxusermacro((yyvsp[(1) - (6)]),
                               xxnewlist5((yyvsp[(2) - (6)]), (yyvsp[(3) - (6)]), (yyvsp[(4) - (6)]), (yyvsp[(5) - (6)]),
@@ -2792,7 +2801,7 @@ yyreduce:
     case 58:
 
 /* Line 1464 of yacc.c  */
-#line 272 "gramRd.y"
+#line 278 "gramRd.y"
     {
         (yyval) = xxusermacro((yyvsp[(1) - (7)]),
                               xxnewlist6((yyvsp[(2) - (7)]), (yyvsp[(3) - (7)]), (yyvsp[(4) - (7)]), (yyvsp[(5) - (7)]),
@@ -2805,7 +2814,7 @@ yyreduce:
     case 59:
 
 /* Line 1464 of yacc.c  */
-#line 275 "gramRd.y"
+#line 281 "gramRd.y"
     {
         (yyval) = xxusermacro((yyvsp[(1) - (9)]),
                               xxnewlist7((yyvsp[(2) - (9)]), (yyvsp[(3) - (9)]), (yyvsp[(4) - (9)]), (yyvsp[(5) - (9)]),
@@ -2818,7 +2827,7 @@ yyreduce:
     case 60:
 
 /* Line 1464 of yacc.c  */
-#line 278 "gramRd.y"
+#line 284 "gramRd.y"
     {
         (yyval) =
             xxusermacro((yyvsp[(1) - (10)]),
@@ -2832,7 +2841,7 @@ yyreduce:
     case 61:
 
 /* Line 1464 of yacc.c  */
-#line 281 "gramRd.y"
+#line 287 "gramRd.y"
     {
         (yyval) = xxusermacro((yyvsp[(1) - (11)]),
                               xxnewlist9((yyvsp[(2) - (11)]), (yyvsp[(3) - (11)]), (yyvsp[(4) - (11)]),
@@ -2846,7 +2855,7 @@ yyreduce:
     case 62:
 
 /* Line 1464 of yacc.c  */
-#line 284 "gramRd.y"
+#line 290 "gramRd.y"
     {
         xxpopMode((yyvsp[(1) - (2)]));
         (yyval) = (yyvsp[(2) - (2)]);
@@ -2857,7 +2866,7 @@ yyreduce:
     case 63:
 
 /* Line 1464 of yacc.c  */
-#line 286 "gramRd.y"
+#line 292 "gramRd.y"
     {
         xxpopMode((yyvsp[(1) - (2)]));
         (yyval) = (yyvsp[(2) - (2)]);
@@ -2868,15 +2877,15 @@ yyreduce:
     case 64:
 
 /* Line 1464 of yacc.c  */
-#line 287 "gramRd.y"
+#line 293 "gramRd.y"
     {
         xxpopMode((yyvsp[(1) - (2)]));
         (yyval) = xxnewlist((yyvsp[(2) - (2)]));
         if (wCalls)
-            warning(_("bad markup (extra space?) at %s:%d:%d"), xxBasename, (yylsp[(2) - (2)]).first_line,
+            warning(_("bad markup (extra space?) at %s:%d:%d"), parseState.xxBasename, (yylsp[(2) - (2)]).first_line,
                     (yylsp[(2) - (2)]).first_column);
         else
-            warningcall(R_NilValue, _("bad markup (extra space?) at %s:%d:%d"), xxBasename,
+            warningcall(R_NilValue, _("bad markup (extra space?) at %s:%d:%d"), parseState.xxBasename,
                         (yylsp[(2) - (2)]).first_line, (yylsp[(2) - (2)]).first_column);
         ;
     }
@@ -2885,7 +2894,7 @@ yyreduce:
     case 65:
 
 /* Line 1464 of yacc.c  */
-#line 296 "gramRd.y"
+#line 302 "gramRd.y"
     {
         xxpopMode((yyvsp[(1) - (2)]));
         (yyval) = (yyvsp[(2) - (2)]);
@@ -2896,7 +2905,7 @@ yyreduce:
     case 66:
 
 /* Line 1464 of yacc.c  */
-#line 298 "gramRd.y"
+#line 304 "gramRd.y"
     {
         xxpopMode((yyvsp[(1) - (2)]));
         (yyval) = (yyvsp[(2) - (2)]);
@@ -2907,7 +2916,7 @@ yyreduce:
     case 67:
 
 /* Line 1464 of yacc.c  */
-#line 300 "gramRd.y"
+#line 306 "gramRd.y"
     {
         xxpopMode((yyvsp[(1) - (2)]));
         (yyval) = (yyvsp[(2) - (2)]);
@@ -2918,7 +2927,7 @@ yyreduce:
     case 68:
 
 /* Line 1464 of yacc.c  */
-#line 304 "gramRd.y"
+#line 310 "gramRd.y"
     {
         xxpopMode((yyvsp[(2) - (4)]));
         (yyval) = (yyvsp[(3) - (4)]);
@@ -2929,7 +2938,7 @@ yyreduce:
     case 69:
 
 /* Line 1464 of yacc.c  */
-#line 305 "gramRd.y"
+#line 311 "gramRd.y"
     {
         xxpopMode((yyvsp[(2) - (3)]));
         (yyval) = xxnewlist(NULL);
@@ -2940,7 +2949,7 @@ yyreduce:
     case 70:
 
 /* Line 1464 of yacc.c  */
-#line 307 "gramRd.y"
+#line 313 "gramRd.y"
     {
         xxpopMode((yyvsp[(1) - (2)]));
         (yyval) = (yyvsp[(2) - (2)]);
@@ -2951,7 +2960,7 @@ yyreduce:
     case 71:
 
 /* Line 1464 of yacc.c  */
-#line 309 "gramRd.y"
+#line 315 "gramRd.y"
     {
         xxpopMode((yyvsp[(1) - (2)]));
         (yyval) = (yyvsp[(2) - (2)]);
@@ -2962,7 +2971,7 @@ yyreduce:
     case 72:
 
 /* Line 1464 of yacc.c  */
-#line 313 "gramRd.y"
+#line 319 "gramRd.y"
     {
         xxpopMode((yyvsp[(2) - (4)]));
         (yyval) = (yyvsp[(3) - (4)]);
@@ -2973,7 +2982,7 @@ yyreduce:
     case 73:
 
 /* Line 1464 of yacc.c  */
-#line 314 "gramRd.y"
+#line 320 "gramRd.y"
     {
         xxpopMode((yyvsp[(2) - (3)]));
         (yyval) = xxnewlist(NULL);
@@ -2984,7 +2993,7 @@ yyreduce:
     case 74:
 
 /* Line 1464 of yacc.c  */
-#line 316 "gramRd.y"
+#line 322 "gramRd.y"
     {
         xxpopMode((yyvsp[(1) - (2)]));
         (yyval) = xxnewlist(xxtag((yyvsp[(2) - (2)]), TEXT, &(yyloc)));
@@ -2995,7 +3004,7 @@ yyreduce:
     case 75:
 
 /* Line 1464 of yacc.c  */
-#line 319 "gramRd.y"
+#line 325 "gramRd.y"
     {
         (yyval) = xxpushMode(LATEXLIKE, UNKNOWN, FALSE);
         ;
@@ -3005,7 +3014,7 @@ yyreduce:
     case 76:
 
 /* Line 1464 of yacc.c  */
-#line 321 "gramRd.y"
+#line 327 "gramRd.y"
     {
         (yyval) = xxpushMode(RLIKE, UNKNOWN, FALSE);
         ;
@@ -3015,11 +3024,11 @@ yyreduce:
     case 77:
 
 /* Line 1464 of yacc.c  */
-#line 323 "gramRd.y"
+#line 329 "gramRd.y"
     {
-        xxbraceDepth--;
+        parseState.xxbraceDepth--;
         (yyval) = xxpushMode(RLIKE, UNKNOWN, FALSE);
-        xxbraceDepth++;
+        parseState.xxbraceDepth++;
         ;
     }
     break;
@@ -3027,7 +3036,7 @@ yyreduce:
     case 78:
 
 /* Line 1464 of yacc.c  */
-#line 325 "gramRd.y"
+#line 331 "gramRd.y"
     {
         (yyval) = xxpushMode(INOPTION, UNKNOWN, FALSE);
         ;
@@ -3037,7 +3046,7 @@ yyreduce:
     case 79:
 
 /* Line 1464 of yacc.c  */
-#line 327 "gramRd.y"
+#line 333 "gramRd.y"
     {
         (yyval) = xxpushMode(VERBATIM, UNKNOWN, FALSE);
         ;
@@ -3047,7 +3056,7 @@ yyreduce:
     case 80:
 
 /* Line 1464 of yacc.c  */
-#line 329 "gramRd.y"
+#line 335 "gramRd.y"
     {
         (yyval) = xxpushMode(VERBATIM, UNKNOWN, TRUE);
         ;
@@ -3057,11 +3066,11 @@ yyreduce:
     case 81:
 
 /* Line 1464 of yacc.c  */
-#line 331 "gramRd.y"
+#line 337 "gramRd.y"
     {
-        xxbraceDepth--;
+        parseState.xxbraceDepth--;
         (yyval) = xxpushMode(VERBATIM, UNKNOWN, FALSE);
-        xxbraceDepth++;
+        parseState.xxbraceDepth++;
         ;
     }
     break;
@@ -3069,7 +3078,7 @@ yyreduce:
     case 82:
 
 /* Line 1464 of yacc.c  */
-#line 333 "gramRd.y"
+#line 339 "gramRd.y"
     {
         (yyval) = xxpushMode(LATEXLIKE, ESCAPE, FALSE);
         ;
@@ -3079,7 +3088,7 @@ yyreduce:
     case 83:
 
 /* Line 1464 of yacc.c  */
-#line 335 "gramRd.y"
+#line 341 "gramRd.y"
     {
         (yyval) = xxpushMode(LATEXLIKE, LATEXMACRO2, FALSE);
         ;
@@ -3089,7 +3098,7 @@ yyreduce:
     case 84:
 
 /* Line 1464 of yacc.c  */
-#line 337 "gramRd.y"
+#line 343 "gramRd.y"
     {
         (yyval) = (yyvsp[(2) - (3)]);
         ;
@@ -3099,7 +3108,7 @@ yyreduce:
     case 85:
 
 /* Line 1464 of yacc.c  */
-#line 338 "gramRd.y"
+#line 344 "gramRd.y"
     {
         (yyval) = xxnewlist(NULL);
         ;
@@ -3109,7 +3118,7 @@ yyreduce:
     case 86:
 
 /* Line 1464 of yacc.c  */
-#line 339 "gramRd.y"
+#line 345 "gramRd.y"
     {
         (yyval) = (yyvsp[(2) - (4)]);
         ;
@@ -3119,7 +3128,7 @@ yyreduce:
     case 87:
 
 /* Line 1464 of yacc.c  */
-#line 340 "gramRd.y"
+#line 346 "gramRd.y"
     {
         (yyval) = xxnewlist(NULL);
         ;
@@ -3129,7 +3138,7 @@ yyreduce:
     case 88:
 
 /* Line 1464 of yacc.c  */
-#line 341 "gramRd.y"
+#line 347 "gramRd.y"
     {
         (yyval) = (yyvsp[(2) - (4)]);
         ;
@@ -3139,7 +3148,7 @@ yyreduce:
     case 89:
 
 /* Line 1464 of yacc.c  */
-#line 343 "gramRd.y"
+#line 349 "gramRd.y"
     {
         (yyval) = (yyvsp[(2) - (3)]);
         ;
@@ -3147,7 +3156,7 @@ yyreduce:
     break;
 
 /* Line 1464 of yacc.c  */
-#line 2983 "gramRd.c"
+#line 2989 "gramRd.c"
     default:
         break;
     }
@@ -3357,30 +3366,30 @@ yyreturn:
 }
 
 /* Line 1684 of yacc.c  */
-#line 345 "gramRd.y"
+#line 351 "gramRd.y"
 
 static SEXP xxpushMode(int newmode, int newitem, int neweqn)
 {
     SEXP ans;
     PROTECT(ans = allocVector(INTSXP, 7));
 
-    INTEGER(ans)[0] = xxmode;       /* Lexer mode */
-    INTEGER(ans)[1] = xxitemType;   /* What is \item? */
-    INTEGER(ans)[2] = xxbraceDepth; /* Brace depth used in RCODE and VERBATIM */
-    INTEGER(ans)[3] = xxinRString;  /* Quote char that started a string */
-    INTEGER(ans)[4] = xxQuoteLine;  /* Where the quote was */
-    INTEGER(ans)[5] = xxQuoteCol;   /*           "         */
-    INTEGER(ans)[6] = xxinEqn;      /* In the first arg to \eqn or \deqn:  no escapes */
+    INTEGER(ans)[0] = parseState.xxmode;       /* Lexer mode */
+    INTEGER(ans)[1] = parseState.xxitemType;   /* What is \item? */
+    INTEGER(ans)[2] = parseState.xxbraceDepth; /* Brace depth used in RCODE and VERBATIM */
+    INTEGER(ans)[3] = parseState.xxinRString;  /* Quote char that started a string */
+    INTEGER(ans)[4] = parseState.xxQuoteLine;  /* Where the quote was */
+    INTEGER(ans)[5] = parseState.xxQuoteCol;   /*           "         */
+    INTEGER(ans)[6] = parseState.xxinEqn;      /* In the first arg to \eqn or \deqn:  no escapes */
 
 #if DEBUGMODE
-    Rprintf("xxpushMode(%d, %s) pushes %d, %s, %d\n", newmode, yytname[YYTRANSLATE(newitem)], xxmode,
-            yytname[YYTRANSLATE(xxitemType)], xxbraceDepth);
+    Rprintf("xxpushMode(%d, %s) pushes %d, %s, %d\n", newmode, yytname[YYTRANSLATE(newitem)], parseState.xxmode,
+            yytname[YYTRANSLATE(parseState.xxitemType)], parseState.xxbraceDepth);
 #endif
-    xxmode = newmode;
-    xxitemType = newitem;
-    xxbraceDepth = 0;
-    xxinRString = 0;
-    xxinEqn = neweqn;
+    parseState.xxmode = newmode;
+    parseState.xxitemType = newitem;
+    parseState.xxbraceDepth = 0;
+    parseState.xxinRString = 0;
+    parseState.xxinEqn = neweqn;
 
     return ans;
 }
@@ -3389,16 +3398,16 @@ static void xxpopMode(SEXP oldmode)
 {
 #if DEBUGVALS
     Rprintf("xxpopMode(%d, %s, %d) replaces %d, %s, %d\n", INTEGER(oldmode)[0],
-            yytname[YYTRANSLATE(INTEGER(oldmode)[1])], INTEGER(oldmode)[2], xxmode, yytname[YYTRANSLATE(xxitemType)],
-            xxbraceDepth);
+            yytname[YYTRANSLATE(INTEGER(oldmode)[1])], INTEGER(oldmode)[2], parseState.xxmode,
+            yytname[YYTRANSLATE(parseState.xxitemType)], parseState.xxbraceDepth);
 #endif
-    xxmode = INTEGER(oldmode)[0];
-    xxitemType = INTEGER(oldmode)[1];
-    xxbraceDepth = INTEGER(oldmode)[2];
-    xxinRString = INTEGER(oldmode)[3];
-    xxQuoteLine = INTEGER(oldmode)[4];
-    xxQuoteCol = INTEGER(oldmode)[5];
-    xxinEqn = INTEGER(oldmode)[6];
+    parseState.xxmode = INTEGER(oldmode)[0];
+    parseState.xxitemType = INTEGER(oldmode)[1];
+    parseState.xxbraceDepth = INTEGER(oldmode)[2];
+    parseState.xxinRString = INTEGER(oldmode)[3];
+    parseState.xxQuoteLine = INTEGER(oldmode)[4];
+    parseState.xxQuoteCol = INTEGER(oldmode)[5];
+    parseState.xxinEqn = INTEGER(oldmode)[6];
 
     UNPROTECT_PTR(oldmode);
 }
@@ -3541,7 +3550,7 @@ static SEXP xxnewcommand(SEXP cmd, SEXP name, SEXP defn, YYLTYPE *lloc)
         PROTECT(thedefn = mkString(CHAR(STRING_ELT(thedefn, 0))));
     else
         PROTECT(thedefn = mkString(""));
-    prev = findVar(install(CHAR(STRING_ELT(thename, 0))), xxMacroList);
+    prev = findVar(install(CHAR(STRING_ELT(thename, 0))), parseState.xxMacroList);
     if (prev != R_UnboundValue && !strcmp(CHAR(STRING_ELT(cmd, 0)), "\renewcommand"))
     {
         snprintf(buffer, sizeof(buffer), _("Macro '%s' previously defined."), CHAR(STRING_ELT(thename, 0)));
@@ -3561,7 +3570,7 @@ static SEXP xxnewcommand(SEXP cmd, SEXP name, SEXP defn, YYLTYPE *lloc)
     setAttrib(ans, install("Rd_tag"), cmd);
     setAttrib(ans, install("definition"), thedefn);
     setAttrib(ans, R_SrcrefSymbol, makeSrcref(lloc, SrcFile));
-    defineVar(install(CHAR(STRING_ELT(thename, 0))), ans, xxMacroList);
+    defineVar(install(CHAR(STRING_ELT(thename, 0))), ans, parseState.xxMacroList);
 
     UNPROTECT_PTR(thedefn);
     UNPROTECT_PTR(cmd);
@@ -3732,12 +3741,12 @@ static SEXP xxmarkup3(SEXP header, SEXP body1, SEXP body2, SEXP body3, int flag,
 static void xxsavevalue(SEXP Rd, YYLTYPE *lloc)
 {
     int flag = getDynamicFlag(Rd);
-    PROTECT(Value = PairToVectorList(CDR(Rd)));
-    if (!isNull(Value))
+    PROTECT(parseState.Value = PairToVectorList(CDR(Rd)));
+    if (!isNull(parseState.Value))
     {
-        setAttrib(Value, R_ClassSymbol, mkString("Rd"));
-        setAttrib(Value, R_SrcrefSymbol, makeSrcref(lloc, SrcFile));
-        setDynamicFlag(Value, flag);
+        setAttrib(parseState.Value, R_ClassSymbol, mkString("Rd"));
+        setAttrib(parseState.Value, R_SrcrefSymbol, makeSrcref(lloc, SrcFile));
+        setDynamicFlag(parseState.Value, flag);
     }
     UNPROTECT_PTR(Rd);
 }
@@ -3751,12 +3760,13 @@ static SEXP xxtag(SEXP item, int type, YYLTYPE *lloc)
 
 static void xxWarnNewline()
 {
-    if (xxNewlineInString)
+    if (parseState.xxNewlineInString)
     {
         if (wCalls)
-            warning(_("newline within quoted string at %s:%d"), xxBasename, xxNewlineInString);
+            warning(_("newline within quoted string at %s:%d"), parseState.xxBasename, parseState.xxNewlineInString);
         else
-            warningcall(R_NilValue, _("newline within quoted string at %s:%d"), xxBasename, xxNewlineInString);
+            warningcall(R_NilValue, _("newline within quoted string at %s:%d"), parseState.xxBasename,
+                        parseState.xxNewlineInString);
     }
 }
 
@@ -3776,7 +3786,7 @@ static int (*ptr_getc)(void);
             pushsize *= 2;                                                                                             \
             pushbase = malloc(pushsize * sizeof(int));                                                                 \
             if (!pushbase)                                                                                             \
-                error(_("unable to allocate buffer for long macro at line %d"), xxlineno);                             \
+                error(_("unable to allocate buffer for long macro at line %d"), parseState.xxlineno);                  \
             memmove(pushbase, old, npush * sizeof(int));                                                               \
             if (old != pushback)                                                                                       \
                 free(old);                                                                                             \
@@ -3821,16 +3831,16 @@ static int xxgetc(void)
     {
         oldpos = prevpos;
         prevpos = (prevpos + 1) % PUSHBACK_BUFSIZE;
-        prevbytes[prevpos] = xxbyteno;
-        prevlines[prevpos] = xxlineno;
+        prevbytes[prevpos] = parseState.xxbyteno;
+        prevlines[prevpos] = parseState.xxlineno;
         /* We only advance the column for the 1st byte in UTF-8, so handle later bytes specially */
         if (0x80 <= (unsigned char)c && (unsigned char)c <= 0xBF)
         {
-            xxcolno--;
+            parseState.xxcolno--;
             prevcols[prevpos] = prevcols[oldpos];
         }
         else
-            prevcols[prevpos] = xxcolno;
+            prevcols[prevpos] = parseState.xxcolno;
 
         if (c == EOF)
             return R_EOF;
@@ -3840,20 +3850,20 @@ static int xxgetc(void)
 
         if (c == '\n')
         {
-            xxlineno += 1;
-            xxcolno = 1;
-            xxbyteno = 1;
+            parseState.xxlineno += 1;
+            parseState.xxcolno = 1;
+            parseState.xxbyteno = 1;
         }
         else
         {
-            xxcolno++;
-            xxbyteno++;
+            parseState.xxcolno++;
+            parseState.xxbyteno++;
         }
 
         if (c == '\t')
-            xxcolno = ((xxcolno + 6) & ~7) + 1;
+            parseState.xxcolno = ((parseState.xxcolno + 6) & ~7) + 1;
 
-        R_ParseContextLine = xxlineno;
+        R_ParseContextLine = parseState.xxlineno;
     }
     /* Rprintf("get %c\n", c); */
     return c;
@@ -3866,12 +3876,12 @@ static int xxungetc(int c)
         macrolevel++;
     if (!macrolevel)
     {
-        xxlineno = prevlines[prevpos];
-        xxbyteno = prevbytes[prevpos];
-        xxcolno = prevcols[prevpos];
+        parseState.xxlineno = prevlines[prevpos];
+        parseState.xxbyteno = prevbytes[prevpos];
+        parseState.xxcolno = prevcols[prevpos];
         prevpos = (prevpos + PUSHBACK_BUFSIZE - 1) % PUSHBACK_BUFSIZE;
 
-        R_ParseContextLine = xxlineno;
+        R_ParseContextLine = parseState.xxlineno;
 
         R_ParseContext[R_ParseContextLast] = '\0';
         /* Mac OS X requires us to keep this non-negative */
@@ -3947,9 +3957,9 @@ static SEXP ParseRd(ParseStatus *status, SEXP srcfile, Rboolean fragment)
     R_ParseContextLast = 0;
     R_ParseContext[0] = '\0';
 
-    xxlineno = 1;
-    xxcolno = 1;
-    xxbyteno = 1;
+    parseState.xxlineno = 1;
+    parseState.xxcolno = 1;
+    parseState.xxbyteno = 1;
 
     SrcFile = srcfile;
 
@@ -3958,20 +3968,20 @@ static SEXP ParseRd(ParseStatus *status, SEXP srcfile, Rboolean fragment)
     pushsize = PUSHBACK_BUFSIZE;
     macrolevel = 0;
 
-    xxmode = LATEXLIKE;
-    xxitemType = UNKNOWN;
-    xxbraceDepth = 0;
-    xxinRString = 0;
-    xxNewlineInString = 0;
-    xxinEqn = 0;
+    parseState.xxmode = LATEXLIKE;
+    parseState.xxitemType = UNKNOWN;
+    parseState.xxbraceDepth = 0;
+    parseState.xxinRString = 0;
+    parseState.xxNewlineInString = 0;
+    parseState.xxinEqn = 0;
     if (fragment)
-        xxinitvalue = STARTFRAGMENT;
+        parseState.xxinitvalue = STARTFRAGMENT;
     else
-        xxinitvalue = STARTFILE;
+        parseState.xxinitvalue = STARTFILE;
 
-    xxMacroList = InstallKeywords();
+    parseState.xxMacroList = InstallKeywords();
 
-    Value = R_NilValue;
+    parseState.Value = R_NilValue;
 
     if (yyparse())
         *status = PARSE_ERROR;
@@ -3979,15 +3989,15 @@ static SEXP ParseRd(ParseStatus *status, SEXP srcfile, Rboolean fragment)
         *status = PARSE_OK;
 
 #if DEBUGVALS
-    Rprintf("ParseRd result: %p\n", Value);
+    Rprintf("ParseRd result: %p\n", parseState.Value);
 #endif
-    UNPROTECT_PTR(Value);
-    UNPROTECT_PTR(xxMacroList);
+    UNPROTECT_PTR(parseState.Value);
+    UNPROTECT_PTR(parseState.xxMacroList);
 
     if (pushbase != pushback)
         free(pushbase);
 
-    return Value;
+    return parseState.Value;
 }
 
 #include "Rconnections.h"
@@ -4201,7 +4211,7 @@ static SEXP InstallKeywords()
 
 static int KeywordLookup(const char *s)
 {
-    SEXP rec = findVar(install(s), xxMacroList);
+    SEXP rec = findVar(install(s), parseState.xxMacroList);
     if (rec == R_UnboundValue)
         return UNKNOWN;
     else
@@ -4210,7 +4220,7 @@ static int KeywordLookup(const char *s)
 
 static SEXP UserMacroLookup(const char *s)
 {
-    SEXP rec = findVar(install(s), xxMacroList);
+    SEXP rec = findVar(install(s), parseState.xxMacroList);
     if (rec == R_UnboundValue)
         error(_("Unable to find macro %s"), s);
     return getAttrib(rec, install("definition"));
@@ -4374,7 +4384,7 @@ static void yyerror(const char *s)
             nstext *= 2;                                                                                               \
             stext = malloc(nstext);                                                                                    \
             if (!stext)                                                                                                \
-                error(_("unable to allocate buffer for long string at line %d"), xxlineno);                            \
+                error(_("unable to allocate buffer for long string at line %d"), parseState.xxlineno);                 \
             memmove(stext, old, nc);                                                                                   \
             if (old != st0)                                                                                            \
                 free(old);                                                                                             \
@@ -4385,9 +4395,9 @@ static void yyerror(const char *s)
 
 static void setfirstloc(void)
 {
-    yylloc.first_line = xxlineno;
-    yylloc.first_column = xxcolno;
-    yylloc.first_byte = xxbyteno;
+    yylloc.first_line = parseState.xxlineno;
+    yylloc.first_column = parseState.xxcolno;
+    yylloc.first_byte = parseState.xxbyteno;
 }
 
 static void setlastloc(void)
@@ -4403,9 +4413,10 @@ static void setlastloc(void)
 static int token(void)
 {
     int c, lookahead;
-    int outsideLiteral = xxmode == LATEXLIKE || xxmode == INOPTION || xxbraceDepth == 0;
+    int outsideLiteral =
+        parseState.xxmode == LATEXLIKE || parseState.xxmode == INOPTION || parseState.xxbraceDepth == 0;
 
-    if (xxinitvalue)
+    if (parseState.xxinitvalue)
     {
         yylloc.first_line = 0;
         yylloc.first_column = 0;
@@ -4414,8 +4425,8 @@ static int token(void)
         yylloc.last_column = 0;
         yylloc.last_byte = 0;
         PROTECT(yylval = mkString(""));
-        c = xxinitvalue;
-        xxinitvalue = 0;
+        c = parseState.xxinitvalue;
+        parseState.xxinitvalue = 0;
         return (c);
     }
 
@@ -4425,56 +4436,56 @@ static int token(void)
     switch (c)
     {
     case '%':
-        if (!xxinEqn)
+        if (!parseState.xxinEqn)
             return mkComment(c);
         break;
     case '\\':
-        if (!xxinEqn)
+        if (!parseState.xxinEqn)
         {
             lookahead = xxungetc(xxgetc());
             if (isalpha(lookahead) &&
-                xxmode != VERBATIM
+                parseState.xxmode != VERBATIM
                 /* In R strings, only link or var is allowed as markup */
-                && (lookahead == 'l' || lookahead == 'v' || !xxinRString))
+                && (lookahead == 'l' || lookahead == 'v' || !parseState.xxinRString))
                 return mkMarkup(c);
         }
         break;
     case R_EOF:
-        if (xxinRString)
+        if (parseState.xxinRString)
         {
             xxWarnNewline();
-            error(_("Unexpected end of input (in %c quoted string opened at %s:%d:%d)"), xxinRString, xxBasename,
-                  xxQuoteLine, xxQuoteCol);
+            error(_("Unexpected end of input (in %c quoted string opened at %s:%d:%d)"), parseState.xxinRString,
+                  parseState.xxBasename, parseState.xxQuoteLine, parseState.xxQuoteCol);
         }
         return END_OF_INPUT;
     case '#':
-        if (!xxinEqn && yylloc.first_column == 1)
+        if (!parseState.xxinEqn && yylloc.first_column == 1)
             return mkIfdef(c);
         break;
     case LBRACE:
-        if (!xxinRString)
+        if (!parseState.xxinRString)
         {
-            xxbraceDepth++;
+            parseState.xxbraceDepth++;
             if (outsideLiteral)
                 return c;
         }
         break;
     case RBRACE:
-        if (!xxinRString)
+        if (!parseState.xxinRString)
         {
-            xxbraceDepth--;
-            if (outsideLiteral || xxbraceDepth == 0)
+            parseState.xxbraceDepth--;
+            if (outsideLiteral || parseState.xxbraceDepth == 0)
                 return c;
         }
         break;
     case '[':
     case ']':
-        if (xxmode == INOPTION)
+        if (parseState.xxmode == INOPTION)
             return c;
         break;
     }
 
-    switch (xxmode)
+    switch (parseState.xxmode)
     {
     case RLIKE:
         return mkCode(c);
@@ -4511,7 +4522,7 @@ static int mkText(int c)
             if (isalpha(lookahead))
                 goto stop;
         case ']':
-            if (xxmode == INOPTION)
+            if (parseState.xxmode == INOPTION)
                 goto stop;
             break;
         case '%':
@@ -4559,10 +4570,10 @@ static int mkCode(int c)
     char *stext = st0, *bp = st0;
 
     /* Avoid double counting initial braces */
-    if (c == LBRACE && !xxinRString)
-        xxbraceDepth--;
-    if (c == RBRACE && !xxinRString)
-        xxbraceDepth++;
+    if (c == LBRACE && !parseState.xxinRString)
+        parseState.xxbraceDepth--;
+    if (c == RBRACE && !parseState.xxinRString)
+        parseState.xxbraceDepth++;
 
     while (1)
     {
@@ -4580,7 +4591,7 @@ static int mkCode(int c)
         }
         if ((!escaped && c == '%') || c == R_EOF)
             break;
-        if (xxinRString)
+        if (parseState.xxinRString)
         {
             /* This stuff is messy, because there are two levels of escaping:
                The Rd escaping and the R code string escaping. */
@@ -4590,7 +4601,7 @@ static int mkCode(int c)
                 if (lookahead == '\\')
                 { /* This must be the 3rd backslash */
                     lookahead = xxgetc();
-                    if (lookahead == xxinRString || lookahead == '\\')
+                    if (lookahead == parseState.xxinRString || lookahead == '\\')
                     {
                         TEXT_PUSH(c);
                         c = lookahead;
@@ -4602,7 +4613,7 @@ static int mkCode(int c)
                         xxungetc('\\');      /* and the 3rd */
                     }
                 }
-                else if (lookahead == xxinRString)
+                else if (lookahead == parseState.xxinRString)
                 { /* There could be one or two before this */
                     TEXT_PUSH(c);
                     c = lookahead;
@@ -4617,8 +4628,8 @@ static int mkCode(int c)
                 else
                     xxungetc(lookahead);
             }
-            if (!escaped && c == xxinRString)
-                xxinRString = 0;
+            if (!escaped && c == parseState.xxinRString)
+                parseState.xxinRString = 0;
         }
         else
         {
@@ -4641,18 +4652,18 @@ static int mkCode(int c)
                             xxungetc(lookahead);
                     }
                     if (c == LBRACE && !escaped)
-                        xxbraceDepth++;
+                        parseState.xxbraceDepth++;
                     else if (c == RBRACE && !escaped)
-                        xxbraceDepth--;
-                } while (c != '\n' && c != R_EOF && xxbraceDepth > 0);
+                        parseState.xxbraceDepth--;
+                } while (c != '\n' && c != R_EOF && parseState.xxbraceDepth > 0);
                 if (c == RBRACE && !escaped)
-                    xxbraceDepth++; /* avoid double counting */
+                    parseState.xxbraceDepth++; /* avoid double counting */
             }
             if (c == '\'' || c == '"' || c == '`')
             {
-                xxinRString = c;
-                xxQuoteLine = xxlineno;
-                xxQuoteCol = xxcolno;
+                parseState.xxinRString = c;
+                parseState.xxQuoteLine = parseState.xxlineno;
+                parseState.xxQuoteCol = parseState.xxcolno;
             }
             else if (c == '\\' && !escaped)
             {
@@ -4675,14 +4686,14 @@ static int mkCode(int c)
             }
             else if (c == LBRACE)
             {
-                xxbraceDepth++;
+                parseState.xxbraceDepth++;
             }
             else if (c == RBRACE)
             {
-                if (xxbraceDepth == 1)
+                if (parseState.xxbraceDepth == 1)
                     break;
                 else
-                    xxbraceDepth--;
+                    parseState.xxbraceDepth--;
             }
             else if (c == R_EOF)
                 break;
@@ -4690,8 +4701,8 @@ static int mkCode(int c)
         TEXT_PUSH(c);
         if (c == '\n')
         {
-            if (xxinRString && !xxNewlineInString)
-                xxNewlineInString = xxlineno - 1;
+            if (parseState.xxinRString && !parseState.xxNewlineInString)
+                parseState.xxNewlineInString = parseState.xxlineno - 1;
             break;
         }
         c = xxgetc();
@@ -4742,7 +4753,7 @@ static int mkMarkup(int c)
             else
             {
                 if (retval == NOITEM)
-                    retval = xxitemType;
+                    retval = parseState.xxitemType;
                 break;
             }
         }
@@ -4784,7 +4795,7 @@ static int mkIfdef(int c)
         bp--;
         for (; bp > stext; bp--)
             xxungetc(*bp);
-        switch (xxmode)
+        switch (parseState.xxmode)
         {
         case RLIKE:
             retval = mkCode(*bp);
@@ -4812,9 +4823,9 @@ static int mkVerb(int c)
 
     /* Avoid double counting initial braces */
     if (c == LBRACE)
-        xxbraceDepth--;
+        parseState.xxbraceDepth--;
     if (c == RBRACE)
-        xxbraceDepth++;
+        parseState.xxbraceDepth++;
 
     while (1)
     {
@@ -4825,7 +4836,7 @@ static int mkVerb(int c)
             if (lookahead == '\\' || lookahead == '%' || lookahead == LBRACE || lookahead == RBRACE)
             {
                 escaped = 1;
-                if (xxinEqn)
+                if (parseState.xxinEqn)
                     TEXT_PUSH(c);
                 c = lookahead;
             }
@@ -4836,16 +4847,16 @@ static int mkVerb(int c)
             break;
         if (!escaped)
         {
-            if (c == '%' && !xxinEqn)
+            if (c == '%' && !parseState.xxinEqn)
                 break;
             else if (c == LBRACE)
-                xxbraceDepth++;
+                parseState.xxbraceDepth++;
             else if (c == RBRACE)
             {
-                if (xxbraceDepth == 1)
+                if (parseState.xxbraceDepth == 1)
                     break;
                 else
-                    xxbraceDepth--;
+                    parseState.xxbraceDepth--;
             }
         }
         TEXT_PUSH(c);
@@ -4865,11 +4876,11 @@ static int yylex(void)
 {
     int tok = token();
 
-    if (xxDebugTokens)
+    if (parseState.xxDebugTokens)
     {
         Rprintf("%d:%d: %s", yylloc.first_line, yylloc.first_column, yytname[YYTRANSLATE(tok)]);
-        if (xxinRString)
-            Rprintf("(in %c%c)", xxinRString, xxinRString);
+        if (parseState.xxinRString)
+            Rprintf("(in %c%c)", parseState.xxinRString, parseState.xxinRString);
         if (tok > 255 && tok != END_OF_INPUT)
             Rprintf(": %s", CHAR(STRING_ELT(yylval, 0)));
         Rprintf("\n");
@@ -4883,6 +4894,73 @@ static void con_cleanup(void *data)
     Rconnection con = data;
     if (con->isopen)
         con->close(con);
+}
+
+static void PutState(ParseState *state)
+{
+    state->xxinRString = parseState.xxinRString;
+    state->xxQuoteLine = parseState.xxQuoteLine;
+    state->xxQuoteCol = parseState.xxQuoteCol;
+    state->xxinEqn = parseState.xxinEqn;
+    state->xxNewlineInString = parseState.xxNewlineInString;
+    state->xxlineno = parseState.xxlineno;
+    state->xxbyteno = parseState.xxbyteno;
+    state->xxcolno = parseState.xxcolno;
+    state->xxmode = parseState.xxmode;
+    state->xxitemType = parseState.xxitemType;
+    state->xxbraceDepth = parseState.xxbraceDepth;
+    state->xxDebugTokens = parseState.xxDebugTokens;
+    state->xxBasename = parseState.xxBasename;
+    state->Value = parseState.Value;
+    state->xxinitvalue = parseState.xxinitvalue;
+    state->xxMacroList = parseState.xxMacroList;
+    state->prevState = parseState.prevState;
+}
+
+static void UseState(ParseState *state)
+{
+    parseState.xxinRString = state->xxinRString;
+    parseState.xxQuoteLine = state->xxQuoteLine;
+    parseState.xxQuoteCol = state->xxQuoteCol;
+    parseState.xxinEqn = state->xxinEqn;
+    parseState.xxNewlineInString = state->xxNewlineInString;
+    parseState.xxlineno = state->xxlineno;
+    parseState.xxbyteno = state->xxbyteno;
+    parseState.xxcolno = state->xxcolno;
+    parseState.xxmode = state->xxmode;
+    parseState.xxitemType = state->xxitemType;
+    parseState.xxbraceDepth = state->xxbraceDepth;
+    parseState.xxDebugTokens = state->xxDebugTokens;
+    parseState.xxBasename = state->xxBasename;
+    parseState.Value = state->Value;
+    parseState.xxinitvalue = state->xxinitvalue;
+    parseState.xxMacroList = state->xxMacroList;
+    parseState.prevState = state->prevState;
+}
+
+static void PushState()
+{
+    if (busy)
+    {
+        ParseState *prev = malloc(sizeof(ParseState));
+        PutState(prev);
+        parseState.prevState = prev;
+    }
+    else
+        parseState.prevState = NULL;
+    busy = TRUE;
+}
+
+static void PopState()
+{
+    if (parseState.prevState)
+    {
+        ParseState *prev = parseState.prevState;
+        UseState(prev);
+        free(prev);
+    }
+    else
+        busy = FALSE;
 }
 
 /* "do_parseRd"
@@ -4909,6 +4987,8 @@ SEXP C_parseRd(SEXP call, SEXP op, SEXP args, SEXP env)
     R_ParseError = 0;
     R_ParseErrorMsg[0] = '\0';
 
+    PushState();
+
     ifile = asInteger(CAR(args));
     args = CDR(args);
 
@@ -4920,9 +5000,9 @@ SEXP C_parseRd(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     if (!isLogical(CAR(args)) || LENGTH(CAR(args)) != 1)
         error(_("invalid '%s' value"), "verbose");
-    xxDebugTokens = asInteger(CAR(args));
+    parseState.xxDebugTokens = asInteger(CAR(args));
     args = CDR(args);
-    xxBasename = CHAR(STRING_ELT(CAR(args), 0));
+    parseState.xxBasename = CHAR(STRING_ELT(CAR(args), 0));
     args = CDR(args);
     fragment = asLogical(CAR(args));
     args = CDR(args);
@@ -4947,11 +5027,15 @@ SEXP C_parseRd(SEXP call, SEXP op, SEXP args, SEXP env)
         s = R_ParseRd(con, &status, source, fragment);
         if (!wasopen)
             endcontext(&cntxt);
+        PopState();
         if (status != PARSE_OK)
             parseError(call, R_ParseError);
     }
     else
+    {
+        PopState();
         error(_("invalid Rd file"));
+    }
     return s;
 }
 
@@ -4974,15 +5058,21 @@ SEXP C_deparseRd(SEXP e, SEXP state)
 
     if (!isInteger(state) || length(state) != 5)
         error(_("bad state"));
-    xxbraceDepth = INTEGER(state)[0];
-    xxinRString = INTEGER(state)[1];
-    xxmode = INTEGER(state)[2];
-    xxinEqn = INTEGER(state)[3];
+
+    PushState();
+
+    parseState.xxbraceDepth = INTEGER(state)[0];
+    parseState.xxinRString = INTEGER(state)[1];
+    parseState.xxmode = INTEGER(state)[2];
+    parseState.xxinEqn = INTEGER(state)[3];
     quoteBraces = INTEGER(state)[4];
 
-    if (xxmode != LATEXLIKE && xxmode != RLIKE && xxmode != VERBATIM && xxmode != COMMENTMODE && xxmode != INOPTION &&
-        xxmode != UNKNOWNMODE)
-        error(_("bad text mode %d in 'deparseRd'"), xxmode);
+    if (parseState.xxmode != LATEXLIKE && parseState.xxmode != RLIKE && parseState.xxmode != VERBATIM &&
+        parseState.xxmode != COMMENTMODE && parseState.xxmode != INOPTION && parseState.xxmode != UNKNOWNMODE)
+    {
+        PopState();
+        error(_("bad text mode %d in 'deparseRd'"), parseState.xxmode);
+    }
 
     for (c = CHAR(e), outlen = 0; *c; c++)
     {
@@ -4996,52 +5086,53 @@ SEXP C_deparseRd(SEXP e, SEXP state)
     for (c = CHAR(e); *c; c++)
     {
         escape = FALSE;
-        if (xxmode != UNKNOWNMODE)
+        if (parseState.xxmode != UNKNOWNMODE)
         {
             switch (*c)
             {
             case '\\':
-                if (xxmode == RLIKE && xxinRString)
+                if (parseState.xxmode == RLIKE && parseState.xxinRString)
                 {
                     lookahead = *(c + 1);
-                    if (lookahead == '\\' || lookahead == xxinRString || lookahead == 'l')
+                    if (lookahead == '\\' || lookahead == parseState.xxinRString || lookahead == 'l')
                         escape = TRUE;
                     break;
                 } /* fall through to % case for non-strings... */
             case '%':
-                if (xxmode != COMMENTMODE && !xxinEqn)
+                if (parseState.xxmode != COMMENTMODE && !parseState.xxinEqn)
                     escape = TRUE;
                 break;
             case LBRACE:
             case RBRACE:
                 if (quoteBraces)
                     escape = TRUE;
-                else if (!xxinRString && !xxinEqn && (xxmode == RLIKE || xxmode == VERBATIM))
+                else if (!parseState.xxinRString && !parseState.xxinEqn &&
+                         (parseState.xxmode == RLIKE || parseState.xxmode == VERBATIM))
                 {
                     if (*c == LBRACE)
-                        xxbraceDepth++;
-                    else if (xxbraceDepth <= 0)
+                        parseState.xxbraceDepth++;
+                    else if (parseState.xxbraceDepth <= 0)
                         escape = TRUE;
                     else
-                        xxbraceDepth--;
+                        parseState.xxbraceDepth--;
                 }
                 break;
             case '\'':
             case '"':
             case '`':
-                if (xxmode == RLIKE)
+                if (parseState.xxmode == RLIKE)
                 {
-                    if (xxinRString)
+                    if (parseState.xxinRString)
                     {
-                        if (xxinRString == *c)
-                            xxinRString = 0;
+                        if (parseState.xxinRString == *c)
+                            parseState.xxinRString = 0;
                     }
                     else if (!inRComment)
-                        xxinRString = *c;
+                        parseState.xxinRString = *c;
                 }
                 break;
             case '#':
-                if (xxmode == RLIKE && !xxinRString)
+                if (parseState.xxmode == RLIKE && !parseState.xxinRString)
                     inRComment = TRUE;
                 break;
             case '\n':
@@ -5060,8 +5151,11 @@ SEXP C_deparseRd(SEXP e, SEXP state)
     R_chk_free(outbuf);
 
     statevals = INTEGER(VECTOR_ELT(result, 1));
-    statevals[0] = xxbraceDepth;
-    statevals[1] = xxinRString;
+    statevals[0] = parseState.xxbraceDepth;
+    statevals[1] = parseState.xxinRString;
+
+    PopState();
+
     UNPROTECT(1);
     return result;
 }
