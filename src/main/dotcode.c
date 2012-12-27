@@ -32,10 +32,6 @@
 
 #include <Rmath.h>
 
-#ifdef SUPPORT_CONVERTERS
-#include <R_ext/RConverters.h>
-#endif
-
 #ifndef max
 #define max(a, b) ((a > b) ? (a) : (b))
 #endif
@@ -1196,10 +1192,6 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
     DL_FUNC ofun = NULL;
     VarFun fun = NULL;
     SEXP ans, pa, s;
-#ifdef SUPPORT_CONVERTERS
-    /* the post-call converters back to R objects. */
-    R_toCConverter *argConverters[65];
-#endif
     R_RegisteredNativeSymbol symbol = {R_C_SYM, {NULL}, NULL};
     R_NativePrimitiveArgType *checkTypes = NULL;
     R_NativeArgStyle *argStyles = NULL;
@@ -1285,32 +1277,6 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
         /* start with return value a copy of the inputs, as that is
            what is needed for DUP = FALSE and for non-atomic-vector inputs */
         SET_VECTOR_ELT(ans, na, s);
-
-#ifdef SUPPORT_CONVERTERS
-        /* We could simplify this code, but we have no known examples */
-        R_toCConverter **converter = argConverters + na;
-        if (converter)
-            *converter = NULL;
-        if (length(getAttrib(s, R_ClassSymbol)))
-        {
-            R_CConvertInfo info;
-            int success;
-            void *ans;
-
-            info.naok = naok;
-            info.dup = dup;
-            info.narg = na + 1;
-            info.Fort = Fort;
-            info.name = symName;
-
-            ans = Rf_convertToC(s, &info, &success, converter);
-            if (success)
-            {
-                cargs[na] = ans;
-                continue;
-            }
-        }
-#endif
 
         if (checkNativeType(targetType, TYPEOF(s)) == FALSE)
         {
@@ -1976,13 +1942,6 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (dup)
     {
-#ifdef SUPPORT_CONVERTERS
-        R_FromCConvertInfo info;
-        info.cargs = cargs;
-        info.allArgs = args;
-        info.nargs = nargs;
-        info.functionName = symName;
-#endif
 
         for (na = 0, pa = args; pa != R_NilValue; pa = CDR(pa), na++)
         {
@@ -1990,24 +1949,6 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 SET_VECTOR_ELT(ans, na, R_NilValue);
                 continue;
-#ifdef SUPPORT_CONVERTERS
-            }
-            else if (argConverters[na])
-            {
-                if (argConverters[na]->reverse)
-                {
-                    info.argIndex = na;
-                    s = argConverters[na]->reverse(cargs[na], CAR(pa), &info, argConverters[na]);
-                    PROTECT(s);
-                    SET_VECTOR_ELT(ans, na, s);
-                    UNPROTECT(1);
-                }
-                else
-                {
-                    SET_VECTOR_ELT(ans, na, R_NilValue);
-                    continue;
-                }
-#endif
             }
             else
             {
