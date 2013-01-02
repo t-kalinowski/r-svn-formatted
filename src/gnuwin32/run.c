@@ -689,7 +689,7 @@ static Rboolean Wpipe_open(Rconnection con)
 
 static void Wpipe_close(Rconnection con)
 {
-    rpipeClose(((RWpipeconn)con->private)->rp);
+    con->status = rpipeClose(((RWpipeconn)con->private)->rp);
     con->isopen = FALSE;
 }
 
