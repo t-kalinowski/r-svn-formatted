@@ -1496,7 +1496,7 @@ SEXP attribute_hidden do_attr(SEXP call, SEXP op, SEXP args, SEXP env)
 
 static void check_slot_name(SEXP obj, SEXP input)
 {
-    int isAttr = 0;
+    Rboolean isAttr = FALSE;
     SEXP alist, name;
 
     name = install(CHAR(STRING_ELT(input, 0)));
@@ -1509,7 +1509,7 @@ static void check_slot_name(SEXP obj, SEXP input)
         SEXP tmp = TAG(alist);
         if (tmp == name)
         {
-            isAttr = 1;
+            isAttr = TRUE;
             break;
         }
     }
@@ -1517,7 +1517,7 @@ static void check_slot_name(SEXP obj, SEXP input)
     {
         SEXP klass;
         klass = getAttrib(obj, R_ClassSymbol);
-        error(_("\"%s\" is not a slot in object of class \"%s\""), translateChar(STRING_ELT(input, 0)),
+        error(_("\"%s\" is not an existing slot in an object of class \"%s\""), translateChar(STRING_ELT(input, 0)),
               translateChar(STRING_ELT(klass, 0)));
     }
 }
@@ -1531,13 +1531,11 @@ SEXP attribute_hidden do_attrgets(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (PRIMVAL(op))
     { /* @<- */
-        SEXP input, nlist, value, ans;
-        int iS;
+        SEXP input, nlist, ans;
         PROTECT(input = allocVector(STRSXP, 1));
 
         nlist = CADR(args);
-        iS = isSymbol(nlist);
-        if (iS)
+        if (isSymbol(nlist))
             SET_STRING_ELT(input, 0, PRINTNAME(nlist));
         else if (isString(nlist))
             SET_STRING_ELT(input, 0, STRING_ELT(nlist, 0));
@@ -1549,16 +1547,16 @@ SEXP attribute_hidden do_attrgets(SEXP call, SEXP op, SEXP args, SEXP env)
 
         /* replace the second argument with a string */
         SETCADR(args, input);
+        UNPROTECT(1); // 'input' is now protected
 
         if (DispatchOrEval(call, op, "@<-", args, env, &ans, 0, 0))
             return (ans);
 
-        PROTECT(value = CADDR(ans));
-
         PROTECT(obj = CAR(ans));
         check_slot_name(obj, input);
-        UNPROTECT(3);
-        return R_do_slot_assign(obj, input, value);
+        UNPROTECT(1);
+        /* R_do_slot_assign protects obj and value */
+        return R_do_slot_assign(obj, input, CADDR(ans));
     }
 
     obj = CAR(args);
