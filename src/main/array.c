@@ -66,7 +66,6 @@ SEXP attribute_hidden do_matrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     vals = CAR(args);
     args = CDR(args);
-    /* Supposedly as.vector() gave a vector type, but we check */
     switch (TYPEOF(vals))
     {
     case LGLSXP:
@@ -79,7 +78,7 @@ SEXP attribute_hidden do_matrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     case VECSXP:
         break;
     default:
-        error(_("'data' must be of a vector type"));
+        error(_("'data' must be of a vector type, was '%s'"), type2char(TYPEOF(vals)));
     }
     lendat = XLENGTH(vals);
     snr = CAR(args);
@@ -1640,8 +1639,7 @@ SEXP attribute_hidden do_array(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
     vals = CAR(args);
-    /* Supposedly as.vector() gave a vector type, but we check before
-       calling XLENGTH */
+    /* at least NULL can get here */
     switch (TYPEOF(vals))
     {
     case LGLSXP:
@@ -1654,7 +1652,7 @@ SEXP attribute_hidden do_array(SEXP call, SEXP op, SEXP args, SEXP rho)
     case VECSXP:
         break;
     default:
-        error(_("'data' must be of a vector type"));
+        error(_("'data' must be of a vector type, was '%s'"), type2char(TYPEOF(vals)));
     }
     lendat = XLENGTH(vals);
     dims = CADR(args);
