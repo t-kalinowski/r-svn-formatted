@@ -83,21 +83,12 @@ static R_CallMethodDef callMethods[] = {
     {                                                                                                                  \
 #name, (DL_FUNC)&F77_SYMBOL(name), n, NULL                                                                     \
     }
-static R_FortranMethodDef fortranMethods[] = {FDEF(ch2inv, 5),
-                                              FDEF(chol, 5),
+static R_FortranMethodDef fortranMethods[] = {
+    /* LINPACK */
+    FDEF(dchdc, 7), FDEF(dqrcf, 8),  FDEF(dqrdc2, 9), FDEF(dqrqty, 7),
+    FDEF(dqrqy, 7), FDEF(dqrrsd, 7), FDEF(dqrxb, 7),  FDEF(dtrco, 6),
 
-                                              /* LINPACK */
-                                              FDEF(dchdc, 7),
-                                              FDEF(dqrcf, 8),
-                                              FDEF(dqrdc2, 9),
-                                              FDEF(dqrqty, 7),
-                                              FDEF(dqrqy, 7),
-                                              FDEF(dqrrsd, 7),
-                                              FDEF(dqrxb, 7),
-                                              FDEF(dsvdc, 13),
-                                              FDEF(dtrco, 6),
-
-                                              {NULL, NULL, 0}};
+    {NULL, NULL, 0}};
 
 void attribute_hidden R_init_base(DllInfo *dll)
 {
