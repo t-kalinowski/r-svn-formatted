@@ -111,17 +111,19 @@ void fdhess(int n, double *x, double fval, fcn_p fun, void *state, double *h, in
     }
 } /* fdhess */
 
+#if 0
 static void d1fcn_dum(int n, double *x, double *g, void *state)
 {
-    /*	dummy routine to prevent unsatisfied external diagnostic
-     *	when specific analytic gradient function not supplied. */
+/*	dummy routine to prevent unsatisfied external diagnostic
+ *	when specific analytic gradient function not supplied. */
 }
 
 static void d2fcn_dum(int nr, int n, double *x, double *h, void *state)
 {
-    /*	dummy routine to prevent unsatisfied external diagnostic
-     *	when specific analytic hessian function not supplied. */
+/*	dummy routine to prevent unsatisfied external diagnostic
+ *	when specific analytic hessian function not supplied. */
 }
+#endif
 
 static void mvmltl(int nr, int n, double *a, double *x, double *y)
 {
@@ -2289,7 +2291,7 @@ static void optdrv(int nr, int n, double *x, fcn_p fcn, fcn_p d1fcn, d2fcn_p d2f
      *			 be evaluated by secant update instead of
      *			 analytically or by finite differences
      *	msg	    <--> on input:  ( > 0) message to inhibit certain
-     *			   automatic checks; see do_nlm() in ../main/optimize.c
+     *			   automatic checks; see do_nlm() in optimize.c
      *			 on output: ( < 0) error code; =0 no error
      *	ndigit	     --> number of good digits in optimization function fcn
      *	itnlim	     --> maximum number of allowable iterations
@@ -2554,99 +2556,110 @@ static void optdrv(int nr, int n, double *x, fcn_p fcn, fcn_p d1fcn, d2fcn_p d2f
     optdrv_end(nr, n, xpls, x, gpls, g, fpls, f, a, p, *itncnt, *itrmcd, msg, prt_result);
 } /* optdrv */
 
-static void dfault(int n, double *x, double *typsiz, double *fscale, int *method, int *iexp, int *msg, int *ndigit,
-                   int *itnlim, int *iagflg, int *iahflg, double *dlt, double *gradtl, double *stepmx, double *steptl)
+#if 0
+static void
+dfault(int n, double *x,
+       double *typsiz, double *fscale,
+       int *method, int *iexp, int *msg,
+       int *ndigit, int *itnlim, int *iagflg, int *iahflg,
+       double *dlt, double *gradtl, double *stepmx, double *steptl)
 {
-    /* Set default values for each input variable to minimization algorithm
-     * for optif0() only.
+/* Set default values for each input variable to minimization algorithm
+ * for optif0() only.
 
-     * PARAMETERS :
+ * PARAMETERS :
 
-     * INPUT:
-     *	n	  dimension of problem
-     *	x(n)	  initial guess to solution (to compute max step size)
-     * OUTPUT:
-     *	typsiz(n) typical size for each component of x
-     *	fscale	  estimate of scale of minimization function
-     *	method	  algorithm to use to solve minimization problem
-     *	iexp	  =0 if minimization function not expensive to evaluate
-     *	msg	  message to inhibit certain automatic checks + output
-     *	ndigit	  number of good digits in minimization function
-     *	itnlim	  maximum number of allowable iterations
-     *	iagflg	  =0 if analytic gradient not supplied
-     *	iahflg	  =0 if analytic hessian not supplied
-     *	dlt	  trust region radius
-     *	gradtl	  tolerance at which gradient considered close enough
-     *		  to zero to terminate algorithm
-     *	stepmx	  value of zero to trip default maximum in optchk
-     *	steptl	  tolerance at which successive iterates considered
-     *		  close enough to terminate algorithm
-     */
-    double epsm;
-    int i;
+ * INPUT:
+ *	n	  dimension of problem
+ *	x(n)	  initial guess to solution (to compute max step size)
+ * OUTPUT:
+ *	typsiz(n) typical size for each component of x
+ *	fscale	  estimate of scale of minimization function
+ *	method	  algorithm to use to solve minimization problem
+ *	iexp	  =0 if minimization function not expensive to evaluate
+ *	msg	  message to inhibit certain automatic checks + output
+ *	ndigit	  number of good digits in minimization function
+ *	itnlim	  maximum number of allowable iterations
+ *	iagflg	  =0 if analytic gradient not supplied
+ *	iahflg	  =0 if analytic hessian not supplied
+ *	dlt	  trust region radius
+ *	gradtl	  tolerance at which gradient considered close enough
+ *		  to zero to terminate algorithm
+ *	stepmx	  value of zero to trip default maximum in optchk
+ *	steptl	  tolerance at which successive iterates considered
+ *		  close enough to terminate algorithm
+ */
+  double epsm;
+  int i;
 
-    /* set typical size of x and minimization function */
-    for (i = 0; i < n; ++i)
-        typsiz[i] = 1.;
+  /* set typical size of x and minimization function */
+  for (i = 0; i < n; ++i)
+    typsiz[i] = 1.;
 
-    *fscale = 1.;
+  *fscale = 1.;
 
-    /* set tolerances */
+  /* set tolerances */
 
-    epsm = DBL_EPSILON;           /* for IEEE : = 2^-52	  ~= 2.22  e-16 */
-    *gradtl = pow(epsm, 1. / 3.); /* for IEEE : = 2^(-52/3) ~= 6.055 e-6 */
-    *steptl = sqrt(epsm);         /* for IEEE : = 2^-26	  ~= 1.490 e-8 */
-    *stepmx = 0.;                 /* -> compute default in optchk() */
-    *dlt = -1.;                   /* (not needed for method 1) */
+  epsm = DBL_EPSILON;		/* for IEEE : = 2^-52	  ~= 2.22  e-16 */
+  *gradtl = pow(epsm, 1./3.);	/* for IEEE : = 2^(-52/3) ~= 6.055 e-6 */
+  *steptl = sqrt(epsm);		/* for IEEE : = 2^-26	  ~= 1.490 e-8 */
+  *stepmx = 0.;/* -> compute default in optchk() */
+  *dlt = -1.;/* (not needed for method 1) */
 
-    /* set flags */
+  /* set flags */
 
-    *method = 1;
-    *iexp = 1;
-    *msg = 0;
-    *ndigit = -1; /* -> compute default = floor(-log10(EPS)) in optchk() */
-    *itnlim = 150;
-    *iagflg = 0; /* no gradient */
-    *iahflg = 0; /* no hessian */
+  *method = 1;
+  *iexp	  = 1;
+  *msg	  = 0;
+  *ndigit = -1;/* -> compute default = floor(-log10(EPS)) in optchk() */
+  *itnlim = 150;
+  *iagflg = 0;/* no gradient */
+  *iahflg = 0;/* no hessian */
 } /* dfault() */
 
-void optif0(int nr, int n, double *x, fcn_p fcn, void *state, double *xpls, double *fpls, double *gpls, int *itrmcd,
-            double *a, double *wrk)
+void
+optif0(int nr, int n, double *x, fcn_p fcn, void *state,
+       double *xpls, double *fpls, double *gpls, int *itrmcd,
+       double *a, double *wrk)
 {
-    /* Provide simplest interface to minimization package.
-     * User has no control over options.
+/* Provide simplest interface to minimization package.
+ * User has no control over options.
 
-     * PARAMETERS :
+ * PARAMETERS :
 
-     *	nr	     --> row dimension of matrix
-     *	n	     --> dimension of problem
-     *	x(n)	     --> initial estimate of minimum
-     *	fcn	     --> name of routine to evaluate minimization function.
-     *			 must be declared external in calling routine.
-     *	state	    <--> information other than x and n that fcn requires
-     *			 state is not modified in optif0 (but can be
-     *			 modified by fcn).
-     *	xpls(n)	    <--	 local minimum
-     *	fpls	    <--	 function value at local minimum xpls
-     *	gpls(n)	    <--	 gradient at local minimum xpls
-     *	itrmcd	    <--	 termination code
-     *	a(n,n)	     --> workspace
-     *	wrk(n,9)     --> workspace
-     */
-    int iexp, iagflg, iahflg;
-    int ndigit, method, itnlim, itncnt;
-    double fscale, gradtl, steptl, stepmx, dlt;
-    int msg;
+ *	nr	     --> row dimension of matrix
+ *	n	     --> dimension of problem
+ *	x(n)	     --> initial estimate of minimum
+ *	fcn	     --> name of routine to evaluate minimization function.
+ *			 must be declared external in calling routine.
+ *	state	    <--> information other than x and n that fcn requires
+ *			 state is not modified in optif0 (but can be
+ *			 modified by fcn).
+ *	xpls(n)	    <--	 local minimum
+ *	fpls	    <--	 function value at local minimum xpls
+ *	gpls(n)	    <--	 gradient at local minimum xpls
+ *	itrmcd	    <--	 termination code
+ *	a(n,n)	     --> workspace
+ *	wrk(n,9)     --> workspace
+ */
+  int iexp, iagflg, iahflg;
+  int ndigit, method, itnlim, itncnt;
+  double fscale, gradtl, steptl, stepmx, dlt;
+  int msg;
 
-    /* Function Body */
-    dfault(n, x, &wrk[nr], &fscale, &method, &iexp, &msg, &ndigit, &itnlim, &iagflg, &iahflg, &dlt, &gradtl, &stepmx,
-           &steptl);
-    optdrv(nr, n, x, (fcn_p)fcn, (fcn_p)d1fcn_dum, (d2fcn_p)d2fcn_dum, state, &wrk[nr * 3], fscale, method, iexp, &msg,
-           ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, wrk, &wrk[nr],
-           &wrk[nr * 2], &wrk[nr * 4], &wrk[nr * 5], &wrk[nr * 6], &wrk[nr * 7], &wrk[nr * 8], &itncnt);
+  /* Function Body */
+  dfault(n, x, &wrk[nr], &fscale, &method, &iexp, &msg, &ndigit,
+	 &itnlim, &iagflg, &iahflg, &dlt, &gradtl, &stepmx, &steptl);
+  optdrv(nr, n, x, (fcn_p)fcn, (fcn_p)d1fcn_dum, (d2fcn_p)d2fcn_dum,
+	 state, &wrk[nr * 3], fscale, method, iexp, &msg, ndigit,
+	 itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl,
+	 xpls, fpls, gpls, itrmcd, a, wrk, &wrk[nr], &wrk[nr * 2],
+	 &wrk[nr * 4], &wrk[nr * 5], &wrk[nr * 6], &wrk[nr * 7],
+	 &wrk[nr * 8], &itncnt);
 } /* optif0 */
+#endif
 
-/* ---- this one is called from ../main/optimize.c : --------------- */
+/* ---- this one is called from optimize.c : --------------- */
 void optif9(int nr, int n, double *x, fcn_p fcn, fcn_p d1fcn, d2fcn_p d2fcn, void *state, double *typsiz, double fscale,
             int method, int iexp, int *msg, int ndigit, int itnlim, int iagflg, int iahflg, double dlt, double gradtl,
             double stepmx, double steptl, double *xpls, double *fpls, double *gpls, int *itrmcd, double *a, double *wrk,
@@ -2697,7 +2710,7 @@ void optif9(int nr, int n, double *x, fcn_p fcn, fcn_p d1fcn, d2fcn_p d2fcn, voi
      *	fpls	    <--> on exit:  function value at solution, xpls
      *	gpls(n)	    <--> on exit:  gradient at solution xpls
      *	itrmcd	    <--	 termination code (in 0..5 ; 0 is "perfect");
-     *			see optcode() in ../main/optimize.c for meaning
+     *			see optcode() in optimize.c for meaning
      *	a(n,n)	     --> workspace for hessian (or estimate)
      *			 and its cholesky decomposition
      *	wrk(n,8)     --> workspace
