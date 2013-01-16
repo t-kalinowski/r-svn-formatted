@@ -182,7 +182,6 @@ static void __cdecl ProfileThread(void *pwait)
 
 static void lineprof(SEXP srcref)
 {
-    int len;
     if (srcref && !isNull(srcref))
     {
         SEXP filename;
