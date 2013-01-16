@@ -102,10 +102,29 @@ static int R_Mem_Profiling = 0;
 extern void get_current_mem(unsigned long *, unsigned long *, unsigned long *); /* in memory.c */
 extern unsigned long get_duplicate_counter(void);                               /* in duplicate.c */
 extern void reset_duplicate_counter(void);                                      /* in duplicate.c */
+static int R_Line_Profiling = 0;
 
 #ifdef Win32
 HANDLE MainThread;
 HANDLE ProfileEvent;
+
+static void lineprof(char *buf, SEXP srcref)
+{
+    int len;
+    if (srcref && !isNull(srcref) && (len = strlen(buf)) < 1000)
+    {
+        SEXP filename;
+        int line = asInteger(srcref);
+        PROTECT(filename = R_GetSrcFilename(srcref));
+        const char *f = strrchr(CHAR(STRING_ELT(filename, 0)), '/');
+        if (!f)
+            f = CHAR(STRING_ELT(filename, 0));
+        else
+            f = f + 1;
+        snprintf(buf + len, 1100 - len, "%s#%d ", f, line);
+        UNPROTECT(1);
+    }
+}
 
 static void doprof(void)
 {
@@ -125,6 +144,9 @@ static void doprof(void)
         }
         reset_duplicate_counter();
     }
+    if (R_Line_Profiling)
+        lineprof(buf, R_Srcref);
+
     for (cptr = R_GlobalContext; cptr; cptr = cptr->nextcontext)
     {
         if ((cptr->callflag & (CTXT_FUNCTION | CTXT_BUILTIN)) && TYPEOF(cptr->call) == LANGSXP)
@@ -132,8 +154,11 @@ static void doprof(void)
             SEXP fun = CAR(cptr->call);
             if (strlen(buf) < 1000)
             {
+                strcat(buf, "\"");
                 strcat(buf, TYPEOF(fun) == SYMSXP ? CHAR(PRINTNAME(fun)) : "<Anonymous>");
-                strcat(buf, " ");
+                strcat(buf, "\" ");
+                if (R_Line_Profiling)
+                    lineprof(buf, cptr->srcref);
             }
         }
     }
@@ -154,6 +179,25 @@ static void __cdecl ProfileThread(void *pwait)
     }
 }
 #else  /* not Win32 */
+
+static void lineprof(SEXP srcref)
+{
+    int len;
+    if (srcref && !isNull(srcref))
+    {
+        SEXP filename;
+        int line = asInteger(srcref);
+        PROTECT(filename = R_GetSrcFilename(srcref));
+        const char *f = strrchr(CHAR(STRING_ELT(filename, 0)), '/');
+        if (!f)
+            f = CHAR(STRING_ELT(filename, 0));
+        else
+            f = f + 1;
+        fprintf(R_ProfileOutfile, "%s#%d ", f, line);
+        UNPROTECT(1);
+    }
+}
+
 static void doprof(int sig)
 {
     RCNTXT *cptr;
@@ -167,6 +211,9 @@ static void doprof(int sig)
         fprintf(R_ProfileOutfile, ":%ld:%ld:%ld:%ld:", smallv, bigv, nodes, get_duplicate_counter());
         reset_duplicate_counter();
     }
+    if (R_Line_Profiling)
+        lineprof(R_Srcref);
+
     for (cptr = R_GlobalContext; cptr; cptr = cptr->nextcontext)
     {
         if ((cptr->callflag & (CTXT_FUNCTION | CTXT_BUILTIN)) && TYPEOF(cptr->call) == LANGSXP)
@@ -175,6 +222,8 @@ static void doprof(int sig)
             if (!newline)
                 newline = 1;
             fprintf(R_ProfileOutfile, "\"%s\" ", TYPEOF(fun) == SYMSXP ? CHAR(PRINTNAME(fun)) : "<Anonymous>");
+            if (R_Line_Profiling)
+                lineprof(cptr->srcref);
         }
     }
     if (newline)
@@ -209,7 +258,7 @@ static void R_EndProfiling(void)
     R_Profiling = 0;
 }
 
-static void R_InitProfiling(SEXP filename, int append, double dinterval, int mem_profiling)
+static void R_InitProfiling(SEXP filename, int append, double dinterval, int mem_profiling, int line_profiling)
 {
 #ifndef Win32
     struct itimerval itv;
@@ -226,13 +275,16 @@ static void R_InitProfiling(SEXP filename, int append, double dinterval, int mem
     if (R_ProfileOutfile == NULL)
         error(_("Rprof: cannot open profile file '%s'"), translateChar(filename));
     if (mem_profiling)
-        fprintf(R_ProfileOutfile, "memory profiling: sample.interval=%d\n", interval);
-    else
-        fprintf(R_ProfileOutfile, "sample.interval=%d\n", interval);
+        fprintf(R_ProfileOutfile, "memory profiling: ");
+    if (line_profiling)
+        fprintf(R_ProfileOutfile, "line profiling: ");
+    fprintf(R_ProfileOutfile, "sample.interval=%d\n", interval);
 
     R_Mem_Profiling = mem_profiling;
     if (mem_profiling)
         reset_duplicate_counter();
+
+    R_Line_Profiling = line_profiling;
 
 #ifdef Win32
     /* need to duplicate to make a real handle */
@@ -257,7 +309,7 @@ static void R_InitProfiling(SEXP filename, int append, double dinterval, int mem
 SEXP do_Rprof(SEXP args)
 {
     SEXP filename;
-    int append_mode, mem_profiling;
+    int append_mode, mem_profiling, line_profiling;
     double dinterval;
 
 #ifdef BC_PROFILING
@@ -272,9 +324,11 @@ SEXP do_Rprof(SEXP args)
     append_mode = asLogical(CADR(args));
     dinterval = asReal(CADDR(args));
     mem_profiling = asLogical(CADDDR(args));
+    line_profiling = asLogical(CAD4R(args));
+
     filename = STRING_ELT(CAR(args), 0);
     if (LENGTH(filename))
-        R_InitProfiling(filename, append_mode, dinterval, mem_profiling);
+        R_InitProfiling(filename, append_mode, dinterval, mem_profiling, line_profiling);
     else
         R_EndProfiling();
     return R_NilValue;
@@ -1506,7 +1560,7 @@ SEXP attribute_hidden do_return(SEXP call, SEXP op, SEXP args, SEXP rho)
     return R_NilValue; /*NOTREACHED*/
 }
 
-/* Declated with a variable number of args in names.c */
+/* Declared with a variable number of args in names.c */
 SEXP attribute_hidden do_function(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP rval, srcref;
