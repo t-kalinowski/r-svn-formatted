@@ -139,6 +139,7 @@ int Ri18n_wcwidth(wchar_t c)
     return (wcwidthsearch(c, table_wcwidth, (sizeof(table_wcwidth) / sizeof(struct interval_wcwidth)), lc));
 }
 
+/* Used in charcter.c, gnuwin32/console.c */
 attribute_hidden int Ri18n_wcswidth(const wchar_t *s, size_t n)
 {
     int rs = 0;
@@ -306,7 +307,8 @@ static const Ri18n_wctype_func_l Ri18n_wctype_func[] = {{"upper", 1 << 0, Ri18n_
                                                         {"alnum", 1 << 11, Ri18n_iswalnum},
                                                         {NULL, 0, NULL}};
 
-attribute_hidden wctype_t Ri18n_wctype(const char *name)
+/* These two used (via macros) in X11 dataentry */
+wctype_t Ri18n_wctype(const char *name)
 {
     int i;
 
@@ -315,7 +317,7 @@ attribute_hidden wctype_t Ri18n_wctype(const char *name)
     return Ri18n_wctype_func[i].wctype;
 }
 
-attribute_hidden int Ri18n_iswctype(wint_t wc, wctype_t desc)
+int Ri18n_iswctype(wint_t wc, wctype_t desc)
 {
     int i;
 
