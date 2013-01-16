@@ -112,11 +112,14 @@ void R_CleanUp(SA_TYPE saveact, int status, int runLast)
 {
     ptr_R_CleanUp(saveact, status, runLast);
 }
-int R_ShowFiles(int nfile, const char **file, const char **headers, const char *wtitle, Rboolean del, const char *pager)
+
+attribute_hidden int R_ShowFiles(int nfile, const char **file, const char **headers, const char *wtitle, Rboolean del,
+                                 const char *pager)
 {
     return ptr_R_ShowFiles(nfile, file, headers, wtitle, del, pager);
 }
-int R_ChooseFile(int _new, char *buf, int len)
+
+attribute_hidden int R_ChooseFile(int _new, char *buf, int len)
 {
     return ptr_R_ChooseFile(_new, buf, len);
 }

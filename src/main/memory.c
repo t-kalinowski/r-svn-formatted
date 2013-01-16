@@ -3527,7 +3527,7 @@ int(PRIMOFFSET)(SEXP x)
 {
     return PRIMOFFSET(x);
 }
-void(SET_PRIMOFFSET)(SEXP x, int v)
+attribute_hidden void(SET_PRIMOFFSET)(SEXP x, int v)
 {
     SET_PRIMOFFSET(x, v);
 }
