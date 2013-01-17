@@ -43,13 +43,15 @@ SEXP winver(void)
     /* see http://msdn2.microsoft.com/en-us/library/ms724429.aspx
        for ways to get more info.
        Pre-NT versions are all 4.x, so no need to separate test.
+       See also http://msdn.microsoft.com/en-us/library/ms724832.aspx
+       for version number naming.
     */
     if (osvi.dwMajorVersion >= 5)
     {
         char *desc = "", *type = "";
         PGNSI pGNSI;
         SYSTEM_INFO si;
-        if (osvi.dwMajorVersion > 6)
+        if (osvi.dwMajorVersion > 6 || (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion > 2))
         { /* future proof */
             sprintf(ver, "Windows %d.%d (build %d)", (int)osvi.dwMajorVersion, (int)osvi.dwMinorVersion,
                     LOWORD(osvi.dwBuildNumber));
@@ -60,11 +62,20 @@ SEXP winver(void)
             {
                 if (osvi.dwMinorVersion == 0)
                     desc = "Vista";
-                else
+                else if (osvi.dwMinorVersion == 1)
                     desc = "7";
+                else
+                    desc = "8";
             }
             else
-                desc = "Server 2008";
+            {
+                if (osvi.dwMinorVersion == 0)
+                    desc = "Server 2008";
+                else if (osvi.dwMinorVersion == 1)
+                    desc = "Server 2008 R2";
+                else
+                    desc = "Server 2012";
+            }
         }
         else if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 0)
             desc = "2000";
