@@ -136,7 +136,7 @@ static SEXP GrowList(SEXP l, SEXP s)
 
 static void lineprof(char *buf, SEXP srcref)
 {
-    int len;
+    size_t len;
     if (srcref && !isNull(srcref) && (len = strlen(buf)) < 1000)
     {
         SEXP filename;
@@ -161,7 +161,8 @@ static void doprof(int sig) /* sig is ignored in Windows */
     RCNTXT *cptr;
     char buf[1100];
     unsigned long bigv, smallv, nodes;
-    int len, prevnum = R_Line_Profiling;
+    size_t len;
+    int prevnum = R_Line_Profiling;
 
     buf[0] = '\0';
 
