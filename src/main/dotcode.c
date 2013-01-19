@@ -543,6 +543,14 @@ SEXP attribute_hidden do_External(SEXP call, SEXP op, SEXP args, SEXP env)
     check1arg2(args, call, ".NAME");
     args = resolveNativeRoutine(args, &ofun, &symbol, buf, NULL, NULL, NULL, call, env);
 
+    if (symbol.symbol.external && symbol.symbol.external->numArgs > -1)
+    {
+        int nargs = length(args) - 1;
+        if (symbol.symbol.external->numArgs != nargs)
+            warningcall(call, _("Incorrect number of arguments (%d), expecting %d for '%s'"), nargs,
+                        symbol.symbol.external->numArgs, buf);
+    }
+
     if (PRIMVAL(op) == 1)
     {
         R_ExternalRoutine2 fun = (R_ExternalRoutine2)ofun;
