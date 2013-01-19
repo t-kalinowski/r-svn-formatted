@@ -44,7 +44,7 @@ static const R_CallMethodDef CallEntries[] = {CALLDEF(C_contourDef, 0),
     }
 
 static const R_ExternalMethodDef ExtEntries[] = {
-    EXTDEF(C_contour, -1),    EXTDEF(C_filledcontour, 4), EXTDEF(C_image, 4),     EXTDEF(C_persp, -1),
+    EXTDEF(C_contour, -1),    EXTDEF(C_filledcontour, 5), EXTDEF(C_image, 4),     EXTDEF(C_persp, -1),
 
     EXTDEF(C_abline, -1),     EXTDEF(C_axis, -1),         EXTDEF(C_arrows, -1),   EXTDEF(C_box, -1),
     EXTDEF(C_clip, -1),       EXTDEF(C_convertX, 3),      EXTDEF(C_convertY, 3),  EXTDEF(C_dend, -1),
