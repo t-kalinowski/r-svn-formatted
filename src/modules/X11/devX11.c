@@ -229,6 +229,7 @@ static void Cairo_update(pX11Desc xd)
     if (inclose || !xd || !xd->buffered || xd->holdlevel > 0)
         return;
     cairo_paint(xd->xcc);
+    cairo_surface_flush(xd->xcs);
     if (xd->type == WINDOW)
         XDefineCursor(display, xd->window, arrow_cursor);
     XSync(display, 0);
@@ -791,7 +792,10 @@ static void handleEvent(XEvent event)
             pX11Desc xd = (pX11Desc)dd->deviceSpecific;
             /* We can use the buffered copy where we have it */
             if (xd->buffered == 1)
+            {
                 cairo_paint(xd->xcc);
+                cairo_surface_flush(xd->xcs);
+            }
             else if (xd->buffered > 1)
                 /* rely on timer to repaint eventually */
                 xd->last_activity = currentTime();
@@ -2830,7 +2834,11 @@ static void X11_Mode(int mode, pDevDesc dd)
             return;
         }
         if (xd->buffered)
+        {
             cairo_paint(xd->xcc);
+            cairo_surface_flush(xd->xcs);
+        }
+
 #endif
         if (xd->type == WINDOW)
             XDefineCursor(display, xd->window, arrow_cursor);
