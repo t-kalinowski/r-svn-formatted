@@ -152,7 +152,7 @@ static int getFilenum(const char *filename)
 
 static void lineprof(char *buf, SEXP srcref)
 {
-    int len;
+    size_t len;
     if (srcref && !isNull(srcref) && (len = strlen(buf)) < 1000)
     {
         int fnum, line = asInteger(srcref);
@@ -176,7 +176,8 @@ static void doprof(int sig) /* sig is ignored in Windows */
     RCNTXT *cptr;
     char buf[1100];
     unsigned long bigv, smallv, nodes;
-    int len, prevnum = R_Line_Profiling;
+    size_t len;
+    int prevnum = R_Line_Profiling;
 
     buf[0] = '\0';
 
@@ -188,9 +189,7 @@ static void doprof(int sig) /* sig is ignored in Windows */
     {
         get_current_mem(&smallv, &bigv, &nodes);
         if ((len = strlen(buf)) < 1000)
-        {
             sprintf(buf + len, ":%ld:%ld:%ld:%ld:", smallv, bigv, nodes, get_duplicate_counter());
-        }
         reset_duplicate_counter();
     }
 
@@ -369,7 +368,7 @@ SEXP do_Rprof(SEXP args)
     args = CDR(args);
     if (numfiles < 0)
         error(_("invalid '%s' argument"), "numfiles");
-    bufsize = (size_t)asInteger(CAR(args));
+    bufsize = asInteger(CAR(args));
     if (bufsize < 0)
         error(_("invalid '%s' argument"), "bufsize");
 
