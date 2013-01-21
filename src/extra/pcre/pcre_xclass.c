@@ -60,9 +60,9 @@ Arguments:
 Returns:      TRUE if character matches, else FALSE
 */
 
-BOOL PRIV(xclass)(int c, const pcre_uchar *data, BOOL utf)
+BOOL PRIV(xclass)(pcre_uint32 c, const pcre_uchar *data, BOOL utf)
 {
-    int t;
+    pcre_uchar t;
     BOOL negated = (*data & XCL_NOT) != 0;
 
     (void)utf;
@@ -90,7 +90,7 @@ BOOL PRIV(xclass)(int c, const pcre_uchar *data, BOOL utf)
 
     while ((t = *data++) != XCL_END)
     {
-        int x, y;
+        pcre_uint32 x, y;
         if (t == XCL_SINGLE)
         {
 #ifdef SUPPORT_UTF
