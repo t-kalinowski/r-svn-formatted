@@ -102,6 +102,7 @@ static int R_Mem_Profiling = 0;
 extern void get_current_mem(unsigned long *, unsigned long *, unsigned long *); /* in memory.c */
 extern unsigned long get_duplicate_counter(void);                               /* in duplicate.c */
 extern void reset_duplicate_counter(void);                                      /* in duplicate.c */
+static int R_GC_Profiling = 0;                                                  /* indicates GC profiling */
 static int R_Line_Profiling = 0;      /* indicates line profiling, and also counts the filenames seen (+1) */
 static char **R_Srcfiles;             /* an array of pointers into the filename buffer */
 static size_t R_Srcfile_bufcount;     /* how big is the array above? */
@@ -193,6 +194,9 @@ static void doprof(int sig) /* sig is ignored in Windows */
         reset_duplicate_counter();
     }
 
+    if (R_GC_Profiling && R_gc_running())
+        strcat(buf, "\"<GC>\" ");
+
     if (R_Line_Profiling)
     {
         lineprof(buf, R_Srcref);
@@ -277,8 +281,8 @@ static void R_EndProfiling(void)
                 R_Profiling_Error == 1 ? "numfiles" : "bufsize");
 }
 
-static void R_InitProfiling(SEXP filename, int append, double dinterval, int mem_profiling, int line_profiling,
-                            int numfiles, int bufsize)
+static void R_InitProfiling(SEXP filename, int append, double dinterval, int mem_profiling, int gc_profiling,
+                            int line_profiling, int numfiles, int bufsize)
 {
 #ifndef Win32
     struct itimerval itv;
@@ -296,6 +300,8 @@ static void R_InitProfiling(SEXP filename, int append, double dinterval, int mem
         error(_("Rprof: cannot open profile file '%s'"), translateChar(filename));
     if (mem_profiling)
         fprintf(R_ProfileOutfile, "memory profiling: ");
+    if (gc_profiling)
+        fprintf(R_ProfileOutfile, "GC profiling: ");
     if (line_profiling)
         fprintf(R_ProfileOutfile, "line profiling: ");
     fprintf(R_ProfileOutfile, "sample.interval=%d\n", interval);
@@ -306,6 +312,7 @@ static void R_InitProfiling(SEXP filename, int append, double dinterval, int mem
 
     R_Profiling_Error = 0;
     R_Line_Profiling = line_profiling;
+    R_GC_Profiling = gc_profiling;
     if (line_profiling)
     {
         /* Allocate a big RAW vector to use as a buffer.  The first len1 bytes are an array of pointers
@@ -342,7 +349,7 @@ static void R_InitProfiling(SEXP filename, int append, double dinterval, int mem
 SEXP do_Rprof(SEXP args)
 {
     SEXP filename;
-    int append_mode, mem_profiling, line_profiling;
+    int append_mode, mem_profiling, gc_profiling, line_profiling;
     double dinterval;
     int numfiles, bufsize;
 
@@ -362,6 +369,8 @@ SEXP do_Rprof(SEXP args)
     args = CDR(args);
     mem_profiling = asLogical(CAR(args));
     args = CDR(args);
+    gc_profiling = asLogical(CAR(args));
+    args = CDR(args);
     line_profiling = asLogical(CAR(args));
     args = CDR(args);
     numfiles = asInteger(CAR(args));
@@ -374,7 +383,8 @@ SEXP do_Rprof(SEXP args)
 
     filename = STRING_ELT(filename, 0);
     if (LENGTH(filename))
-        R_InitProfiling(filename, append_mode, dinterval, mem_profiling, line_profiling, numfiles, bufsize);
+        R_InitProfiling(filename, append_mode, dinterval, mem_profiling, gc_profiling, line_profiling, numfiles,
+                        bufsize);
     else
         R_EndProfiling();
     return R_NilValue;
