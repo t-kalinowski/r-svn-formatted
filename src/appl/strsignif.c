@@ -1,6 +1,6 @@
 /*
  *  Copyright (C) Martin Maechler, 1994, 1998
- *  Copyright (C) 2001-2012 the R Core Team
+ *  Copyright (C) 2001-2013 the R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -83,57 +83,43 @@
 #define attribute_hidden
 #endif
 
-#ifdef ENABLE_NLS
-#include <libintl.h>
-#define _(String) gettext(String)
-#else
-#define _(String) (String)
-#endif
-
 #ifdef Win32
 /* avoid latest MinGW's redefinition in stdio.h */
 int trio_sprintf(char *buffer, const char *format, ...);
 #define sprintf trio_sprintf
 #endif
 
-/*
-   The declaration for x is unusual for a .C() but is managed by
-   casting in the code itself.  However, it does mean that we cannot
-   use the argument type matching
- */
-attribute_hidden void str_signif(void *x, int *n, const char **type, int *width, int *digits, const char **format,
-                                 const char **flag, char **result)
+attribute_hidden void str_signif(void *x, int n, const char *type, int width, int digits, const char *format,
+                                 const char *flag, char **result)
 {
-    int wid = *width;
-    int dig = abs(*digits);
-    int i, nn = *n;
-    Rboolean rm_trailing_0 = (*digits) >= 0;
-    Rboolean do_fg = !strcmp("fg", *format); /* TRUE  iff  format == "fg" */
+    int dig = abs(digits);
+    Rboolean rm_trailing_0 = digits >= 0;
+    Rboolean do_fg = !strcmp("fg", format); /* TRUE  iff  format == "fg" */
     double xx;
     int iex;
-    size_t j, len_flag = strlen(*flag);
+    size_t j, len_flag = strlen(flag);
 
     char *f0 = R_alloc((size_t)do_fg ? 1 + 1 + len_flag + 3 : 1, sizeof(char));
-    char *form = R_alloc((size_t)1 + 1 + len_flag + 3 + strlen(*format), sizeof(char));
+    char *form = R_alloc((size_t)1 + 1 + len_flag + 3 + strlen(format), sizeof(char));
 
-    if (wid == 0)
-        error(_(".C(..): Width cannot be zero"));
+    if (width == 0)
+        error("width cannot be zero");
 
-    if (strcmp("d", *format) == 0)
+    if (strcmp("d", format) == 0)
     {
         if (len_flag == 0)
             strcpy(form, "%*d");
         else
         {
             strcpy(form, "%");
-            strcat(form, *flag);
+            strcat(form, flag);
             strcat(form, "*d");
         }
-        if (strcmp("integer", *type) == 0)
-            for (i = 0; i < nn; i++)
-                snprintf(result[i], strlen(result[i]) + 1, form, wid, ((int *)x)[i]);
+        if (strcmp("integer", type) == 0)
+            for (int i = 0; i < n; i++)
+                snprintf(result[i], strlen(result[i]) + 1, form, width, ((int *)x)[i]);
         else
-            error(_(".C(..): 'type' must be \"integer\" for  \"d\"-format"));
+            error("'type' must be \"integer\" for  \"d\"-format");
     }
     else
     { /* --- floating point --- */
@@ -142,28 +128,28 @@ attribute_hidden void str_signif(void *x, int *n, const char **type, int *width,
         else
         {
             strcpy(form, "%");
-            strcat(form, *flag);
+            strcat(form, flag);
             strcat(form, "*.*");
         }
 
         if (do_fg)
         {
             strcpy(f0, "%");
-            strcat(f0, *flag);
+            strcat(f0, flag);
             strcat(f0, ".*f");
             strcat(form, "g");
         }
         else
-            strcat(form, *format);
+            strcat(form, format);
 #ifdef DEBUG
-        fprintf(stderr, "strsignif.c: form='%s', wid=%d, dig=%d\n", form, wid, dig);
+        fprintf(stderr, "strsignif.c: form='%s', width=%d, dig=%d\n", form, width, dig);
         if (do_fg)
             fprintf(stderr, "\t\"fg\": f0='%s'.", f0);
 #endif
-        if (strcmp("double", *type) == 0)
+        if (strcmp("double", type) == 0)
         {
             if (do_fg) /* do smart "f" : */
-                for (i = 0; i < nn; i++)
+                for (int i = 0; i < n; i++)
                 {
                     xx = ((double *)x)[i];
                     if (xx == 0.)
@@ -215,17 +201,15 @@ attribute_hidden void str_signif(void *x, int *n, const char **type, int *width,
 #ifdef DEBUG
                             fprintf(stderr, "\t  iex >= -4; using %d for 'dig'\n", (iex >= dig) ? (iex + 1) : dig);
 #endif
-                            snprintf(result[i], strlen(result[i]) + 1, form, wid, (iex >= dig) ? (iex + 1) : dig, xx);
+                            snprintf(result[i], strlen(result[i]) + 1, form, width, (iex >= dig) ? (iex + 1) : dig, xx);
                         }
                     } /* xx != 0 */
                 }     /* if(do_fg) for(i..) */
             else
-                for (i = 0; i < nn; i++)
-                {
-                    snprintf(result[i], strlen(result[i]) + 1, form, wid, dig, ((double *)x)[i]);
-                }
+                for (int i = 0; i < n; i++)
+                    snprintf(result[i], strlen(result[i]) + 1, form, width, dig, ((double *)x)[i]);
         }
         else
-            error(_(".C(..): 'type' must be \"real\" for this format"));
+            error("'type' must be \"real\" for this format");
     }
 }
