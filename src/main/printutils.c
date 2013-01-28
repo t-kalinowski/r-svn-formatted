@@ -946,7 +946,7 @@ int vasprintf(char **strp, const char *fmt, va_list ap)
 #endif
 
 #define R_BUFSIZE BUFSIZE
-void Rcons_vprintf(const char *format, va_list arg)
+attribute_hidden void Rcons_vprintf(const char *format, va_list arg)
 {
     char buf[R_BUFSIZE], *p = buf;
     int res;

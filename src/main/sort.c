@@ -975,7 +975,7 @@ static void orderVectorl(R_xlen_t *indx, R_xlen_t n, SEXP key, Rboolean nalast, 
 #endif
 
 #define ORD_2_BODY(FNAME, TYPE_1, TYPE_2, GREATER_2_SUB)                                                               \
-    void FNAME(int *indx, int n, TYPE_1 *x, TYPE_2 *y, Rboolean nalast, Rboolean decreasing)                           \
+    static void FNAME(int *indx, int n, TYPE_1 *x, TYPE_2 *y, Rboolean nalast, Rboolean decreasing)                    \
     {                                                                                                                  \
         int t;                                                                                                         \
         for (t = 0; t < n; t++)                                                                                        \
