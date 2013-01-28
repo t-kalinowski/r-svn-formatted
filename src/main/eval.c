@@ -5659,6 +5659,7 @@ SEXP attribute_hidden do_savefile(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 }
 
+#ifdef UNUSED
 #define R_COMPILED_EXTENSION ".Rc"
 
 /* neither of these functions call R_ExpandFileName -- the caller
@@ -5678,7 +5679,7 @@ char *R_CompiledFileName(char *fname, char *buf, size_t bsize)
         /* the supplied file name has the compiled file extension, so
            just copy it to the buffer and return the buffer pointer */
         if (snprintf(buf, bsize, "%s", fname) < 0)
-            error(_("R_CompiledFileName: buffer too small"));
+            error("R_CompiledFileName: buffer too small");
         return buf;
     }
     else if (ext == NULL)
@@ -5686,12 +5687,12 @@ char *R_CompiledFileName(char *fname, char *buf, size_t bsize)
         /* if the requested file has no extention, make a name that
            has the extenrion added on to the expanded name */
         if (snprintf(buf, bsize, "%s%s", fname, R_COMPILED_EXTENSION) < 0)
-            error(_("R_CompiledFileName: buffer too small"));
+            error("R_CompiledFileName: buffer too small");
         return buf;
     }
     else
     {
-        /* the supplied file already has an extention, so there is no
+        /* the supplied file already has an extension, so there is no
            corresponding compiled file name */
         return NULL;
     }
@@ -5710,6 +5711,7 @@ FILE *R_OpenCompiledFile(char *fname, char *buf, size_t bsize)
     else
         return NULL;
 }
+#endif
 
 SEXP attribute_hidden do_growconst(SEXP call, SEXP op, SEXP args, SEXP env)
 {

@@ -278,9 +278,6 @@ void warning(const char *format, ...)
     warningcall(c ? c->call : R_NilValue, "%s", buf);
 }
 
-/* temporary hook to allow experimenting with alternate warning mechanisms */
-static void (*R_WarningHook)(SEXP, char *) = NULL;
-
 /* declarations for internal condition handling */
 
 static void vsignalError(SEXP call, const char *format, va_list ap);
@@ -1352,16 +1349,9 @@ void WarningMessage(SEXP call, R_WARNING which_warn, ...)
     warningcall(call, "%s", buf);
 }
 
-/* Temporary hooks to allow experimenting with alternate error and
-   warning mechanisms.  They are not in the header files for now, but
-   the following snippet can serve as a header file: */
-
-void R_ReturnOrRestart(SEXP val, SEXP env, Rboolean restart);
-void R_PrintDeferredWarnings(void);
-void R_SetErrmessage(const char *s);
-void R_SetErrorHook(void (*hook)(SEXP, char *));
-void R_SetWarningHook(void (*hook)(SEXP, char *));
-void R_JumpToToplevel(Rboolean restart);
+#ifdef UNUSED
+/* temporary hook to allow experimenting with alternate warning mechanisms */
+static void (*R_WarningHook)(SEXP, char *) = NULL;
 
 void R_SetWarningHook(void (*hook)(SEXP, char *))
 {
@@ -1413,14 +1403,15 @@ void R_JumpToToplevel(Rboolean restart)
     R_restore_globals(R_GlobalContext);
     LONGJMP(c->cjmpbuf, CTXT_TOPLEVEL);
 }
+#endif
 
-void R_SetErrmessage(const char *s)
+static void R_SetErrmessage(const char *s)
 {
     strncpy(errbuf, s, sizeof(errbuf));
     errbuf[sizeof(errbuf) - 1] = 0;
 }
 
-void R_PrintDeferredWarnings(void)
+static void R_PrintDeferredWarnings(void)
 {
     if (R_ShowErrorMessages && R_CollectWarnings)
     {
@@ -1429,7 +1420,7 @@ void R_PrintDeferredWarnings(void)
     }
 }
 
-SEXP R_GetTraceback(int skip)
+attribute_hidden SEXP R_GetTraceback(int skip)
 {
     int nback = 0, ns;
     RCNTXT *c;
