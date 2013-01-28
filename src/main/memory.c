@@ -3043,7 +3043,7 @@ SEXP R_CollectFromIndex(PROTECT_INDEX i)
 }
 
 /* "initStack" initialize environment stack */
-void initStack(void)
+attribute_hidden void initStack(void)
 {
     R_PPStackTop = 0;
 }
