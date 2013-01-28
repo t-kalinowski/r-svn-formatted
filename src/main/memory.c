@@ -431,7 +431,7 @@ void attribute_hidden R_SetMaxNSize(R_size_t size)
         R_MaxNSize = size;
 }
 
-void R_SetPPSize(R_size_t size)
+void attribute_hidden R_SetPPSize(R_size_t size)
 {
     R_PPStackSize = (int)size;
 }
@@ -1827,6 +1827,7 @@ again:
 }
 
 /* public interface for controlling GC torture settings */
+/* maybe, but in no header */
 void R_gc_torture(int gap, int wait, Rboolean inhibit)
 {
     if (gap != NA_INTEGER && gap >= 0)
