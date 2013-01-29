@@ -76,7 +76,7 @@ static void printLogicalVector(int *x, R_xlen_t n, int indx)
     Rprintf("\n");
 }
 
-void printIntegerVector(int *x, R_xlen_t n, int indx)
+attribute_hidden void printIntegerVector(int *x, R_xlen_t n, int indx)
 {
     int w, labwidth = 0, width;
 
@@ -96,6 +96,7 @@ void printIntegerVector(int *x, R_xlen_t n, int indx)
     Rprintf("\n");
 }
 
+// used in uncmin.c, and pro tem in package 'sem'
 void printRealVector(double *x, R_xlen_t n, int indx)
 {
     int w, d, e, labwidth = 0, width;
@@ -116,7 +117,7 @@ void printRealVector(double *x, R_xlen_t n, int indx)
     Rprintf("\n");
 }
 
-void printComplexVector(Rcomplex *x, R_xlen_t n, int indx)
+attribute_hidden void printComplexVector(Rcomplex *x, R_xlen_t n, int indx)
 {
     int w, wr, dr, er, wi, di, ei, labwidth = 0, width;
 

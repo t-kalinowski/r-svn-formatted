@@ -466,7 +466,8 @@ static void printRawMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP rl,
     }
 }
 
-void printMatrix(SEXP x, int offset, SEXP dim, int quote, int right, SEXP rl, SEXP cl, const char *rn, const char *cn)
+attribute_hidden void printMatrix(SEXP x, int offset, SEXP dim, int quote, int right, SEXP rl, SEXP cl, const char *rn,
+                                  const char *cn)
 {
     /* 'rl' and 'cl' are dimnames(.)[[1]] and dimnames(.)[[2]]  whereas
      * 'rn' and 'cn' are the  names(dimnames(.))
@@ -523,7 +524,7 @@ void printMatrix(SEXP x, int offset, SEXP dim, int quote, int right, SEXP rl, SE
 #endif
 }
 
-static void printArrayGeneral(SEXP x, SEXP dim, int quote, int right, SEXP dimnames)
+attribute_hidden void printArray(SEXP x, SEXP dim, int quote, int right, SEXP dimnames)
 {
     /* == printArray(.) */
 
@@ -649,9 +650,4 @@ static void printArrayGeneral(SEXP x, SEXP dim, int quote, int right, SEXP dimna
             Rprintf(" %d matrix slice(s) ]\n", nb - nb_pr);
         }
     }
-}
-
-void printArray(SEXP x, SEXP dim, int quote, int right, SEXP dimnames)
-{
-    printArrayGeneral(x, dim, quote, right, dimnames);
 }

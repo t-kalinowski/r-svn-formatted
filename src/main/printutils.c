@@ -164,14 +164,14 @@ const char *EncodeInteger(int x, int w)
     return buff;
 }
 
-const char *EncodeRaw(Rbyte x)
+attribute_hidden const char *EncodeRaw(Rbyte x)
 {
     static char buff[10];
     sprintf(buff, "%02x", x);
     return buff;
 }
 
-const char *EncodeEnvironment(SEXP x)
+attribute_hidden const char *EncodeEnvironment(SEXP x)
 {
     static char ch[1000];
     if (x == R_GlobalEnv)
@@ -497,7 +497,7 @@ attribute_hidden int Rstrlen(SEXP s, int quote)
    format().
  */
 
-const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
+attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
 {
     int b, b0, i, j, cnt;
     const char *p;

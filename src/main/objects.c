@@ -1087,7 +1087,7 @@ static R_stdGen_ptr_t R_standardGeneric_ptr = 0;
 static SEXP dispatchNonGeneric(SEXP name, SEXP env, SEXP fdef);
 #define NOT_METHODS_DISPATCH_PTR(ptr) (ptr == 0 || ptr == dispatchNonGeneric)
 
-R_stdGen_ptr_t R_get_standardGeneric_ptr(void)
+static R_stdGen_ptr_t R_get_standardGeneric_ptr(void)
 {
     return R_standardGeneric_ptr;
 }
@@ -1685,6 +1685,7 @@ SEXP attribute_hidden do_setS4Object(SEXP call, SEXP op, SEXP args, SEXP env)
         return asS4(object, flag, complete);
 }
 
+#ifdef UNUSED
 SEXP R_get_primname(SEXP object)
 {
     SEXP f;
@@ -1695,6 +1696,7 @@ SEXP R_get_primname(SEXP object)
     UNPROTECT(1);
     return f;
 }
+#endif
 
 Rboolean isS4(SEXP s)
 {

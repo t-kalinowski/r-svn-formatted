@@ -45,12 +45,12 @@
 #include <Print.h>
 
 /* this is just for conformity with other types */
-void formatRaw(Rbyte *x, R_xlen_t n, int *fieldwidth)
+attribute_hidden void formatRaw(Rbyte *x, R_xlen_t n, int *fieldwidth)
 {
     *fieldwidth = 2;
 }
 
-void formatString(SEXP *x, R_xlen_t n, int *fieldwidth, int quote)
+attribute_hidden void formatString(SEXP *x, R_xlen_t n, int *fieldwidth, int quote)
 {
     int xmax = 0;
     int l;
