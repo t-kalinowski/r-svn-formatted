@@ -57,7 +57,7 @@ extern "C"
 
 /* Many small functions are included from ../include/Rinlinedfuns.h */
 
-Rboolean tsConform(SEXP x, SEXP y)
+attribute_hidden Rboolean tsConform(SEXP x, SEXP y)
 {
     if ((x = getAttrib(x, R_TspSymbol)) != R_NilValue && (y = getAttrib(y, R_TspSymbol)) != R_NilValue)
     {
@@ -113,6 +113,7 @@ int ncols(SEXP s)
 
 const static char type_msg[] = "invalid type passed to internal function\n";
 
+#ifdef UNUSED
 void internalTypeCheck(SEXP call, SEXP s, SEXPTYPE type)
 {
     if (TYPEOF(s) != type)
@@ -123,6 +124,7 @@ void internalTypeCheck(SEXP call, SEXP s, SEXPTYPE type)
             error(type_msg);
     }
 }
+#endif
 
 const static char *const truenames[] = {
     "T", "True", "TRUE", "true", (char *)NULL,
@@ -262,6 +264,7 @@ const char *type2char(SEXPTYPE t)
     return ""; /* for -Wall */
 }
 
+#ifdef UNUSED
 SEXP type2symbol(SEXPTYPE t)
 {
     int i;
@@ -276,8 +279,9 @@ SEXP type2symbol(SEXPTYPE t)
     error(_("type %d is unimplemented in '%s'"), t, "type2symbol");
     return R_NilValue; /* for -Wall */
 }
+#endif
 
-void UNIMPLEMENTED_TYPEt(const char *s, SEXPTYPE t)
+attribute_hidden void UNIMPLEMENTED_TYPEt(const char *s, SEXPTYPE t)
 {
     int i;
 
@@ -426,7 +430,6 @@ SEXP attribute_hidden EnsureString(SEXP s)
     return s;
 }
 
-/* used in modules */
 void Rf_checkArityCall(SEXP op, SEXP args, SEXP call)
 {
     if (PRIMARITY(op) >= 0 && PRIMARITY(op) != length(args))
@@ -1400,13 +1403,13 @@ size_t Mbrtowc(wchar_t *wc, const char *s, size_t n, mbstate_t *ps)
     return used;
 }
 
-Rboolean mbcsValid(const char *str)
+attribute_hidden Rboolean mbcsValid(const char *str)
 {
     return ((int)mbstowcs(NULL, str, 0) >= 0);
 }
 
 #include "valid_utf8.h"
-Rboolean utf8Valid(const char *str)
+attribute_hidden Rboolean utf8Valid(const char *str)
 {
     return valid_utf8(str, strlen(str)) == 0;
 }

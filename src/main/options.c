@@ -144,7 +144,7 @@ int GetOptionDigits(void)
     return d;
 }
 
-int GetOptionCutoff(void)
+attribute_hidden int GetOptionCutoff(void)
 {
     int w;
     w = asInteger(GetOption1(install("deparse.cutoff")));
@@ -156,7 +156,7 @@ int GetOptionCutoff(void)
     return w;
 }
 
-Rboolean Rf_GetOptionDeviceAsk(void)
+attribute_hidden Rboolean Rf_GetOptionDeviceAsk(void)
 {
     int ask;
     ask = asLogical(GetOption1(install("device.ask.default")));

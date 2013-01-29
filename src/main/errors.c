@@ -448,7 +448,7 @@ static void cleanup_PrintWarnings(void *data)
     inPrintWarnings = 0;
 }
 
-void PrintWarnings(void)
+attribute_hidden void PrintWarnings(void)
 {
     int i;
     char *header;
@@ -1309,7 +1309,7 @@ static struct
     {WARNING_UNKNOWN, N_("unknown warning (report this!)")},
 };
 
-void ErrorMessage(SEXP call, int which_error, ...)
+attribute_hidden void ErrorMessage(SEXP call, int which_error, ...)
 {
     int i;
     char buf[BUFSIZE];
@@ -1329,7 +1329,7 @@ void ErrorMessage(SEXP call, int which_error, ...)
     errorcall(call, "%s", buf);
 }
 
-void WarningMessage(SEXP call, R_WARNING which_warn, ...)
+attribute_hidden void WarningMessage(SEXP call, R_WARNING which_warn, ...)
 {
     int i;
     char buf[BUFSIZE];

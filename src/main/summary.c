@@ -369,7 +369,7 @@ static Rboolean cprod(Rcomplex *x, R_xlen_t n, Rcomplex *value, Rboolean narm)
     return (updated);
 }
 
-SEXP fixup_NaRm(SEXP args)
+attribute_hidden SEXP fixup_NaRm(SEXP args)
 {
     SEXP t, na_value;
 

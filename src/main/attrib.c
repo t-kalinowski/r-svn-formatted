@@ -435,7 +435,7 @@ static void badtsp(void)
     error(_("invalid time series parameters specified"));
 }
 
-SEXP tspgets(SEXP vec, SEXP val)
+attribute_hidden SEXP tspgets(SEXP vec, SEXP val)
 {
     double start, end, frequency;
     int n;

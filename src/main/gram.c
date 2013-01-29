@@ -4370,7 +4370,7 @@ static SEXP mkNA(void)
     return t;
 }
 
-SEXP mkTrue(void)
+attribute_hidden SEXP mkTrue(void)
 {
     SEXP s = allocVector(LGLSXP, 1);
     LOGICAL(s)[0] = 1;
@@ -5261,7 +5261,7 @@ static int SpecialValue(int c)
 }
 
 /* return 1 if name is a valid name 0 otherwise */
-int isValidName(const char *name)
+attribute_hidden int isValidName(const char *name)
 {
     const char *p = name;
     int i;

@@ -908,22 +908,23 @@ R_varloc_t R_findVarLocInFrame(SEXP rho, SEXP symbol)
     return binding == R_NilValue ? NULL : (R_varloc_t)binding;
 }
 
-SEXP R_GetVarLocValue(R_varloc_t vl)
+attribute_hidden SEXP R_GetVarLocValue(R_varloc_t vl)
 {
     return BINDING_VALUE((SEXP)vl);
 }
 
-SEXP R_GetVarLocSymbol(R_varloc_t vl)
+attribute_hidden SEXP R_GetVarLocSymbol(R_varloc_t vl)
 {
     return TAG((SEXP)vl);
 }
 
+/* used in methods */
 Rboolean R_GetVarLocMISSING(R_varloc_t vl)
 {
     return MISSING((SEXP)vl);
 }
 
-void R_SetVarLocValue(R_varloc_t vl, SEXP value)
+attribute_hidden void R_SetVarLocValue(R_varloc_t vl, SEXP value)
 {
     SET_BINDING_VALUE((SEXP)vl, value);
 }
@@ -1268,7 +1269,7 @@ static int ddVal(SEXP symbol)
 
 */
 
-SEXP ddfindVar(SEXP symbol, SEXP rho)
+attribute_hidden SEXP ddfindVar(SEXP symbol, SEXP rho)
 {
     int i;
     SEXP vl;
@@ -1294,7 +1295,7 @@ SEXP ddfindVar(SEXP symbol, SEXP rho)
 
 /*----------------------------------------------------------------------
 
-  dynamicFindVar
+  dynamicfindVar
 
   This function does a variable lookup, but uses dynamic scoping rules
   rather than the lexical scoping rules used in findVar.
@@ -1304,6 +1305,7 @@ SEXP ddfindVar(SEXP symbol, SEXP rho)
 
 */
 
+#ifdef UNUSED
 SEXP dynamicfindVar(SEXP symbol, RCNTXT *cptr)
 {
     SEXP vl;
@@ -1319,6 +1321,7 @@ SEXP dynamicfindVar(SEXP symbol, RCNTXT *cptr)
     }
     return R_UnboundValue;
 }
+#endif
 
 /*----------------------------------------------------------------------
 
