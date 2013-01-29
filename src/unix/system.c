@@ -177,7 +177,7 @@ extern void *__libc_stack_end;
 #endif
 #endif
 
-attribute_hidden int R_running_as_main_program = 0;
+int R_running_as_main_program = 0;
 
 extern void BindDomain(char *R_Home);
 
