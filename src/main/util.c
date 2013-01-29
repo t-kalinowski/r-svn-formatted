@@ -1409,8 +1409,9 @@ attribute_hidden Rboolean mbcsValid(const char *str)
     return ((int)mbstowcs(NULL, str, 0) >= 0);
 }
 
+/* used in src/library/grDevices/src/cairo/cairoFns.c */
 #include "valid_utf8.h"
-attribute_hidden Rboolean utf8Valid(const char *str)
+Rboolean utf8Valid(const char *str)
 {
     return valid_utf8(str, strlen(str)) == 0;
 }
