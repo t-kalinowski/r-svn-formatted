@@ -3567,7 +3567,7 @@ void(SET_RSTEP)(SEXP x, int v)
 
 /* These are only needed with the write barrier on */
 /* Primitive Accessors */
-attribute_hidden int(PRIMOFFSET)(SEXP x)
+int(PRIMOFFSET)(SEXP x)
 {
     return PRIMOFFSET(x);
 }
