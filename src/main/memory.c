@@ -3565,8 +3565,9 @@ void(SET_RSTEP)(SEXP x, int v)
     SET_RSTEP(CHK(x), v);
 }
 
+/* These are only needed with the write barrier on */
 /* Primitive Accessors */
-int(PRIMOFFSET)(SEXP x)
+attribute_hidden int(PRIMOFFSET)(SEXP x)
 {
     return PRIMOFFSET(x);
 }
@@ -3690,26 +3691,26 @@ void(SET_PRSEEN)(SEXP x, int v)
 }
 
 /* Hashing Accessors */
-int(HASHASH)(SEXP x)
+attribute_hidden int(HASHASH)(SEXP x)
 {
     return HASHASH(CHK(x));
 }
-int(HASHVALUE)(SEXP x)
+attribute_hidden int(HASHVALUE)(SEXP x)
 {
     return HASHVALUE(CHK(x));
 }
 
-void(SET_HASHASH)(SEXP x, int v)
+attribute_hidden void(SET_HASHASH)(SEXP x, int v)
 {
     SET_HASHASH(CHK(x), v);
 }
-void(SET_HASHVALUE)(SEXP x, int v)
+attribute_hidden void(SET_HASHVALUE)(SEXP x, int v)
 {
     SET_HASHVALUE(CHK(x), v);
 }
 
 #ifdef USE_ATTRIB_FIELD_FOR_CHARSXP_CACHE_CHAINS
-SEXP(SET_CXTAIL)(SEXP x, SEXP v)
+attribute_hidden SEXP(SET_CXTAIL)(SEXP x, SEXP v)
 {
 #ifdef USE_TYPE_CHECKING
     if (TYPEOF(v) != CHARSXP && TYPEOF(v) != NILSXP)
@@ -3781,16 +3782,16 @@ void attribute_hidden(UNLOCK_BINDING)(SEXP b)
     UNLOCK_BINDING(b);
 }
 
-/* R_FunTab accessors */
-int(PRIMVAL)(SEXP x)
+/* R_FunTab accessors, only needed when write barrier is on */
+attribute_hidden int(PRIMVAL)(SEXP x)
 {
     return PRIMVAL(x);
 }
-CCODE(PRIMFUN)(SEXP x)
+attribute_hidden CCODE(PRIMFUN)(SEXP x)
 {
     return PRIMFUN(x);
 }
-void(SET_PRIMFUN)(SEXP x, CCODE f)
+attribute_hidden void(SET_PRIMFUN)(SEXP x, CCODE f)
 {
     PRIMFUN(x) = f;
 }

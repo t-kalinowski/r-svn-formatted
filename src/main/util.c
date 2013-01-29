@@ -1327,8 +1327,9 @@ static size_t Rwcrtomb(char *s, const wchar_t wc)
     return i + 1;
 }
 
-/* attribute_hidden? */
-size_t wcstoutf8(char *s, const wchar_t *wc, size_t n)
+attribute_hidden // but used in windlgs
+    size_t
+    wcstoutf8(char *s, const wchar_t *wc, size_t n)
 {
     ssize_t m, res = 0;
     char *t;
