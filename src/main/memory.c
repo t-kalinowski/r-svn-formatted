@@ -4007,8 +4007,7 @@ void attribute_hidden R_FreeStringBufferL(R_StringBuffer *buf)
 /* ======== This needs direct access to gp field for efficiency ======== */
 
 /* this has NA_STRING = NA_STRING */
-/* used in src/library/stats/model.c */
-int Seql(SEXP a, SEXP b)
+attribute_hidden int Seql(SEXP a, SEXP b)
 {
     /* The only case where pointer comparisons do not suffice is where
       we have two strings in different encodings (which must be
