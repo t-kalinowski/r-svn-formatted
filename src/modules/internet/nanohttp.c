@@ -1583,7 +1583,7 @@ retry:
     {
         RxmlMessage(1, _("redirect to: '%s'"), ctxt->location);
         while (RxmlNanoHTTPRecv(ctxt))
-            ;
+            ; // clang likes this on a separate line
         if (nbRedirects < XML_NANO_HTTP_MAX_REDIR)
         {
             nbRedirects++;
