@@ -1830,7 +1830,10 @@ SEXP attribute_hidden do_enc2(SEXP call, SEXP op, SEXP args, SEXP env)
     for (i = 0; i < XLENGTH(ans); i++)
     {
         el = STRING_ELT(ans, i);
-        if (PRIMVAL(op) && !known_to_be_utf8)
+        if (el == NA_STRING)
+        { /* do nothing */
+        }
+        else if (PRIMVAL(op) && !known_to_be_utf8)
         { /* enc2utf8 */
             if (!IS_UTF8(el) && !IS_ASCII(el))
             {
