@@ -88,6 +88,7 @@ SEXP winver(void)
             else
                 desc = "Server 2003";
         }
+        /* GetNativeSystemInfo is XP or later */
         pGNSI = (PGNSI)GetProcAddress(GetModuleHandle(TEXT("kernel32.dll")), "GetNativeSystemInfo");
         if (NULL != pGNSI)
             pGNSI(&si);
