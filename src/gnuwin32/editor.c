@@ -351,8 +351,7 @@ int editorchecksave(editor c)
         case NO:
             break;
         case CANCEL:
-            return 1; /* used in rui.c (closeconsole) to abort closing
-                 the whole of Rgui */
+            return 1;
         }
     }
     return 0;
@@ -378,7 +377,10 @@ void editorcleanall(void)
     for (i = neditors - 1; i >= 0; --i)
     {
         if (editorchecksave(REditors[i]))
+        {
+            R_ProcessEvents(); // see R_CleanUp
             jump_to_toplevel();
+        }
         del(REditors[i]);
     }
 }
