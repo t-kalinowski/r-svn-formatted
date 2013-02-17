@@ -774,8 +774,9 @@ static Rboolean parenthesizeCaller(SEXP s)
             sym = SYMVALUE(op);
             if (TYPEOF(sym) == BUILTINSXP || TYPEOF(sym) == SPECIALSXP)
             {
-                if (PPINFO(sym).precedence >= PREC_DOLLAR || PPINFO(sym).kind == PP_FUNCALL)
-                    return FALSE; /* x$f(z) or x[n](z) or f(z) */
+                if (PPINFO(sym).precedence >= PREC_DOLLAR || PPINFO(sym).kind == PP_FUNCALL ||
+                    PPINFO(sym).kind == PP_PAREN || PPINFO(sym).kind == PP_CURLY)
+                    return FALSE; /* x$f(z) or x[n](z) or f(z) or (f) or {f} */
                 else
                     return TRUE; /* (f+g)(z) etc. */
             }
