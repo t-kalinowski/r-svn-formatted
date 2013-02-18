@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998--2012 The R Core Team
+ *  Copyright (C) 1998--2013 The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -2294,7 +2294,26 @@ SEXP attribute_hidden do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
         while ((p = Rf_strchr(p + 1, '/')))
         {
             *p = '\0';
-            res = mkdir(dir, (mode_t)mode);
+            struct stat sb;
+            res = stat(dir, &sb);
+            if (res == 0)
+            {
+                if (!S_ISDIR(sb.st_mode))
+                {
+                    /* file already exists but is not a directory */
+                    res = -1;
+                    serrno = ENOTDIR;
+                    goto end;
+                }
+            }
+            else if (errno != ENOENT || !*dir)
+            {
+                serrno = errno;
+                goto end;
+            }
+            else
+                res = mkdir(dir, (mode_t)mode);
+
             /* Solaris 10 returns ENOSYS on automount, PR#13834
                EROFS is allowed by POSIX, so we skip that too */
             serrno = errno;
