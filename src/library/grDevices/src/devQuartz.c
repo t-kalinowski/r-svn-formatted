@@ -1512,13 +1512,13 @@ QuartzDesc_t Quartz_C(QuartzParameters_t *par, quartz_create_fn_t q_create, int 
     }
 }
 
-/* ARGS: type, file, width, height, ps, family, antialias, fontsm,
+/* ARGS: type, file, width, height, ps, family, antialias,
    title, bg, canvas, dpi */
 SEXP Quartz(SEXP args)
 {
     SEXP tmps, bgs, canvass;
     double width, height, ps;
-    Rboolean antialias, smooth;
+    Rboolean antialias;
     int quartzpos, bg, canvas, module = 0;
     double mydpi[2], *dpi = 0;
     const char *type, *mtype = 0, *family, *title;
@@ -1552,7 +1552,6 @@ SEXP Quartz(SEXP args)
     family = CHAR(STRING_ELT(CAR(args), 0));
     args = CDR(args);
     antialias = ARG(asLogical, args);
-    smooth = ARG(asLogical, args);
     title = CHAR(STRING_ELT(CAR(args), 0));
     args = CDR(args);
     bgs = CAR(args);
