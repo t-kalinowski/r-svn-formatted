@@ -1320,12 +1320,13 @@ static void menugvar(control m)
     if (!v)
         return;
     vDL = findVar(install(v), R_GlobalEnv);
-    if (!pEXIST || !pNUMPLOTS)
+    pMUSTEXIST;
+    pCHECK;
+    if (!pNUMPLOTS)
     {
-        R_ShowMessage(G_("Variable doesn't exist or doesn't contain any plots!"));
+        R_ShowMessage(G_("Variable doesn't contain any plots!"));
         return;
     }
-    pCHECK;
     pCURRENTPOS = 0;
     Replay(dd, vDL);
     SETDL;
