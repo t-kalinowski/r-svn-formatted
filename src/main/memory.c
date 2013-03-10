@@ -374,7 +374,7 @@ static void init_gc_grow_settings()
     arg = getenv("R_GC_MEM_GROW");
     if (arg != NULL)
     {
-        int which = atof(arg);
+        int which = (int)atof(arg);
         switch (which)
         {
         case 0: /* very conservative -- the SMALL_MEMORY settings */
