@@ -208,7 +208,7 @@ void loess_workspace(int *d, int *n, double *span, int *degree, int *nonparametr
     lv = 50 + (3 * D + 3) * nvmax + N + (tau0 + 2) * nf;
     double dliv = 50 + (pow(2.0, (double)D) + 4.0) * nvmax + 2.0 * N;
     if (dliv < INT_MAX)
-        liv = dliv;
+        liv = (int)dliv;
     else
         error("workspace required is too large");
     if (*setLf)
