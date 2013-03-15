@@ -4059,6 +4059,15 @@ SEXP devga(SEXP args)
     BEGIN_SUSPEND_INTERRUPTS
     {
         pDevDesc dev;
+        char type[100];
+        strcpy(type, "windows");
+        if (display[0])
+        {
+            strncpy(type, display, 100);
+            char *p = strchr(type, ':');
+            if (p)
+                *p = '\0';
+        }
         /* Allocate and initialize the device driver data */
         if (!(dev = (pDevDesc)calloc(1, sizeof(DevDesc))))
             return 0;
@@ -4067,21 +4076,11 @@ SEXP devga(SEXP args)
                             (Rboolean)buffered, psenv, restoreConsole, title, clickToConfirm, fillOddEven, family,
                             quality))
         {
-            char type[100], *p;
             free(dev);
-            if (display[0])
-            {
-                strncpy(type, display, 100);
-                p = strchr(type, ':');
-                if (p)
-                    *p = '\0';
-            }
-            else
-                strcpy(type, "windows");
             error(_("unable to start %s() device"), type);
         }
         gdd = GEcreateDevDesc(dev);
-        GEaddDevice2(gdd, display[0] ? display : "windows");
+        GEaddDevice2(gdd, type);
     }
     END_SUSPEND_INTERRUPTS;
     vmaxset(vmax);
