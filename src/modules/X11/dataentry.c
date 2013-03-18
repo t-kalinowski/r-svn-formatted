@@ -1295,7 +1295,7 @@ static void printstring(DEstruct DE, const char *ibuf, int buflen, int row, int 
     pbuf[bufw] = '\0';
 
     p = pbuf;
-    wcsbufw = mbsrtowcs(wcspbuf, (const char **)&p, bufw, NULL);
+    wcsbufw = (int)mbsrtowcs(wcspbuf, (const char **)&p, bufw, NULL);
     wcspbuf[wcsbufw] = L'\0';
     if (left)
     {
@@ -1305,7 +1305,7 @@ static void printstring(DEstruct DE, const char *ibuf, int buflen, int row, int 
                 wcs[j] = *(wcspc + j);
             wcs[j] = L'\0';
             w_p = wcs;
-            cnt = wcsrtombs(s, (const wchar_t **)&w_p, sizeof(s) - 1, NULL);
+            cnt = (int)wcsrtombs(s, (const wchar_t **)&w_p, sizeof(s) - 1, NULL);
             s[cnt] = '\0';
             if (textwidth(DE, s, (int)strlen(s)) < (bw - DE->text_offset))
                 break;
@@ -1332,7 +1332,7 @@ static void printstring(DEstruct DE, const char *ibuf, int buflen, int row, int 
         wcs[j] = *(wcspc + j);
     wcs[j] = L'\0';
     w_p = wcs;
-    cnt = wcsrtombs(s, (const wchar_t **)&w_p, sizeof(s) - 1, NULL);
+    cnt = (int)wcsrtombs(s, (const wchar_t **)&w_p, sizeof(s) - 1, NULL);
 
     drawtext(DE, x_pos + DE->text_offset, y_pos + DE->box_h - DE->text_offset, s, cnt);
 
@@ -1410,7 +1410,7 @@ static void handlechar(DEstruct DE, char *text)
     if (currentexp == 1)
     { /* we are parsing a number */
         char *mbs = text;
-        int i, cnt = mbsrtowcs(wcs, (const char **)&mbs, (int)strlen(text) + 1, NULL);
+        int i, cnt = (int)mbsrtowcs(wcs, (const char **)&mbs, (int)strlen(text) + 1, NULL);
 
         for (i = 0; i < cnt; i++)
         {
@@ -1454,7 +1454,7 @@ static void handlechar(DEstruct DE, char *text)
     if (currentexp == 3)
     {
         char *mbs = text;
-        int i, cnt = mbsrtowcs(wcs, (const char **)&mbs, (int)strlen(text) + 1, NULL);
+        int i, cnt = (int)mbsrtowcs(wcs, (const char **)&mbs, (int)strlen(text) + 1, NULL);
         for (i = 0; i < cnt; i++)
         {
             if (iswspace(wcs[i]))
@@ -2179,7 +2179,7 @@ static Rboolean initwin(DEstruct DE, const char *title) /* TRUE = Error */
         DE->windowWidth = w;
     DE->windowWidth += 2;
     /* allow enough width for buttons */
-    minwidth = 7.5 * textwidth(DE, "Paste", 5);
+    minwidth = (int)(7.5 * textwidth(DE, "Paste", 5));
     if (DE->windowWidth < minwidth)
         DE->windowWidth = minwidth;
 
@@ -2689,7 +2689,7 @@ static void calc_pre_edit_pos(DEstruct DE)
     int i;
     int w;
 
-    xpoint.x = DE->boxw[0];
+    xpoint.x = (int)DE->boxw[0];
     for (i = 1; i < DE->ccol; i++)
         xpoint.x += BOXW(DE->colmin + i - 1);
 #ifdef HAVE_XUTF8TEXTESCAPEMENT
@@ -2700,7 +2700,7 @@ static void calc_pre_edit_pos(DEstruct DE)
         w = XmbTextEscapement(font_set, buf, clength);
     xpoint.x += (w > BOXW(DE->colmin + DE->ccol - 1)) ? BOXW(DE->colmin + DE->ccol - 1) : w;
     xpoint.x += DE->text_offset;
-    xpoint.y = DE->hht + (DE->crow + 1) * DE->box_h - DE->text_offset;
+    xpoint.y = (int)(DE->hht + (DE->crow + 1) * DE->box_h - DE->text_offset);
 
     /*
       <FIXME>
@@ -2731,7 +2731,7 @@ static int last_wchar_bytes(char *str)
     memset(wcs, 0, sizeof(wcs));
     memset(&mb_st, 0, sizeof(mbstate_t));
 
-    if ((size_t)-1 == (cnt = mbsrtowcs(wcs, (const char **)&mbs, (int)strlen(mbs), &mb_st)))
+    if ((size_t)-1 == (cnt = (int)mbsrtowcs(wcs, (const char **)&mbs, (int)strlen(mbs), &mb_st)))
     {
         return 0;
     }
@@ -2740,5 +2740,5 @@ static int last_wchar_bytes(char *str)
 
     memset(last_mbs, 0, sizeof(last_mbs));
     bytes = wcrtomb(last_mbs, wcs[cnt - 1], &mb_st); /* -Wall */
-    return (bytes);
+    return (int)bytes;
 }
