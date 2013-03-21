@@ -41,6 +41,7 @@ static const R_CallMethodDef callMethods[] = {{"nextStream", (DL_FUNC)&nextStrea
                                               {"mc_select_children", (DL_FUNC)&mc_select_children, 2},
                                               {"mc_send_child_stdin", (DL_FUNC)&mc_send_child_stdin, 2},
                                               {"mc_affinity", (DL_FUNC)&mc_affinity, 1},
+                                              {"mc_interactive", (DL_FUNC)&mc_interactive, 1},
 #else
                                               {"ncpus", (DL_FUNC)&ncpus, 1},
 #endif

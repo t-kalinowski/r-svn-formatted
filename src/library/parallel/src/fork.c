@@ -39,6 +39,7 @@
 
 #include <R.h>
 #include <Rinternals.h>
+#include <Rinterface.h> /* for R_Interactive */
 
 #ifndef FILE_LOG
 /* use printf instead of Rprintf for debugging to avoid forked console interactions */
@@ -671,6 +672,15 @@ SEXP mc_exit(SEXP sRes)
     exit(res);
     error(_("'mcexit' failed"));
     return R_NilValue;
+}
+
+/* NA = query, TRUE/FALSE = set R_Interactive accordingly */
+SEXP mc_interactive(SEXP sWhat)
+{
+    int what = asInteger(sWhat);
+    if (what != NA_INTEGER)
+        R_Interactive = what;
+    return ScalarLogical(R_Interactive);
 }
 
 /*--  mcaffinity --
