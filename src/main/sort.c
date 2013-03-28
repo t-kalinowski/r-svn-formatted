@@ -411,6 +411,7 @@ static const int incs[NI] = {1073790977, 268460033, 67121153, 16783361, 4197377,
             x[j] = v;                                                                                                  \
         }
 
+/* These are only called with n >= 2 */
 static void R_isort2(int *x, R_xlen_t n, Rboolean decreasing)
 {
     int v;
@@ -879,8 +880,8 @@ static int listgreater(int i, int j, SEXP key, Rboolean nalast, Rboolean decreas
         }                                                                                                              \
     }
 
-static const int sincs[16] = {1073790977, 268460033, 67121153, 16783361, 4197377, 1050113, 262913, 65921,
-                              16577,      4193,      1073,     281,      77,      23,      8,      1};
+static const int sincs[17] = {1073790977, 268460033, 67121153, 16783361, 4197377, 1050113, 262913, 65921, 16577,
+                              4193,       1073,      281,      77,       23,      8,       1,      0};
 
 // Needs indx set to  0:(n-1)  initially :
 static void orderVector(int *indx, int n, SEXP key, Rboolean nalast, Rboolean decreasing,
