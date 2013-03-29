@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998-2012   The R Core Team
+ *  Copyright (C) 1998-2013   The R Core Team
  *  Copyright (C) 2004        The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -387,14 +387,14 @@ SEXP attribute_hidden do_sort(SEXP call, SEXP op, SEXP args, SEXP rho)
 #ifdef LONG_VECTOR_SUPPORT
 // This goes up to 2^38: extend eventually.
 #define NI 20
-static const R_xlen_t incs[NI] = {274878693377L, 68719869953L, 17180065793L, 4295065601L, 1073790977L,
-                                  268460033L,    67121153L,    16783361L,    4197377L,    1050113L,
-                                  262913L,       65921L,       16577L,       4193L,       1073L,
-                                  281L,          77L,          23L,          8L,          1L};
+static const R_xlen_t incs[NI + 1] = {
+    274878693377L, 68719869953L, 17180065793L, 4295065601L, 1073790977L, 268460033L, 67121153L,
+    16783361L,     4197377L,     1050113L,     262913L,     65921L,      16577L,     4193L,
+    1073L,         281L,         77L,          23L,         8L,          1L,         0L};
 #else
 #define NI 16
-static const int incs[NI] = {1073790977, 268460033, 67121153, 16783361, 4197377, 1050113, 262913, 65921,
-                             16577,      4193,      1073,     281,      77,      23,      8,      1};
+static const int incs[NI + 1] = {1073790977, 268460033, 67121153, 16783361, 4197377, 1050113, 262913, 65921, 16577,
+                                 4193,       1073,      281,      77,       23,      8,       1,      0};
 #endif
 
 #define sort2_body                                                                                                     \
@@ -417,6 +417,8 @@ static void R_isort2(int *x, R_xlen_t n, Rboolean decreasing)
     int v;
     R_xlen_t i, j, h, t;
 
+    if (n < 2)
+        error("'n >= 2' is required");
     for (t = 0; incs[t] > n; t++)
         ;
     if (decreasing)
@@ -434,6 +436,8 @@ static void R_rsort2(double *x, R_xlen_t n, Rboolean decreasing)
     double v;
     R_xlen_t i, j, h, t;
 
+    if (n < 2)
+        error("'n >= 2' is required");
     for (t = 0; incs[t] > n; t++)
         ;
     if (decreasing)
@@ -451,6 +455,8 @@ static void R_csort2(Rcomplex *x, R_xlen_t n, Rboolean decreasing)
     Rcomplex v;
     R_xlen_t i, j, h, t;
 
+    if (n < 2)
+        error("'n >= 2' is required");
     for (t = 0; incs[t] > n; t++)
         ;
     for (h = incs[t]; t < NI; h = incs[++t])
@@ -479,6 +485,8 @@ static void ssort2(SEXP *x, R_xlen_t n, Rboolean decreasing)
     SEXP v;
     R_xlen_t i, j, h, t;
 
+    if (n < 2)
+        error("'n >= 2' is required");
     for (t = 0; incs[t] > n; t++)
         ;
     for (h = incs[t]; t < NI; h = incs[++t])
@@ -890,6 +898,8 @@ static void orderVector(int *indx, int n, SEXP key, Rboolean nalast, Rboolean de
     int i, j, h, t;
     int itmp;
 
+    if (n < 2)
+        return;
     for (t = 0; sincs[t] > n; t++)
         ;
     for (h = sincs[t]; t < 16; h = sincs[++t])
@@ -957,6 +967,8 @@ static void orderVectorl(R_xlen_t *indx, R_xlen_t n, SEXP key, Rboolean nalast, 
     R_xlen_t i, j, h;
     R_xlen_t itmp;
 
+    if (n < 2)
+        return;
     for (t = 0; incs[t] > n; t++)
         ;
     for (h = incs[t]; t < NI; h = sincs[++t])
@@ -982,6 +994,8 @@ static void orderVectorl(R_xlen_t *indx, R_xlen_t n, SEXP key, Rboolean nalast, 
         int t;                                                                                                         \
         for (t = 0; t < n; t++)                                                                                        \
             indx[t] = t; /* indx[] <- 0:(n-1) */                                                                       \
+        if (n < 2)                                                                                                     \
+            return;                                                                                                    \
         for (t = 0; sincs[t] > n; t++)                                                                                 \
             ;                                                                                                          \
         for (int h = sincs[t]; t < 16; h = sincs[++t])                                                                 \
@@ -1051,6 +1065,8 @@ void attribute_hidden orderVector1(int *indx, int n, SEXP key, Rboolean nalast, 
     Rcomplex *cx = NULL /* -Wall */;
     SEXP *sx = NULL /* -Wall */;
 
+    if (n < 2)
+        return;
     switch (TYPEOF(key))
     {
     case LGLSXP:
@@ -1119,6 +1135,8 @@ void attribute_hidden orderVector1(int *indx, int n, SEXP key, Rboolean nalast, 
     }
 
     /* Shell sort isn't stable, so add test on index */
+
+    /* FIXME: check hi-lo + 1 > 1 ? */
     for (t = 0; sincs[t] > hi - lo + 1; t++)
         ;
 
@@ -1208,6 +1226,8 @@ static void orderVector1l(R_xlen_t *indx, R_xlen_t n, SEXP key, Rboolean nalast,
     SEXP *sx = NULL /* -Wall */;
     R_xlen_t itmp;
 
+    if (n < 2)
+        return;
     switch (TYPEOF(key))
     {
     case LGLSXP:
@@ -1276,6 +1296,8 @@ static void orderVector1l(R_xlen_t *indx, R_xlen_t n, SEXP key, Rboolean nalast,
     }
 
     /* Shell sort isn't stable, so add test on index */
+
+    /* FIXME: check hi-lo + 1 > 1 ? */
     for (t = 0; sincs[t] > hi - lo + 1; t++)
         ;
 
