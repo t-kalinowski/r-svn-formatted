@@ -6000,7 +6000,7 @@ attribute_hidden SEXP R_compress1(SEXP in)
     return ans;
 }
 
-attribute_hidden SEXP R_decompress1(SEXP in)
+attribute_hidden SEXP R_decompress1(SEXP in, Rboolean *err)
 {
     uLong inlen, outlen;
     int res;
@@ -6015,7 +6015,11 @@ attribute_hidden SEXP R_decompress1(SEXP in)
     buf = (Bytef *)R_alloc(outlen, sizeof(Bytef));
     res = uncompress(buf, &outlen, (Bytef *)(p + 4), inlen - 4);
     if (res != Z_OK)
-        error("internal error %d in R_decompress1", res);
+    {
+        warning("internal error %d in R_decompress1", res);
+        *err = TRUE;
+        return R_NilValue;
+    }
     ans = allocVector(RAWSXP, outlen);
     memcpy(RAW(ans), buf, outlen);
     return ans;
@@ -6051,7 +6055,7 @@ attribute_hidden SEXP R_compress2(SEXP in)
     return ans;
 }
 
-attribute_hidden SEXP R_decompress2(SEXP in)
+attribute_hidden SEXP R_decompress2(SEXP in, Rboolean *err)
 {
     unsigned int inlen, outlen;
     int res;
@@ -6068,21 +6072,33 @@ attribute_hidden SEXP R_decompress2(SEXP in)
     {
         res = BZ2_bzBuffToBuffDecompress(buf, &outlen, p + 5, inlen - 5, 0, 0);
         if (res != BZ_OK)
-            error("internal error %d in R_decompress2", res);
+        {
+            warning("internal error %d in R_decompress2", res);
+            *err = TRUE;
+            return R_NilValue;
+        }
     }
     else if (type == '1')
     {
         uLong outl;
         res = uncompress((unsigned char *)buf, &outl, (Bytef *)(p + 5), inlen - 5);
         if (res != Z_OK)
-            error("internal error %d in R_decompress1");
+        {
+            warning("internal error %d in R_decompress1");
+            *err = TRUE;
+            return R_NilValue;
+        }
     }
     else if (type == '0')
     {
         buf = p + 5;
     }
     else
-        error("unknown type in R_decompress2");
+    {
+        warning("unknown type in R_decompress2");
+        *err = TRUE;
+        return R_NilValue;
+    }
     ans = allocVector(RAWSXP, outlen);
     memcpy(RAW(ans), buf, outlen);
     return ans;
@@ -6155,7 +6171,7 @@ static void init_filters(void)
     */
 }
 
-attribute_hidden SEXP R_compress3(SEXP in)
+attribute_hidden SEXP R_compress3(SEXP in, Rboolean *err)
 {
     unsigned int inlen, outlen;
     unsigned char *buf;
@@ -6199,7 +6215,7 @@ attribute_hidden SEXP R_compress3(SEXP in)
     return ans;
 }
 
-attribute_hidden SEXP R_decompress3(SEXP in)
+attribute_hidden SEXP R_decompress3(SEXP in, Rboolean *err)
 {
     unsigned int inlen, outlen;
     unsigned char *buf, *p = RAW(in), type = p[4];
@@ -6218,14 +6234,22 @@ attribute_hidden SEXP R_decompress3(SEXP in)
         init_filters();
         ret = lzma_raw_decoder(&strm, filters);
         if (ret != LZMA_OK)
-            error("internal error %d in R_decompress3", ret);
+        {
+            warning("internal error %d in R_decompress3", ret);
+            *err = TRUE;
+            return R_NilValue;
+        }
         strm.next_in = p + 5;
         strm.avail_in = inlen - 5;
         strm.next_out = buf;
         strm.avail_out = outlen;
         ret = lzma_code(&strm, LZMA_RUN);
         if (ret != LZMA_OK && (strm.avail_in > 0))
-            error("internal error %d in R_decompress3 %d", ret, strm.avail_in);
+        {
+            warning("internal error %d in R_decompress3 %d", ret, strm.avail_in);
+            *err = TRUE;
+            return R_NilValue;
+        }
         lzma_end(&strm);
     }
     else if (type == '2')
@@ -6233,7 +6257,11 @@ attribute_hidden SEXP R_decompress3(SEXP in)
         int res;
         res = BZ2_bzBuffToBuffDecompress((char *)buf, &outlen, (char *)(p + 5), inlen - 5, 0, 0);
         if (res != BZ_OK)
-            error("internal error %d in R_decompress2", res);
+        {
+            warning("internal error %d in R_decompress2", res);
+            *err = TRUE;
+            return R_NilValue;
+        }
     }
     else if (type == '1')
     {
@@ -6241,15 +6269,22 @@ attribute_hidden SEXP R_decompress3(SEXP in)
         int res;
         res = uncompress(buf, &outl, (Bytef *)(p + 5), inlen - 5);
         if (res != Z_OK)
-            error("internal error %d in R_decompress1");
+        {
+            warning("internal error %d in R_decompress1");
+            *err = TRUE;
+            return R_NilValue;
+        }
     }
     else if (type == '0')
     {
         buf = p + 5;
     }
     else
-        error("unknown type in R_decompress3");
-
+    {
+        warning("unknown type in R_decompress3");
+        *err = TRUE;
+        return R_NilValue;
+    }
     ans = allocVector(RAWSXP, outlen);
     memcpy(RAW(ans), buf, outlen);
     return ans;
