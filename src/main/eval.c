@@ -656,8 +656,8 @@ SEXP eval(SEXP e, SEXP rho)
             if (R_Profiling || (PPINFO(op).kind == PP_FOREIGN))
             {
                 SEXP oldref = R_Srcref;
-                R_Srcref = NULL;
                 begincontext(&cntxt, CTXT_BUILTIN, e, R_BaseEnv, R_BaseEnv, R_NilValue, R_NilValue);
+                R_Srcref = NULL;
                 tmp = PRIMFUN(op)(e, op, tmp, rho);
                 R_Srcref = oldref;
                 endcontext(&cntxt);
