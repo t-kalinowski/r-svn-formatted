@@ -902,7 +902,7 @@ SEXP readtablehead(SEXP args)
     int nlines, i, c, quote = 0, nread, nbuf, buf_size = BUF_SIZE, blskip;
     const char *p;
     char *buf;
-    Rboolean empty, skip;
+    Rboolean empty, skip, firstnonwhite;
     LocalData data = {NULL, 0, 0, '.', NULL, NO_COMCHAR, 0, NULL, FALSE, FALSE, 0, FALSE, FALSE};
     data.NAstrings = R_NilValue;
 
@@ -981,7 +981,9 @@ SEXP readtablehead(SEXP args)
     for (nread = 0; nread < nlines;)
     {
         nbuf = 0;
-        empty = TRUE, skip = FALSE;
+        empty = TRUE;
+        skip = FALSE;
+        firstnonwhite = TRUE;
         if (data.ttyflag)
             sprintf(ConsolePrompt, "%d: ", nread);
         /* want to interpret comments here, not in scanchar */
@@ -1030,8 +1032,12 @@ SEXP readtablehead(SEXP args)
                     }
                 }
             }
-            else if (!quote && !skip && strchr(data.quoteset, c))
+            else if (!skip && firstnonwhite && strchr(data.quoteset, c))
                 quote = c;
+            else if (Rspace(c))
+                firstnonwhite = TRUE;
+            else
+                firstnonwhite = FALSE;
             /* A line is empty only if it contains nothing before
                EOL, EOF or a comment char.
                A line containing just white space is not empty if sep=","
