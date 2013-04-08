@@ -1053,7 +1053,7 @@ SEXP readtablehead(SEXP args)
             }
             else if (!skip && firstnonwhite && strchr(data.quoteset, c))
                 quote = c;
-            else if (Rspace(c))
+            else if (Rspace(c) || c == data.sepchar)
                 firstnonwhite = TRUE;
             else
                 firstnonwhite = FALSE;
