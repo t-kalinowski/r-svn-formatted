@@ -1279,6 +1279,7 @@ static void menunext(control m)
     pCHECK;
     if (pCURRENTPOS != (pNUMPLOTS - 1))
         pMOVE(1);
+    PrintWarnings();
 }
 
 static void menuprev(control m)
@@ -1304,6 +1305,7 @@ static void menuprev(control m)
         }
         pMOVE((xd->needsave) ? 0 : -1);
     }
+    PrintWarnings();
 }
 
 static void menugrclear(control m)

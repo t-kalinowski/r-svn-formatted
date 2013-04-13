@@ -962,7 +962,7 @@ attribute_hidden int StrToInternal(const char *s)
     for (i = 0; R_FunTab[i].name; i++)
         if (strcmp(s, R_FunTab[i].name) == 0)
             return i;
-    return 0;
+    return NA_INTEGER;
 }
 
 static void installFunTab(int i)

@@ -2989,13 +2989,21 @@ void GEplayDisplayList(pGEDevDesc dd)
             SEXP theOperation = CAR(theList);
             SEXP op = CAR(theOperation);
             SEXP args = CADR(theOperation);
-            PRIMFUN(op)(R_NilValue, op, args, R_NilValue);
-            /* Check with each graphics system that the plotting went ok
-             */
-            if (!GEcheckState(dd))
+            if (TYPEOF(op) == BUILTINSXP || TYPEOF(op) == SPECIALSXP)
             {
+                PRIMFUN(op)(R_NilValue, op, args, R_NilValue);
+                /* Check with each graphics system that the plotting went ok
+                 */
+                if (!GEcheckState(dd))
+                {
+                    warning(_("display list redraw incomplete"));
+                    plotok = 0;
+                }
+            }
+            else
+            {
+                warning(_("invalid display list"));
                 plotok = 0;
-                warning(_("display list redraw incomplete"));
             }
             theList = CDR(theList);
         }
