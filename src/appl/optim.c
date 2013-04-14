@@ -301,7 +301,7 @@ void nmmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, int *fa
     double oldsize;
     double **P;
     double size, step, temp, trystep;
-    char tstr[6];
+    char tstr[9]; // allow for 10^8 iters ...
     double VH, VL, VR;
 
     if (maxit <= 0)
@@ -409,9 +409,12 @@ void nmmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, int *fa
             if (VH <= VL + convtol || VL <= abstol)
                 break;
 
-            sprintf(tstr, "%5d", funcount);
+            // avoid buffer overflow at 100001 iters. (PR#15240)
             if (trace)
+            {
+                snprintf(tstr, 9, "%5d", funcount);
                 Rprintf("%s%s %f %f\n", action, tstr, VH, VL);
+            }
 
             for (i = 0; i < n; i++)
             {
