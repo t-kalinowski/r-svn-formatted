@@ -45,6 +45,8 @@
 #include <Rmath.h>
 #include <Graphics.h> /* "GPar" structure + COMMENTS */
 
+#include "graphics.h"
+
 typedef struct
 {
     char *name;
