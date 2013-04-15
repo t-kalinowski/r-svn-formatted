@@ -878,7 +878,7 @@ SEXP menu(SEXP choices)
     if (!isString(choices))
         error(_("invalid '%s' argument"), "choices");
 
-    sprintf(ConsolePrompt, _("Selection: "));
+    snprintf(ConsolePrompt, CONSOLE_PROMPT_SIZE, _("Selection: "));
 
     while ((c = ConsoleGetchar()) != '\n' && c != R_EOF)
     {
@@ -1004,7 +1004,7 @@ SEXP readtablehead(SEXP args)
         skip = FALSE;
         firstnonwhite = TRUE;
         if (data.ttyflag)
-            sprintf(ConsolePrompt, "%d: ", nread);
+            snprintf(ConsolePrompt, CONSOLE_PROMPT_SIZE, "%d: ", nread);
         /* want to interpret comments here, not in scanchar */
         while ((c = scanchar(TRUE, &data)) != R_EOF)
         {

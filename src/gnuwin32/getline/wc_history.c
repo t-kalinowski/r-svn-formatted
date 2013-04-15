@@ -156,7 +156,7 @@ void wgl_savehistory(const char *file, int size)
     if (!fp)
     {
         char msg[256];
-        sprintf(msg, "Unable to open %s", file);
+        snprintf(msg, 256, "Unable to open %s", file);
         R_ShowMessage(msg);
         return;
     }
@@ -198,7 +198,7 @@ void wgl_savehistoryW(const wchar_t *file, int size)
     if (!fp)
     {
         char msg[256];
-        sprintf(msg, "Unable to open %ls", file);
+        snprintf(msg, 256, "Unable to open %ls", file);
         R_ShowMessage(msg);
         return;
     }

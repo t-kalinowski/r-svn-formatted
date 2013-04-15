@@ -3,7 +3,7 @@
  *  file console.c
  *  Copyright (C) 1998--2003  Guido Masarotto and Brian Ripley
  *  Copyright (C) 2004-8      The R Foundation
- *  Copyright (C) 2004-11     The R Core Team
+ *  Copyright (C) 2004-13     The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1128,8 +1128,9 @@ static void performCompletion(control c)
         if (pline[i] == '"')
             pline[i] = L'\'';
 
-    char cmd[wcslen(pline) + 100];
-    sprintf(cmd, "utils:::.win32consoleCompletion(\"%ls\", %d)", pline, cursor_position);
+    size_t len = wcslen(pline) + 100;
+    char cmd[len];
+    snprintf(cmd, len, "utils:::.win32consoleCompletion(\"%ls\", %d)", pline, cursor_position);
     PROTECT(cmdSexp = mkString(cmd));
     cmdexpr = PROTECT(R_ParseVector(cmdSexp, -1, &status, R_NilValue));
     if (status != PARSE_OK)
@@ -1164,8 +1165,9 @@ static void performCompletion(control c)
         /* make a copy of the current string first */
         wchar_t *p1 = LINE(NUMLINES - 1);
         checkpointpos(p->lbuf, 1);
-        char buf1[MB_CUR_MAX * wcslen(p1) + 1];
-        sprintf(buf1, "%ls\n", p1);
+        size_t len = MB_CUR_MAX * wcslen(p1) + 1;
+        char buf1[len];
+        snprintf(buf1, len, "%ls\n", p1);
         consolewrites(c, buf1);
 
         for (i = 0; i < min(alen, max_show); i++)
@@ -2334,8 +2336,8 @@ void setconsoleoptions(const char *fnname, int fnsty, int fnpoints, int rows, in
         if (!consolefn)
         {
             /* This is unlikely to happen: it will find some match */
-            sprintf(msg, G_("Font %s-%d-%d  not found.\nUsing system fixed font"), fontname, fontsty | FixedWidth,
-                    pointsize);
+            snprintf(msg, LF_FACESIZE + 128, G_("Font %s-%d-%d  not found.\nUsing system fixed font"), fontname,
+                     fontsty | FixedWidth, pointsize);
             R_ShowMessage(msg);
             consolefn = FixedFont;
         }
@@ -2388,8 +2390,8 @@ void consoleprint(console c)
     if (!f)
     {
         /* Should not happen but....*/
-        sprintf(msg, G_("Font %s-%d-%d  not found.\nUsing system fixed font"),
-                strcmp(fontname, "FixedFont") ? fontname : "Courier New", fontsty, pointsize);
+        snprintf(msg, LF_FACESIZE + 128, G_("Font %s-%d-%d  not found.\nUsing system fixed font"),
+                 strcmp(fontname, "FixedFont") ? fontname : "Courier New", fontsty, pointsize);
         R_ShowMessage(msg);
         f = FixedFont;
     }
@@ -2463,7 +2465,7 @@ void consoleprint(console c)
             if (cp > 1)
                 nextpage(lpr);
             gdrawstr(lpr, f, Black, pt(left, top), title);
-            sprintf(msg, "Page %d", cp++);
+            snprintf(msg, LF_FACESIZE + 128, "Page %d", cp++);
             gdrawstr(lpr, f, Black, pt(cc - gstrwidth(lpr, f, msg) - 1, top), msg);
             clinp = top + 2 * fh;
         }
