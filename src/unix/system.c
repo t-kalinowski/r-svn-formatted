@@ -291,7 +291,7 @@ int Rf_initialize_R(int ac, char **av)
                 }
                 else
                 {
-                    sprintf(msg, _("WARNING: --gui or -g without value ignored"));
+                    snprintf(msg, 1024, _("WARNING: --gui or -g without value ignored"));
                     R_ShowMessage(msg);
                     p = "X11";
                 }

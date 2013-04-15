@@ -94,7 +94,7 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
         {
             if (!strcmp(*av, "--version"))
             {
-                PrintVersion(msg);
+                PrintVersion(msg, 1024);
                 R_ShowMessage(msg);
                 exit(0);
             }

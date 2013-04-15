@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2006-10  The R Core Team
+ *  Copyright (C) 2006-13  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "impossibly long path for RHOME\n");
         exit(1);
     }
-    sprintf(cmd, "%s/bin/R", p);
+    snprintf(cmd, PATH_MAX + 1, "%s/bin/R", p);
 #endif
     av[ac++] = cmd;
     av[ac++] = "--slave";
@@ -211,7 +211,7 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "unable to set R_DEFAULT_PACKAGES\n");
                 exit(1);
             }
-            sprintf(buf2, "R_DEFAULT_PACKAGES=%s", argv[i] + 19);
+            snprintf(buf2, 1100, "R_DEFAULT_PACKAGES=%s", argv[i] + 19);
             if (verbose)
                 fprintf(stderr, "setting '%s'\n", buf2);
 #ifdef HAVE_PUTENV
@@ -240,7 +240,7 @@ int main(int argc, char *argv[])
             fprintf(stderr, "file name is too long\n");
             exit(1);
         }
-        sprintf(buf, "--file=%s", argv[i0]);
+        snprintf(buf, PATH_MAX + 8, "--file=%s", argv[i0]);
         av[ac++] = buf;
     }
     av[ac++] = "--args";

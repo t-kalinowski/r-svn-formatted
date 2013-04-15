@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995-1996   Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997-2012   The R Core Team
+ *  Copyright (C) 1997-2013   The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1235,7 +1235,7 @@ const char *reEnc(const char *x, cetype_t ce_in, cetype_t ce_out, int subst)
 #ifdef Win32
     case CE_NATIVE: {
         /* Looks like CP1252 is treated as Latin-1 by iconv */
-        sprintf(buf, "CP%d", localeCP);
+        snprintf(buf, 20, "CP%d", localeCP);
         fromcode = buf;
         break;
     }
@@ -1262,7 +1262,7 @@ const char *reEnc(const char *x, cetype_t ce_in, cetype_t ce_out, int subst)
 #ifdef Win32
     case CE_NATIVE: {
         /* avoid possible misidentification of CP1250 as LATIN-2 */
-        sprintf(buf, "CP%d", localeCP);
+        snprintf(buf, 20, "CP%d", localeCP);
         tocode = buf;
         break;
     }
@@ -1630,9 +1630,9 @@ void attribute_hidden InitTempDir()
             GetShortPathName(tm, tmp2, MAX_PATH);
             tm = tmp2;
         }
-        sprintf(tmp1, "%s\\RtmpXXXXXX", tm);
+        snprintf(tmp1, PATH_MAX + 11, "%s\\RtmpXXXXXX", tm);
 #else
-        sprintf(tmp1, "%s/RtmpXXXXXX", tm);
+        snprintf(tmp1, PATH_MAX + 11, "%s/RtmpXXXXXX", tm);
 #endif
         tmp = mkdtemp(tmp1);
         if (!tmp)
@@ -1643,10 +1643,11 @@ void attribute_hidden InitTempDir()
             errorcall(R_NilValue, _("unable to set R_SESSION_TMPDIR"));
 #elif defined(HAVE_PUTENV)
         {
-            char *buf = (char *)malloc((strlen(tmp) + 20) * sizeof(char));
+            size_t len = strlen(tmp) + 20;
+            char *buf = (char *)malloc((len) * sizeof(char));
             if (buf)
             {
-                sprintf(buf, "R_SESSION_TMPDIR=%s", tmp);
+                snprintf(buf, len, "R_SESSION_TMPDIR=%s", tmp);
                 if (putenv(buf))
                     errorcall(R_NilValue, _("unable to set R_SESSION_TMPDIR"));
                 /* no free here: storage remains in use */
