@@ -1833,7 +1833,6 @@ SEXP attribute_hidden do_backsolve(SEXP call, SEXP op, SEXP args, SEXP rho)
     int trans = asLogical(CAR(args));
     if (trans == NA_INTEGER)
         error(_("invalid '%s' argument"), "transpose");
-    SEXP ans;
     if (TYPEOF(r) != REALSXP)
     {
         PROTECT(r = coerceVector(r, REALSXP));
@@ -1854,7 +1853,7 @@ SEXP attribute_hidden do_backsolve(SEXP call, SEXP op, SEXP args, SEXP rho)
             error(_("singular matrix in 'backsolve'. First zero in diagonal [%d]"), i + 1);
     }
 
-    PROTECT(ans = allocMatrix(REALSXP, k, ncb));
+    SEXP ans = PROTECT(allocMatrix(REALSXP, k, ncb));
     if (k > 0 && ncb > 0)
     {
         /* copy (part) cols of b to ans */
@@ -1875,9 +1874,11 @@ SEXP attribute_hidden do_maxcol(SEXP call, SEXP op, SEXP args, SEXP rho)
     int method = asInteger(CADR(args));
     int nr = nrows(m), nc = ncols(m), nprot = 1;
     if (TYPEOF(m) != REALSXP)
+    {
         PROTECT(m = coerceVector(m, REALSXP));
-    SEXP ans = allocVector(INTSXP, nr);
-    PROTECT(ans);
+        nprot++;
+    }
+    SEXP ans = PROTECT(allocVector(INTSXP, nr));
     R_max_col(REAL(m), &nr, &nc, INTEGER(ans), &method);
     UNPROTECT(nprot);
     return ans;
