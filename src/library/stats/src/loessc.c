@@ -394,8 +394,10 @@ void F77_SUB(ehg182)(int *i)
         MSG("degree must be at least 1 for vertex influence matrix")
     case 999:
         MSG("not yet implemented")
-    default:
+    default: {
         snprintf(msg2, 50, "Assert failed; error code %d\n", *i);
+        msg = msg2;
+    }
     }
     warning(msg);
 }

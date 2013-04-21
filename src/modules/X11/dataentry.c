@@ -2731,7 +2731,7 @@ static int last_wchar_bytes(char *str)
     memset(wcs, 0, sizeof(wcs));
     memset(&mb_st, 0, sizeof(mbstate_t));
 
-    if ((size_t)-1 == (cnt = (int)mbsrtowcs(wcs, (const char **)&mbs, (int)strlen(mbs), &mb_st)))
+    if ((int)-1 == (cnt = (int)mbsrtowcs(wcs, (const char **)&mbs, (int)strlen(mbs), &mb_st)))
     {
         return 0;
     }
