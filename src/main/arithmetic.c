@@ -1635,7 +1635,7 @@ SEXP attribute_hidden do_Math2(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         double digits = 0;
         if (PRIMVAL(op) == 10004)
-            digits = 6.0;
+            digits = 6.0; // for signif()
         PROTECT(args = list2(CAR(args), ScalarReal(digits)));
         nprotect++;
     }
