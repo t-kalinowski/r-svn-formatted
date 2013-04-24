@@ -2520,6 +2520,9 @@ SEXP attribute_hidden do_saveToConn(SEXP call, SEXP op, SEXP args, SEXP env)
 
 /* Read and checks the magic number, open the connection if needed */
 
+extern int R_ReadItemDepth;
+extern int R_InitReadItemDepth;
+
 SEXP attribute_hidden do_loadFromConn2(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* loadFromConn2(conn, environment) */
@@ -2572,7 +2575,9 @@ SEXP attribute_hidden do_loadFromConn2(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         R_InitConnInPStream(&in, con, R_pstream_any_format, NULL, NULL);
         /* PROTECT is paranoia: some close() method might allocate */
+        R_InitReadItemDepth = R_ReadItemDepth = -asInteger(CADDR(args));
         PROTECT(res = RestoreToEnv(R_Unserialize(&in), aenv));
+        R_ReadItemDepth = 0;
         if (!wasopen)
         {
             endcontext(&cntxt);

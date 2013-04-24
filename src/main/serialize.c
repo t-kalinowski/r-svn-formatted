@@ -1404,6 +1404,9 @@ void R_Serialize(SEXP s, R_outpstream_t stream)
  * Unserialize Code
  */
 
+int R_ReadItemDepth = 0;
+int R_InitReadItemDepth;
+
 #define INITIAL_REFREAD_TABLE_SIZE 128
 
 static SEXP MakeReadRefTable(void)
@@ -1453,8 +1456,10 @@ static SEXP InStringVec(R_inpstream_t stream, SEXP ref_table)
         error(_("names in persistent strings are not supported yet"));
     len = InInteger(stream);
     PROTECT(s = allocVector(STRSXP, len));
+    R_ReadItemDepth++;
     for (i = 0; i < len; i++)
         SET_STRING_ELT(s, i, ReadItem(ref_table, stream));
+    R_ReadItemDepth--;
     UNPROTECT(1);
     return s;
 }
@@ -1631,7 +1636,9 @@ static SEXP ReadItem(SEXP ref_table, R_inpstream_t stream)
         AddReadRef(ref_table, s);
         return s;
     case SYMSXP:
+        R_ReadItemDepth++;
         PROTECT(s = ReadItem(ref_table, stream)); /* print name */
+        R_ReadItemDepth--;
         s = install(CHAR(s));
         AddReadRef(ref_table, s);
         UNPROTECT(1);
@@ -1657,10 +1664,12 @@ static SEXP ReadItem(SEXP ref_table, R_inpstream_t stream)
         AddReadRef(ref_table, s);
 
         /* Now fill it in  */
+        R_ReadItemDepth++;
         SET_ENCLOS(s, ReadItem(ref_table, stream));
         SET_FRAME(s, ReadItem(ref_table, stream));
         SET_HASHTAB(s, ReadItem(ref_table, stream));
         SET_ATTRIB(s, ReadItem(ref_table, stream));
+        R_ReadItemDepth--;
         if (ATTRIB(s) != R_NilValue && getAttrib(s, R_ClassSymbol) != R_NilValue)
             /* We don't write out the object bit for environments,
                so reconstruct it here if needed. */
@@ -1690,9 +1699,16 @@ static SEXP ReadItem(SEXP ref_table, R_inpstream_t stream)
         PROTECT(s = allocSExp(type));
         SETLEVELS(s, levs);
         SET_OBJECT(s, objf);
+        R_ReadItemDepth++;
         SET_ATTRIB(s, hasattr ? ReadItem(ref_table, stream) : R_NilValue);
         SET_TAG(s, hastag ? ReadItem(ref_table, stream) : R_NilValue);
+        if (hastag && R_ReadItemDepth <= 0)
+        {
+            Rprintf("%*s", 2 * (R_ReadItemDepth - R_InitReadItemDepth), "");
+            PrintValue(TAG(s));
+        }
         SETCAR(s, ReadItem(ref_table, stream));
+        R_ReadItemDepth--; /* do this early because of the recursion. */
         SETCDR(s, ReadItem(ref_table, stream));
         /* For reading closures and promises stored in earlier versions, convert NULL env to baseenv() */
         if (type == CLOSXP && CLOENV(s) == R_NilValue)
@@ -1711,8 +1727,10 @@ static SEXP ReadItem(SEXP ref_table, R_inpstream_t stream)
             PROTECT(s = allocSExp(type));
             AddReadRef(ref_table, s);
             R_SetExternalPtrAddr(s, NULL);
+            R_ReadItemDepth++;
             R_SetExternalPtrProtected(s, ReadItem(ref_table, stream));
             R_SetExternalPtrTag(s, ReadItem(ref_table, stream));
+            R_ReadItemDepth--;
             break;
         case WEAKREFSXP:
             PROTECT(s = R_MakeWeakRef(R_NilValue, R_NilValue, R_NilValue, FALSE));
@@ -1788,15 +1806,23 @@ static SEXP ReadItem(SEXP ref_table, R_inpstream_t stream)
         case STRSXP:
             len = ReadLENGTH(stream);
             PROTECT(s = allocVector(type, len));
+            R_ReadItemDepth++;
             for (count = 0; count < len; ++count)
                 SET_STRING_ELT(s, count, ReadItem(ref_table, stream));
+            R_ReadItemDepth--;
             break;
         case VECSXP:
         case EXPRSXP:
             len = ReadLENGTH(stream);
             PROTECT(s = allocVector(type, len));
+            R_ReadItemDepth++;
             for (count = 0; count < len; ++count)
+            {
+                if (R_ReadItemDepth <= 0)
+                    Rprintf("%*s[%d]\n", 2 * (R_ReadItemDepth - R_InitReadItemDepth), "", count + 1);
                 SET_VECTOR_ELT(s, count, ReadItem(ref_table, stream));
+            }
+            R_ReadItemDepth--;
             break;
         case BCODESXP:
             PROTECT(s = ReadBC(ref_table, stream));
@@ -1835,11 +1861,17 @@ static SEXP ReadItem(SEXP ref_table, R_inpstream_t stream)
                alone.  If there is an attribute (as there might be if
                the serialized data was created by an older version) we
                read and ignore the value. */
+            R_ReadItemDepth++;
             if (hasattr)
                 ReadItem(ref_table, stream);
+            R_ReadItemDepth--;
         }
         else
+        {
+            R_ReadItemDepth++;
             SET_ATTRIB(s, hasattr ? ReadItem(ref_table, stream) : R_NilValue);
+            R_ReadItemDepth--;
+        }
         UNPROTECT(1); /* s */
         return s;
     }
@@ -1880,16 +1912,22 @@ static SEXP ReadBCLang(int type, SEXP ref_table, SEXP reps, R_inpstream_t stream
         PROTECT(ans = allocSExp(type));
         if (pos >= 0)
             SET_VECTOR_ELT(reps, pos, ans);
+        R_ReadItemDepth++;
         if (hasattr)
             SET_ATTRIB(ans, ReadItem(ref_table, stream));
         SET_TAG(ans, ReadItem(ref_table, stream));
+        R_ReadItemDepth--;
         SETCAR(ans, ReadBCLang(InInteger(stream), ref_table, reps, stream));
         SETCDR(ans, ReadBCLang(InInteger(stream), ref_table, reps, stream));
         UNPROTECT(1);
         return ans;
     }
-    default:
-        return ReadItem(ref_table, stream);
+    default: {
+        R_ReadItemDepth++;
+        SEXP res = ReadItem(ref_table, stream);
+        R_ReadItemDepth--;
+        return res;
+    }
     }
 }
 
@@ -1918,7 +1956,9 @@ static SEXP ReadBCConsts(SEXP ref_table, SEXP reps, R_inpstream_t stream)
             SET_VECTOR_ELT(ans, i, c);
             break;
         default:
+            R_ReadItemDepth++;
             SET_VECTOR_ELT(ans, i, ReadItem(ref_table, stream));
+            R_ReadItemDepth--;
         }
     }
     UNPROTECT(1);
@@ -1929,7 +1969,9 @@ static SEXP ReadBC1(SEXP ref_table, SEXP reps, R_inpstream_t stream)
 {
     SEXP s;
     PROTECT(s = allocSExp(BCODESXP));
+    R_ReadItemDepth++;
     SETCAR(s, ReadItem(ref_table, stream)); /* code */
+    R_ReadItemDepth--;
     SETCAR(s, R_bcEncode(CAR(s)));
     SETCDR(s, ReadBCConsts(ref_table, reps, stream)); /* consts */
     SET_TAG(s, R_NilValue);                           /* expr */
