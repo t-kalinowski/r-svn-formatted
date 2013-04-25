@@ -482,7 +482,7 @@ static void RNGkind(RNGtype newkind)
     /* Choose a new kind of RNG.
      * Initialize its seed by calling the old RNG's unif_rand()
      */
-    if (newkind == -1)
+    if (newkind == (RNGtype)-1)
         newkind = RNG_DEFAULT;
     switch (newkind)
     {
@@ -508,7 +508,7 @@ static void Norm_kind(N01type kind)
 {
     /* N01type is an enumeration type, so this will probably get
        mapped to an unsigned integer type. */
-    if (kind == -1)
+    if (kind == (N01type)-1)
         kind = N01_DEFAULT;
     if (kind > KINDERMAN_RAMAGE)
         error(_("invalid Normal type in 'RNGkind'"));
