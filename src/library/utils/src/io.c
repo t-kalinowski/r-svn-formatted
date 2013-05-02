@@ -1156,6 +1156,8 @@ static const char *EncodeElement2(SEXP x, int indx, Rboolean quote, Rboolean qme
     char *q;
     const char *p, *p0;
 
+    if (indx < 0 || indx >= length(x))
+        error(_("index out of range"));
     if (TYPEOF(x) == STRSXP)
     {
         p0 = translateChar(STRING_ELT(x, indx));
@@ -1334,7 +1336,7 @@ SEXP writetable(SEXP call, SEXP op, SEXP args, SEXP env)
                             tmp =
                                 EncodeElement2(levels[j], (int)(REAL(xj)[i] - 1), quote_col[j], qmethod, &strBuf, cdec);
                         else
-                            error("column %s claims to be a factor but does not have numeric codes", j + 1);
+                            error(_("column %s claims to be a factor but does not have numeric codes"), j + 1);
                     }
                     else
                     {
