@@ -735,6 +735,7 @@ void cgmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, optimgr
     *grcount = gradcount;
 }
 
+/* include setulb() */
 #include "lbfgsb.c"
 
 void lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd, double *Fmin, optimfn fminfn, optimgr fmingr,
@@ -791,7 +792,6 @@ void lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd, double *Fmi
     strcpy(task, "START");
     while (1)
     {
-        /* Main workhorse setulb() from ../appl/lbfgsb.c : */
         setulb(n, m, x, l, u, nbd, &f, g, factr, &pgtol, wa, iwa, task, tr, lsave, isave, dsave);
         /*	Rprintf("in lbfgsb - %s\n", task);*/
         if (strncmp(task, "FG", 2) == 0)
