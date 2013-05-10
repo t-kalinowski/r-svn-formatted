@@ -1034,7 +1034,7 @@ static void worker_input_handler(void *data)
                         if (!strncmp(bol, "HEAD ", 5))
                             c->method = METHOD_HEAD;
                         /* only custom handlers can use other methods */
-                        if (!c->method && !strncmp(url, "/custom/", 8))
+                        if (!strncmp(url, "/custom/", 8))
                         {
                             char *mend = url - 1;
                             /* we generate a header with the method so it can be passed to the handler */
@@ -1043,7 +1043,8 @@ static void worker_input_handler(void *data)
                             /* make sure it fits */
                             if (c->headers->size - c->headers->length >= 18 + (mend - bol))
                             {
-                                c->method = METHOD_OTHER;
+                                if (!c->method)
+                                    c->method = METHOD_OTHER;
                                 /* add "Request-Method: xxx" */
                                 memcpy(c->headers->data + c->headers->length, "Request-Method: ", 16);
                                 c->headers->length += 16;
