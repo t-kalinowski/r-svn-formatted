@@ -4682,6 +4682,12 @@ static int NumericValue(int c)
             YYTEXT_PUSH(c, yyp);
             while (isdigit(c = xxgetc()) || ('a' <= c && c <= 'f') || ('A' <= c && c <= 'F') || c == '.')
             {
+                if (c == '.')
+                {
+                    if (seendot)
+                        return ERROR;
+                    seendot = 1;
+                }
                 YYTEXT_PUSH(c, yyp);
                 nd++;
             }
@@ -4689,6 +4695,7 @@ static int NumericValue(int c)
                 return ERROR;
             if (c == 'p' || c == 'P')
             {
+                seenexp = 1;
                 YYTEXT_PUSH(c, yyp);
                 c = xxgetc();
                 if (!isdigit(c) && c != '+' && c != '-')
@@ -4703,6 +4710,8 @@ static int NumericValue(int c)
                 if (nd == 0)
                     return ERROR;
             }
+            if (seendot && !seenexp)
+                return ERROR;
             break;
         }
         if (c == 'E' || c == 'e')
