@@ -13,11 +13,9 @@
 SEXP out(SEXP x, SEXP y)
 {
     int nx = length(x), ny = length(y);
-    double *rx = REAL(x), *ry = REAL(y), *rans;
-    SEXP ans, dimnames;
+    SEXP ans = PROTECT(allocMatrix(REALSXP, nx, ny));
+    double *rx = REAL(x), *ry = REAL(y), *rans = REAL(ans);
 
-    ans = PROTECT(allocMatrix(REALSXP, nx, ny));
-    rans = REAL(ans);
     for (int i = 0; i < nx; i++)
     {
         double tmp = rx[i];
@@ -25,12 +23,12 @@ SEXP out(SEXP x, SEXP y)
             rans[i + nx * j] = tmp * ry[j];
     }
 
-    dimnames = PROTECT(allocVector(VECSXP, 2));
+    SEXP dimnames = PROTECT(allocVector(VECSXP, 2));
     SET_VECTOR_ELT(dimnames, 0, getAttrib(x, R_NamesSymbol));
     SET_VECTOR_ELT(dimnames, 1, getAttrib(y, R_NamesSymbol));
     setAttrib(ans, R_DimNamesSymbol, dimnames);
     UNPROTECT(2);
-    return (ans);
+    return ans;
 }
 
 /* get the list element named str, or return NULL */
@@ -58,7 +56,7 @@ SEXP getvar(SEXP name, SEXP rho)
         error("rho should be an environment");
     ans = findVar(install(CHAR(STRING_ELT(name, 0))), rho);
     Rprintf("first value is %f\n", REAL(ans)[0]);
-    return (R_NilValue);
+    return R_NilValue;
 }
 
 /* ----- Convolution via .Call  ----- */
@@ -85,7 +83,7 @@ SEXP convolve2(SEXP a, SEXP b)
         for (int j = 0; j < nb; j++)
             xab[i + j] += xa[i] * xb[j];
     UNPROTECT(3);
-    return (ab);
+    return ab;
 }
 
 /* ----- Convolution via .External  ----- */
@@ -111,7 +109,7 @@ SEXP convolveE(SEXP args)
         for (int j = 0; j < nb; j++)
             xab[i + j] += xa[i] * xb[j];
     UNPROTECT(3);
-    return (ab);
+    return ab;
 }
 
 /* ----- Show arguments  ----- */
@@ -149,7 +147,7 @@ SEXP showArgs(SEXP args)
             Rprintf("[%d] '%s' R type\n", i + 1, name);
         }
     }
-    return (R_NilValue);
+    return R_NilValue;
 }
 
 SEXP showArgs1(SEXP largs)
@@ -183,7 +181,7 @@ SEXP showArgs1(SEXP largs)
             Rprintf("[%d] '%s' R type\n", i + 1, name);
         }
     }
-    return (R_NilValue);
+    return R_NilValue;
 }
 
 /* ----- Skeleton lapply ----- */
@@ -205,7 +203,7 @@ SEXP lapply(SEXP list, SEXP expr, SEXP rho)
     }
     setAttrib(ans, R_NamesSymbol, getAttrib(list, R_NamesSymbol));
     UNPROTECT(1);
-    return (ans);
+    return ans;
 }
 
 SEXP lapply2(SEXP list, SEXP fn, SEXP rho)
@@ -228,7 +226,7 @@ SEXP lapply2(SEXP list, SEXP fn, SEXP rho)
     }
     setAttrib(ans, R_NamesSymbol, getAttrib(list, R_NamesSymbol));
     UNPROTECT(2);
-    return (ans);
+    return ans;
 }
 
 /* ----- Zero-finding ----- */
@@ -245,7 +243,7 @@ SEXP mkans(double x)
 double feval(double x, SEXP f, SEXP rho)
 {
     defineVar(install("x"), mkans(x), rho);
-    return (REAL(eval(f, rho))[0]);
+    return REAL(eval(f, rho))[0];
 }
 
 SEXP zero(SEXP f, SEXP guesses, SEXP stol, SEXP rho)
