@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1995-2012	The R Core Team
+ *  Copyright (C) 1995-2013	The R Core Team
  *  Copyright (C) 2003		The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -20,6 +20,12 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
+
+#ifdef LONG_DOUBLE
+#define SQRTL sqrtl
+#else
+#define SQRTL sqrt
 #endif
 
 #include <Defn.h>
@@ -126,7 +132,7 @@ SEXP cov(SEXP x, SEXP y, SEXP na_method, SEXP kendall)
                     ysd /= n1;                                                                                         \
                     sum /= n1;                                                                                         \
                 }                                                                                                      \
-                sum /= (sqrtl(xsd) * sqrtl(ysd));                                                                      \
+                sum /= (SQRTL(xsd) * SQRTL(ysd));                                                                      \
                 if (sum > 1.)                                                                                          \
                     sum = 1.;                                                                                          \
             }                                                                                                          \
@@ -478,7 +484,7 @@ static void cov_complete2(int n, int ncx, int ncy, double *x, double *y, double 
                         if (ind[n1] != 0 && xx[k] != xx[n1])                                                           \
                             sum++; /* = sign(. - .)^2 */                                                               \
         }                                                                                                              \
-        _X_##m[i] = (double)sqrtl(sum);                                                                                \
+        _X_##m[i] = (double)SQRTL(sum);                                                                                \
     }
 
         COV_SDEV(x); /* -> xm[.] */
@@ -584,7 +590,7 @@ static void cov_na_2(int n, int ncx, int ncy, double *x, double *y, double *xm, 
                         if (xx[k] != xx[n1])                                                                           \
                             sum++; /* = sign(. - .)^2 */                                                               \
             }                                                                                                          \
-            _X_##m[i] = (double)sqrtl(sum);                                                                            \
+            _X_##m[i] = (double)SQRTL(sum);                                                                            \
         }
 
         COV_SDEV(x); /* -> xm[.] */
