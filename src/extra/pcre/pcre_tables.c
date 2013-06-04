@@ -347,6 +347,7 @@ strings to make sure that UTF-8 support works on EBCDIC platforms. */
 #define STRING_Xan0 STR_X STR_a STR_n "\0"
 #define STRING_Xps0 STR_X STR_p STR_s "\0"
 #define STRING_Xsp0 STR_X STR_s STR_p "\0"
+#define STRING_Xuc0 STR_X STR_u STR_c "\0"
 #define STRING_Xwd0 STR_X STR_w STR_d "\0"
 #define STRING_Yi0 STR_Y STR_i "\0"
 #define STRING_Z0 STR_Z "\0"
@@ -373,8 +374,8 @@ const char PRIV(utt_names)[] = STRING_Any0 STRING_Arabic0 STRING_Armenian0 STRIN
     STRING_Sharada0 STRING_Shavian0 STRING_Sinhala0 STRING_Sk0 STRING_Sm0 STRING_So0 STRING_Sora_Sompeng0
     STRING_Sundanese0 STRING_Syloti_Nagri0 STRING_Syriac0 STRING_Tagalog0 STRING_Tagbanwa0 STRING_Tai_Le0
     STRING_Tai_Tham0 STRING_Tai_Viet0 STRING_Takri0 STRING_Tamil0 STRING_Telugu0 STRING_Thaana0 STRING_Thai0
-    STRING_Tibetan0 STRING_Tifinagh0 STRING_Ugaritic0 STRING_Vai0 STRING_Xan0 STRING_Xps0 STRING_Xsp0 STRING_Xwd0
-    STRING_Yi0 STRING_Z0 STRING_Zl0 STRING_Zp0 STRING_Zs0;
+    STRING_Tibetan0 STRING_Tifinagh0 STRING_Ugaritic0 STRING_Vai0 STRING_Xan0 STRING_Xps0 STRING_Xsp0 STRING_Xuc0
+    STRING_Xwd0 STRING_Yi0 STRING_Z0 STRING_Zl0 STRING_Zp0 STRING_Zs0;
 
 const ucp_type_table PRIV(utt)[] = {{0, PT_ANY, 0},
                                     {4, PT_SC, ucp_Arabic},
@@ -515,12 +516,13 @@ const ucp_type_table PRIV(utt)[] = {{0, PT_ANY, 0},
                                     {1011, PT_ALNUM, 0},
                                     {1015, PT_PXSPACE, 0},
                                     {1019, PT_SPACE, 0},
-                                    {1023, PT_WORD, 0},
-                                    {1027, PT_SC, ucp_Yi},
-                                    {1030, PT_GC, ucp_Z},
-                                    {1032, PT_PC, ucp_Zl},
-                                    {1035, PT_PC, ucp_Zp},
-                                    {1038, PT_PC, ucp_Zs}};
+                                    {1023, PT_UCNC, 0},
+                                    {1027, PT_WORD, 0},
+                                    {1031, PT_SC, ucp_Yi},
+                                    {1034, PT_GC, ucp_Z},
+                                    {1036, PT_PC, ucp_Zl},
+                                    {1039, PT_PC, ucp_Zp},
+                                    {1042, PT_PC, ucp_Zs}};
 
 const int PRIV(utt_size) = sizeof(PRIV(utt)) / sizeof(ucp_type_table);
 

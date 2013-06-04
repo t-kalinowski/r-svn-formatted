@@ -6,7 +6,7 @@
 and semantics are as close as possible to those of the Perl 5 language.
 
                        Written by Philip Hazel
-           Copyright (c) 1997-2012 University of Cambridge
+           Copyright (c) 1997-2013 University of Cambridge
 
 -----------------------------------------------------------------------------
 Redistribution and use in source and binary forms, with or without
@@ -204,6 +204,18 @@ PCRE_EXP_DEFN int PCRE_CALL_CONVENTION pcre32_fullinfo(const pcre32 *argument_re
 
     case PCRE_INFO_MAXLOOKBEHIND:
         *((int *)where) = re->max_lookbehind;
+        break;
+
+    case PCRE_INFO_MATCHLIMIT:
+        if ((re->flags & PCRE_MLSET) == 0)
+            return PCRE_ERROR_UNSET;
+        *((pcre_uint32 *)where) = re->limit_match;
+        break;
+
+    case PCRE_INFO_RECURSIONLIMIT:
+        if ((re->flags & PCRE_RLSET) == 0)
+            return PCRE_ERROR_UNSET;
+        *((pcre_uint32 *)where) = re->limit_recursion;
         break;
 
     default:

@@ -6,7 +6,7 @@
 and semantics are as close as possible to those of the Perl 5 language.
 
                        Written by Philip Hazel
-           Copyright (c) 1997-2012 University of Cambridge
+           Copyright (c) 1997-2013 University of Cambridge
 
 -----------------------------------------------------------------------------
 Redistribution and use in source and binary forms, with or without
@@ -477,7 +477,7 @@ static const char error_texts[] =
                                            "a numbered reference must not be zero\0"
                                            "an argument is not allowed for (*ACCEPT), (*FAIL), or (*COMMIT)\0"
                                            /* 60 */
-                                           "(*VERB) not recognized\0"
+                                           "(*VERB) not recognized or malformed\0"
                                            "number is too big\0"
                                            "subpattern name expected\0"
                                            "digit expected after (?+\0"
@@ -497,7 +497,8 @@ static const char error_texts[] =
                                            /* 75 */
                                            "name is too long in (*MARK), (*PRUNE), (*SKIP), or (*THEN)\0"
                                            "character value in \\u.... sequence is too large\0"
-                                           "invalid UTF-32 string\0";
+                                           "invalid UTF-32 string\0"
+                                           "setting UTF is disabled by the application\0";
 
 /* Table to identify digits and hex digits. This is used when compiling
 patterns. Note that the tables in chartables are dependent on the locale, and
@@ -850,11 +851,11 @@ static int check_escape(const pcre_uchar **ptrptr, pcre_uint32 *chptr, int *erro
                     }
 
 #if defined COMPILE_PCRE8
-                    if (c > (utf ? 0x10ffff : 0xff))
+                    if (c > (utf ? 0x10ffffU : 0xffU))
 #elif defined COMPILE_PCRE16
-                    if (c > (utf ? 0x10ffff : 0xffff))
+                    if (c > (utf ? 0x10ffffU : 0xffffU))
 #elif defined COMPILE_PCRE32
-                    if (utf && c > 0x10ffff)
+                    if (utf && c > 0x10ffffU)
 #endif
                     {
                         *errorcodeptr = ERR76;
@@ -1111,19 +1112,19 @@ static int check_escape(const pcre_uchar **ptrptr, pcre_uint32 *chptr, int *erro
 #endif
 
 #if defined COMPILE_PCRE8
-                    if (c > (utf ? 0x10ffff : 0xff))
+                    if (c > (utf ? 0x10ffffU : 0xffU))
                     {
                         overflow = TRUE;
                         break;
                     }
 #elif defined COMPILE_PCRE16
-                    if (c > (utf ? 0x10ffff : 0xffff))
+                    if (c > (utf ? 0x10ffffU : 0xffffU))
                     {
                         overflow = TRUE;
                         break;
                     }
 #elif defined COMPILE_PCRE32
-                    if (utf && c > 0x10ffff)
+                    if (utf && c > 0x10ffffU)
                     {
                         overflow = TRUE;
                         break;
@@ -1456,7 +1457,11 @@ static int find_parens_sub(pcre_uchar **ptrptr, compile_data *cd, const pcre_uch
         /* Handle specials such as (*SKIP) or (*UTF8) etc. */
 
         if (ptr[1] == CHAR_ASTERISK)
+        {
             ptr += 2;
+            while (ptr < cd->end_pattern && *ptr != CHAR_RIGHT_PARENTHESIS)
+                ptr++;
+        }
 
         /* Handle a normal, unnamed capturing parenthesis. */
 
@@ -2215,9 +2220,6 @@ const pcre_uchar *PRIV(find_bracket)(const pcre_uchar *code, BOOL utf, int numbe
             case OP_MARK:
             case OP_PRUNE_ARG:
             case OP_SKIP_ARG:
-                code += code[1];
-                break;
-
             case OP_THEN_ARG:
                 code += code[1];
                 break;
@@ -2338,9 +2340,6 @@ static const pcre_uchar *find_recurse(const pcre_uchar *code, BOOL utf)
             case OP_MARK:
             case OP_PRUNE_ARG:
             case OP_SKIP_ARG:
-                code += code[1];
-                break;
-
             case OP_THEN_ARG:
                 code += code[1];
                 break;
@@ -2711,9 +2710,6 @@ static BOOL could_be_empty_branch(const pcre_uchar *code, const pcre_uchar *endc
         case OP_MARK:
         case OP_PRUNE_ARG:
         case OP_SKIP_ARG:
-            code += code[1];
-            break;
-
         case OP_THEN_ARG:
             code += code[1];
             break;
@@ -3548,7 +3544,7 @@ static int add_to_class(pcre_uint8 *classbits, pcre_uchar **uchardptr, int optio
         if ((options & PCRE_UTF8) != 0)
         {
             int rc;
-            pcre_uint32 oc, od = 0; // -Wall change
+            pcre_uint32 oc, od;
 
             options &= ~PCRE_CASELESS; /* Remove for recursive calls */
             c = start;
@@ -4375,10 +4371,8 @@ static BOOL compile_branch(int *optionsptr, pcre_uchar **codeptr, const pcre_uch
                     if (c == CHAR_BACKSLASH)
                     {
                         escape = check_escape(&ptr, &ec, errorcodeptr, cd->bracount, options, TRUE);
-
                         if (*errorcodeptr != 0)
                             goto FAILED;
-
                         if (escape == 0)
                             c = ec;
                         else if (escape == ESC_b)
@@ -5032,16 +5026,6 @@ static BOOL compile_branch(int *optionsptr, pcre_uchar **codeptr, const pcre_uch
                 if (repeat_max == 0)
                     goto END_REPEAT;
 
-                /*--------------------------------------------------------------------*/
-                /* This code is obsolete from release 8.00; the restriction was finally
-                removed: */
-
-                /* All real repeats make it impossible to handle partial matching (maybe
-                one day we will be able to remove this restriction). */
-
-                /* if (repeat_max != 1) cd->external_flags |= PCRE_NOPARTIAL; */
-                /*--------------------------------------------------------------------*/
-
                 /* Combine the op_type with the repeat_type */
 
                 repeat_type += op_type;
@@ -5188,16 +5172,6 @@ static BOOL compile_branch(int *optionsptr, pcre_uchar **codeptr, const pcre_uch
                     code = previous;
                     goto END_REPEAT;
                 }
-
-                /*--------------------------------------------------------------------*/
-                /* This code is obsolete from release 8.00; the restriction was finally
-                removed: */
-
-                /* All real repeats make it impossible to handle partial matching (maybe
-                one day we will be able to remove this restriction). */
-
-                /* if (repeat_max != 1) cd->external_flags |= PCRE_NOPARTIAL; */
-                /*--------------------------------------------------------------------*/
 
                 if (repeat_min == 0 && repeat_max == -1)
                     *code++ = OP_CRSTAR + repeat_type;
@@ -5923,6 +5897,7 @@ static BOOL compile_branch(int *optionsptr, pcre_uchar **codeptr, const pcre_uch
                 /* ------------------------------------------------------------ */
                 case CHAR_LEFT_PARENTHESIS:
                     bravalue = OP_COND; /* Conditional group */
+                    tempptr = ptr;
 
                     /* A condition can be an assertion, a number (referring to a numbered
                     group), a name (referring to a named group), or 'R', referring to
@@ -5935,15 +5910,29 @@ static BOOL compile_branch(int *optionsptr, pcre_uchar **codeptr, const pcre_uch
                     be the recursive thing or the name 'R' (and similarly for 'R' followed
                     by digits), and (b) a number could be a name that consists of digits.
                     In both cases, we look for a name first; if not found, we try the other
-                    cases. */
+                    cases.
+
+                    For compatibility with auto-callouts, we allow a callout to be
+                    specified before a condition that is an assertion. First, check for the
+                    syntax of a callout; if found, adjust the temporary pointer that is
+                    used to check for an assertion condition. That's all that is needed! */
+
+                    if (ptr[1] == CHAR_QUESTION_MARK && ptr[2] == CHAR_C)
+                    {
+                        for (i = 3;; i++)
+                            if (!IS_DIGIT(ptr[i]))
+                                break;
+                        if (ptr[i] == CHAR_RIGHT_PARENTHESIS)
+                            tempptr += i + 1;
+                    }
 
                     /* For conditions that are assertions, check the syntax, and then exit
                     the switch. This will take control down to where bracketed groups,
                     including assertions, are processed. */
 
-                    if (ptr[1] == CHAR_QUESTION_MARK &&
-                        (ptr[2] == CHAR_EQUALS_SIGN || ptr[2] == CHAR_EXCLAMATION_MARK ||
-                         ptr[2] == CHAR_LESS_THAN_SIGN))
+                    if (tempptr[1] == CHAR_QUESTION_MARK &&
+                        (tempptr[2] == CHAR_EQUALS_SIGN || tempptr[2] == CHAR_EXCLAMATION_MARK ||
+                         tempptr[2] == CHAR_LESS_THAN_SIGN))
                         break;
 
                     /* Most other conditions use OP_CREF (a couple change to OP_RREF
@@ -6923,11 +6912,10 @@ static BOOL compile_branch(int *optionsptr, pcre_uchar **codeptr, const pcre_uch
         case CHAR_BACKSLASH:
             tempptr = ptr;
             escape = check_escape(&ptr, &ec, errorcodeptr, cd->bracount, options, FALSE);
-
             if (*errorcodeptr != 0)
                 goto FAILED;
 
-            if (escape == 0)
+            if (escape == 0) /* The escape coded a single character */
                 c = ec;
             else
             {
@@ -7103,11 +7091,11 @@ static BOOL compile_branch(int *optionsptr, pcre_uchar **codeptr, const pcre_uch
                 can obtain the OP value by negating the escape value in the default
                 situation when PCRE_UCP is not set. When it *is* set, we substitute
                 Unicode property tests. Note that \b and \B do a one-character
-                lookbehind. */
+                lookbehind, and \A also behaves as if it does. */
 
                 else
                 {
-                    if ((escape == ESC_b || escape == ESC_B) && cd->max_lookbehind == 0)
+                    if ((escape == ESC_b || escape == ESC_B || escape == ESC_A) && cd->max_lookbehind == 0)
                         cd->max_lookbehind = 1;
 #ifdef SUPPORT_UCP
                     if (escape >= ESC_DU && escape <= ESC_wu)
@@ -7964,12 +7952,15 @@ PCRE_EXP_DEFN pcre32 *PCRE_CALL_CONVENTION pcre32_compile2(PCRE_SPTR32 pattern, 
 {
     REAL_PCRE *re;
     int length = 1; /* For final END opcode */
-    pcre_uint32 firstchar, reqchar;
     pcre_int32 firstcharflags, reqcharflags;
+    pcre_uint32 firstchar, reqchar;
+    pcre_uint32 limit_match = PCRE_UINT32_MAX;
+    pcre_uint32 limit_recursion = PCRE_UINT32_MAX;
     int newline;
     int errorcode = 0;
     int skipatstart = 0;
     BOOL utf;
+    BOOL never_utf = FALSE;
     size_t size;
     pcre_uchar *code;
     const pcre_uchar *codestart;
@@ -8032,8 +8023,15 @@ PCRE_EXP_DEFN pcre32 *PCRE_CALL_CONVENTION pcre32_compile2(PCRE_SPTR32 pattern, 
         goto PCRE_EARLY_ERROR_RETURN;
     }
 
+    /* If PCRE_NEVER_UTF is set, remember it. */
+
+    if ((options & PCRE_NEVER_UTF) != 0)
+        never_utf = TRUE;
+
     /* Check for global one-time settings at the start of the pattern, and remember
     the offset for later. */
+
+    cd->external_flags = 0; /* Initialize here for LIMIT_MATCH/RECURSION */
 
     while (ptr[skipatstart] == CHAR_LEFT_PARENTHESIS && ptr[skipatstart + 1] == CHAR_ASTERISK)
     {
@@ -8088,6 +8086,48 @@ PCRE_EXP_DEFN pcre32 *PCRE_CALL_CONVENTION pcre32_compile2(PCRE_SPTR32 pattern, 
             continue;
         }
 
+        else if (STRNCMP_UC_C8(ptr + skipatstart + 2, STRING_LIMIT_MATCH_EQ, 12) == 0)
+        {
+            pcre_uint32 c = 0;
+            int p = skipatstart + 14;
+            while (isdigit(ptr[p]))
+            {
+                if (c > PCRE_UINT32_MAX / 10 - 1)
+                    break; /* Integer overflow */
+                c = c * 10 + ptr[p++] - CHAR_0;
+            }
+            if (ptr[p++] != CHAR_RIGHT_PARENTHESIS)
+                break;
+            if (c < limit_match)
+            {
+                limit_match = c;
+                cd->external_flags |= PCRE_MLSET;
+            }
+            skipatstart = p;
+            continue;
+        }
+
+        else if (STRNCMP_UC_C8(ptr + skipatstart + 2, STRING_LIMIT_RECURSION_EQ, 16) == 0)
+        {
+            pcre_uint32 c = 0;
+            int p = skipatstart + 18;
+            while (isdigit(ptr[p]))
+            {
+                if (c > PCRE_UINT32_MAX / 10 - 1)
+                    break; /* Integer overflow check */
+                c = c * 10 + ptr[p++] - CHAR_0;
+            }
+            if (ptr[p++] != CHAR_RIGHT_PARENTHESIS)
+                break;
+            if (c < limit_recursion)
+            {
+                limit_recursion = c;
+                cd->external_flags |= PCRE_RLSET;
+            }
+            skipatstart = p;
+            continue;
+        }
+
         if (STRNCMP_UC_C8(ptr + skipatstart + 2, STRING_CR_RIGHTPAR, 3) == 0)
         {
             skipatstart += 5;
@@ -8135,6 +8175,11 @@ PCRE_EXP_DEFN pcre32 *PCRE_CALL_CONVENTION pcre32_compile2(PCRE_SPTR32 pattern, 
 
     /* PCRE_UTF(16|32) have the same value as PCRE_UTF8. */
     utf = (options & PCRE_UTF8) != 0;
+    if (utf && never_utf)
+    {
+        errorcode = ERR78;
+        goto PCRE_EARLY_ERROR_RETURN2;
+    }
 
     /* Can't support UTF unless PCRE has been compiled to include the code. The
     return of an error code from PRIV(valid_utf)() is a new feature, introduced in
@@ -8269,7 +8314,6 @@ PCRE_EXP_DEFN pcre32 *PCRE_CALL_CONVENTION pcre32_compile2(PCRE_SPTR32 pattern, 
     cd->assert_depth = 0;
     cd->max_lookbehind = 0;
     cd->external_options = options;
-    cd->external_flags = 0;
     cd->open_caps = NULL;
 
     /* Now do the pre-compile. On error, errorcode will be set non-zero, so we
@@ -8318,6 +8362,8 @@ PCRE_EXP_DEFN pcre32 *PCRE_CALL_CONVENTION pcre32_compile2(PCRE_SPTR32 pattern, 
     re->size = (int)size;
     re->options = cd->external_options;
     re->flags = cd->external_flags;
+    re->limit_match = limit_match;
+    re->limit_recursion = limit_recursion;
     re->first_char = 0;
     re->req_char = 0;
     re->name_table_offset = sizeof(REAL_PCRE) / sizeof(pcre_uchar);
@@ -8327,7 +8373,9 @@ PCRE_EXP_DEFN pcre32 *PCRE_CALL_CONVENTION pcre32_compile2(PCRE_SPTR32 pattern, 
     re->tables = (tables == PRIV(default_tables)) ? NULL : tables;
     re->nullpad = NULL;
 #ifdef COMPILE_PCRE32
-    re->dummy1 = re->dummy2 = 0;
+    re->dummy = 0;
+#else
+    re->dummy1 = re->dummy2 = re->dummy3 = 0;
 #endif
 
     /* The starting points of the name/number translation table and of the code are
@@ -8389,7 +8437,7 @@ PCRE_EXP_DEFN pcre32 *PCRE_CALL_CONVENTION pcre32_compile2(PCRE_SPTR32 pattern, 
 
 #ifdef SUPPORT_VALGRIND
     /* If the estimated length exceeds the really used length, mark the extra
-    allocated memory as unadressable, so that any out-of-bound reads can be
+    allocated memory as unaddressable, so that any out-of-bound reads can be
     detected. */
     VALGRIND_MAKE_MEM_NOACCESS(code, (length - (code - codestart)) * sizeof(pcre_uchar));
 #endif
