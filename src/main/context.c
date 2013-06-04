@@ -220,7 +220,6 @@ static void jumpfun(RCNTXT *cptr, int mask, SEXP val)
 /* begincontext and endcontext are used in dataentry.c and modules */
 void begincontext(RCNTXT *cptr, int flags, SEXP syscall, SEXP env, SEXP sysp, SEXP promargs, SEXP callfun)
 {
-    cptr->nextcontext = R_GlobalContext;
     cptr->cstacktop = R_PPStackTop;
     cptr->evaldepth = R_EvalDepth;
     cptr->callflag = flags;
@@ -241,6 +240,7 @@ void begincontext(RCNTXT *cptr, int flags, SEXP syscall, SEXP env, SEXP sysp, SE
     cptr->intstack = R_BCIntStackTop;
 #endif
     cptr->srcref = R_Srcref;
+    cptr->nextcontext = R_GlobalContext;
     R_GlobalContext = cptr;
 }
 
