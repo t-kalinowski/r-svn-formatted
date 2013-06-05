@@ -1,5 +1,5 @@
 /* deflate.c -- compress data using the deflation algorithm
- * Copyright (C) 1995-2012 Jean-loup Gailly and Mark Adler
+ * Copyright (C) 1995-2013 Jean-loup Gailly and Mark Adler
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
@@ -51,7 +51,7 @@
 
 #include "deflate.h"
 
-const char deflate_copyright[] = " deflate 1.2.7 Copyright 1995-2012 Jean-loup Gailly and Mark Adler ";
+const char deflate_copyright[] = " deflate 1.2.8 Copyright 1995-2013 Jean-loup Gailly and Mark Adler ";
 /*
   If you use the zlib library in a product, an acknowledgment is welcome
   in the documentation of your product. If for some reason you cannot
@@ -309,7 +309,7 @@ int stream_size;
     if (s->window == Z_NULL || s->prev == Z_NULL || s->head == Z_NULL || s->pending_buf == Z_NULL)
     {
         s->status = FINISH_STATE;
-        strm->msg = (char *)ERR_MSG(Z_MEM_ERROR);
+        strm->msg = ERR_MSG(Z_MEM_ERROR);
         deflateEnd(strm);
         return Z_MEM_ERROR;
     }
@@ -332,7 +332,7 @@ uInt dictLength;
     uInt str, n;
     int wrap;
     unsigned avail;
-    unsigned char *next;
+    z_const unsigned char *next;
 
     if (strm == Z_NULL || strm->state == Z_NULL || dictionary == Z_NULL)
         return Z_STREAM_ERROR;
@@ -364,7 +364,7 @@ uInt dictLength;
     avail = strm->avail_in;
     next = strm->next_in;
     strm->avail_in = dictLength;
-    strm->next_in = (Bytef *)dictionary;
+    strm->next_in = (z_const Bytef *)dictionary;
     fill_window(s);
     while (s->lookahead >= MIN_MATCH)
     {
@@ -524,6 +524,8 @@ int strategy;
     {
         /* Flush the last buffer: */
         err = deflate(strm, Z_BLOCK);
+        if (err == Z_BUF_ERROR && s->pending == 0)
+            err = Z_OK;
     }
     if (s->level != level)
     {
