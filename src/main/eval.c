@@ -561,7 +561,7 @@ SEXP eval(SEXP e, SEXP rho)
         else
             tmp = findVar(e, rho);
         if (tmp == R_UnboundValue)
-            error(_("object '%s' not found"), CHAR(PRINTNAME(e)));
+            error(_("object '%s' not found"), EncodeChar(PRINTNAME(e)));
         /* if ..d is missing then ddfindVar will signal */
         else if (tmp == R_MissingArg && !DDVAL(e))
         {
@@ -1264,7 +1264,7 @@ static SEXP EnsureLocal(SEXP symbol, SEXP rho)
 
     vl = eval(symbol, ENCLOS(rho));
     if (vl == R_UnboundValue)
-        error(_("object '%s' not found"), CHAR(PRINTNAME(symbol)));
+        error(_("object '%s' not found"), EncodeChar(PRINTNAME(symbol)));
 
     PROTECT(vl = duplicate(vl));
     defineVar(symbol, vl, rho);
@@ -1778,7 +1778,7 @@ static R_INLINE SEXP installAssignFcnName(SEXP fun)
 {
     char buf[ASSIGNBUFSIZ];
     if (strlen(CHAR(PRINTNAME(fun))) + 3 > ASSIGNBUFSIZ)
-        error(_("overlong name in '%s'"), CHAR(PRINTNAME(fun)));
+        error(_("overlong name in '%s'"), EncodeChar(PRINTNAME(fun)));
     sprintf(buf, "%s<-", CHAR(PRINTNAME(fun)));
     return install(buf);
 }
@@ -2088,7 +2088,7 @@ SEXP attribute_hidden evalList(SEXP el, SEXP rho, SEXP call, int n)
         else if (isSymbol(CAR(el)) && R_isMissing(CAR(el), rho))
         {
             /* It was missing */
-            errorcall(call, _("'%s' is missing"), CHAR(PRINTNAME(CAR(el))));
+            errorcall(call, _("'%s' is missing"), EncodeChar(PRINTNAME(CAR(el))));
         }
         else
         {
@@ -2776,7 +2776,7 @@ attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP a
     if (isSymbol(CAR(call)))
     {
         if (strlen(CHAR(PRINTNAME(CAR(call)))) >= 512)
-            error(_("call name too long in '%s'"), CHAR(PRINTNAME(CAR(call))));
+            error(_("call name too long in '%s'"), EncodeChar(PRINTNAME(CAR(call))));
         sprintf(lbuf, "%s", CHAR(PRINTNAME(CAR(call))));
         pt = strtok(lbuf, ".");
         pt = strtok(NULL, ".");
@@ -3764,7 +3764,7 @@ static void MISSING_ARGUMENT_ERROR(SEXP symbol)
 
 static void UNBOUND_VARIABLE_ERROR(SEXP symbol)
 {
-    error(_("object '%s' not found"), CHAR(PRINTNAME(symbol)));
+    error(_("object '%s' not found"), EncodeChar(PRINTNAME(symbol)));
 }
 
 static R_INLINE SEXP FORCE_PROMISE(SEXP value, SEXP symbol, SEXP rho, Rboolean keepmiss)

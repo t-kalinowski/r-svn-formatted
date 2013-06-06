@@ -4509,7 +4509,7 @@ static void CheckFormalArgs(SEXP formlist, SEXP _new, YYLTYPE *lloc)
     {
         if (TAG(formlist) == _new)
         {
-            error(_("repeated formal argument '%s' on line %d"), CHAR(PRINTNAME(_new)), lloc->first_line);
+            error(_("repeated formal argument '%s' on line %d"), EncodeChar(PRINTNAME(_new)), lloc->first_line);
         }
         formlist = CDR(formlist);
     }

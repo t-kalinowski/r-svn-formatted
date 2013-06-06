@@ -272,7 +272,7 @@ static void inspect_tree(int pre, SEXP v, int deep, int pvec)
         Rprintf("\"%s\"", CHAR(v));
     }
     if (TYPEOF(v) == SYMSXP)
-        Rprintf("\"%s\"%s", CHAR(PRINTNAME(v)), (SYMVALUE(v) == R_UnboundValue) ? "" : " (has value)");
+        Rprintf("\"%s\"%s", EncodeChar(PRINTNAME(v)), (SYMVALUE(v) == R_UnboundValue) ? "" : " (has value)");
     switch (TYPEOF(v))
     { /* for native vectors print the first elements in-line */
     case LGLSXP:

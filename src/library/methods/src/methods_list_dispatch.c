@@ -679,8 +679,8 @@ static SEXP do_dispatch(SEXP fname, SEXP ev, SEXP mlist, int firstTry, int evalA
     if (isNull(method))
     {
         if (!firstTry)
-            error(_("no matching method for function '%s' (argument '%s', with class \"%s\")"), CHAR(asChar(fname)),
-                  CHAR(PRINTNAME(arg_sym)), class);
+            error(_("no matching method for function '%s' (argument '%s', with class \"%s\")"),
+                  EncodeChar(asChar(fname)), EncodeChar(PRINTNAME(arg_sym)), class);
         UNPROTECT(nprotect);
         return (R_NilValue);
     }

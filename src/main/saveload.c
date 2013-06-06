@@ -2155,7 +2155,7 @@ SEXP attribute_hidden do_save(SEXP call, SEXP op, SEXP args, SEXP env)
         SET_TAG(t, install(CHAR(STRING_ELT(CAR(args), j))));
         tmp = findVar(TAG(t), source);
         if (tmp == R_UnboundValue)
-            error(_("object '%s' not found"), CHAR(PRINTNAME(TAG(t))));
+            error(_("object '%s' not found"), EncodeChar(PRINTNAME(TAG(t))));
         if (ep && TYPEOF(tmp) == PROMSXP)
         {
             PROTECT(tmp);
@@ -2501,7 +2501,7 @@ SEXP attribute_hidden do_saveToConn(SEXP call, SEXP op, SEXP args, SEXP env)
         SETCAR(t, findVar(TAG(t), source));
         tmp = findVar(TAG(t), source);
         if (tmp == R_UnboundValue)
-            error(_("object '%s' not found"), CHAR(PRINTNAME(TAG(t))));
+            error(_("object '%s' not found"), EncodeChar(PRINTNAME(TAG(t))));
         if (ep && TYPEOF(tmp) == PROMSXP)
         {
             PROTECT(tmp);
