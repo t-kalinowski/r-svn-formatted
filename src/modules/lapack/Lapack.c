@@ -712,7 +712,7 @@ static SEXP qr_coef_cmplx(SEXP Q, SEXP Bin)
     if (!isMatrix(Bin))
         error(_("'b' must be a complex matrix"));
 
-    if (!isReal(Bin))
+    if (!isComplex(Bin))
         B = PROTECT(coerceVector(Bin, CPLXSXP));
     else
         B = PROTECT(duplicate(Bin));
