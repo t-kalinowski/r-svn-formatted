@@ -198,7 +198,8 @@ void doMouseEvent(pDevDesc dd, R_MouseEvent event, int buttons, double x, double
     if (TYPEOF(handler) == CLOSXP)
     {
         defineVar(install("which"), ScalarInteger(ndevNumber(dd) + 1), dd->eventEnv);
-        PROTECT(bvec = allocVector(INTSXP, 3));
+        int len = (buttons & leftButton) + (buttons & middleButton) + (buttons & rightButton);
+        PROTECT(bvec = allocVector(INTSXP, len));
         i = 0;
         if (buttons & leftButton)
             INTEGER(bvec)[i++] = 0;
@@ -206,7 +207,6 @@ void doMouseEvent(pDevDesc dd, R_MouseEvent event, int buttons, double x, double
             INTEGER(bvec)[i++] = 1;
         if (buttons & rightButton)
             INTEGER(bvec)[i++] = 2;
-        SETLENGTH(bvec, i);
 
         PROTECT(sx = ScalarReal((x - dd->left) / (dd->right - dd->left)));
         PROTECT(sy = ScalarReal((y - dd->bottom) / (dd->top - dd->bottom)));
