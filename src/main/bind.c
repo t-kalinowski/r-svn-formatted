@@ -105,12 +105,20 @@ static void AnswerType(SEXP x, int recurse, int usenames, struct BindData *data,
         data->ans_flags |= 128;
         data->ans_length += XLENGTH(x);
         break;
+
+#ifdef DO_C_Symbol
+        /* new case : */
+    case SYMSXP:
+    case LANGSXP:
+        data->ans_flags |= 512; /* as.expression() implicitly */
+        data->ans_length += 1;
+        break;
+#endif
     case VECSXP:
     case EXPRSXP:
         if (recurse)
         {
-            R_xlen_t i, n;
-            n = xlength(x);
+            R_xlen_t i, n = xlength(x);
             if (usenames && !data->ans_nnames && !isNull(getAttrib(x, R_NamesSymbol)))
                 data->ans_nnames = 1;
             for (i = 0; i < n; i++)
@@ -898,7 +906,7 @@ SEXP attribute_hidden do_c_dflt(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP attribute_hidden do_unlist(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, t;
-    int mode, recurse, usenames;
+    int mode;
     R_xlen_t i, n = 0;
     struct BindData data;
     struct NameData nameData;
@@ -916,8 +924,9 @@ SEXP attribute_hidden do_unlist(SEXP call, SEXP op, SEXP args, SEXP env)
     /* by an optional "recursive" argument. */
 
     PROTECT(args = CAR(ans));
-    recurse = asLogical(CADR(ans));
-    usenames = asLogical(CADDR(ans));
+    int recurse = asLogical(CADR(ans));
+    int usenames = asLogical(CADDR(ans));
+    int lenient = TRUE; // was (implicitly!) FALSE  up to R 3.0.1
 
     /* Determine the type of the returned value. */
     /* The strategy here is appropriate because the */
@@ -956,7 +965,7 @@ SEXP attribute_hidden do_unlist(SEXP call, SEXP op, SEXP args, SEXP env)
     else
     {
         UNPROTECT(1);
-        if (isVector(args))
+        if (lenient || isVector(args))
             return args;
         else
             error(_("argument not a list"));
@@ -1208,9 +1217,10 @@ SEXP attribute_hidden do_bind(SEXP call, SEXP op, SEXP args, SEXP env)
     case RAWSXP:
         break;
     /* we don't handle expressions: we could, but coercion of a matrix
-       to an expression is not ideal */
+       to an expression is not ideal.
+       FIXME?  had  cbind(y ~ x, 1) work using lists, before */
     default:
-        error(_("cannot create a matrix from these types"));
+        error(_("cannot create a matrix from type '%s'"), type2char(mode));
     }
 
     if (PRIMVAL(op) == 1)
