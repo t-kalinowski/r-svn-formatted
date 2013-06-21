@@ -3740,17 +3740,20 @@ attribute_hidden void R_FinalizeSrcRefState(void)
                 _PARENT(i) = 0;
             }
     }
-    if (ParseState.ids && (ParseState.prevState || ID_COUNT > MAX_DATA_COUNT))
+    if (ParseState.ids)
     {
-        R_ReleaseObject(ParseState.ids);
-        ParseState.ids = NULL;
-    }
-    else
-    { /* Remove the parent records */
-        if (identifier > ID_COUNT)
-            identifier = ID_COUNT;
-        for (int i = 0; i < identifier; i++)
-            ID_PARENT(i) = 0;
+        if (ParseState.prevState || ID_COUNT > MAX_DATA_COUNT)
+        {
+            R_ReleaseObject(ParseState.ids);
+            ParseState.ids = NULL;
+        }
+        else
+        { /* Remove the parent records */
+            if (identifier > ID_COUNT)
+                identifier = ID_COUNT;
+            for (int i = 0; i < identifier; i++)
+                ID_PARENT(i) = 0;
+        }
     }
     ParseState.SrcFileProt = NA_INTEGER;
     ParseState.OriginalProt = NA_INTEGER;
