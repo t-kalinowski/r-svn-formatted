@@ -78,15 +78,14 @@ static void R_ReplFile(FILE *fp, SEXP rho)
 {
     ParseStatus status;
     int count = 0;
-    SrcRefState ParseState;
     int savestack;
 
-    R_InitSrcRefState(&ParseState);
+    R_InitSrcRefState();
     savestack = R_PPStackTop;
     for (;;)
     {
         R_PPStackTop = savestack;
-        R_CurrentExpr = R_Parse1File(fp, 1, &status, &ParseState);
+        R_CurrentExpr = R_Parse1File(fp, 1, &status);
         switch (status)
         {
         case PARSE_NULL:
@@ -804,6 +803,7 @@ void setup_Rmainloop(void)
     /* make sure srand is called before R_tmpnam, PR#14381 */
     srand(TimeToSeed());
 
+    InitParser();
     InitTempDir(); /* must be before InitEd */
     InitMemory();
     InitStringHash(); /* must be before InitNames */
@@ -815,6 +815,7 @@ void setup_Rmainloop(void)
     InitEd();
     InitArithmetic();
     InitGraphics();
+
     R_Is_Running = 1;
     R_check_locale();
 
