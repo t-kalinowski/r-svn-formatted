@@ -1078,6 +1078,11 @@ SEXP attribute_hidden do_switch(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(x = eval(CAR(args), rho));
     if (!isVector(x) || length(x) != 1)
         errorcall(call, _("EXPR must be a length 1 vector"));
+    if (isFactor(x))
+        warningcall(call,
+                    _("EXPR is a \"factor\", treated as integer.\n"
+                      " Consider using '%s' instead."),
+                    "switch(as.character( * ), ...)");
     if (nargs > 1)
     {
         /* There is a complication: if called from lapply
