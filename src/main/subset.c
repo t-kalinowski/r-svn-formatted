@@ -1229,7 +1229,7 @@ SEXP attribute_hidden R_subset3_dflt(SEXP x, SEXP input, SEXP call)
             if (R_warn_partial_match_dollar)
             {
                 const char *st = "";
-                SEXP target = TAG(y);
+                SEXP target = TAG(xmatch);
                 switch (TYPEOF(target))
                 {
                 case SYMSXP:
