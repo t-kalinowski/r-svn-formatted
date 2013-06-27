@@ -67,8 +67,8 @@ void rcmdusage(char *RCMD)
             "  build    Build add-on packages\n", "  check    Check add-on packages\n",
             "  Rprof    Post process R profiling files\n", "  Rdconv   Convert Rd format to various other formats\n",
             "  Rdiff    difference R output files\n", "  Rd2pdf   Convert Rd format to PDF\n",
-            "  Rd2txt   Convert Rd format to pretty text\n", "  Stangle  Extract S/R code from Sweave documentation\n",
-            "  Sweave   Process Sweave documentation\n",
+            "  Rd2txt   Convert Rd format to pretty text\n", "  tangle   Extract S/R code from vignette\n",
+            "  weave    Process vignette documentation\n",
             "  config   Obtain configuration information about R\n"
             "  open     Open a file via Windows file associations\n"
             "  texify   Process a latex file\n");
@@ -510,13 +510,13 @@ int rcmdfn(int cmdarg, int argc, char **argv)
                  getRHOME(3), BINDIR);
         PROCESS_CMD("nextArg");
     }
-    else if (!strcmp(argv[cmdarg], "Sweave"))
+    else if (!strcmp(argv[cmdarg], "Sweave") || !strcmp(argv[cmdarg], "weave"))
     {
         snprintf(cmd, CMD_LEN, "%s/%s/Rterm.exe --no-restore --slave -e utils:::.Sweave() --args ", getRHOME(3),
                  BINDIR);
         PROCESS_CMD("nextArg");
     }
-    else if (!strcmp(argv[cmdarg], "Stangle"))
+    else if (!strcmp(argv[cmdarg], "Stangle") || !strcmp(argv[cmdarg], "tangle"))
     {
         snprintf(cmd, CMD_LEN, "%s/%s/Rterm.exe --vanilla --slave -e utils:::.Stangle() --args ", getRHOME(3), BINDIR);
         PROCESS_CMD("nextArg");
