@@ -787,10 +787,10 @@ void setup_Rmainloop(void)
         /* NB: we do not set LC_NUMERIC */
 #ifdef LC_MONETARY
     if (!setlocale(LC_MONETARY, ""))
-        snprintf(deferred_warnings[ndeferred_warnings++], 250, "Setting LC_PAPER failed, using \"C\"\n");
+        snprintf(deferred_warnings[ndeferred_warnings++], 250, "Setting LC_MONETARY failed, using \"C\"\n");
 #endif
 #ifdef LC_PAPER
-    if (!setlocale(LC_MONETARY, ""))
+    if (!setlocale(LC_PAPER, ""))
         snprintf(deferred_warnings[ndeferred_warnings++], 250, "Setting LC_PAPER failed, using \"C\"\n");
 #endif
 #ifdef LC_MEASUREMENT
