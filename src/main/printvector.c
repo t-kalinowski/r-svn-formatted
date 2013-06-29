@@ -175,7 +175,7 @@ static void printRawVector(Rbyte *x, R_xlen_t n, int indx)
         {
             DO_newline;
         }
-        Rprintf("%*s%s", R_print.gap, "", EncodeRaw(x[i]));
+        Rprintf("%*s%s", R_print.gap, "", EncodeRaw(x[i], ""));
         width += w;
     }
     Rprintf("\n");
@@ -335,7 +335,7 @@ static void printNamedLogicalVector(int *x, int n, SEXP *names)
 
                                         static void printNamedRawVector(Rbyte *x, int n, SEXP *names)
                                             PRINT_N_VECTOR(formatRaw(x, n, &w),
-                                                           Rprintf("%s%*s", EncodeRaw(x[k]), R_print.gap, ""))
+                                                           Rprintf("%s%*s", EncodeRaw(x[k], ""), R_print.gap, ""))
 
                                                 attribute_hidden
     void printNamedVector(SEXP x, SEXP names, int quote, const char *title)

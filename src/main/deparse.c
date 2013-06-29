@@ -1526,6 +1526,11 @@ static void vector2buff(SEXP vector, LocalParseData *d)
                 print2buff("as.character(", d);
             }
         }
+        else if (TYPEOF(vector) == RAWSXP)
+        {
+            surround = TRUE;
+            print2buff("as.raw(", d);
+        }
         if (tlen > 1)
             print2buff("c(", d);
         allNA = allNA && !(d->opts & S_COMPAT);
@@ -1556,6 +1561,10 @@ static void vector2buff(SEXP vector, LocalParseData *d)
                 if (strlen(ts) >= 8192)
                     d->longstring = TRUE;
                 strp = EncodeElement(vector, i, quote, '.');
+            }
+            else if (TYPEOF(vector) == RAWSXP)
+            {
+                strp = EncodeRaw(RAW(vector)[i], "0x");
             }
             else
                 strp = EncodeElement(vector, i, quote, '.');
