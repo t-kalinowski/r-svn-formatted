@@ -472,6 +472,7 @@ attribute_hidden void printMatrix(SEXP x, int offset, SEXP dim, int quote, int r
     /* 'rl' and 'cl' are dimnames(.)[[1]] and dimnames(.)[[2]]  whereas
      * 'rn' and 'cn' are the  names(dimnames(.))
      */
+    const void *vmax = vmaxget();
     int r = INTEGER(dim)[0];
     int c = INTEGER(dim)[1], r_pr;
     /* PR#850 */
@@ -522,12 +523,13 @@ attribute_hidden void printMatrix(SEXP x, int offset, SEXP dim, int quote, int r
     if (r_pr < r)
         Rprintf(" [ reached getOption(\"max.print\") -- omitted %d rows ]\n", r - r_pr);
 #endif
+    vmaxset(vmax);
 }
 
 attribute_hidden void printArray(SEXP x, SEXP dim, int quote, int right, SEXP dimnames)
 {
     /* == printArray(.) */
-
+    const void *vmax = vmaxget();
     int ndim = LENGTH(dim);
     const char *rn = NULL, *cn = NULL;
 
@@ -650,4 +652,5 @@ attribute_hidden void printArray(SEXP x, SEXP dim, int quote, int right, SEXP di
             Rprintf(" %d matrix slice(s) ]\n", nb - nb_pr);
         }
     }
+    vmaxset(vmax);
 }
