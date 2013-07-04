@@ -1492,6 +1492,8 @@ static SEXP math2_2(SEXP sa, SEXP sb, SEXP sI1, SEXP sI2, double (*f)(double, do
     return sy;
 } /* math2_2() */
 
+/* This is only used directly by .Internal for Bessel functions,
+   so managing R_alloc stack is only prudence */
 static SEXP math2B(SEXP sa, SEXP sb, double (*f)(double, double, double *), SEXP lcall)
 {
     SEXP sy;
@@ -1517,6 +1519,7 @@ static SEXP math2B(SEXP sa, SEXP sb, double (*f)(double, double, double *), SEXP
         if (av > amax)
             amax = av;
     }
+    const void *vmax = vmaxget();
     nw = 1 + (long)floor(amax);
     work = (double *)R_alloc((size_t)nw, sizeof(double));
 
@@ -1533,6 +1536,7 @@ static SEXP math2B(SEXP sa, SEXP sb, double (*f)(double, double, double *), SEXP
         }
     }
 
+    vmaxset(vmax);
     FINISH_Math2;
 
     return sy;
@@ -1879,6 +1883,8 @@ static SEXP math3_2(SEXP sa, SEXP sb, SEXP sc, SEXP sI, SEXP sJ, double (*f)(dou
     return sy;
 } /* math3_2 */
 
+/* This is only used directly by .Internal for Bessel functions,
+   so managing R_alloc stack is only prudence */
 static SEXP math3B(SEXP sa, SEXP sb, SEXP sc, double (*f)(double, double, double, double *), SEXP lcall)
 {
     SEXP sy;
@@ -1899,6 +1905,7 @@ static SEXP math3B(SEXP sa, SEXP sb, SEXP sc, double (*f)(double, double, double
         if (av > amax)
             amax = av;
     }
+    const void *vmax = vmaxget();
     nw = 1 + (long)floor(amax);
     work = (double *)R_alloc((size_t)nw, sizeof(double));
 
@@ -1917,6 +1924,7 @@ static SEXP math3B(SEXP sa, SEXP sb, SEXP sc, double (*f)(double, double, double
     }
 
     FINISH_Math3;
+    vmaxset(vmax);
 
     return sy;
 } /* math3B */

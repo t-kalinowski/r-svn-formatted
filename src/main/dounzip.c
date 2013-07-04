@@ -337,6 +337,7 @@ SEXP Runzip(SEXP args)
     char zipname[PATH_MAX], dest[PATH_MAX];
     const char *p, **topics = NULL;
     int i, ntopics, list, overwrite, junk, setTime, rc, nnames = 0;
+    void *vmax = vmaxget();
 
     if (!isString(CAR(args)) || LENGTH(CAR(args)) != 1)
         error(_("invalid zip name argument"));
@@ -414,6 +415,7 @@ SEXP Runzip(SEXP args)
     PROTECT(names = lengthgets(names, nnames));
     setAttrib(ans, install("extracted"), names);
     UNPROTECT(3);
+    vmaxset(vmax);
     return ans;
 }
 

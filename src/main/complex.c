@@ -1085,6 +1085,7 @@ static void R_cpolyroot(double *opr, double *opi, int *degree, double *zeror, do
         return;
 
     /* Use a single allocation as these as small */
+    void *vmax = vmaxget();
     tmp = (double *)R_alloc((size_t)(10 * nn), sizeof(double));
     pr = tmp;
     pi = tmp + nn;
@@ -1163,6 +1164,7 @@ static void R_cpolyroot(double *opr, double *opi, int *degree, double *zeror, do
         /* return empty handed */
 
         *fail = TRUE;
+        vmaxset(vmax);
         return;
 
     /* the second stage jumps directly to the third stage iteration.
@@ -1183,6 +1185,7 @@ static void R_cpolyroot(double *opr, double *opi, int *degree, double *zeror, do
     /*	calculate the final zero and return */
     cdivid(-pr[1], -pi[1], pr[0], pi[0], &zeror[d1], &zeroi[d1]);
 
+    vmaxset(vmax);
     return;
 }
 

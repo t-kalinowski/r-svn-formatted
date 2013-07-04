@@ -1568,7 +1568,9 @@ void F77_SYMBOL(rchkusr)(void)
     R_CheckUserInterrupt();
 }
 
-/* Return a copy of a string using memory from R_alloc */
+/* Return a copy of a string using memory from R_alloc.
+   NB: caller has to manage R_alloc stack.  Used in platform.c
+*/
 char *acopy_string(const char *in)
 {
     char *out;
@@ -2464,6 +2466,7 @@ static void str_signif(void *x, R_xlen_t n, const char *type, int width, int dig
     double xx;
     int iex;
     size_t j, len_flag = strlen(flag);
+    void *vmax = vmaxget();
 
     char *f0 = R_alloc((size_t)do_fg ? 1 + 1 + len_flag + 3 : 1, sizeof(char));
     char *form = R_alloc((size_t)1 + 1 + len_flag + 3 + strlen(format), sizeof(char));
@@ -2578,4 +2581,5 @@ static void str_signif(void *x, R_xlen_t n, const char *type, int width, int dig
         else
             error("'type' must be \"real\" for this format");
     }
+    vmaxset(vmax);
 }
