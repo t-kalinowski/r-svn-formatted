@@ -1545,8 +1545,8 @@ static void contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
 #endif
 
     vmax = vmaxget();
+    /* This R-allocs ctr_SegDB */
     ctr_SegDB = contourLines(REAL(x), nx, REAL(y), ny, REAL(z), zc, atom);
-    /* we need to keep ctr_SegDB available, so vmaxset(vmax); was wrong */
 
     /* The segment database is now assembled. */
     /* Begin following contours. */
