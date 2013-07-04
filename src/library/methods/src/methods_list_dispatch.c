@@ -860,6 +860,7 @@ static SEXP R_selectByPackage(SEXP table, SEXP classes, int nargs)
         lwidth += strlen(STRING_VALUE(thisPkg)) + 1;
     }
     /* make the label */
+    const void *vmax = vmaxget();
     buf = (char *)R_alloc(lwidth + 1, sizeof(char));
     bufptr = buf;
     for (i = 0; i < nargs; i++)
@@ -875,7 +876,9 @@ static SEXP R_selectByPackage(SEXP table, SEXP classes, int nargs)
     }
     /* look up the method by package -- if R_unboundValue, will go on
      to do inherited calculation */
-    return findVarInFrame(table, install(buf));
+    SEXP sym = install(buf);
+    vmaxset(vmax);
+    return findVarInFrame(table, sym);
 }
 
 static const char *check_single_string(SEXP obj, Rboolean nonEmpty, const char *what)
@@ -1112,6 +1115,7 @@ SEXP R_dispatchGeneric(SEXP fname, SEXP ev, SEXP fdef)
         lwidth += strlen(STRING_VALUE(thisClass)) + 1;
     }
     /* make the label */
+    const void *vmax = vmaxget();
     buf = (char *)R_alloc(lwidth + 1, sizeof(char));
     bufptr = buf;
     for (i = 0; i < nargs; i++)
@@ -1124,6 +1128,7 @@ SEXP R_dispatchGeneric(SEXP fname, SEXP ev, SEXP fdef)
             bufptr++;
     }
     method = findVarInFrame(mtable, install(buf));
+    vmaxset(vmax);
     if (DUPLICATE_CLASS_CASE(method))
         method = R_selectByPackage(method, classes, nargs);
     if (method == R_UnboundValue)
