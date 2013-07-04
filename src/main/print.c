@@ -407,6 +407,7 @@ static void PrintGenericVector(SEXP s, SEXP env)
             case STRSXP:
                 if (LENGTH(tmp) == 1)
                 {
+                    const void *vmax = vmaxget();
                     /* This can potentially overflow */
                     const char *ctmp = translateChar(STRING_ELT(tmp, 0));
                     int len = (int)strlen(ctmp);
@@ -419,6 +420,7 @@ static void PrintGenericVector(SEXP s, SEXP env)
                         pbuf[101] = '\0';
                         strcat(pbuf, " [truncated]");
                     }
+                    vmaxset(vmax);
                 }
                 else
                     snprintf(pbuf, 115, "Character,%d", LENGTH(tmp));
@@ -475,6 +477,7 @@ static void PrintGenericVector(SEXP s, SEXP env)
                     Rprintf("\n");
                 if (names != R_NilValue && STRING_ELT(names, i) != R_NilValue && *CHAR(STRING_ELT(names, i)) != '\0')
                 {
+                    const void *vmax = vmaxget();
                     const char *ss = translateChar(STRING_ELT(names, i));
                     if (taglen + strlen(ss) > TAGBUFLEN)
                     {
@@ -492,6 +495,7 @@ static void PrintGenericVector(SEXP s, SEXP env)
                         else
                             sprintf(ptag, "$`%s`", ss);
                     }
+                    vmaxset(vmax);
                 }
                 else
                 {
@@ -522,6 +526,7 @@ static void PrintGenericVector(SEXP s, SEXP env)
         }
         else
         { /* ns = length(s) == 0 */
+            const void *vmax = vmaxget();
             /* Formal classes are represented as empty lists */
             const char *className = NULL;
             SEXP klass;
@@ -543,6 +548,7 @@ static void PrintGenericVector(SEXP s, SEXP env)
                 Rprintf("An object of class \"%s\"\n", className);
                 UNPROTECT(1);
                 printAttributes(s, env, TRUE);
+                vmaxset(vmax);
                 return;
             }
             else
@@ -551,6 +557,7 @@ static void PrintGenericVector(SEXP s, SEXP env)
                     Rprintf("named ");
                 Rprintf("list()\n");
             }
+            vmaxset(vmax);
         }
         UNPROTECT(1);
     }
@@ -826,6 +833,7 @@ void attribute_hidden PrintValueRec(SEXP s, SEXP env)
         {
             if (LENGTH(t) == 1)
             {
+                const void *vmax = vmaxget();
                 PROTECT(t = getAttrib(s, R_DimNamesSymbol));
                 if (t != R_NilValue && VECTOR_ELT(t, 0) != R_NilValue)
                 {
@@ -840,6 +848,7 @@ void attribute_hidden PrintValueRec(SEXP s, SEXP env)
                 else
                     printVector(s, 1, R_print.quote);
                 UNPROTECT(1);
+                vmaxset(vmax);
             }
             else if (LENGTH(t) == 2)
             {

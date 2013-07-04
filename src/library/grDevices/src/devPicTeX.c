@@ -633,12 +633,11 @@ static Rboolean PicTeXDeviceDriver(pDevDesc dd, const char *filename, const char
 SEXP PicTeX(SEXP args)
 {
     pGEDevDesc dd;
-    char *vmax;
     const char *file, *bg, *fg;
     double height, width;
     Rboolean debug;
 
-    vmax = vmaxget();
+    const void *vmax = vmaxget();
     args = CDR(args); /* skip entry point name */
     file = translateChar(asChar(CAR(args)));
     args = CDR(args);

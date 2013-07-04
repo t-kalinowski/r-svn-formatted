@@ -482,6 +482,7 @@ SEXP in_Cairo(SEXP args)
     SEXP sc;
     const char *filename, *family;
     int type, quality, width, height, pointsize, bgcolor, res, antialias;
+    const void *vmax = vmaxget();
 
     args = CDR(args); /* skip entry point name */
     if (!isString(CAR(args)) || LENGTH(CAR(args)) < 1)
@@ -542,5 +543,6 @@ SEXP in_Cairo(SEXP args)
     }
     END_SUSPEND_INTERRUPTS;
 
+    vmaxset(vmax);
     return R_NilValue;
 }

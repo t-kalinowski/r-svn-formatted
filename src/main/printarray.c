@@ -176,10 +176,12 @@ static void printLogicalMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP
                                                                                                                        \
     if (!isNull(cl))                                                                                                   \
     {                                                                                                                  \
+        const void *vmax = vmaxget();                                                                                  \
         if (STRING_ELT(cl, j) == NA_STRING)                                                                            \
             clabw = R_print.na_width_noquote;                                                                          \
         else                                                                                                           \
             clabw = strwidth(translateChar(STRING_ELT(cl, j)));                                                        \
+        vmaxset(vmax);                                                                                                 \
     }                                                                                                                  \
     else                                                                                                               \
         clabw = IndexWidth(j + 1) + 3;

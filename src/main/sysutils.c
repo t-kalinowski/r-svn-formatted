@@ -212,13 +212,16 @@ FILE *RC_fopen(const SEXP fn, const char *mode, const Rboolean expand)
 #else
 FILE *RC_fopen(const SEXP fn, const char *mode, const Rboolean expand)
 {
-    const char *filename = translateChar(fn);
+    const void *vmax = vmaxget();
+    const char *filename = translateChar(fn), *res;
     if (fn == NA_STRING || !filename)
         return NULL;
     if (expand)
-        return fopen(R_ExpandFileName(filename), mode);
+        res = R_ExpandFileName(filename);
     else
-        return fopen(filename, mode);
+        res = filename;
+    vmaxset(vmax);
+    return fopen(res, mode);
 }
 #endif
 
@@ -868,6 +871,8 @@ int Riconv_close(void *cd)
 
 static void *latin1_obj = NULL, *utf8_obj = NULL, *ucsmb_obj = NULL, *ucsutf8_obj = NULL;
 
+/* This may return a R_alloc-ed result, so the caller has to manage the
+   R_alloc stack */
 const char *translateChar(SEXP x)
 {
     void *obj;
@@ -1001,6 +1006,8 @@ next_char:
     return p;
 }
 
+/* This may return a R_alloc-ed result, so the caller has to manage the
+   R_alloc stack */
 const char *translateChar0(SEXP x)
 {
     if (TYPEOF(x) != CHARSXP)
@@ -1010,6 +1017,8 @@ const char *translateChar0(SEXP x)
     return translateChar(x);
 }
 
+/* This may return a R_alloc-ed result, so the caller has to manage the
+   R_alloc stack */
 const char *translateCharUTF8(SEXP x)
 {
     void *obj;
@@ -1091,6 +1100,8 @@ static void *latin1_wobj = NULL, *utf8_wobj = NULL;
    NB: that wchar_t is UCS-4 is an assumption, but not easy to avoid.
 */
 
+/* This may return a R_alloc-ed result, so the caller has to manage the
+   R_alloc stack */
 attribute_hidden /* but not hidden on Windows, where it was used in tcltk.c */
     const wchar_t *
     wtransChar(SEXP x)
@@ -1191,6 +1202,8 @@ next_char:
 
 extern void *Rf_AdobeSymbol2utf8(char *work, const char *c0, size_t nwork); /* from util.c */
 
+/* This may return a R_alloc-ed result, so the caller has to manage the
+   R_alloc stack */
 const char *reEnc(const char *x, cetype_t ce_in, cetype_t ce_out, int subst)
 {
     void *obj;

@@ -173,6 +173,7 @@ attribute_hidden const char *EncodeRaw(Rbyte x, const char *prefix)
 
 attribute_hidden const char *EncodeEnvironment(SEXP x)
 {
+    const void *vmax = vmaxget();
     static char ch[1000];
     if (x == R_GlobalEnv)
         sprintf(ch, "<environment: R_GlobalEnv>");
@@ -187,6 +188,7 @@ attribute_hidden const char *EncodeEnvironment(SEXP x)
     else
         snprintf(ch, 1000, "<environment: %p>", (void *)x);
 
+    vmaxset(vmax);
     return ch;
 }
 
@@ -504,6 +506,8 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
     char *q, buf[11];
     cetype_t ienc = getCharCE(s);
     Rboolean useUTF8 = w < 0;
+    const void *vmax = vmaxget();
+
     if (w < 0)
         w = w + 1000000;
 
@@ -871,6 +875,8 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
             *q++ = ' ';
     }
     *q = '\0';
+
+    vmaxset(vmax);
     return buffer->data;
 }
 

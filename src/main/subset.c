@@ -1112,6 +1112,7 @@ enum pmatch
 static enum pmatch pstrmatch(SEXP target, SEXP input, size_t slen)
 {
     const char *st = "";
+    const void *vmax = vmaxget();
 
     if (target == R_NilValue)
         return NO_MATCH;
@@ -1126,9 +1127,15 @@ static enum pmatch pstrmatch(SEXP target, SEXP input, size_t slen)
         break;
     }
     if (strncmp(st, translateChar(input), slen) == 0)
+    {
+        vmaxset(vmax);
         return (strlen(st) == slen) ? EXACT_MATCH : PARTIAL_MATCH;
+    }
     else
+    {
+        vmaxset(vmax);
         return NO_MATCH;
+    }
 }
 
 /* The $ subset operator.

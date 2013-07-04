@@ -171,6 +171,7 @@ else if (streql(what, "family"))
     const char *ss;
     value = coerceVector(value, STRSXP);
     lengthCheck(what, value, 1);
+    const void *vmax = vmaxget();
     ss = translateChar(STRING_ELT(value, 0));
     if (strlen(ss) > 200)
         error(_("graphical parameter 'family' has a maximum length of 200 bytes"));
@@ -178,6 +179,7 @@ else if (streql(what, "family"))
     strncpy(dpptr(dd)->family, ss, 201);
 #endif
     strncpy(gpptr(dd)->family, ss, 201);
+    vmaxset(vmax);
 }
 else if (streql(what, "fg"))
 {

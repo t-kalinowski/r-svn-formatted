@@ -72,6 +72,7 @@ R_xlen_t attribute_hidden OneIndex(SEXP x, SEXP s, R_xlen_t len, int partial, SE
 {
     SEXP names;
     R_xlen_t i, indx, nx;
+    const void *vmax;
 
     if (pos < 0 && length(s) > 1)
     {
@@ -97,6 +98,7 @@ R_xlen_t attribute_hidden OneIndex(SEXP x, SEXP s, R_xlen_t len, int partial, SE
         indx = integerOneIndex((int)REAL(s)[pos], len, call);
         break;
     case STRSXP:
+        vmax = vmaxget();
         nx = xlength(x);
         names = getAttrib(x, R_NamesSymbol);
         if (names != R_NilValue)
@@ -135,8 +137,10 @@ R_xlen_t attribute_hidden OneIndex(SEXP x, SEXP s, R_xlen_t len, int partial, SE
         if (indx == -1)
             indx = nx;
         *newname = STRING_ELT(s, pos);
+        vmaxset(vmax);
         break;
     case SYMSXP:
+        vmax = vmaxget();
         nx = xlength(x);
         names = getAttrib(x, R_NamesSymbol);
         if (names != R_NilValue)
@@ -151,6 +155,7 @@ R_xlen_t attribute_hidden OneIndex(SEXP x, SEXP s, R_xlen_t len, int partial, SE
         if (indx == -1)
             indx = nx;
         *newname = STRING_ELT(s, pos);
+        vmaxset(vmax);
         break;
     default:
         if (call == R_NilValue)
@@ -178,6 +183,7 @@ R_xlen_t attribute_hidden get1index(SEXP s, SEXP names, R_xlen_t len, int pok, i
     int warn_pok = 0;
     const char *ss, *cur_name;
     R_xlen_t indx;
+    const void *vmax;
 
     if (pok == -1)
     {
@@ -241,6 +247,7 @@ R_xlen_t attribute_hidden get1index(SEXP s, SEXP names, R_xlen_t len, int pok, i
             break;
 
         /* Try for exact match */
+        vmax = vmaxget();
         ss = translateChar(STRING_ELT(s, pos));
         for (R_xlen_t i = 0; i < xlength(names); i++)
             if (STRING_ELT(names, i) != NA_STRING)
@@ -284,12 +291,15 @@ R_xlen_t attribute_hidden get1index(SEXP s, SEXP names, R_xlen_t len, int pok, i
                 }
             }
         }
+        vmaxset(vmax);
         break;
     case SYMSXP:
+        vmax = vmaxget();
         for (R_xlen_t i = 0; i < xlength(names); i++)
             if (STRING_ELT(names, i) != NA_STRING && streql(translateChar(STRING_ELT(names, i)), CHAR(PRINTNAME(s))))
             {
                 indx = i;
+                vmaxset(vmax);
                 break;
             }
     default:

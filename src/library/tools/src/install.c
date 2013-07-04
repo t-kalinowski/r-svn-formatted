@@ -57,7 +57,7 @@ static void chmod_one(const char *name, const int grpwrt)
     if (grpwrt)
     {
         mask = S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR | S_IWGRP; /* 0664 */
-        dirmask = mask | S_IXUSR | S_IXGRP | S_IXOTH;           /* 0775 */
+        dirmask = mask | S_IXUSR | S_IXGRP | S_IXOTH;           /* 0755 */
     }
     else
     {
@@ -105,7 +105,9 @@ static void chmod_one(const char *name, const int grpwrt)
 }
 
 /* recursively fix up permissions: used for R CMD INSTALL and build.
+   'gwsxp' means set group-write permissions on directories.
    NB: this overrides umask. */
+/* This is a .Call so manages R_alloc stack */
 SEXP dirchmod(SEXP dr, SEXP gwsxp)
 {
     if (!isString(dr) || length(dr) != 1)

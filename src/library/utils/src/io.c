@@ -1160,6 +1160,7 @@ static const char *EncodeElement2(SEXP x, int indx, Rboolean quote, Rboolean qme
         error(_("index out of range"));
     if (TYPEOF(x) == STRSXP)
     {
+        const void *vmax = vmaxget();
         p0 = translateChar(STRING_ELT(x, indx));
         if (!quote)
             return p0;
@@ -1176,6 +1177,7 @@ static const char *EncodeElement2(SEXP x, int indx, Rboolean quote, Rboolean qme
         }
         *q++ = '"';
         *q = '\0';
+        vmaxset(vmax);
         return buff->data;
     }
     return EncodeElement(x, indx, quote ? '"' : 0, cdec);

@@ -408,6 +408,8 @@ SEXP VectorToPairList(SEXP x)
 {
     SEXP xptr, xnew, xnames;
     int i, len, named;
+    const void *vmax = vmaxget();
+
     len = length(x);
     PROTECT(x);
     PROTECT(xnew = allocList(len)); /* limited to int */
@@ -424,6 +426,7 @@ SEXP VectorToPairList(SEXP x)
     if (len > 0) /* can't set attributes on NULL */
         copyMostAttrib(x, xnew);
     UNPROTECT(3);
+    vmaxset(vmax);
     return xnew;
 }
 
@@ -1409,7 +1412,11 @@ SEXP CreateTag(SEXP x)
     if (isNull(x) || isSymbol(x))
         return x;
     if (isString(x) && length(x) >= 1 && length(STRING_ELT(x, 0)) >= 1)
+    {
+        const void *vmax = vmaxget();
         x = install(translateChar(STRING_ELT(x, 0)));
+        vmaxset(vmax);
+    }
     else
         x = install(CHAR(STRING_ELT(deparse1(x, 1, SIMPLEDEPARSE), 0)));
     return x;

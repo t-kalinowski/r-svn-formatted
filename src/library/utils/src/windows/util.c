@@ -301,6 +301,7 @@ SEXP writeClipboard(SEXP text, SEXP sformat)
     char *s;
     const char *p;
     Rboolean success = FALSE, raw = FALSE;
+    const void *vmax = vmaxget();
 
     format = asInteger(sformat);
 
@@ -372,6 +373,7 @@ SEXP writeClipboard(SEXP text, SEXP sformat)
             }
         }
     }
+    vmaxset(vmax);
     return ScalarLogical(success);
 }
 

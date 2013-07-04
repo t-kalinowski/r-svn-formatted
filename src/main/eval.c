@@ -2255,6 +2255,7 @@ static SEXP VectorToPairListNamed(SEXP x)
 {
     SEXP xptr, xnew, xnames;
     int i, len = 0, named;
+    const void *vmax = vmaxget();
 
     PROTECT(x);
     PROTECT(xnames = getAttrib(x, R_NamesSymbol)); /* isn't this protected via x? */
@@ -2282,6 +2283,7 @@ static SEXP VectorToPairListNamed(SEXP x)
     else
         xnew = allocList(0);
     UNPROTECT(2);
+    vmaxset(vmax);
     return xnew;
 }
 
@@ -2700,6 +2702,7 @@ static void findmethod(SEXP Class, const char *group, const char *generic, SEXP 
                        char *buf, SEXP rho)
 {
     int len, whichclass;
+    const void *vmax = vmaxget();
 
     len = length(Class);
 
@@ -2731,6 +2734,7 @@ static void findmethod(SEXP Class, const char *group, const char *generic, SEXP 
             break;
         }
     }
+    vmaxset(vmax);
     *which = whichclass;
 }
 
@@ -2816,6 +2820,7 @@ attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP a
 
     findmethod(lclass, group, generic, &lsxp, &lgr, &lmeth, &lwhich, lbuf, rho);
     PROTECT(lgr);
+    const void *vmax = vmaxget();
     if (isFunction(lsxp) && IS_S4_OBJECT(CAR(args)) && lwhich > 0 &&
         isBasicClass(translateChar(STRING_ELT(lclass, lwhich))))
     {
@@ -2844,6 +2849,7 @@ attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP a
         if (value != R_NilValue)
             SETCADR(args, value);
     }
+    vmaxset(vmax);
 
     PROTECT(rgr);
 
@@ -2887,6 +2893,7 @@ attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP a
 
     PROTECT(newrho = allocSExp(ENVSXP));
     PROTECT(m = allocVector(STRSXP, nargs));
+    vmax = vmaxget();
     s = args;
     for (i = 0; i < nargs; i++)
     {
@@ -2908,6 +2915,7 @@ attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP a
             SET_STRING_ELT(m, i, R_BlankString);
         s = CDR(s);
     }
+    vmaxset(vmax);
 
     defineVar(R_dot_Method, m, newrho);
     UNPROTECT(1);

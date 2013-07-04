@@ -1085,7 +1085,7 @@ static void R_cpolyroot(double *opr, double *opi, int *degree, double *zeror, do
         return;
 
     /* Use a single allocation as these as small */
-    void *vmax = vmaxget();
+    const void *vmax = vmaxget();
     tmp = (double *)R_alloc((size_t)(10 * nn), sizeof(double));
     pr = tmp;
     pi = tmp + nn;

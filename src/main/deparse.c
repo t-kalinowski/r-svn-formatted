@@ -714,6 +714,7 @@ static void printcomment(SEXP s, LocalParseData *d)
 {
     SEXP cmt;
     int i, ncmt;
+    const void *vmax = vmaxget();
 
     /* look for old-style comments first */
 
@@ -735,6 +736,7 @@ static void printcomment(SEXP s, LocalParseData *d)
             writeline(d);
         }
     }
+    vmaxset(vmax);
 }
 
 static const char *quotify(SEXP name, int quote)
@@ -834,11 +836,13 @@ static void deparse2buff(SEXP s, LocalParseData *d)
         }
         break;
     case CHARSXP: {
+        const void *vmax = vmaxget();
         const char *ts = translateChar(s);
         /* versions of R < 2.7.0 cannot parse strings longer than 8192 chars */
         if (strlen(ts) >= 8192)
             d->longstring = TRUE;
         print2buff(ts, d);
+        vmaxset(vmax);
         break;
     }
     case SPECIALSXP:
@@ -1119,11 +1123,13 @@ static void deparse2buff(SEXP s, LocalParseData *d)
                     {
                         s = CADDR(s);
                         n = length(s);
+                        const void *vmax = vmaxget();
                         for (i = 0; i < n; i++)
                         {
                             print2buff(translateChar(STRING_ELT(s, i)), d);
                             writeline(d);
                         }
+                        vmaxset(vmax);
                     }
                     break;
                 case PP_ASSIGN:
@@ -1561,11 +1567,13 @@ static void vector2buff(SEXP vector, LocalParseData *d)
             }
             else if (TYPEOF(vector) == STRSXP)
             {
+                const void *vmax = vmaxget();
                 const char *ts = translateChar(STRING_ELT(vector, i));
                 /* versions of R < 2.7.0 cannot parse strings longer than 8192 chars */
                 if (strlen(ts) >= 8192)
                     d->longstring = TRUE;
                 strp = EncodeElement(vector, i, quote, '.');
+                vmaxset(vmax);
             }
             else if (TYPEOF(vector) == RAWSXP)
             {
@@ -1593,6 +1601,7 @@ static void vector2buff(SEXP vector, LocalParseData *d)
 static void src2buff1(SEXP srcref, LocalParseData *d)
 {
     int i, n;
+    const void *vmax = vmaxget();
     PROTECT(srcref);
 
     PROTECT(srcref = lang2(install("as.character"), srcref));
@@ -1605,6 +1614,7 @@ static void src2buff1(SEXP srcref, LocalParseData *d)
             writeline(d);
     }
     UNPROTECT(3);
+    vmaxset(vmax);
 }
 
 /* src2buff : Deparse source element k to buffer, if possible; return FALSE on failure */
@@ -1631,6 +1641,7 @@ static void vec2buff(SEXP v, LocalParseData *d)
     SEXP nv, sv;
     int i, n /*, localOpts = d->opts */;
     Rboolean lbreak = FALSE;
+    const void *vmax = vmaxget();
 
     n = length(v);
     nv = getAttrib(v, R_NamesSymbol);
@@ -1676,6 +1687,7 @@ static void vec2buff(SEXP v, LocalParseData *d)
     }
     if (lbreak)
         d->indent--;
+    vmaxset(vmax);
 }
 
 static void args2buff(SEXP arglist, int lineb, int formals, LocalParseData *d)

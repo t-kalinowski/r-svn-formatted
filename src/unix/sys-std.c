@@ -781,6 +781,7 @@ static char *R_completion_generator(const char *text, int state)
         SEXP completions, assignCall = PROTECT(lang2(RComp_assignTokenSym, mkString(text))),
                           completionCall = PROTECT(lang1(RComp_completeTokenSym)),
                           retrieveCall = PROTECT(lang1(RComp_retrieveCompsSym));
+        const void *vmax = vmaxget();
 
         eval(assignCall, rcompgen_rho);
         eval(completionCall, rcompgen_rho);
@@ -796,6 +797,7 @@ static char *R_completion_generator(const char *text, int state)
                 compstrings[i] = strdup(translateChar(STRING_ELT(completions, i)));
         }
         UNPROTECT(4);
+        vmaxset(vmax);
     }
 
     if (list_index < ncomp)

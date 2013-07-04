@@ -174,11 +174,13 @@ SEXP dotTcl(SEXP args)
     SEXP ans;
     const char *cmd;
     Tcl_Obj *val;
+    const void *vmax = vmaxget();
     if (!isValidString(CADR(args)))
         error(_("invalid argument"));
     cmd = translateChar(STRING_ELT(CADR(args), 0));
     val = tk_eval(cmd);
     ans = makeRTclObject(val);
+    vmaxset(vmax);
     return ans;
 }
 
@@ -187,6 +189,7 @@ SEXP dotTclObjv(SEXP args)
     SEXP t, avec = CADR(args), nm = getAttrib(avec, R_NamesSymbol);
     int objc, i, result;
     Tcl_Obj **objv;
+    const void *vmax = vmaxget();
 
     for (objc = 0, i = 0; i < length(avec); i++)
     {
@@ -237,21 +240,28 @@ SEXP dotTclObjv(SEXP args)
         error(p);
     }
 
-    return makeRTclObject(Tcl_GetObjResult(RTcl_interp));
+    SEXP res = makeRTclObject(Tcl_GetObjResult(RTcl_interp));
+    vmaxset(vmax);
+    return res;
 }
 
 SEXP RTcl_ObjFromVar(SEXP args)
 {
     Tcl_Obj *tclobj;
+    const void *vmax = vmaxget();
 
     tclobj = Tcl_GetVar2Ex(RTcl_interp, translateChar(STRING_ELT(CADR(args), 0)), NULL, 0);
-    return makeRTclObject(tclobj);
+    SEXP res = makeRTclObject(tclobj);
+    vmaxset(vmax);
+    return res;
 }
 
 SEXP RTcl_AssignObjToVar(SEXP args)
 {
+    const void *vmax = vmaxget();
     Tcl_SetVar2Ex(RTcl_interp, translateChar(STRING_ELT(CADR(args), 0)), NULL,
                   (Tcl_Obj *)R_ExternalPtrAddr(CADDR(args)), 0);
+    vmaxset(vmax);
     return R_NilValue;
 }
 
@@ -313,6 +323,7 @@ SEXP RTcl_ObjFromCharVector(SEXP args)
     int i;
     SEXP val, drop;
     Tcl_Encoding encoding;
+    const void *vmax = vmaxget();
 
     val = CADR(args);
     drop = CADDR(args);
@@ -340,7 +351,9 @@ SEXP RTcl_ObjFromCharVector(SEXP args)
         }
 
     Tcl_FreeEncoding(encoding);
-    return makeRTclObject(tclobj);
+    SEXP res = makeRTclObject(tclobj);
+    vmaxset(vmax);
+    return res;
 }
 
 SEXP RTcl_ObjAsDoubleVector(SEXP args)
@@ -524,6 +537,7 @@ SEXP RTcl_GetArrayElem(SEXP args)
     SEXP x, i;
     const char *xstr, *istr;
     Tcl_Obj *tclobj;
+    const void *vmax = vmaxget();
 
     x = CADR(args);
     i = CADDR(args);
@@ -531,6 +545,7 @@ SEXP RTcl_GetArrayElem(SEXP args)
     xstr = translateChar(STRING_ELT(x, 0));
     istr = translateChar(STRING_ELT(i, 0));
     tclobj = Tcl_GetVar2Ex(RTcl_interp, xstr, istr, 0);
+    vmaxset(vmax);
 
     if (tclobj == NULL)
         return R_NilValue;
@@ -543,6 +558,7 @@ SEXP RTcl_SetArrayElem(SEXP args)
     SEXP x, i;
     const char *xstr, *istr;
     Tcl_Obj *value;
+    const void *vmax = vmaxget();
 
     x = CADR(args);
     i = CADDR(args);
@@ -552,6 +568,7 @@ SEXP RTcl_SetArrayElem(SEXP args)
     istr = translateChar(STRING_ELT(i, 0));
     Tcl_SetVar2Ex(RTcl_interp, xstr, istr, value, 0);
 
+    vmaxset(vmax);
     return R_NilValue;
 }
 
@@ -559,6 +576,7 @@ SEXP RTcl_RemoveArrayElem(SEXP args)
 {
     SEXP x, i;
     const char *xstr, *istr;
+    const void *vmax = vmaxget();
 
     x = CADR(args);
     i = CADDR(args);
@@ -566,6 +584,7 @@ SEXP RTcl_RemoveArrayElem(SEXP args)
     xstr = translateChar(STRING_ELT(x, 0));
     istr = translateChar(STRING_ELT(i, 0));
     Tcl_UnsetVar2(RTcl_interp, xstr, istr, 0);
+    vmaxset(vmax);
 
     return R_NilValue;
 }

@@ -1053,6 +1053,7 @@ static SEXP Rf_MakeDLLInfo(DllInfo *info)
  */
 SEXP attribute_hidden R_getSymbolInfo(SEXP sname, SEXP spackage, SEXP withRegistrationInfo)
 {
+    const void *vmax = vmaxget();
     const char *package, *name;
     R_RegisteredNativeSymbol symbol = {R_ANY_SYM, {NULL}, NULL};
     SEXP sym = R_NilValue;
@@ -1081,7 +1082,8 @@ SEXP attribute_hidden R_getSymbolInfo(SEXP sname, SEXP spackage, SEXP withRegist
     if (f)
         sym = createRSymbolObject(sname, f, &symbol, LOGICAL(withRegistrationInfo)[0]);
 
-    return (sym);
+    vmaxset(vmax);
+    return sym;
 }
 
 SEXP attribute_hidden R_getDllTable()
