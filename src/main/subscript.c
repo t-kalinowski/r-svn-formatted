@@ -349,7 +349,7 @@ SEXP attribute_hidden vectorIndex(SEXP x, SEXP thesub, int start, int stop, int 
             if (dup && NAMED(x) > 1)
             {
                 x = duplicate(x);
-                nthcdr(x, (int)offset);
+                SETCAR(cx, x);
             }
         }
         else
