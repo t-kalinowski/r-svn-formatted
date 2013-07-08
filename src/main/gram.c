@@ -5441,6 +5441,13 @@ static SEXP install_and_save(char *text)
     return install(text);
 }
 
+/* Get an R symbol, and set different yytext.  Used for translation of -> to <-. ->> to <<- */
+static SEXP install_and_save2(char *text, char *savetext)
+{
+    strcpy(yytext, savetext);
+    return install(text);
+}
+
 /* Split the input stream into tokens. */
 /* This is the lowest of the parsing levels. */
 
@@ -5549,12 +5556,12 @@ symbol:
         {
             if (nextchar('>'))
             {
-                yylval = install_and_save("<<-");
+                yylval = install_and_save2("<<-", "->>");
                 return RIGHT_ASSIGN;
             }
             else
             {
-                yylval = install_and_save("<-");
+                yylval = install_and_save2("<-", "->");
                 return RIGHT_ASSIGN;
             }
         }
@@ -5655,9 +5662,8 @@ symbol:
            presumably it was for compatibility with S. */
         if (nextchar('*'))
         {
-            strcpy(yytext, "**");
-            yylval = install("^");
-            c = '^';
+            yylval = install_and_save2("^", "**");
+            return '^';
         }
         else
             yylval = install_and_save("*");
