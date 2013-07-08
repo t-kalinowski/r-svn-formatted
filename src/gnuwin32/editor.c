@@ -109,8 +109,8 @@ static void editor_load_file(editor c, const char *name, int enc)
     textbox t = getdata(c);
     EditorData p = getdata(t);
     FILE *f;
-    char *buffer = NULL, tmp[MAX_PATH + 50];
-    const char *sname, tname[MAX_PATH + 1];
+    char *buffer = NULL, tmp[MAX_PATH + 50], tname[MAX_PATH + 1];
+    const char *sname;
     long num = 1, bufsize;
 
     if (enc == CE_UTF8)
@@ -161,8 +161,8 @@ static void editor_save_file(editor c, const char *name, int enc)
 {
     textbox t = getdata(c);
     FILE *f;
-    char buf[MAX_PATH + 30];
-    const char *sname, tname[MAX_PATH + 1];
+    char buf[MAX_PATH + 30], tname[MAX_PATH + 1];
+    const char *sname;
 
     if (name == NULL)
         return;
@@ -212,7 +212,7 @@ static void editorsaveas(editor c)
         p->file = 1;
         reEnc2(name, p->filename, MAX_PATH + 1, CE_UTF8, CE_NATIVE, 3);
         gsetmodified(t, 0);
-        editor_set_title(c, tname);
+        editor_set_title(c, p->filename);
     }
     show(c);
 }
@@ -401,8 +401,7 @@ void menueditornew(control m)
 static void editoropen(const char *default_name)
 {
     wchar_t *wname;
-    char name[4 * MAX_PATH];
-    const char title[4 * MAX_PATH];
+    char name[4 * MAX_PATH], title[4 * MAX_PATH];
 
     int i;
     textbox t;

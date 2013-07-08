@@ -1375,25 +1375,27 @@ void reEnc2(const char *x, char *y, int ny, cetype_t ce_in, cetype_t ce_out, int
 {
     void *obj;
     const char *inbuf;
-    char *outbuf, *p;
+    char *outbuf;
     size_t inb, outb, res, top;
     char *tocode = NULL, *fromcode = NULL;
     char buf[20];
     R_StringBuffer cbuff = {NULL, 0, MAXELTSIZE};
 
+    strncpy(y, x, ny);
+
     if (ce_in == ce_out || ce_in == CE_ANY || ce_out == CE_ANY)
-        return x;
+        return;
     if (utf8locale && ce_in == CE_NATIVE && ce_out == CE_UTF8)
-        return x;
+        return;
     if (utf8locale && ce_out == CE_NATIVE && ce_in == CE_UTF8)
-        return x;
+        return;
     if (latin1locale && ce_in == CE_NATIVE && ce_out == CE_LATIN1)
-        return x;
+        return;
     if (latin1locale && ce_out == CE_NATIVE && ce_in == CE_LATIN1)
-        return x;
+        return;
 
     if (strIsASCII(x))
-        return x;
+        return;
 
     switch (ce_in)
     {
@@ -1410,7 +1412,7 @@ void reEnc2(const char *x, char *y, int ny, cetype_t ce_in, cetype_t ce_out, int
         fromcode = "UTF-8";
         break;
     default:
-        return x;
+        return;
     }
 
     switch (ce_out)
@@ -1428,12 +1430,12 @@ void reEnc2(const char *x, char *y, int ny, cetype_t ce_in, cetype_t ce_out, int
         tocode = "UTF-8";
         break;
     default:
-        return x;
+        return;
     }
 
     obj = Riconv_open(tocode, fromcode);
     if (obj == (void *)(-1))
-        return x;
+        return;
     R_AllocStringBuffer(0, &cbuff);
 top_of_loop:
     inbuf = x;
@@ -1502,7 +1504,7 @@ next_char:
     res = (top - outb) + 1; /* strlen(cbuff.data) + 1; */
     if (res > ny)
         error("converted string too long for buffer");
-    memcpy(out, cbuff.data, res);
+    memcpy(y, cbuff.data, res);
     R_FreeStringBuffer(&cbuff);
 }
 #endif
