@@ -408,7 +408,6 @@ SEXP VectorToPairList(SEXP x)
 {
     SEXP xptr, xnew, xnames;
     int i, len, named;
-    const void *vmax = vmaxget();
 
     len = length(x);
     PROTECT(x);
@@ -420,13 +419,12 @@ SEXP VectorToPairList(SEXP x)
     {
         SETCAR(xptr, VECTOR_ELT(x, i));
         if (named && CHAR(STRING_ELT(xnames, i))[0] != '\0') /* ASCII */
-            SET_TAG(xptr, install(translateChar(STRING_ELT(xnames, i))));
+            SET_TAG(xptr, installTrChar(STRING_ELT(xnames, i)));
         xptr = CDR(xptr);
     }
     if (len > 0) /* can't set attributes on NULL */
         copyMostAttrib(x, xnew);
     UNPROTECT(3);
-    vmaxset(vmax);
     return xnew;
 }
 
@@ -1413,9 +1411,7 @@ SEXP CreateTag(SEXP x)
         return x;
     if (isString(x) && length(x) >= 1 && length(STRING_ELT(x, 0)) >= 1)
     {
-        const void *vmax = vmaxget();
-        x = install(translateChar(STRING_ELT(x, 0)));
-        vmaxset(vmax);
+        x = installTrChar(STRING_ELT(x, 0));
     }
     else
         x = install(CHAR(STRING_ELT(deparse1(x, 1, SIMPLEDEPARSE), 0)));
@@ -1711,7 +1707,7 @@ SEXP attribute_hidden do_asfunction(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         SETCAR(pargs, VECTOR_ELT(arglist, i));
         if (names != R_NilValue && *CHAR(STRING_ELT(names, i)) != '\0') /* ASCII */
-            SET_TAG(pargs, install(translateChar(STRING_ELT(names, i))));
+            SET_TAG(pargs, installTrChar(STRING_ELT(names, i)));
         else
             SET_TAG(pargs, R_NilValue);
         pargs = CDR(pargs);
@@ -1755,7 +1751,7 @@ SEXP attribute_hidden do_ascall(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             SETCAR(ap, VECTOR_ELT(args, i));
             if (names != R_NilValue && !StringBlank(STRING_ELT(names, i)))
-                SET_TAG(ap, install(translateChar(STRING_ELT(names, i))));
+                SET_TAG(ap, installTrChar(STRING_ELT(names, i)));
             ap = CDR(ap);
         }
         UNPROTECT(1);
@@ -2666,7 +2662,7 @@ SEXP attribute_hidden do_docall(SEXP call, SEXP op, SEXP args, SEXP rho)
         SET_PRVALUE(CAR(c), VECTOR_ELT(args, i));
 #endif
         if (ItemName(names, (int)i) != R_NilValue)
-            SET_TAG(c, install(translateChar(ItemName(names, i))));
+            SET_TAG(c, installTrChar(ItemName(names, i)));
         c = CDR(c);
     }
     call = eval(call, envir);

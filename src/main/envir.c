@@ -1600,7 +1600,7 @@ SEXP attribute_hidden do_assign(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         if (length(CAR(args)) > 1)
             warning(_("only the first element is used as variable name"));
-        name = install(translateChar(STRING_ELT(CAR(args), 0)));
+        name = installTrChar(STRING_ELT(CAR(args), 0));
     }
     PROTECT(val = CADR(args));
     aenv = CADDR(args);
@@ -1641,7 +1641,7 @@ SEXP attribute_hidden do_list2env(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     for (int i = 0; i < LENGTH(x); i++)
     {
-        SEXP name = install(translateChar(STRING_ELT(xnms, i)));
+        SEXP name = installTrChar(STRING_ELT(xnms, i));
         defineVar(name, VECTOR_ELT(x, i), envir);
     }
 
@@ -1746,7 +1746,7 @@ SEXP attribute_hidden do_remove(SEXP call, SEXP op, SEXP args, SEXP rho)
     for (i = 0; i < LENGTH(name); i++)
     {
         done = 0;
-        tsym = install(translateChar(STRING_ELT(name, i)));
+        tsym = installTrChar(STRING_ELT(name, i));
         if (!HASHASH(PRINTNAME(tsym)))
             hashcode = R_Newhashpjw(CHAR(PRINTNAME(tsym)));
         else
@@ -1791,7 +1791,7 @@ SEXP attribute_hidden do_get(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (!isValidStringF(CAR(args)))
         error(_("invalid first argument"));
     else
-        t1 = install(translateChar(STRING_ELT(CAR(args), 0)));
+        t1 = installTrChar(STRING_ELT(CAR(args), 0));
 
     /* envir :	originally, the "where=" argument */
 
@@ -2067,7 +2067,7 @@ SEXP attribute_hidden do_missing(SEXP call, SEXP op, SEXP args, SEXP rho)
     check1arg(args, call, "x");
     s = sym = CAR(args);
     if (isString(sym) && length(sym) == 1)
-        s = sym = install(translateChar(STRING_ELT(CAR(args), 0)));
+        s = sym = installTrChar(STRING_ELT(CAR(args), 0));
     if (!isSymbol(sym))
         errorcall(call, _("invalid use of 'missing'"));
 
@@ -3353,9 +3353,7 @@ static SEXP checkNSname(SEXP call, SEXP name)
     case STRSXP:
         if (LENGTH(name) >= 1)
         {
-            const void *vmax = vmaxget();
-            name = install(translateChar(STRING_ELT(name, 0)));
-            vmaxset(vmax);
+            name = installTrChar(STRING_ELT(name, 0));
             break;
         }
     /* else fall through */
@@ -3447,8 +3445,8 @@ SEXP attribute_hidden do_importIntoEnv(SEXP call, SEXP op, SEXP args, SEXP rho)
     n = LENGTH(impnames);
     for (i = 0; i < n; i++)
     {
-        impsym = install(translateChar(STRING_ELT(impnames, i)));
-        expsym = install(translateChar(STRING_ELT(expnames, i)));
+        impsym = installTrChar(STRING_ELT(impnames, i));
+        expsym = installTrChar(STRING_ELT(expnames, i));
 
         /* find the binding--may be a CONS cell or a symbol */
         SEXP binding = R_NilValue;

@@ -184,10 +184,8 @@ SEXP getAttrib(SEXP vec, SEXP name)
     if (ATTRIB(vec) == R_NilValue && !(TYPEOF(vec) == LISTSXP || TYPEOF(vec) == LANGSXP))
         return R_NilValue;
 
-    const void *vmax = vmaxget();
     if (isString(name))
-        name = install(translateChar(STRING_ELT(name, 0)));
-    vmaxset(vmax);
+        name = installTrChar(STRING_ELT(name, 0));
 
     /* special test for c(NA, n) rownames of data frames: */
     if (name == R_RowNamesSymbol)
@@ -249,9 +247,7 @@ SEXP setAttrib(SEXP vec, SEXP name, SEXP val)
 
     if (isString(name))
     {
-        const void *vmax = vmaxget();
-        name = install(translateChar(STRING_ELT(name, 0)));
-        vmaxset(vmax);
+        name = installTrChar(STRING_ELT(name, 0));
     }
     if (val == R_NilValue)
     {
@@ -950,7 +946,7 @@ SEXP namesgets(SEXP vec, SEXP val)
         for (s = vec; s != R_NilValue; s = CDR(s), i++)
             if (STRING_ELT(val, i) != R_NilValue && STRING_ELT(val, i) != R_NaString &&
                 *CHAR(STRING_ELT(val, i)) != 0) /* test of length */
-                SET_TAG(s, install(translateChar(STRING_ELT(val, i))));
+                SET_TAG(s, installTrChar(STRING_ELT(val, i)));
             else
                 SET_TAG(s, R_NilValue);
     }
@@ -1083,7 +1079,7 @@ SEXP dimnamesgets(SEXP vec, SEXP val)
         top = VECTOR_ELT(val, 0);
         i = 0;
         for (val = vec; !isNull(val); val = CDR(val))
-            SET_TAG(val, install(translateChar(STRING_ELT(top, i++))));
+            SET_TAG(val, installTrChar(STRING_ELT(top, i++)));
     }
     UNPROTECT(2);
     return vec;
@@ -1348,7 +1344,7 @@ SEXP attribute_hidden do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             if (i == i0)
                 continue;
-            setAttrib(object, install(translateChar(STRING_ELT(names, i))), VECTOR_ELT(attrs, i));
+            setAttrib(object, installTrChar(STRING_ELT(names, i)), VECTOR_ELT(attrs, i));
         }
     }
     UNPROTECT(1);
@@ -1770,9 +1766,9 @@ SEXP R_do_slot_assign(SEXP obj, SEXP name, SEXP value)
     PROTECT(value);
     /* Ensure that name is a symbol */
     if (isString(name) && LENGTH(name) == 1)
-        name = install(translateChar(STRING_ELT(name, 0)));
+        name = installTrChar(STRING_ELT(name, 0));
     if (TYPEOF(name) == CHARSXP)
-        name = install(translateChar(name));
+        name = installTrChar(name);
     if (!isSymbol(name))
         error(_("invalid type or length for slot name"));
 
@@ -1817,7 +1813,7 @@ SEXP attribute_hidden do_AT(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!(isSymbol(nlist) || (isString(nlist) && LENGTH(nlist) == 1)))
         error(_("invalid type or length for slot name"));
     if (isString(nlist))
-        nlist = install(translateChar(STRING_ELT(nlist, 0)));
+        nlist = installTrChar(STRING_ELT(nlist, 0));
     PROTECT(object = eval(CAR(args), env));
     if (!s_dot_Data)
         init_slot_handling();

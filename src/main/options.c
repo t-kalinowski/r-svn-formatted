@@ -431,7 +431,7 @@ SEXP attribute_hidden do_options(SEXP call, SEXP op, SEXP args, SEXP rho)
 
         if (*CHAR(namei))
         { /* name = value  ---> assignment */
-            tag = install(translateChar(namei));
+            tag = installTrChar(namei);
             if (streql(CHAR(namei), "width"))
             {
                 k = asInteger(argi);
