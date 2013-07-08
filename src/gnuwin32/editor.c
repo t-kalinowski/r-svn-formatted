@@ -41,6 +41,9 @@ extern UImode CharacterMode;
 #include "rui.h"
 #include "editor.h"
 
+/* from sysutils.c */
+void reEnc2(const char *x, char *y, int ny, cetype_t ce_in, cetype_t ce_out, int subst);
+
 #define gettext GA_gettext
 
 #define MCHECK(a)                                                                                                      \
@@ -107,16 +110,16 @@ static void editor_load_file(editor c, const char *name, int enc)
     EditorData p = getdata(t);
     FILE *f;
     char *buffer = NULL, tmp[MAX_PATH + 50];
-    const char *sname;
+    const char *sname, tname[MAX_PATH + 1];
     long num = 1, bufsize;
-    const void *vmax = vmaxget();
 
     if (enc == CE_UTF8)
     {
         wchar_t wname[MAX_PATH + 1];
         Rf_utf8towcs(wname, name, MAX_PATH + 1);
         f = R_wfopen(wname, L"r");
-        sname = reEnc(name, CE_UTF8, CE_NATIVE, 3);
+        reEnc2(name, tname, MAX_PATH + 1, CE_UTF8, CE_NATIVE, 3);
+        sname = tname;
     }
     else
     {
@@ -152,7 +155,6 @@ static void editor_load_file(editor c, const char *name, int enc)
     gsetmodified(t, 0);
     free(buffer);
     fclose(f);
-    vmaxset(vmax);
 }
 
 static void editor_save_file(editor c, const char *name, int enc)
@@ -160,18 +162,18 @@ static void editor_save_file(editor c, const char *name, int enc)
     textbox t = getdata(c);
     FILE *f;
     char buf[MAX_PATH + 30];
-    const char *sname;
+    const char *sname, tname[MAX_PATH + 1];
 
     if (name == NULL)
         return;
     else
     {
-        const void *vmax = vmaxget();
         if (enc == CE_UTF8)
         {
             wchar_t wname[MAX_PATH + 1];
             Rf_utf8towcs(wname, name, MAX_PATH + 1);
-            sname = reEnc(name, CE_UTF8, CE_NATIVE, 3);
+            reEnc2(name, tname, MAX_PATH + 1, CE_UTF8, CE_NATIVE, 3);
+            sname = tname;
             f = R_wfopen(wname, L"w");
         }
         else
@@ -187,7 +189,6 @@ static void editor_save_file(editor c, const char *name, int enc)
         }
         fprintf(f, "%s", gettext(t));
         fclose(f);
-        vmaxset(vmax);
     }
 }
 
@@ -201,21 +202,17 @@ static void editorsaveas(editor c)
     wname = askfilesaveW(G_("Save script as"), "");
     if (wname)
     {
-        const void *vmax = vmaxget();
         char name[4 * MAX_PATH + 1];
-        const char *tname;
         wcstoutf8(name, wname, MAX_PATH);
         /* now check if it has an extension */
         char *q = strchr(name, '.');
         if (!q)
             strncat(name, ".R", 4 * MAX_PATH);
-        tname = reEnc(name, CE_UTF8, CE_NATIVE, 3);
         editor_save_file(c, name, CE_UTF8);
         p->file = 1;
-        strncpy(p->filename, tname, MAX_PATH + 1);
+        reEnc2(name, p->filename, MAX_PATH + 1, CE_UTF8, CE_NATIVE, 3);
         gsetmodified(t, 0);
         editor_set_title(c, tname);
-        vmaxset(vmax);
     }
     show(c);
 }
@@ -405,7 +402,7 @@ static void editoropen(const char *default_name)
 {
     wchar_t *wname;
     char name[4 * MAX_PATH];
-    const char *title;
+    const char title[4 * MAX_PATH];
 
     int i;
     textbox t;
@@ -414,7 +411,6 @@ static void editoropen(const char *default_name)
     wname = askfilenameW(G_("Open script"), default_name); /* returns NULL if open dialog cancelled */
     if (wname)
     {
-        const void *vmax = vmaxget();
         wcstoutf8(name, wname, MAX_PATH);
         /* check if file is already open in an editor. If so, close and open again */
         for (i = 0; i < neditors; ++i)
@@ -427,9 +423,8 @@ static void editoropen(const char *default_name)
                 break;
             }
         }
-        title = reEnc(name, CE_UTF8, CE_NATIVE, 3);
+        reEnc2(name, title, MAX_PATH + 1, CE_UTF8, CE_NATIVE, 3);
         Rgui_Edit(name, CE_UTF8, title, 0);
-        vmaxset(vmax);
     }
     else
         show(RConsole);
