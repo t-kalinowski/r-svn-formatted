@@ -2951,7 +2951,7 @@ SEXP R_decompress3(SEXP in, Rboolean *err);
    result to a file.  Returns the key position/length key for
    retrieving the value */
 
-SEXP attribute_hidden R_lazyLoadDBinsertValue(SEXP value, SEXP file, SEXP ascii, SEXP compsxp, SEXP hook)
+static SEXP R_lazyLoadDBinsertValue(SEXP value, SEXP file, SEXP ascii, SEXP compsxp, SEXP hook)
 {
     PROTECT_INDEX vpi;
     int compress = asInteger(compsxp);
