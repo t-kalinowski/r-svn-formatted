@@ -53,7 +53,7 @@ static lzma_ret auto_decode(lzma_coder *coder, lzma_allocator *allocator, const 
         }
         else
         {
-            return_if_error(lzma_alone_decoder_init(&coder->next, allocator, coder->memlimit));
+            return_if_error(lzma_alone_decoder_init(&coder->next, allocator, coder->memlimit, true));
 
             // If the application wants to know about missing
             // integrity check or about the check in general, we
