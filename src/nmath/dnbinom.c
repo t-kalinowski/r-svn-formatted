@@ -49,6 +49,9 @@ double dnbinom(double x, double size, double prob, int give_log)
     R_D_nonint_check(x);
     if (x < 0 || !R_FINITE(x))
         return R_D__0;
+    /* limiting case as size approaches zero is point mass at zero */
+    if (x == 0 && size == 0)
+        return R_D__1;
     x = R_D_forceint(x);
 
     ans = dbinom_raw(size, x + size, prob, 1 - prob, give_log);
@@ -72,6 +75,14 @@ double dnbinom_mu(double x, double size, double mu, int give_log)
     R_D_nonint_check(x);
     if (x < 0 || !R_FINITE(x))
         return R_D__0;
+
+    /* limiting case as size approaches zero is point mass at zero,
+     * even if mu is kept constant. limit distribution does not
+     * have mean mu, though.
+     */
+    if (x == 0 && size == 0)
+        return R_D__1;
+
     x = R_D_forceint(x);
     if (x == 0) /* be accurate, both for n << mu, and n >> mu :*/
         return R_D_exp(size * (size < mu ? log(size / (size + mu)) : log1p(-mu / (size + mu))));
