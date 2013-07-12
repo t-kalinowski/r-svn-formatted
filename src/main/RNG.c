@@ -388,17 +388,24 @@ static void GetRNGkind(SEXP seeds)
     {
         if (seeds == R_MissingArg) /* How can this happen? */
             error(_("'.Random.seed' is a missing argument with no default"));
-        error(_("'.Random.seed' is not an integer vector but of type '%s'"), type2char(TYPEOF(seeds)));
+        warning(_("'.Random.seed' is not an integer vector but of type '%s', so ignored"), type2char(TYPEOF(seeds)));
+        goto invalid;
     }
     is = INTEGER(seeds);
     tmp = is[0];
     /* avoid overflow here: max current value is 705 */
     if (tmp == NA_INTEGER || tmp < 0 || tmp > 1000)
-        error(_("'.Random.seed[1]' is not a valid integer"));
+    {
+        error(_("'.Random.seed[1]' is not a valid integer, so ignored"));
+        goto invalid;
+    }
     newRNG = (RNGtype)(tmp % 100);
     newN01 = (N01type)(tmp / 100);
     if (newN01 > KINDERMAN_RAMAGE)
-        error(_("'.Random.seed[1]' is not a valid Normal type"));
+    {
+        error(_("'.Random.seed[1]' is not a valid Normal type, so ignored"));
+        goto invalid;
+    }
     switch (newRNG)
     {
     case WICHMANN_HILL:
@@ -411,13 +418,22 @@ static void GetRNGkind(SEXP seeds)
         break;
     case USER_UNIF:
         if (!User_unif_fun)
-            error(_("'.Random.seed[1] = 5' but no user-supplied generator"));
+        {
+            warning(_("'.Random.seed[1] = 5' but no user-supplied generator, so ignored"));
+            goto invalid;
+        }
         break;
     default:
-        error(_("'.Random.seed[1]' is not a valid RNG kind"));
+        warning(_("'.Random.seed[1]' is not a valid RNG kind so ignored"));
+        goto invalid;
     }
     RNG_kind = newRNG;
     N01_kind = newN01;
+    return;
+invalid:
+    RNG_kind = RNG_DEFAULT;
+    N01_kind = N01_DEFAULT;
+    Randomize(RNG_kind);
     return;
 }
 
