@@ -696,7 +696,7 @@ static void rdqagie(integr_fn f, void *ex, double *bound, int *inf, double *epsa
                 errmax = elist[maxerr];
                 if (fabs(blist[maxerr] - alist[maxerr]) > small)
                 {
-                    continue;
+                    goto L90;
                 }
                 ++nrmax;
                 /* L50: */
@@ -742,6 +742,7 @@ static void rdqagie(integr_fn f, void *ex, double *bound, int *inf, double *epsa
         extrap = FALSE;
         small *= .5;
         erlarg = errsum;
+    L90:;
     }
 
     /* L100:     set final result and error estimate. */
@@ -1429,7 +1430,7 @@ static void rdqagse(integr_fn f, void *ex, double *a, double *b, double *epsabs,
                 errmax = elist[maxerr];
                 if (fabs(blist[maxerr] - alist[maxerr]) > small)
                 {
-                    continue;
+                    goto L90;
                 }
                 ++nrmax;
                 /* L50: */
@@ -1474,6 +1475,7 @@ static void rdqagse(integr_fn f, void *ex, double *a, double *b, double *epsabs,
         extrap = FALSE;
         small *= .5;
         erlarg = errsum;
+    L90:;
     }
 
     /* L100:	set final result and error estimate. */
