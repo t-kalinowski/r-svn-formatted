@@ -240,7 +240,9 @@ void begincontext(RCNTXT *cptr, int flags, SEXP syscall, SEXP env, SEXP sysp, SE
     cptr->intstack = R_BCIntStackTop;
 #endif
     cptr->srcref = R_Srcref;
+    cptr->browserfinish = R_GlobalContext->browserfinish;
     cptr->nextcontext = R_GlobalContext;
+
     R_GlobalContext = cptr;
 }
 
