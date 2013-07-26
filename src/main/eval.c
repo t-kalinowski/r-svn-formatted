@@ -977,7 +977,8 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedenv)
 
     /* Debugging */
 
-    SET_RDEBUG(newrho, RDEBUG(op) || RSTEP(op) || (RDEBUG(rho) && R_BrowserLastCommand == 's'));
+    /* a package calls eval with rho = NULL */
+    SET_RDEBUG(newrho, RDEBUG(op) || RSTEP(op) || (rho && RDEBUG(rho) && R_BrowserLastCommand == 's'));
     if (RSTEP(op))
         SET_RSTEP(op, 0);
     if (RDEBUG(newrho))
