@@ -484,6 +484,7 @@ static SEXP forcePromise(SEXP e)
 
 /* Return value of "e" evaluated in "rho". */
 
+/* some places, e.g. deparse2buff, call this with a promise and rho = NULL */
 SEXP eval(SEXP e, SEXP rho)
 {
     SEXP op, tmp;
@@ -884,6 +885,10 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedenv)
     /* actuals = values to be bound to formals */
     /* arglist = the tagged list of arguments */
 
+    /* protection against rho = NULL */
+    if (!rho || !isEnvironment(rho)) // this is deliberately not translated
+        errorcall(call, "'rho' must be an environment: detected in C-level applyClosure");
+
     formals = FORMALS(op);
     body = BODY(op);
     savedrho = CLOENV(op);
@@ -977,8 +982,7 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedenv)
 
     /* Debugging */
 
-    /* a package calls eval with rho = NULL */
-    SET_RDEBUG(newrho, RDEBUG(op) || RSTEP(op) || (rho && RDEBUG(rho) && R_BrowserLastCommand == 's'));
+    SET_RDEBUG(newrho, RDEBUG(op) || RSTEP(op) || (RDEBUG(rho) && R_BrowserLastCommand == 's'));
     if (RSTEP(op))
         SET_RSTEP(op, 0);
     if (RDEBUG(newrho))
