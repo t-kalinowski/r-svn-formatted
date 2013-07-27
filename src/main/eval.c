@@ -354,7 +354,7 @@ static void R_InitProfiling(SEXP filename, int append, double dinterval, int mem
         R_Srcfile_bufcount = numfiles;
         size_t len1 = R_Srcfile_bufcount * sizeof(char *), len2 = bufsize;
         R_PreserveObject(R_Srcfiles_buffer = Rf_allocVector(RAWSXP, len1 + len2));
-        //   	memset(RAW(R_Srcfiles_buffer), 0, len1+len2);
+        //	memset(RAW(R_Srcfiles_buffer), 0, len1+len2);
         R_Srcfiles = (char **)RAW(R_Srcfiles_buffer);
         R_Srcfiles[0] = (char *)RAW(R_Srcfiles_buffer) + len1;
         *(R_Srcfiles[0]) = '\0';
@@ -489,6 +489,11 @@ SEXP eval(SEXP e, SEXP rho)
 {
     SEXP op, tmp;
     static int evalcount = 0;
+
+    if (!rho)
+        error("'rho' cannot be C NULL: detected in C-level eval");
+    if (!isEnvironment(rho))
+        error("'rho' must be an environment not %s: detected in C-level eval", type2char(TYPEOF(rho)));
 
     /* Save the current srcref context. */
 
@@ -886,8 +891,12 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedenv)
     /* arglist = the tagged list of arguments */
 
     /* protection against rho = NULL */
-    if (!rho || !isEnvironment(rho)) // this is deliberately not translated
-        errorcall(call, "'rho' must be an environment: detected in C-level applyClosure");
+    // these are deliberately not translated
+    if (!rho)
+        errorcall(call, "'rho' cannot be C NULL: detected in C-level applyClosure");
+    if (!isEnvironment(rho))
+        errorcall(call, "'rho' must be an environment not %s: detected in C-level applyClosure",
+                  type2char(TYPEOF(rho)));
 
     formals = FORMALS(op);
     body = BODY(op);
@@ -4482,7 +4491,7 @@ static R_INLINE void checkForMissings(SEXP args, SEXP call)
                _not_ signal an error for a call expression that
                produces an R_MissingArg value; for example
 
-                   c(alist(a=)$a)
+               c(alist(a=)$a)
 
                does not signal an error. If we decide we do want an
                error in this case we can modify evalList for the
