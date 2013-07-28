@@ -861,7 +861,7 @@ int attribute_hidden Rstd_ReadConsole(const char *prompt, unsigned char *buf, in
             if (!cd)
             {
                 cd = Riconv_open("", R_StdinEnc);
-                if (!cd)
+                if (cd == (void *)-1)
                     error(_("encoding '%s' is not recognised"), R_StdinEnc);
             }
             res = Riconv(cd, &ib, &inb, &ob, &onb);

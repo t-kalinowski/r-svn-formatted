@@ -340,7 +340,7 @@ static int FileReadConsole(const char *prompt, char *buf, int len, int addhistor
         if (!cd)
         {
             cd = Riconv_open("", R_StdinEnc);
-            if (!cd)
+            if (cd == (void *)-1)
                 error(_("encoding '%s' is not recognised"), R_StdinEnc);
         }
         res = Riconv(cd, &ib, &inb, &ob, &onb);
