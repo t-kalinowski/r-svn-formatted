@@ -1126,6 +1126,11 @@ int cmdlineoptions(int ac, char **av)
             {
                 ac--;
                 av++;
+                if (!ac)
+                {
+                    snprintf(s, 1024, _("option '%s' requires an argument"), "-f");
+                    R_Suicide(s);
+                }
                 Rp->R_Interactive = FALSE;
                 Rp->ReadConsole = FileReadConsole;
                 if (strcmp(*av, "-"))
@@ -1156,6 +1161,11 @@ int cmdlineoptions(int ac, char **av)
             {
                 ac--;
                 av++;
+                if (!ac)
+                {
+                    snprintf(s, 1024, _("option '%s' requires an argument"), "-e");
+                    R_Suicide(s);
+                }
                 if (strlen(cmdlines) + strlen(*av) + 2 <= 10000)
                 {
                     strcat(cmdlines, *av);
