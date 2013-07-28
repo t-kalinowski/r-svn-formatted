@@ -2976,23 +2976,32 @@ static void reset_pp_stack(void *data)
     R_PPStackSize = *poldpps;
 }
 
+void R_signal_protect_error(void)
+{
+    RCNTXT cntxt;
+    int oldpps = R_PPStackSize;
+
+    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_BaseEnv, R_BaseEnv, R_NilValue, R_NilValue);
+    cntxt.cend = &reset_pp_stack;
+    cntxt.cenddata = &oldpps;
+
+    if (R_PPStackSize < R_RealPPStackSize)
+        R_PPStackSize = R_RealPPStackSize;
+    errorcall(R_NilValue, _("protect(): protection stack overflow"));
+
+    endcontext(&cntxt); /* not reached */
+}
+
+void R_signal_unprotect_error(void)
+{
+    error(_("unprotect(): only %d protected items"), R_PPStackTop);
+}
+
+#ifndef INLINE_PROTECT
 SEXP protect(SEXP s)
 {
     if (R_PPStackTop >= R_PPStackSize)
-    {
-        RCNTXT cntxt;
-        int oldpps = R_PPStackSize;
-
-        begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_BaseEnv, R_BaseEnv, R_NilValue, R_NilValue);
-        cntxt.cend = &reset_pp_stack;
-        cntxt.cenddata = &oldpps;
-
-        if (R_PPStackSize < R_RealPPStackSize)
-            R_PPStackSize = R_RealPPStackSize;
-        errorcall(R_NilValue, _("protect(): protection stack overflow"));
-
-        endcontext(&cntxt); /* not reached */
-    }
+        R_signal_protect_error();
     R_PPStack[R_PPStackTop++] = CHK(s);
     return s;
 }
@@ -3004,8 +3013,9 @@ void unprotect(int l)
     if (R_PPStackTop >= l)
         R_PPStackTop -= l;
     else
-        error(_("unprotect(): only %d protected items"), R_PPStackTop);
+        R_signal_unprotect_error();
 }
+#endif
 
 /* "unprotect_ptr" remove pointer from somewhere in R_PPStack */
 
@@ -3047,20 +3057,27 @@ int Rf_isProtected(SEXP s)
     return (i);
 }
 
+#ifndef INLINE_PROTECT
 void R_ProtectWithIndex(SEXP s, PROTECT_INDEX *pi)
 {
     protect(s);
     *pi = R_PPStackTop - 1;
 }
+#endif
 
+void R_signal_reprotect_error(PROTECT_INDEX i)
+{
+    error(_("R_Reprotect: only %d protected items, can't reprotect index %d"), R_PPStackTop, i);
+}
+
+#ifndef INLINE_PROTECT
 void R_Reprotect(SEXP s, PROTECT_INDEX i)
 {
     if (i >= R_PPStackTop || i < 0)
-    {
-        error(_("R_Reprotect: only %d protected items, can't reprotect index %d"), R_PPStackTop, i);
-    }
+        R_signal_reprotect_error(i);
     R_PPStack[i] = s;
 }
+#endif
 
 #ifdef UNUSED
 /* remove all objects from the protection stack from index i upwards
