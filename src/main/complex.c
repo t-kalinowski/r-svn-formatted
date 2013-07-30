@@ -112,7 +112,7 @@ SEXP attribute_hidden complex_unary(ARITHOP_TYPE code, SEXP s1, SEXP call)
     case PLUSOP:
         return s1;
     case MINUSOP:
-        ans = duplicate(s1);
+        ans = NAMED(s1) == 0 ? s1 : duplicate(s1);
         n = XLENGTH(s1);
         for (i = 0; i < n; i++)
         {
@@ -228,7 +228,7 @@ SEXP attribute_hidden complex_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         return (allocVector(CPLXSXP, 0));
 
     n = (n1 > n2) ? n1 : n2;
-    ans = allocVector(CPLXSXP, n);
+    ans = R_allocOrReuseVector(s1, s2, CPLXSXP, n);
     PROTECT(ans);
 
     switch (code)
@@ -288,9 +288,9 @@ SEXP attribute_hidden complex_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
 
     /* Copy attributes from longer argument. */
 
-    if (n == n2 && ATTRIB(s2) != R_NilValue)
+    if (ans != s2 && n == n2 && ATTRIB(s2) != R_NilValue)
         copyMostAttrib(s2, ans);
-    if (n == n1 && ATTRIB(s1) != R_NilValue)
+    if (ans != s1 && n == n1 && ATTRIB(s1) != R_NilValue)
         copyMostAttrib(s1, ans); /* Done 2nd so s1's attrs overwrite s2's */
 
     return ans;
@@ -341,7 +341,7 @@ SEXP attribute_hidden do_cmathfuns(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
             break;
         case 5: /* Conj */
-            y = allocVector(CPLXSXP, n);
+            y = NAMED(x) == 0 ? x : allocVector(CPLXSXP, n);
             for (i = 0; i < n; i++)
             {
                 COMPLEX(y)[i].r = COMPLEX(x)[i].r;
@@ -357,7 +357,7 @@ SEXP attribute_hidden do_cmathfuns(SEXP call, SEXP op, SEXP args, SEXP env)
             PROTECT(x);
         else
             PROTECT(x = coerceVector(x, REALSXP));
-        y = allocVector(REALSXP, n);
+        y = NAMED(x) == 0 ? x : allocVector(REALSXP, n);
 
         switch (PRIMVAL(op))
         {
@@ -390,7 +390,7 @@ SEXP attribute_hidden do_cmathfuns(SEXP call, SEXP op, SEXP args, SEXP env)
     else
         errorcall(call, _("non-numeric argument to function"));
 
-    if (ATTRIB(x) != R_NilValue)
+    if (x != y && ATTRIB(x) != R_NilValue)
     {
         PROTECT(x);
         PROTECT(y);

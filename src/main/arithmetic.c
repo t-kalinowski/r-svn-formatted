@@ -759,7 +759,7 @@ static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
     if (code == DIVOP || code == POWOP)
         ans = allocVector(REALSXP, n);
     else
-        ans = allocVector(INTSXP, n);
+        ans = R_allocOrReuseVector(s1, s2, INTSXP, n);
     if (n == 0)
         return (ans);
     PROTECT(ans);
@@ -900,9 +900,9 @@ static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
 
     /* Copy attributes from longer argument. */
 
-    if (n == n2 && ATTRIB(s2) != R_NilValue)
+    if (ans != s2 && n == n2 && ATTRIB(s2) != R_NilValue)
         copyMostAttrib(s2, ans);
-    if (n == n1 && ATTRIB(s1) != R_NilValue)
+    if (ans != s1 && n == n1 && ATTRIB(s1) != R_NilValue)
         copyMostAttrib(s1, ans); /* Done 2nd so s1's attrs overwrite s2's */
 
     return ans;
@@ -924,7 +924,7 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         return (allocVector(REALSXP, 0));
 
     n = (n1 > n2) ? n1 : n2;
-    PROTECT(ans = allocVector(REALSXP, n));
+    PROTECT(ans = R_allocOrReuseVector(s1, s2, REALSXP, n));
 
     switch (code)
     {
@@ -1199,9 +1199,9 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
 
     /* Copy attributes from longer argument. */
 
-    if (n == n2 && ATTRIB(s2) != R_NilValue)
+    if (ans != s2 && n == n2 && ATTRIB(s2) != R_NilValue)
         copyMostAttrib(s2, ans);
-    if (n == n1 && ATTRIB(s1) != R_NilValue)
+    if (ans != s1 && n == n1 && ATTRIB(s1) != R_NilValue)
         copyMostAttrib(s1, ans); /* Done 2nd so s1's attrs overwrite s2's */
 
     return ans;
@@ -1222,7 +1222,7 @@ static SEXP math1(SEXP sa, double (*f)(double), SEXP lcall)
     n = XLENGTH(sa);
     /* coercion can lose the object bit */
     PROTECT(sa = coerceVector(sa, REALSXP));
-    PROTECT(sy = allocVector(REALSXP, n));
+    PROTECT(sy = NAMED(sa) == 0 ? sa : allocVector(REALSXP, n));
     a = REAL(sa);
     y = REAL(sy);
     naflag = 0;
@@ -1241,7 +1241,7 @@ static SEXP math1(SEXP sa, double (*f)(double), SEXP lcall)
     if (naflag)
         warningcall(lcall, R_MSG_NA);
 
-    if (ATTRIB(sa) != R_NilValue)
+    if (sa != sy && ATTRIB(sa) != R_NilValue)
         DUPLICATE_ATTRIB(sy, sa);
     UNPROTECT(2);
     return sy;
@@ -1361,7 +1361,8 @@ SEXP attribute_hidden do_abs(SEXP call, SEXP op, SEXP args, SEXP env)
         /* integer or logical ==> return integer,
            factor was covered by Math.factor. */
         R_xlen_t i, n = XLENGTH(x);
-        s = allocVector(INTSXP, n);
+        s = (NAMED(x) == 0 && TYPEOF(x) == INTSXP) ? x : allocVector(INTSXP, n);
+        PROTECT(s);
         /* Note: relying on INTEGER(.) === LOGICAL(.) : */
         for (i = 0; i < n; i++)
             INTEGER(s)[i] = abs(INTEGER(x)[i]);
@@ -1369,7 +1370,7 @@ SEXP attribute_hidden do_abs(SEXP call, SEXP op, SEXP args, SEXP env)
     else if (TYPEOF(x) == REALSXP)
     {
         R_xlen_t i, n = XLENGTH(x);
-        s = allocVector(REALSXP, n);
+        PROTECT(s = NAMED(x) == 0 ? x : allocVector(REALSXP, n));
         for (i = 0; i < n; i++)
             REAL(s)[i] = fabs(REAL(x)[i]);
     }
@@ -1379,12 +1380,10 @@ SEXP attribute_hidden do_abs(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     else
         errorcall(call, R_MSG_NONNUM_MATH);
-    if (ATTRIB(x) != R_NilValue)
-    {
-        PROTECT(s);
+
+    if (x != s && ATTRIB(x) != R_NilValue)
         DUPLICATE_ATTRIB(s, x);
-        UNPROTECT(1);
-    }
+    UNPROTECT(1);
     return s;
 }
 
