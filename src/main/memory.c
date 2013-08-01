@@ -3836,6 +3836,19 @@ void attribute_hidden(UNLOCK_BINDING)(SEXP b)
     UNLOCK_BINDING(b);
 }
 
+void(SET_BASE_SYM_CACHED)(SEXP b)
+{
+    SET_BASE_SYM_CACHED(b);
+}
+void(UNSET_BASE_SYM_CACHED)(SEXP b)
+{
+    UNSET_BASE_SYM_CACHED(b);
+}
+Rboolean(BASE_SYM_CACHED)(SEXP b)
+{
+    return BASE_SYM_CACHED(b);
+}
+
 /* R_FunTab accessors, only needed when write barrier is on */
 /* Not hidden to allow experimentaiton without rebuilding R - LT */
 /* attribute_hidden */
