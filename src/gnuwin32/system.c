@@ -1161,9 +1161,9 @@ int cmdlineoptions(int ac, char **av)
             {
                 ac--;
                 av++;
-                if (!ac)
+                if (!ac || !strlen(*av))
                 {
-                    snprintf(s, 1024, _("option '%s' requires an argument"), "-e");
+                    snprintf(s, 1024, _("option '%s' requires a non-empty argument"), "-e");
                     R_Suicide(s);
                 }
                 if (strlen(cmdlines) + strlen(*av) + 2 <= 10000)
