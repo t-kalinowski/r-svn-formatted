@@ -1189,7 +1189,7 @@ int attribute_hidden Rstd_ShowFiles(int nfile,            /* number of files */
             }
             fclose(tfp);
         }
-        snprintf(buf, 1024, "%s < %s", pager, filename);
+        snprintf(buf, 1024, "'%s' < '%s'", pager, filename); // might contain spaces
         res = R_system(buf);
         unlink(filename);
         free(filename);
