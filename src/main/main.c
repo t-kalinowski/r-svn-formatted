@@ -813,6 +813,7 @@ void setup_Rmainloop(void)
     InitParser();
     InitTempDir(); /* must be before InitEd */
     InitMemory();
+    InitArithmetic();
     InitStringHash(); /* must be before InitNames */
     InitNames();
     InitBaseEnv();
@@ -820,7 +821,6 @@ void setup_Rmainloop(void)
     InitDynload();
     InitOptions();
     InitEd();
-    InitArithmetic();
     InitGraphics();
 
     R_Is_Running = 1;
