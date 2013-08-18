@@ -459,6 +459,7 @@ static R_INLINE SEXP ScalarValue2(SEXP x, SEXP y)
 }
 
 /* Unary and Binary Operators */
+#define IS_SCALAR(x, type) (TYPEOF(x) == (type) && SHORT_VEC_LENGTH(x) == 1)
 
 SEXP attribute_hidden do_arith(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -484,9 +485,9 @@ SEXP attribute_hidden do_arith(SEXP call, SEXP op, SEXP args, SEXP env)
     else if (argc == 2)
     {
         /* Handle some scaler operations immediately */
-        if (TYPEOF(arg1) == REALSXP && LENGTH(arg1) == 1)
+        if (IS_SCALAR(arg1, REALSXP))
         {
-            if (TYPEOF(arg2) == REALSXP && LENGTH(arg2) == 1)
+            if (IS_SCALAR(arg2, REALSXP))
             {
                 double x1 = REAL(arg1)[0];
                 double x2 = REAL(arg2)[0];
@@ -507,7 +508,7 @@ SEXP attribute_hidden do_arith(SEXP call, SEXP op, SEXP args, SEXP env)
                     return ans;
                 }
             }
-            else if (TYPEOF(arg2) == INTSXP && LENGTH(arg2) == 1)
+            else if (IS_SCALAR(arg2, INTSXP))
             {
                 double x1 = REAL(arg1)[0];
                 double x2 = INTEGER(arg2)[0] != NA_INTEGER ? (double)INTEGER(arg2)[0] : NA_REAL;
@@ -529,9 +530,9 @@ SEXP attribute_hidden do_arith(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
             }
         }
-        else if (TYPEOF(arg1) == INTSXP && LENGTH(arg1) == 1)
+        else if (IS_SCALAR(arg1, INTSXP))
         {
-            if (TYPEOF(arg2) == REALSXP && LENGTH(arg2) == 1)
+            if (IS_SCALAR(arg2, REALSXP))
             {
                 double x1 = INTEGER(arg1)[0] != NA_INTEGER ? (double)INTEGER(arg1)[0] : NA_REAL;
                 double x2 = REAL(arg2)[0];
@@ -552,7 +553,7 @@ SEXP attribute_hidden do_arith(SEXP call, SEXP op, SEXP args, SEXP env)
                     return ans;
                 }
             }
-            else if (TYPEOF(arg2) == INTSXP && LENGTH(arg2) == 1)
+            else if (IS_SCALAR(arg2, INTSXP))
             {
                 Rboolean naflag = FALSE;
                 int x1 = INTEGER(arg1)[0];
@@ -583,7 +584,7 @@ SEXP attribute_hidden do_arith(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     else if (argc == 1)
     {
-        if (TYPEOF(arg1) == REALSXP && LENGTH(arg1) == 1)
+        if (IS_SCALAR(arg1, REALSXP))
         {
             switch (PRIMVAL(op))
             {
@@ -595,7 +596,7 @@ SEXP attribute_hidden do_arith(SEXP call, SEXP op, SEXP args, SEXP env)
                 return ans;
             }
         }
-        else if (TYPEOF(arg1) == INTSXP && LENGTH(arg1) == 1)
+        else if (IS_SCALAR(arg1, INTSXP))
         {
             switch (PRIMVAL(op))
             {
