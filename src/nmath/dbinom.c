@@ -73,7 +73,7 @@ double attribute_hidden dbinom_raw(double x, double n, double p, double q, int g
     /* Upto R 2.7.1:
      * lf = log(M_2PI) + log(x) + log(n-x) - log(n);
      * -- following is much better for  x << n : */
-    lf = log(M_2PI) + log(x) + log1p(-x / n);
+    lf = M_LN_2PI + log(x) + log1p(-x / n);
 
     return R_D_exp(lc - 0.5 * lf);
 }
