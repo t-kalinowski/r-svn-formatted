@@ -151,7 +151,7 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta, double err
     {
         /* evade cancellation error */
         /* t = exp((1 - t)*(2 - t/(f2 + 1))) / sqrt(2*M_PI*(f2 + 1));*/
-        lt = (1 - t)*(2 - t/(f2 + 1)) - M_LN_SQRT_2PI - 0.5 * log(f2 + 1));
+        lt = (1 - t) * (2 - t / (f2 + 1)) - M_LN_SQRT_2PI - 0.5 * log(f2 + 1);
 #ifdef DEBUG_pnch
         REprintf(" (case I) ==> ");
 #endif
