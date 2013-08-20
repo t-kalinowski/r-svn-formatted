@@ -27,7 +27,6 @@
 
  *  makeSubscript()   -- for "[" and "[<-" in ./subset.c and ./subassign.c,
  *			 and "[[<-" with a scalar in ./subassign.c
- *  vectorSubscript() -- for makeSubscript()   {currently unused externally}
  *  arraySubscript()  -- for "[i,j,..." and "[<-..." in ./subset.c, ./subassign.c
  */
 
@@ -1021,6 +1020,7 @@ SEXP attribute_hidden makeSubscript(SEXP x, SEXP s, R_xlen_t *stretch, SEXP call
                 return s;
             }
         }
+#ifdef FAST_REAL_SUBSCRIPTS
         else if (TYPEOF(s) == REALSXP)
         {
             double di = REAL(s)[0];
@@ -1034,6 +1034,7 @@ SEXP attribute_hidden makeSubscript(SEXP x, SEXP s, R_xlen_t *stretch, SEXP call
                 return s;
             }
         }
+#endif
     }
 
     PROTECT(s = duplicate(s));
