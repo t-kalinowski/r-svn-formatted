@@ -1474,25 +1474,30 @@ static SEXP listRemove(SEXP x, SEXP s, int ind)
     return CDR(a);
 }
 
-static void SubAssignArgs(SEXP args, SEXP *x, SEXP *s, SEXP *y)
+static R_INLINE int SubAssignArgs(SEXP args, SEXP *x, SEXP *s, SEXP *y)
 {
-    int nargs = length(args);
-    SEXP p;
-    if (nargs < 2)
+    if (CDR(args) == R_NilValue)
         error(_("SubAssignArgs: invalid number of arguments"));
     *x = CAR(args);
-    if (nargs == 2)
+    if (CDDR(args) == R_NilValue)
     {
         *s = R_NilValue;
         *y = CADR(args);
+        return 0;
     }
     else
     {
+        int nsubs = 1;
+        SEXP p;
         *s = p = CDR(args);
         while (CDDR(p) != R_NilValue)
+        {
             p = CDR(p);
+            nsubs++;
+        }
         *y = CADR(p);
         SETCDR(p, R_NilValue);
+        return nsubs;
     }
 }
 
@@ -1560,9 +1565,8 @@ SEXP attribute_hidden do_subassign_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (NAMED(CAR(args)) == 2)
         x = SETCAR(args, duplicate(CAR(args)));
 
-    SubAssignArgs(args, &x, &subs, &y);
+    nsubs = SubAssignArgs(args, &x, &subs, &y);
     S4 = IS_S4_OBJECT(x);
-    nsubs = length(subs);
 
     oldtype = 0;
     if (TYPEOF(x) == LISTSXP || TYPEOF(x) == LANGSXP)
@@ -1702,7 +1706,7 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
 
     PROTECT(args);
 
-    SubAssignArgs(args, &x, &subs, &y);
+    nsubs = SubAssignArgs(args, &x, &subs, &y);
     S4 = IS_S4_OBJECT(x);
 
     /* Handle NULL left-hand sides.  If the right-hand side */
@@ -1733,7 +1737,6 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
 
     dims = getAttrib(x, R_DimSymbol);
     ndims = length(dims);
-    nsubs = length(subs);
 
     /* code to allow classes to extend ENVSXP */
     if (TYPEOF(x) == S4SXP)
