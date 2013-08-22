@@ -60,7 +60,7 @@ double lgammafn_sign(double x, int *sgn)
    dxrel = sqrt(DBL_EPSILON) = 2^-26 = 5^26 * 1e-26 (is *exact* below !)
  */
 #define xmax 2.5327372760800758e+305
-#define dxrel 1.490116119384765696e-8
+#define dxrel 1.490116119384765625e-8
 #endif
 
     if (sgn != NULL)
@@ -71,9 +71,8 @@ double lgammafn_sign(double x, int *sgn)
         return x;
 #endif
 
-    if (x < 0 && fmod(floor(-x), 2.) == 0)
-        if (sgn != NULL)
-            *sgn = -1;
+    if (sgn != NULL && x < 0 && fmod(floor(-x), 2.) == 0)
+        *sgn = -1;
 
     if (x <= 0 && x == trunc(x))
     { /* Negative integer argument */
@@ -84,7 +83,7 @@ double lgammafn_sign(double x, int *sgn)
     y = fabs(x);
 
     if (y < 1e-306)
-        return -log(x); // denormalized range, R change
+        return -log(y); // denormalized range, R change
     if (y <= 10)
         return log(fabs(gammafn(x)));
     /*
