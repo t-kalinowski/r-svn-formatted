@@ -1166,12 +1166,12 @@ SEXP attribute_hidden do_listfiles(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-static void list_dirs(const char *dnp, const char *stem, int *count, SEXP *pans, int *countmax, PROTECT_INDEX idx,
-                      Rboolean recursive)
+static void list_dirs(const char *dnp, const char *nm, Rboolean full, int *count, SEXP *pans, int *countmax,
+                      PROTECT_INDEX idx, Rboolean recursive)
 {
     DIR *dir;
     struct dirent *de;
-    char p[PATH_MAX], stem2[PATH_MAX];
+    char p[PATH_MAX];
 #ifdef Windows
     /* > 2GB files might be skipped otherwise */
     struct _stati64 sb;
@@ -1179,6 +1179,7 @@ static void list_dirs(const char *dnp, const char *stem, int *count, SEXP *pans,
     struct stat sb;
 #endif
     R_CheckUserInterrupt(); // includes stack check
+
     if ((dir = opendir(dnp)) != NULL)
     {
         if (recursive)
@@ -1188,7 +1189,7 @@ static void list_dirs(const char *dnp, const char *stem, int *count, SEXP *pans,
                 *countmax *= 2;
                 REPROTECT(*pans = lengthgets(*pans, *countmax), idx);
             }
-            SET_STRING_ELT(*pans, (*count)++, mkChar(dnp));
+            SET_STRING_ELT(*pans, (*count)++, mkChar(full ? dnp : nm));
         }
         while ((de = readdir(dir)))
         {
@@ -1211,20 +1212,9 @@ static void list_dirs(const char *dnp, const char *stem, int *count, SEXP *pans,
                 {
                     if (recursive)
                     {
-                        if (stem)
-                        {
-#ifdef Win32
-                            if (strlen(stem) == 2 && stem[1] == ':')
-                                snprintf(stem2, PATH_MAX, "%s%s", stem, de->d_name);
-                            else
-                                snprintf(stem2, PATH_MAX, "%s%s%s", stem, R_FileSep, de->d_name);
-#else
-                            snprintf(stem2, PATH_MAX, "%s%s%s", stem, R_FileSep, de->d_name);
-#endif
-                        }
-                        else
-                            strcpy(stem2, de->d_name);
-                        list_dirs(p, stem2, count, pans, countmax, idx, recursive);
+                        char nm2[PATH_MAX];
+                        snprintf(nm2, PATH_MAX, "%s%s%s", nm, R_FileSep, de->d_name);
+                        list_dirs(p, nm[0] ? nm2 : de->d_name, full, count, pans, countmax, idx, recursive);
                     }
                     else
                     {
@@ -1233,7 +1223,7 @@ static void list_dirs(const char *dnp, const char *stem, int *count, SEXP *pans,
                             *countmax *= 2;
                             REPROTECT(*pans = lengthgets(*pans, *countmax), idx);
                         }
-                        SET_STRING_ELT(*pans, (*count)++, mkChar(p));
+                        SET_STRING_ELT(*pans, (*count)++, mkChar(full ? p : de->d_name));
                     }
                 }
             }
@@ -1271,7 +1261,7 @@ SEXP attribute_hidden do_listdirs(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (STRING_ELT(d, i) == NA_STRING)
             continue;
         dnp = R_ExpandFileName(translateChar(STRING_ELT(d, i)));
-        list_dirs(dnp, fullnames ? dnp : NULL, &count, &ans, &countmax, idx, recursive);
+        list_dirs(dnp, "", fullnames, &count, &ans, &countmax, idx, recursive);
     }
     REPROTECT(ans = lengthgets(ans, count), idx);
     ssort(STRING_PTR(ans), count);
