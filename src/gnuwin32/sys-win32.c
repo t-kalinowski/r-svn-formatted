@@ -227,6 +227,10 @@ SEXP do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
         SetStdHandle(STD_INPUT_HANDLE, INVALID_HANDLE_VALUE);
         SetStdHandle(STD_OUTPUT_HANDLE, INVALID_HANDLE_VALUE);
         SetStdHandle(STD_ERROR_HANDLE, INVALID_HANDLE_VALUE);
+        if (TYPEOF(Stdout) == STRSXP)
+            fout = CHAR(STRING_ELT(Stdout, 0));
+        if (TYPEOF(Stderr) == STRSXP)
+            ferr = CHAR(STRING_ELT(Stderr, 0));
     }
     else
     {
