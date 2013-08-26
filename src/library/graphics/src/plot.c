@@ -487,6 +487,15 @@ static void GetTextArg(SEXP spec, SEXP *ptxt, rcolor *pcol, double *pcex, int *p
 
 /* GRAPHICS FUNCTION ENTRY POINTS */
 
+SEXP C_new_page()
+{
+    SEXP ans;
+    PROTECT(ans = allocVector(LGLSXP, 1));
+    LOGICAL(ans)[0] = GNewPage();
+    UNPROTECT(1);
+    return ans;
+}
+
 SEXP C_plot_new(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     /* plot.new() - create a new plot "frame" */
