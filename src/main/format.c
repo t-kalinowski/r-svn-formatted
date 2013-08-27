@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2011  The R Core Team.
+ *  Copyright (C) 1997--2013  The R Core Team.
  *  Copyright (C) 2003--2011  The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -192,16 +192,17 @@ static void format_via_sprintf(double r, int d, int *kpower, int *nsig)
 }
 
 static const long double tbl[] = {
-    /* Powers exactly representable with 64 bit mantissa */
-    1e00, 1e01, 1e02, 1e03, 1e04, 1e05, 1e06, 1e07, 1e08, 1e09, 1e10, 1e11, 1e12, 1e13,
+    /* Powers exactly representable with 64 bit mantissa (except the first, which is only used with digits=0) */
+    1e-1, 1e00, 1e01, 1e02, 1e03, 1e04, 1e05, 1e06, 1e07, 1e08, 1e09, 1e10, 1e11, 1e12, 1e13,
     1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22, 1e23, 1e24, 1e25, 1e26, 1e27};
 
-static void scientific(double *x, int *sgn, int *kpower, int *nsig)
+static void scientific(double *x, int *sgn, int *kpower, int *nsig, int *roundingwidens)
 {
     /* for a number x , determine
      *	sgn    = 1_{x < 0}  {0/1}
      *	kpower = Exponent of 10;
      *	nsig   = min(R_print.digits, #{significant digits of alpha})
+     *  roundingwidens = 1 if rounding causes x to increase in width, 0 otherwise
      *
      * where  |x| = alpha * 10^kpower	and	 1 <= alpha < 10
      */
@@ -215,6 +216,7 @@ static void scientific(double *x, int *sgn, int *kpower, int *nsig)
         *kpower = 0;
         *nsig = 1;
         *sgn = 0;
+        *roundingwidens = 0;
     }
     else
     {
@@ -231,6 +233,7 @@ static void scientific(double *x, int *sgn, int *kpower, int *nsig)
         if (R_print.digits >= DBL_DIG + 1)
         {
             format_via_sprintf(r, R_print.digits, kpower, nsig);
+            *roundingwidens = 0;
             return;
         }
         kp = (int)floor(log10(r)) - R_print.digits + 1; /* r = |x|; 10^(kp + digits - 1) <= r */
@@ -240,9 +243,9 @@ static void scientific(double *x, int *sgn, int *kpower, int *nsig)
         if (abs(kp) <= 27)
         {
             if (kp > 0)
-                r_prec /= tbl[kp];
+                r_prec /= tbl[kp + 1];
             else if (kp < 0)
-                r_prec *= tbl[-kp];
+                r_prec *= tbl[-kp + 1];
         }
 #ifdef HAVE_POWL
         else
@@ -253,7 +256,7 @@ static void scientific(double *x, int *sgn, int *kpower, int *nsig)
         else
             r_prec /= pow(10.0, (double)kp);
 #endif
-        if (r_prec < tbl[R_print.digits - 1])
+        if (r_prec < tbl[R_print.digits])
         {
             r_prec *= 10.0;
             kp--;
@@ -267,9 +270,9 @@ static void scientific(double *x, int *sgn, int *kpower, int *nsig)
         if (abs(kp) <= 22)
         {
             if (kp >= 0)
-                r /= tbl[kp];
+                r /= tbl[kp + 1];
             else
-                r *= tbl[-kp];
+                r *= tbl[-kp + 1];
         }
         /* on IEEE 1e-308 is not representable except by gradual underflow.
            Shifting by 303 allows for any potential denormalized numbers x,
@@ -280,8 +283,7 @@ static void scientific(double *x, int *sgn, int *kpower, int *nsig)
             r = (r * 1e+303) / pow(10.0, (double)(kp + 303));
         else
             r /= pow(10.0, (double)kp);
-        if (r < tbl[R_print.digits - 1])
-        {
+        if ((R_print.digits && r < tbl[R_print.digits]) {
             r *= 10.0;
             kp--;
         }
@@ -302,12 +304,13 @@ static void scientific(double *x, int *sgn, int *kpower, int *nsig)
                 break;
             }
         }
-        if (*nsig == 0)
+        if (*nsig == 0 && R_print.digits > 0)
         {
             *nsig = 1;
             kp += 1;
         }
         *kpower = kp + R_print.digits - 1;
+        *roundingwidens = *kpower > 0 && r < tbl[*kpower + 1];
     }
 }
 
@@ -325,7 +328,7 @@ void formatReal(double *x, R_xlen_t n, int *w, int *d, int *e, int nsmall)
 {
     int left, right, sleft;
     int mnl, mxl, rgt, mxsl, mxns, wF;
-    int neg, sgn, kpower, nsig;
+    int neg, sgn, kpower, nsig, roundingwidens;
     int naflag, nanflag, posinf, neginf;
 
     nanflag = 0;
@@ -351,9 +354,12 @@ void formatReal(double *x, R_xlen_t n, int *w, int *d, int *e, int nsmall)
         }
         else
         {
-            scientific(&x[i], &sgn, &kpower, &nsig);
+            scientific(&x[i], &sgn, &kpower, &nsig, &roundingwidens);
 
             left = kpower + 1;
+            if (roundingwidens)
+                left--;
+
             sleft = sgn + ((left <= 0) ? 1 : left); /* >= 1 */
             right = nsig - left;                    /* #{digits} right of '.' ( > 0 often)*/
             if (sgn)
@@ -383,6 +389,8 @@ void formatReal(double *x, R_xlen_t n, int *w, int *d, int *e, int nsmall)
 
     /*-- These	'mxsl' & 'rgt'	are used in F Format
      *	 AND in the	____ if(.) "F" else "E" ___   below: */
+    if (R_print.digits == 0)
+        rgt = 0;
     if (mxl < 0)
         mxsl = 1 + neg; /* we use %#w.dg, so have leading zero */
 
@@ -393,7 +401,7 @@ void formatReal(double *x, R_xlen_t n, int *w, int *d, int *e, int nsmall)
 
     /*-- 'see' how "E" Exponential format would be like : */
     *e = (mxl > 100 || mnl <= -99) ? 2 /* 3 digit exponent */ : 1;
-    if (mxns > 0)
+    if (mxns != INT_MIN)
     {
         *d = mxns - 1;
         *w = neg + (*d > 0) + *d + 4 + *e; /* width for E format */
@@ -436,7 +444,7 @@ void formatComplex(Rcomplex *x, R_xlen_t n, int *wr, int *dr, int *er, int *wi, 
     int rt, mnl, mxl, mxsl, mxns, wF, i_wF;
     int i_rt, i_mnl, i_mxl, i_mxsl, i_mxns;
     int neg, sgn;
-    int kpower, nsig;
+    int kpower, nsig, roundingwidens;
     int naflag;
     int rnanflag, rposinf, rneginf, inanflag, iposinf;
     Rcomplex tmp;
@@ -479,9 +487,11 @@ void formatComplex(Rcomplex *x, R_xlen_t n, int *wr, int *dr, int *er, int *wi, 
             {
                 if (x[i].r != 0)
                     all_re_zero = FALSE;
-                scientific(&(tmp.r), &sgn, &kpower, &nsig);
+                scientific(&(tmp.r), &sgn, &kpower, &nsig, &roundingwidens);
 
                 left = kpower + 1;
+                if (roundingwidens)
+                    left--;
                 sleft = sgn + ((left <= 0) ? 1 : left); /* >= 1 */
                 right = nsig - left;                    /* #{digits} right of '.' ( > 0 often)*/
                 if (sgn)
@@ -514,9 +524,11 @@ void formatComplex(Rcomplex *x, R_xlen_t n, int *wr, int *dr, int *er, int *wi, 
             {
                 if (x[i].i != 0)
                     all_im_zero = FALSE;
-                scientific(&(tmp.i), &sgn, &kpower, &nsig);
+                scientific(&(tmp.i), &sgn, &kpower, &nsig, &roundingwidens);
 
                 left = kpower + 1;
+                if (roundingwidens)
+                    left--;
                 sleft = ((left <= 0) ? 1 : left);
                 right = nsig - left;
 
@@ -539,6 +551,8 @@ void formatComplex(Rcomplex *x, R_xlen_t n, int *wr, int *dr, int *er, int *wi, 
 
     /* overall format for real part	*/
 
+    if (R_print.digits == 0)
+        rt = 0;
     if (mxl != INT_MIN)
     {
         if (mxl < 0)
@@ -561,6 +575,8 @@ void formatComplex(Rcomplex *x, R_xlen_t n, int *wr, int *dr, int *er, int *wi, 
 
     /* overall format for imaginary part */
 
+    if (R_print.digits == 0)
+        i_rt = 0;
     if (i_mxl != INT_MIN)
     {
         if (i_mxl < 0)
