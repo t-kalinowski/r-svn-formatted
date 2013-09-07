@@ -271,8 +271,8 @@ SEXP optim(SEXP call, SEXP op, SEXP args, SEXP rho)
         temp = asReal(getListElement(options, "temp"));
         if (trace)
             trace = asInteger(getListElement(options, "REPORT"));
-        if (tmax == NA_INTEGER)
-            error(_("'tmax' is not an integer"));
+        if (tmax == NA_INTEGER || tmax < 1) // PR#15194
+            error(_("'tmax' is not a positive integer"));
         if (!isNull(gr))
         {
             if (!isFunction(gr))
