@@ -44,16 +44,16 @@ double attribute_hidden bd0(double x, double np)
 
     if (fabs(x - np) < 0.1 * (x + np))
     {
-        v = (x - np) / (x + np);
-        s = (x - np) * v; /* s using v -- change by MM */
+        v = (x - np) / (x + np); // might underflow to 0
+        s = (x - np) * v;        /* s using v -- change by MM */
         ej = 2 * x * v;
         v = v * v;
-        for (j = 1;; j++)
+        for (j = 1; j < 1000; j++)
         { /* Taylor series */
             ej *= v;
             s1 = s + ej / ((j << 1) + 1);
             if (s1 == s) /* last term was effectively 0 */
-                return (s1);
+                return s1;
             s = s1;
         }
     }
