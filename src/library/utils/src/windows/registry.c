@@ -187,20 +187,8 @@ static SEXP readRegistryKey(HKEY hkey, int depth, int view)
         error("RegQueryInfoKey error code %d: '%s'", (int)res, formatError(res));
     size0 = max(maxsubkeylen, maxvalnamlen) + 1;
     name = (wchar_t *)R_alloc(size0, sizeof(wchar_t));
-    tmp = readRegistryKey1(hkey, L"");
-    if (tmp != R_NilValue)
-    {
-        PROTECT(ans = allocVector(VECSXP, nval + nsubkeys + 1));
-        PROTECT(nm = allocVector(STRSXP, nval + nsubkeys + 1));
-        SET_VECTOR_ELT(ans, 0, tmp);
-        SET_STRING_ELT(nm, 0, mkChar("(Default)"));
-        k++;
-    }
-    else
-    {
-        PROTECT(ans = allocVector(VECSXP, nval + nsubkeys));
-        PROTECT(nm = allocVector(STRSXP, nval + nsubkeys));
-    }
+    PROTECT(ans = allocVector(VECSXP, nval + nsubkeys));
+    PROTECT(nm = allocVector(STRSXP, nval + nsubkeys));
     if (nval > 0)
     {
         PROTECT(ans0 = allocVector(VECSXP, nval));
@@ -223,7 +211,10 @@ static SEXP readRegistryKey(HKEY hkey, int depth, int view)
         for (i = 0; i < nval; i++, k++)
         {
             SET_VECTOR_ELT(ans, k, VECTOR_ELT(ans0, indx[i]));
-            SET_STRING_ELT(nm, k, STRING_ELT(nm0, indx[i]));
+            if (LENGTH(tmp = STRING_ELT(nm0, indx[i])))
+                SET_STRING_ELT(nm, k, tmp);
+            else
+                SET_STRING_ELT(nm, k, mkChar("(Default)"));
         }
         UNPROTECT(3);
     }
