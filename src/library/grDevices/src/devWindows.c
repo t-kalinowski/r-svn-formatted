@@ -3450,8 +3450,7 @@ static Rboolean GA_Locator(double *x, double *y, pDevDesc dd)
     while (!xd->clicked)
     {
         SH;
-        if (!peekevent())
-            WaitMessage();
+        R_WaitEvent();
         R_ProcessEvents();
     }
 
@@ -4140,8 +4139,7 @@ static Rboolean GA_NewFrameConfirm(pDevDesc dev)
     while (!xd->clicked && !xd->enterkey)
     {
         SH;
-        if (!peekevent())
-            WaitMessage();
+        R_WaitEvent();
         R_ProcessEvents(); /* May not return if user interrupts */
     }
     dev->onExit(dev);
