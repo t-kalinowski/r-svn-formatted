@@ -1204,7 +1204,6 @@ static void wt_cleanup(void *data)
 SEXP writetable(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, sep, rnames, eol, na, dec, quote, xj;
-    int nr, nc, i, j, qmethod;
     Rboolean wasopen, quote_rn = FALSE, *quote_col;
     Rconnection con;
     const char *csep, *ceol, *cna, *sdec, *tmp = NULL /* -Wall */;
@@ -1232,9 +1231,9 @@ SEXP writetable(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!con->open(con))
             error(_("cannot open the connection"));
     }
-    nr = asInteger(CAR(args));
+    int nr = asInteger(CAR(args));
     args = CDR(args);
-    nc = asInteger(CAR(args));
+    int nc = asInteger(CAR(args));
     args = CDR(args);
     rnames = CAR(args);
     args = CDR(args);
@@ -1248,7 +1247,7 @@ SEXP writetable(SEXP call, SEXP op, SEXP args, SEXP env)
     args = CDR(args);
     quote = CAR(args);
     args = CDR(args);
-    qmethod = asLogical(CAR(args));
+    int qmethod = asLogical(CAR(args));
 
     if (nr == NA_INTEGER)
         error(_("invalid '%s' argument"), "nr");
@@ -1274,9 +1273,9 @@ SEXP writetable(SEXP call, SEXP op, SEXP args, SEXP env)
         error(_("'dec' must be a single character"));
     cdec = sdec[0];
     quote_col = (Rboolean *)R_alloc(nc, sizeof(Rboolean));
-    for (j = 0; j < nc; j++)
+    for (int j = 0; j < nc; j++)
         quote_col[j] = FALSE;
-    for (i = 0; i < length(quote); i++)
+    for (int i = 0; i < length(quote); i++)
     { /* NB, quote might be NULL */
         int this = INTEGER(quote)[i];
         if (this == 0)
@@ -1300,7 +1299,7 @@ SEXP writetable(SEXP call, SEXP op, SEXP args, SEXP env)
 
         /* handle factors internally, check integrity */
         levels = (SEXP *)R_alloc(nc, sizeof(SEXP));
-        for (j = 0; j < nc; j++)
+        for (int j = 0; j < nc; j++)
         {
             xj = VECTOR_ELT(x, j);
             if (LENGTH(xj) != nr)
@@ -1313,13 +1312,13 @@ SEXP writetable(SEXP call, SEXP op, SEXP args, SEXP env)
                 levels[j] = R_NilValue;
         }
 
-        for (i = 0; i < nr; i++)
+        for (int i = 0; i < nr; i++)
         {
             if (i % 1000 == 999)
                 R_CheckUserInterrupt();
             if (!isNull(rnames))
                 Rconn_printf(con, "%s%s", EncodeElement2(rnames, i, quote_rn, qmethod, &strBuf, cdec), csep);
-            for (j = 0; j < nc; j++)
+            for (int j = 0; j < nc; j++)
             {
                 xj = VECTOR_ELT(x, j);
                 if (j > 0)
@@ -1357,16 +1356,16 @@ SEXP writetable(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!isVectorAtomic(x))
             UNIMPLEMENTED_TYPE("write.table, matrix method", x);
         /* quick integrity check */
-        if (LENGTH(x) != nr * nc)
+        if (XLENGTH(x) != (R_len_t)nr * nc)
             error(_("corrupt matrix -- dims not not match length"));
 
-        for (i = 0; i < nr; i++)
+        for (int i = 0; i < nr; i++)
         {
             if (i % 1000 == 999)
                 R_CheckUserInterrupt();
             if (!isNull(rnames))
                 Rconn_printf(con, "%s%s", EncodeElement2(rnames, i, quote_rn, qmethod, &strBuf, cdec), csep);
-            for (j = 0; j < nc; j++)
+            for (int j = 0; j < nc; j++)
             {
                 if (j > 0)
                     Rconn_printf(con, "%s", csep);
