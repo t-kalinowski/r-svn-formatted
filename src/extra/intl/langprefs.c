@@ -55,7 +55,7 @@ const char *_nl_language_preferences_default(void)
             if (preferences != NULL && CFGetTypeID(preferences) == CFArrayGetTypeID())
             {
                 CFArrayRef prefArray = (CFArrayRef)preferences;
-                int n = CFArrayGetCount(prefArray);
+                long n = CFArrayGetCount(prefArray);
                 char buf[256];
                 size_t size = 0;
                 int i;

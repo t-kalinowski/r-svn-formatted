@@ -1133,7 +1133,7 @@ void internal_function _nl_load_domain(struct loaded_l10nfile *domain_file, stru
                     for (i = 0; i < n_inmem_sysdep_strings; i++)
                     {
                         const char *msgid = inmem_orig_sysdep_tab[i].pointer;
-                        nls_uint32 hash_val = __hash_string(msgid);
+                        nls_uint32 hash_val = (nls_uint32)__hash_string(msgid);
                         nls_uint32 idx = hash_val % domain->hash_size;
                         nls_uint32 incr = 1 + (hash_val % (domain->hash_size - 2));
 
