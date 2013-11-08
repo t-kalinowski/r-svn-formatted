@@ -70,6 +70,8 @@ double qcauchy(double p, double location, double scale, int lower_tail, int log_
         }
     }
 
+    if (p == 0.5)
+        return location; // avoid 1/Inf below
     return location + (lower_tail ? -scale : scale) / tanpi(p);
     /*	-1/tan(pi * p) = -cot(pi * p) = tan(pi * (p - 1/2))  */
 }
