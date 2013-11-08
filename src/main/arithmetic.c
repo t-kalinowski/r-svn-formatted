@@ -1381,12 +1381,18 @@ SEXP attribute_hidden do_math1(SEXP call, SEXP op, SEXP args, SEXP env)
         return MATH1(digamma);
     case 43:
         return MATH1(trigamma);
-        /* case 44: return MATH1(tetragamma);
-           case 45: return MATH1(pentagamma);
-           removed in 2.0.0
-        */
+    /* case 44: return MATH1(tetragamma);
+       case 45: return MATH1(pentagamma);
+       removed in 2.0.0
 
-        /* case 46: return MATH1(Rf_gamma_cody); removed in 2.8.0 */
+       case 46: return MATH1(Rf_gamma_cody); removed in 2.8.0
+    */
+    case 47:
+        return MATH1(sinpi);
+    case 48:
+        return MATH1(cospi);
+    case 49:
+        return MATH1(tanpi);
 
     default:
         errorcall(call, _("unimplemented real function of 1 argument"));

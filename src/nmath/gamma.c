@@ -206,7 +206,7 @@ double gammafn(double x)
             ML_ERROR(ME_PRECISION, "gammafn");
         }
 
-        sinpiy = sin(M_PI * y);
+        sinpiy = sinpi(y);
         if (sinpiy == 0)
         { /* Negative integer arg - overflow */
             ML_ERROR(ME_RANGE, "gammafn");
