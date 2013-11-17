@@ -196,9 +196,11 @@ static const long double tbl[] = {
     /* Powers exactly representable with 64 bit mantissa (except the first, which is only used with digits=0) */
     1e-1, 1e00, 1e01, 1e02, 1e03, 1e04, 1e05, 1e06, 1e07, 1e08, 1e09, 1e10, 1e11, 1e12, 1e13,
     1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22, 1e23, 1e24, 1e25, 1e26, 1e27};
+#define KP_MAX 27
 #else
 static const double tbl[] = {1e-1, 1e00, 1e01, 1e02, 1e03, 1e04, 1e05, 1e06, 1e07, 1e08, 1e09, 1e10,
                              1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22};
+#define KP_MAX 22
 #endif
 
 static void scientific(double *x, int *sgn, int *kpower, int *nsig, int *roundingwidens)
@@ -318,8 +320,8 @@ static void scientific(double *x, int *sgn, int *kpower, int *nsig, int *roundin
             kp += 1;
         }
         *kpower = kp + R_print.digits - 1;
-        // FIXME: kpower can be bigger than the table.
-        *roundingwidens = *kpower > 0 && r < tbl[*kpower + 1];
+        // kpower can be bigger than the table.
+        *roundingwidens = *kpower > 0 && *kpower <= KP_MAX && r < tbl[*kpower + 1];
     }
 }
 
