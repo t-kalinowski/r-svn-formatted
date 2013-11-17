@@ -318,6 +318,7 @@ static void scientific(double *x, int *sgn, int *kpower, int *nsig, int *roundin
             kp += 1;
         }
         *kpower = kp + R_print.digits - 1;
+        // FIXME: kpower can be bigger than the table.
         *roundingwidens = *kpower > 0 && r < tbl[*kpower + 1];
     }
 }

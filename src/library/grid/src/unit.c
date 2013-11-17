@@ -1509,6 +1509,7 @@ double transformXYFromINCHES(double location, int unit, double scalemin, double 
     switch (unit)
     {
     case L_NATIVE:
+        // FIXME: this can divide by 0
         result = scalemin + (result / (thisCM / 2.54)) * (scalemax - scalemin);
         break;
     default:

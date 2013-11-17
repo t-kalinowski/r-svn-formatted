@@ -1431,7 +1431,7 @@ static void vector2buff(SEXP vector, LocalParseData *d)
 
         for (i = 1; i < tlen; i++)
         {
-            if (tmp[i] - tmp[i - 1] != 1)
+            if ((tmp[i] == NA_INTEGER) || (tmp[i - 1] == NA_INTEGER) || (tmp[i] - tmp[i - 1] != 1))
             {
                 intSeq = FALSE;
                 break;
