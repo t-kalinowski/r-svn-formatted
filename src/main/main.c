@@ -1491,8 +1491,11 @@ SEXP R_removeTaskCallback(SEXP which)
     }
     else
     {
-        id = asInteger(which) - 1;
-        val = Rf_removeTaskCallbackByIndex(id);
+        id = asInteger(which);
+        if (id != NA_INTEGER)
+            val = Rf_removeTaskCallbackByIndex(id - 1);
+        else
+            val = FALSE;
     }
     return ScalarLogical(val);
 }

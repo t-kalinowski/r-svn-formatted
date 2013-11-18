@@ -203,7 +203,9 @@ void allocateRespected(SEXP layout, int *relativeWidths, int *relativeHeights, d
         /* Determine whether aspect ratio of available space is
          * bigger or smaller than aspect ratio of layout
          */
-        if ((tempHeightCM / tempWidthCM) > (sumHeight / sumWidth))
+        // NB: widths could be zero
+        // if ((tempHeightCM / tempWidthCM) > (sumHeight / sumWidth)) {
+        if (tempHeightCM * sumWidth > sumHeight * tempWidthCM)
         {
             denom = sumWidth;
             mult = tempWidthCM;
