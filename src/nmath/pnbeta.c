@@ -30,7 +30,7 @@ LDOUBLE attribute_hidden pnbeta_raw(double x, double o_x, double a, double b, do
                  see PR#11277 */
 
     double a0, lbeta, c, errbd, x0, temp, tmp_c;
-    int j, ierr;
+    int ierr;
 
     LDOUBLE ans, ax, gx, q, sumq;
 
@@ -62,7 +62,7 @@ LDOUBLE attribute_hidden pnbeta_raw(double x, double o_x, double a, double b, do
     ans = ax = q * temp;
 
     /* recurse over subsequent terms until convergence is achieved */
-    j = (int)x0;
+    double j = floor(x0); // x0 could be billions, and is in package EnvStats
     do
     {
         j++;
