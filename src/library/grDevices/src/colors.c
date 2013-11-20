@@ -369,6 +369,7 @@ static void hcl2rgb(double h, double c, double l, double *R, double *G, double *
     *B = gtrans((0.055648 * X - 0.204043 * Y + 1.057311 * Z) / WHITE_Y);
 }
 
+// People call this with non-finite inputs.
 SEXP hcl(SEXP h, SEXP c, SEXP l, SEXP a, SEXP sfixup)
 {
     double H, C, L, A, r, g, b;
@@ -409,16 +410,21 @@ SEXP hcl(SEXP h, SEXP c, SEXP l, SEXP a, SEXP sfixup)
             H = REAL(h)[i % nh];
             C = REAL(c)[i % nc];
             L = REAL(l)[i % nl];
-            if (L < 0 || L > WHITE_Y || C < 0)
-                error(_("invalid hcl color"));
-            hcl2rgb(H, C, L, &r, &g, &b);
-            ir = (int)(255 * r + .5);
-            ig = (int)(255 * g + .5);
-            ib = (int)(255 * b + .5);
-            if (FixupColor(&ir, &ig, &ib) && !fixup)
-                SET_STRING_ELT(ans, i, NA_STRING);
+            if (R_FINITE(H) && R_FINITE(C) && R_FINITE(L))
+            {
+                if (L < 0 || L > WHITE_Y || C < 0)
+                    error(_("invalid hcl color"));
+                hcl2rgb(H, C, L, &r, &g, &b);
+                ir = (int)(255 * r + .5);
+                ig = (int)(255 * g + .5);
+                ib = (int)(255 * b + .5);
+                if (FixupColor(&ir, &ig, &ib) && !fixup)
+                    SET_STRING_ELT(ans, i, NA_STRING);
+                else
+                    SET_STRING_ELT(ans, i, mkChar(RGB2rgb(ir, ig, ib)));
+            }
             else
-                SET_STRING_ELT(ans, i, mkChar(RGB2rgb(ir, ig, ib)));
+                SET_STRING_ELT(ans, i, NA_STRING);
         }
     }
     else
@@ -431,16 +437,21 @@ SEXP hcl(SEXP h, SEXP c, SEXP l, SEXP a, SEXP sfixup)
             A = REAL(a)[i % na];
             if (!R_FINITE(A))
                 A = 1;
-            if (L < 0 || L > WHITE_Y || C < 0 || A < 0 || A > 1)
-                error(_("invalid hcl color"));
-            hcl2rgb(H, C, L, &r, &g, &b);
-            ir = (int)(255 * r + .5);
-            ig = (int)(255 * g + .5);
-            ib = (int)(255 * b + .5);
-            if (FixupColor(&ir, &ig, &ib) && !fixup)
-                SET_STRING_ELT(ans, i, NA_STRING);
+            if (R_FINITE(H) && R_FINITE(C) && R_FINITE(L))
+            {
+                if (L < 0 || L > WHITE_Y || C < 0 || A < 0 || A > 1)
+                    error(_("invalid hcl color"));
+                hcl2rgb(H, C, L, &r, &g, &b);
+                ir = (int)(255 * r + .5);
+                ig = (int)(255 * g + .5);
+                ib = (int)(255 * b + .5);
+                if (FixupColor(&ir, &ig, &ib) && !fixup)
+                    SET_STRING_ELT(ans, i, NA_STRING);
+                else
+                    SET_STRING_ELT(ans, i, mkChar(RGBA2rgb(ir, ig, ib, ScaleAlpha(A))));
+            }
             else
-                SET_STRING_ELT(ans, i, mkChar(RGBA2rgb(ir, ig, ib, ScaleAlpha(A))));
+                SET_STRING_ELT(ans, i, NA_STRING);
         }
     }
     UNPROTECT(5);
