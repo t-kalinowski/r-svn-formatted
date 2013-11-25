@@ -31,7 +31,9 @@ static void loglin(int nvar, int *dim, int ncon, int *config, int ntab, double *
                    int nmar, double *marg, int nu, double *u, double maxdev, int maxit, double *dev, int *nlast,
                    int *ifault)
 {
-    // FIXME: nvar could be zero (no-segfault test)
+    // nvar could be zero (no-segfault test)
+    if (!nvar)
+        error("no variables"); // not translated
     int i, j, k, n, point, size, check[nvar], icon[nvar];
     double x, y, xmax;
 
