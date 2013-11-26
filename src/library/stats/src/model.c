@@ -354,6 +354,7 @@ SEXP modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     char buf[BUFSIZE] = "\0";
     char *bufp;
     const char *addp;
+    R_xlen_t nn;
 
     args = CDR(args);
 
@@ -413,7 +414,7 @@ SEXP modelmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (length(vars) == 0)
         error(_("do not know how many cases"));
 
-    n = nrows(VECTOR_ELT(vars, 0));
+    nn = n = nrows(VECTOR_ELT(vars, 0));
     /* This could be generated, so need to protect it */
     PROTECT(rnames = getAttrib(vars, R_RowNamesSymbol));
 
@@ -733,6 +734,7 @@ alldone:;
     /* Allocate and compute the design matrix. */
 
     PROTECT(x = allocMatrix(REALSXP, n, nc));
+    double *rx = REAL(x);
 
 #ifdef R_MEMORY_PROFILING
     if (RTRACE(vars))
@@ -745,12 +747,8 @@ alldone:;
     /* a) Begin with a column of 1s for the intercept. */
 
     if ((jnext = jstart = intrcept) != 0)
-    {
         for (i = 0; i < n; i++)
-        {
-            REAL(x)[i] = 1.0;
-        }
-    }
+            rx[i] = 1.0;
 
     /* b) Now loop over the model terms */
 
@@ -789,13 +787,14 @@ alldone:;
                     if (INTEGER(nlevs)[i] > 0)
                     {
                         int adj = isLogical(var_i) ? 1 : 0;
-                        firstfactor(&REAL(x)[jstart * n], n, jnext - jstart, REAL(contrast), nrows(contrast),
+                        // avoid overflow of jstart * nn PR#15578
+                        firstfactor(&rx[jstart * nn], n, jnext - jstart, REAL(contrast), nrows(contrast),
                                     ncols(contrast), INTEGER(var_i) + adj);
                         jnext = jnext + ncols(contrast);
                     }
                     else
                     {
-                        firstvar(&REAL(x)[jstart * n], n, jnext - jstart, REAL(var_i), n, ncols(var_i));
+                        firstvar(&rx[jstart * nn], n, jnext - jstart, REAL(var_i), n, ncols(var_i));
                         jnext = jnext + ncols(var_i);
                     }
                 }
@@ -804,13 +803,13 @@ alldone:;
                     if (INTEGER(nlevs)[i] > 0)
                     {
                         int adj = isLogical(var_i) ? 1 : 0;
-                        addfactor(&REAL(x)[jstart * n], n, jnext - jstart, REAL(contrast), nrows(contrast),
-                                  ncols(contrast), INTEGER(var_i) + adj);
+                        addfactor(&rx[jstart * nn], n, jnext - jstart, REAL(contrast), nrows(contrast), ncols(contrast),
+                                  INTEGER(var_i) + adj);
                         jnext = jnext + (jnext - jstart) * (ncols(contrast) - 1);
                     }
                     else
                     {
-                        addvar(&REAL(x)[jstart * n], n, jnext - jstart, REAL(var_i), n, ncols(var_i));
+                        addvar(&rx[jstart * nn], n, jnext - jstart, REAL(var_i), n, ncols(var_i));
                         jnext = jnext + (jnext - jstart) * (ncols(var_i) - 1);
                     }
                 }
