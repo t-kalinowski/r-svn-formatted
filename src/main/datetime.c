@@ -452,13 +452,13 @@ static double mktime0(struct tm *tm, const int local)
 #else
         errno = 79;
 #endif
-        return (double)(-1);
+        return -1.;
     }
     if (!local)
         return mktime00(tm);
 
-/* This gives -1 for dates prior to 1902, and ignores DST after 2037 */
-#ifndef __APPLE__
+/* OS X 10.9 gives -1 for dates prior to 1902, and ignores DST after 2037 */
+#ifdef HAVE_WORKING_64BIT_MKDIR
     if (sizeof(time_t) == 8)
         OK = !have_broken_mktime() || tm->tm_year >= 70;
     else
@@ -467,7 +467,7 @@ static double mktime0(struct tm *tm, const int local)
     if (OK)
     {
         res = (double)mktime(tm);
-        if (res == (double)-1)
+        if (res == -1.)
             return res;
 #ifndef HAVE_POSIX_LEAPSECONDS
         for (i = 0; i < n_leapseconds; i++)
@@ -491,7 +491,7 @@ static struct tm *localtime0(const double *tp, const int local, struct tm *ltm)
 
     Rboolean OK;
 /* as mktime is broken, do not trust localtime */
-#ifndef __APPLE__
+#ifdef HAVE_WORKING_64BIT_MKDIR
     if (sizeof(time_t) == 8)
         OK = !have_broken_mktime() || d > 0.;
     else
@@ -925,9 +925,9 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
             REAL(ans)[i] = errno ? NA_REAL : tmp + (secs - fsecs);
 #else
             REAL(ans)
-            [i] = ((tmp == (double)(-1))
+            [i] = ((tmp == -1.)
                    /* avoid silly gotcha at epoch minus one sec */
-                   && (tm.tm_sec != 59) && ((tm.tm_sec = 58), (mktime0(&tm, 1 - isgmt) != (double)(-2))))
+                   && (tm.tm_sec != 59) && ((tm.tm_sec = 58), (mktime0(&tm, 1 - isgmt) != -2.)))
                       ? NA_REAL
                       : tmp + (secs - fsecs);
 #endif
