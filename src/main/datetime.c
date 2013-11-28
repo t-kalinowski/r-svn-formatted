@@ -130,8 +130,8 @@ extern time_t mktime(struct tm *);
 static Rboolean have_broken_mktime(void)
 {
 #if defined(_AIX)
-    return TRUE;
-#elif defined(__GLIBC__) && defined(__GLIBC_MINOR__) && __GLIBC__ >= 2 && __GLIBC_MINOR__ >= 2
+    return TRUE; // maybe not so for AIX >= 6, which allegedly uses Olson code
+#elif defined(__GLIBC__) && defined(__GLIBC_MINOR__) && __GLIBC__ == 2 && __GLIBC_MINOR__ >= 2 && __GLIBC_MINOR__ < 10
     static int test_result = -1;
 
     if (test_result == -1)
@@ -604,13 +604,16 @@ double currentTime(void)
     if (res != 0)
         ans = (double)tp.tv_sec + 1e-9 * (double)tp.tv_nsec;
 #elif defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_REALTIME)
+    /* Has 2038 issue if time_t: tv.tv_sec is 32-bit. */
     struct timespec tp;
     int res = clock_gettime(CLOCK_REALTIME, &tp);
     if (res == 0)
         ans = (double)tp.tv_sec + 1e-9 * (double)tp.tv_nsec;
 
 #elif defined(HAVE_GETTIMEOFDAY)
-    /* Mac OS X, mingw.org */
+    /* Mac OS X, mingw.org, used on mingw-w64.
+       Has 2038 issue if time_t: tv.tv_sec is 32-bit.
+     */
     struct timeval tv;
     int res = gettimeofday(&tv, NULL);
     if (res == 0)
