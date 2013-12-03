@@ -257,7 +257,7 @@ static void Y_bessel(double *x, double *alpha, long *nb, double *by, long *ncalc
                 by[i] = by[0];
             return;
         }
-        xna = ftrunc(nu + .5);
+        xna = trunc(nu + .5);
         na = (long)xna;
         if (na == 1)
         { /* <==>  .5 <= *alpha < 1	 <==>  -5. <= nu < 0 */
@@ -419,7 +419,7 @@ static void Y_bessel(double *x, double *alpha, long *nb, double *by, long *ncalc
                Use Campbell's asymptotic scheme.
                ---------------------------------------------------------- */
             na = 0;
-            d1 = ftrunc(ex / fivpi);
+            d1 = trunc(ex / fivpi);
             i = (long)d1;
             dmu = ex - 15. * d1 - d1 * pim5 - (*alpha + .5) * M_PI_2;
             if (i - (i / 2 << 1) == 0)

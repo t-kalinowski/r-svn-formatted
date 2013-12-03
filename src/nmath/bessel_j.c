@@ -345,7 +345,7 @@ static void J_bessel(double *x, double *alpha, long *nb, double *b, long *ncalc)
             /* ------------------------------------------------
                Argument reduction for SIN and COS routines.
                ------------------------------------------------ */
-            t = ftrunc(*x / (twopi1 + twopi2) + .5);
+            t = trunc(*x / (twopi1 + twopi2) + .5);
             z = (*x - t * twopi1) - t * twopi2 - (nu + .5) / pi2;
             vsin = sin(z);
             vcos = cos(z);
