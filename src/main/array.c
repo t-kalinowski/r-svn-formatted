@@ -1430,9 +1430,9 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     x = CAR(args);
     args = CDR(args);
-    int n = asInteger(CAR(args));
+    R_xlen_t n = asVecSize(CAR(args));
     args = CDR(args);
-    int p = asInteger(CAR(args));
+    R_xlen_t p = asVecSize(CAR(args));
     args = CDR(args);
     NaRm = asLogical(CAR(args));
     if (n == NA_INTEGER || n < 0)
@@ -1469,9 +1469,9 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
 #pragma omp parallel for num_threads(nthreads) default(none)                                                           \
     firstprivate(x, ans, n, p, type, NaRm, keepNA, R_NaReal, R_NaInt, OP)
 #endif
-        for (int j = 0; j < p; j++)
+        for (R_xlen_t j = 0; j < p; j++)
         {
-            int cnt = n, i;
+            R_xlen_t cnt = n, i;
             LDOUBLE sum = 0.0;
             switch (type)
             {
@@ -1551,7 +1551,7 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (!keepNA && OP == 3)
             Cnt = Calloc(n, int);
 
-        for (int j = 0; j < p; j++)
+        for (R_xlen_t j = 0; j < p; j++)
         {
             LDOUBLE *ra = rans;
             switch (type)
@@ -1559,10 +1559,10 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
             case REALSXP: {
                 double *rx = REAL(x) + (R_xlen_t)n * j;
                 if (keepNA)
-                    for (int i = 0; i < n; i++)
+                    for (R_xlen_t i = 0; i < n; i++)
                         *ra++ += *rx++;
                 else
-                    for (int i = 0; i < n; i++, ra++, rx++)
+                    for (R_xlen_t i = 0; i < n; i++, ra++, rx++)
                         if (!ISNAN(*rx))
                         {
                             *ra += *rx;
@@ -1573,7 +1573,7 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
             }
             case INTSXP: {
                 int *ix = INTEGER(x) + (R_xlen_t)n * j;
-                for (int i = 0; i < n; i++, ra++, ix++)
+                for (R_xlen_t i = 0; i < n; i++, ra++, ix++)
                     if (keepNA)
                     {
                         if (*ix != NA_INTEGER)
@@ -1591,7 +1591,7 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
             }
             case LGLSXP: {
                 int *ix = LOGICAL(x) + (R_xlen_t)n * j;
-                for (int i = 0; i < n; i++, ra++, ix++)
+                for (R_xlen_t i = 0; i < n; i++, ra++, ix++)
                     if (keepNA)
                     {
                         if (*ix != NA_LOGICAL)
@@ -1612,13 +1612,13 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (OP == 3)
         {
             if (keepNA)
-                for (int i = 0; i < n; i++)
+                for (R_xlen_t i = 0; i < n; i++)
                     rans[i] /= p;
             else
-                for (int i = 0; i < n; i++)
+                for (R_xlen_t i = 0; i < n; i++)
                     rans[i] /= Cnt[i];
         }
-        for (int i = 0; i < n; i++)
+        for (R_xlen_t i = 0; i < n; i++)
             REAL(ans)[i] = (double)rans[i];
 
         if (!keepNA && OP == 3)
