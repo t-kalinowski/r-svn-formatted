@@ -29,6 +29,8 @@
 
 #include "Lapack.h"
 
+extern void F77_NAME(ilaver)(int *major, int *minor, int *patch);
+
 /* NB: the handling of dims is odd here.  Most are coerced to be
  * integers (which dimgets currently guarantees), but a couple were
  * used unchecked.
@@ -1507,6 +1509,14 @@ static SEXP mod_do_lapack(SEXP call, SEXP op, SEXP args, SEXP env)
         a5 = CAR(args);
         args = CDR(args);
         ans = La_svd_cmplx(a1, a2, a3, a4, a5, CAR(args));
+        break;
+    }
+    case 1000: {
+        int major, minor, patch;
+        char str[20];
+        F77_CALL(ilaver)(&major, &minor, &patch);
+        snprintf(str, 20, "%d.%d.%d", major, minor, patch);
+        ans = mkString(str);
         break;
     }
     }
