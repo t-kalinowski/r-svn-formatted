@@ -48,6 +48,8 @@ SEXP fft(SEXP z, SEXP inverse)
     int i, inv, maxf, maxmaxf, maxmaxp, maxp, n, ndims, nseg, nspn;
     double *work;
     int *iwork;
+    size_t smaxf;
+    size_t maxsize = ((size_t)-1) / 4;
 
     switch (TYPEOF(z))
     {
@@ -82,7 +84,10 @@ SEXP fft(SEXP z, SEXP inverse)
             fft_factor(n, &maxf, &maxp);
             if (maxf == 0)
                 error(_("fft factorization error"));
-            work = (double *)R_alloc(4 * maxf, sizeof(double));
+            smaxf = maxf;
+            if (smaxf > maxsize)
+                error("fft too large");
+            work = (double *)R_alloc(4 * smaxf, sizeof(double));
             iwork = (int *)R_alloc(maxp, sizeof(int));
             fft_work(&(COMPLEX(z)[0].r), &(COMPLEX(z)[0].i), 1, n, 1, inv, work, iwork);
         }
@@ -105,7 +110,10 @@ SEXP fft(SEXP z, SEXP inverse)
                         maxmaxp = maxp;
                 }
             }
-            work = (double *)R_alloc(4 * maxmaxf, sizeof(double));
+            smaxf = maxmaxf;
+            if (smaxf > maxsize)
+                error("fft too large");
+            work = (double *)R_alloc(4 * smaxf, sizeof(double));
             iwork = (int *)R_alloc(maxmaxp, sizeof(int));
             nseg = LENGTH(z);
             n = 1;
@@ -136,6 +144,8 @@ SEXP mvfft(SEXP z, SEXP inverse)
     int i, inv, maxf, maxp, n, p;
     double *work;
     int *iwork;
+    size_t smaxf;
+    size_t maxsize = ((size_t)-1) / 4;
 
     d = getAttrib(z, R_DimSymbol);
     if (d == R_NilValue || length(d) > 2)
@@ -173,7 +183,10 @@ SEXP mvfft(SEXP z, SEXP inverse)
         fft_factor(n, &maxf, &maxp);
         if (maxf == 0)
             error(_("fft factorization error"));
-        work = (double *)R_alloc(4 * maxf, sizeof(double));
+        smaxf = maxf;
+        if (smaxf > maxsize)
+            error("fft too large");
+        work = (double *)R_alloc(4 * smaxf, sizeof(double));
         iwork = (int *)R_alloc(maxp, sizeof(int));
         for (i = 0; i < p; i++)
         {
