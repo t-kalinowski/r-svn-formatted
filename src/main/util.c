@@ -1029,7 +1029,7 @@ const char *getTZinfo(void)
         return p;
 #ifdef HAVE_REALPATH
     static char abspath[PATH_MAX + 1] = "";
-    if (!abspath[0])
+    if (abspath[0])
         return abspath + 20;
     if (realpath("/etc/localtime", abspath))
         return abspath + 20; // strip /usr/share/zoneinfo/
