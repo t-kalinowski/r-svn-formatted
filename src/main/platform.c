@@ -2399,8 +2399,13 @@ end:
    'from', 'to' should have trailing path separator if needed.
 */
 #ifdef Win32
+static void copyFileTime(const char *from, const char *to)
+{
+    return;
+}
+
 static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, int over, int recursive, int perms,
-                   int depth)
+                   int dates, int depth)
 {
     R_CheckUserInterrupt(); // includes stack check
     if (depth > 100)
@@ -2455,7 +2460,7 @@ static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, 
                     return 1;
                 }
                 wsprintfW(p, L"%ls%\\%ls", name, de->d_name);
-                nfail += do_copy(from, p, to, over, recursive, perms, depth);
+                nfail += do_copy(from, p, to, over, recursive, perms, dates, depth);
             }
             _wclosedir(dir);
         }
@@ -2464,6 +2469,8 @@ static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, 
             warning(_("problem reading dir %ls: %s"), this, strerror(errno));
             nfail++; /* we were unable to read a dir */
         }
+        if (dates)
+            ;
     }
     else
     { /* a file */
@@ -2499,9 +2506,14 @@ static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, 
                 goto copy_error;
             }
         }
+        if (fp2)
+            fclose(fp2);
+        fp2 = NULL;
         /* FIXME: perhaps manipulate mode as we do in Sys.chmod? */
         if (perms)
             _wchmod(dest, sb.st_mode & 0777);
+        if (dates)
+            copyFileTime(this, dest);
     copy_error:
         if (fp2)
             fclose(fp2);
@@ -2516,7 +2528,7 @@ SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP fn, to, ans;
     wchar_t *p, dir[PATH_MAX], from[PATH_MAX], name[PATH_MAX];
-    int i, nfiles, over, recursive, perms, nfail;
+    int i, nfiles, over, recursive, perms, dates, nfail;
 
     checkArity(op, args);
     fn = CAR(args);
@@ -2524,20 +2536,28 @@ SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(ans = allocVector(LGLSXP, nfiles));
     if (nfiles > 0)
     {
+        args = CDR(args);
         if (!isString(fn))
             error(_("invalid '%s' argument"), "from");
-        to = CADR(args);
+        to = CAR(args);
+        args = CDR(args);
         if (!isString(to) || LENGTH(to) != 1)
             error(_("invalid '%s' argument"), "to");
-        over = asLogical(CADDR(args));
+        over = asLogical(CAR(args));
+        args = CDR(args);
         if (over == NA_LOGICAL)
             error(_("invalid '%s' argument"), "over");
-        recursive = asLogical(CADDDR(args));
+        recursive = asLogical(CAR(args));
+        args = CDR(args);
         if (recursive == NA_LOGICAL)
             error(_("invalid '%s' argument"), "recursive");
-        perms = asLogical(CAD4R(args));
+        perms = asLogical(CAR(args));
+        args = CDR(args);
         if (perms == NA_LOGICAL)
             error(_("invalid '%s' argument"), "copy.mode");
+        dates = asLogical(CAR(args));
+        if (dates == NA_LOGICAL)
+            error(_("invalid '%s' argument"), "copy.dates");
         wcsncpy(dir, filenameToWchar(STRING_ELT(to, 0), TRUE), PATH_MAX);
         if (*(dir + (wcslen(dir) - 1)) != L'\\')
             wcsncat(dir, L"\\", PATH_MAX);
@@ -2571,7 +2591,7 @@ SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
                             wcsncpy(from, L".\\", PATH_MAX);
                         }
                     }
-                    nfail = do_copy(from, name, dir, over, recursive, perms, 1);
+                    nfail = do_copy(from, name, dir, over, recursive, perms, dates, 1);
                 }
                 else
                     nfail = 1;
@@ -2587,7 +2607,43 @@ SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 #else
 
-static int do_copy(const char *from, const char *name, const char *to, int over, int recursive, int perms, int depth)
+#ifdef HAVE_UTIMES
+#include <sys/time.h>
+#elif defined(HAVE_UTIME)
+#include <utime.h>
+#endif
+
+static void copyFileTime(const char *from, const char *to)
+{
+    struct stat sb;
+    if (stat(from, &sb))
+        return;
+    double ftime;
+
+#ifdef STAT_TIMESPEC
+    ftime = (double)STAT_TIMESPEC(sb, st_mtim).tv_sec + 1e-9 * (double)STAT_TIMESPEC(sb, st_mtim).tv_nsec;
+#elif defined STAT_TIMESPEC_NS
+    ftime = STAT_TIMESPEC_NS(sb, st_mtim);
+#else
+        ftime = (double)sb.st_mtime;
+#endif
+
+#if defined(HAVE_UTIMES)
+    struct timeval times[2];
+
+    times[0].tv_sec = times[1].tv_sec = (int)ftime;
+    times[0].tv_usec = times[1].tv_usec = (int)(1e6 * (ftime - (int)ftime));
+    utimes(to, times);
+#elif defined(HAVE_UTIME)
+    struct utimbuf settime;
+
+    settime.actime = settime.modtime = (int)ftime;
+    utime(to, &settime);
+#endif
+}
+
+static int do_copy(const char *from, const char *name, const char *to, int over, int recursive, int perms, int dates,
+                   int depth)
 {
     R_CheckUserInterrupt(); // includes stack check
     if (depth > 100)
@@ -2653,7 +2709,7 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
                     return 1;
                 }
                 snprintf(p, PATH_MAX + 1, "%s/%s", name, de->d_name);
-                nfail += do_copy(from, p, to, over, recursive, perms, depth);
+                nfail += do_copy(from, p, to, over, recursive, perms, dates, depth);
             }
             closedir(dir);
         }
@@ -2663,6 +2719,8 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
             nfail++; /* we were unable to read a dir */
         }
         chmod(dest, (mode_t)(perms ? (sb.st_mode & mask) : mask));
+        if (dates)
+            copyFileTime(this, dest);
     }
     else
     { /* a file */
@@ -2698,9 +2756,14 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
                 nfail++;
                 goto copy_error;
             }
+            if (fp2)
+                fclose(fp2);
+            fp2 = NULL;
+            if (perms)
+                chmod(dest, sb.st_mode & mask);
+            if (dates)
+                copyFileTime(this, dest);
         }
-        if (perms)
-            chmod(dest, sb.st_mode & mask);
     copy_error:
         if (fp2)
             fclose(fp2);
@@ -2715,7 +2778,7 @@ SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP fn, to, ans;
     char *p, dir[PATH_MAX], from[PATH_MAX], name[PATH_MAX];
-    int i, nfiles, over, recursive, perms, nfail;
+    int i, nfiles, over, recursive, perms, dates, nfail;
 
     checkArity(op, args);
     fn = CAR(args);
@@ -2723,20 +2786,28 @@ SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(ans = allocVector(LGLSXP, nfiles));
     if (nfiles > 0)
     {
+        args = CDR(args);
         if (!isString(fn))
             error(_("invalid '%s' argument"), "from");
-        to = CADR(args);
+        to = CAR(args);
+        args = CDR(args);
         if (!isString(to) || LENGTH(to) != 1)
             error(_("invalid '%s' argument"), "to");
-        over = asLogical(CADDR(args));
+        over = asLogical(CAR(args));
+        args = CDR(args);
         if (over == NA_LOGICAL)
             error(_("invalid '%s' argument"), "over");
-        recursive = asLogical(CADDDR(args));
+        recursive = asLogical(CAR(args));
+        args = CDR(args);
         if (recursive == NA_LOGICAL)
             error(_("invalid '%s' argument"), "recursive");
-        perms = asLogical(CAD4R(args));
+        perms = asLogical(CAR(args));
+        args = CDR(args);
         if (perms == NA_LOGICAL)
             error(_("invalid '%s' argument"), "copy.mode");
+        dates = asLogical(CAR(args));
+        if (dates == NA_LOGICAL)
+            error(_("invalid '%s' argument"), "copy.dates");
         strncpy(dir, R_ExpandFileName(translateChar(STRING_ELT(to, 0))), PATH_MAX);
         if (*(dir + (strlen(dir) - 1)) != '/')
             strncat(dir, "/", PATH_MAX);
@@ -2763,7 +2834,7 @@ SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
                         strncpy(name, from, PATH_MAX);
                         strncpy(from, "./", PATH_MAX);
                     }
-                    nfail = do_copy(from, name, dir, over, recursive, perms, 1);
+                    nfail = do_copy(from, name, dir, over, recursive, perms, dates, 1);
                 }
                 else
                     nfail = 1;
@@ -2993,12 +3064,6 @@ static int winSetFileTime(const char *fn, time_t ftime)
     CloseHandle(hFile);
     return res != 0; /* success is non-zero */
 }
-#else
-#ifdef HAVE_UTIMES
-#include <sys/time.h>
-#elif defined(HAVE_UTIME)
-#include <utime.h>
-#endif
 #endif
 
 SEXP attribute_hidden do_setFileTime(SEXP call, SEXP op, SEXP args, SEXP rho)
