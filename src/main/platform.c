@@ -2399,9 +2399,24 @@ end:
    'from', 'to' should have trailing path separator if needed.
 */
 #ifdef Win32
-static void copyFileTime(const char *from, const char *to)
+static void copyFileTime(const wchar_t *from, const wchar_t *to)
 {
-    return;
+    HANDLE hFrom, hTo;
+    FILETIME modft;
+
+    hFrom = CreateFileW(from, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    if (hFrom == INVALID_HANDLE_VALUE)
+        return;
+    int res = GetFileTime(hFrom, NULL, &modft, NULL);
+    CloseHandle(hFrom);
+    if (!res)
+        return;
+
+    hTo = CreateFileW(to, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    if (hTo == INVALID_HANDLE_VALUE)
+        return;
+    SetFileTime(hTo, NULL, NULL, &modft);
+    CloseHandle(hTo);
 }
 
 static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, int over, int recursive, int perms,
@@ -2419,7 +2434,7 @@ static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, 
 
     if (wcslen(from) + wcslen(name) >= PATH_MAX)
     {
-        warning(_("over-long path length"));
+        warning(_("over-long path"));
         return 1;
     }
     wsprintfW(this, L"%ls%ls", from, name);
@@ -2435,7 +2450,7 @@ static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, 
         nc = wcslen(to);
         if (wcslen(to) + wcslen(name) >= PATH_MAX)
         {
-            warning(_("over-long path length"));
+            warning(_("over-long path"));
             return 1;
         }
         wsprintfW(dest, L"%ls%ls", to, name);
@@ -2456,7 +2471,7 @@ static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, 
                     continue;
                 if (wcslen(name) + wcslen(de->d_name) + 1 >= PATH_MAX)
                 {
-                    warning(_("over-long path length"));
+                    warning(_("over-long path"));
                     return 1;
                 }
                 wsprintfW(p, L"%ls%\\%ls", name, de->d_name);
@@ -2470,7 +2485,7 @@ static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, 
             nfail++; /* we were unable to read a dir */
         }
         if (dates)
-            ;
+            copyFileTime(this, dest);
     }
     else
     { /* a file */
@@ -2506,6 +2521,9 @@ static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, 
                 goto copy_error;
             }
         }
+        if (fp1)
+            fclose(fp1);
+        fp1 = NULL;
         if (fp2)
             fclose(fp2);
         fp2 = NULL;
