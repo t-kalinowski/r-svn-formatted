@@ -200,7 +200,7 @@ static int validate_tm(struct tm *tm)
 static double mktime00(struct tm *tm)
 {
     int day = 0;
-    int i, year, year0;
+    int year, year0;
     double excess = 0.0;
 
     day = tm->tm_mday - 1;
@@ -217,7 +217,7 @@ static double mktime00(struct tm *tm)
         year0 -= (int)(excess * 2000);
     }
 
-    for (i = 0; i < tm->tm_mon; i++)
+    for (int i = 0; i < tm->tm_mon; i++)
         day += days_in_month[i];
     if (tm->tm_mon > 1 && isleap(year0))
         day++;
@@ -409,9 +409,6 @@ static double mktime0(struct tm *tm, const int local)
 {
     double res;
     Rboolean OK;
-#ifndef HAVE_POSIX_LEAPSECONDS
-    int i;
-#endif
 
     if (validate_tm(tm) < 0)
     {
@@ -438,7 +435,7 @@ static double mktime0(struct tm *tm, const int local)
         if (res == -1.)
             return res;
 #ifndef HAVE_POSIX_LEAPSECONDS
-        for (i = 0; i < n_leapseconds; i++)
+        for (int i = 0; i < n_leapseconds; i++)
             if (res > leapseconds[i])
                 res -= 1.0;
 #endif
@@ -797,7 +794,7 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
 
     checkArity(op, args);
     PROTECT(x = duplicate(CAR(args))); /* coerced below */
-    if (!isVectorList(x) || LENGTH(x) != 9)
+    if (!isVectorList(x) || LENGTH(x) < 9)
         error(_("invalid '%s' argument"), "x");
     if (!isString((stz = CADR(args))) || LENGTH(stz) != 1)
         error(_("invalid '%s' value"), "tz");
@@ -882,7 +879,7 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, sformat, ans, tz;
-    R_xlen_t i, n = 0, m, N, nlen[9];
+    R_xlen_t n = 0, m, N, nlen[9];
     int UseTZ, settz = 0;
     char buff[300];
     char oldtz[20] = "";
@@ -891,7 +888,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 
     checkArity(op, args);
     PROTECT(x = duplicate(CAR(args))); /* coerced below */
-    if (!isVectorList(x) || LENGTH(x) != 9)
+    if (!isVectorList(x) || LENGTH(x) < 9)
         error(_("invalid '%s' argument"), "x");
     if (!isString((sformat = CADR(args))) || XLENGTH(sformat) == 0)
         error(_("invalid '%s' argument"), "format");
@@ -906,7 +903,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         /* If the format includes %Z or %z
            we need to try to set TZ accordingly */
         int needTZ = 0;
-        for (i = 0; i < m; i++)
+        for (R_xlen_t i = 0; i < m; i++)
         {
             const char *p = CHAR(STRING_ELT(sformat, i));
             if (strstr(p, "%Z") || strstr(p, "%z"))
@@ -925,7 +922,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     memset(&tm, 0, sizeof(tm));
 
     /* coerce fields to integer or real, find length of longest one */
-    for (i = 0; i < 9; i++)
+    for (int i = 0; i < 9; i++)
     {
         nlen[i] = XLENGTH(VECTOR_ELT(x, i));
         if (nlen[i] > n)
@@ -934,7 +931,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     if (n > 0)
     {
-        for (i = 0; i < 9; i++)
+        for (int i = 0; i < 9; i++)
             if (nlen[i] == 0)
                 error(_("zero-length component in non-empty \"POSIXlt\" structure"));
     }
@@ -943,7 +940,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     else
         N = 0;
     PROTECT(ans = allocVector(STRSXP, N));
-    for (i = 0; i < N; i++)
+    for (R_xlen_t i = 0; i < N; i++)
     {
         double secs = REAL(VECTOR_ELT(x, 0))[i % nlen[0]], fsecs = floor(secs);
         // avoid (int) NAN
@@ -1053,7 +1050,7 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
     const char *tz = NULL;
     char oldtz[20] = "";
     double psecs = 0.0;
-    R_xlen_t i, n, m, N;
+    R_xlen_t n, m, N;
 
     checkArity(op, args);
     if (!isString((x = CAR(args))))
@@ -1103,14 +1100,14 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
         N = 0;
 
     PROTECT(ans = allocVector(VECSXP, 9));
-    for (i = 0; i < 9; i++)
+    for (int i = 0; i < 9; i++)
         SET_VECTOR_ELT(ans, i, allocVector(i > 0 ? INTSXP : REALSXP, N));
 
     PROTECT(ansnames = allocVector(STRSXP, 9));
-    for (i = 0; i < 9; i++)
+    for (int i = 0; i < 9; i++)
         SET_STRING_ELT(ansnames, i, mkChar(ltnames[i]));
 
-    for (i = 0; i < N; i++)
+    for (R_xlen_t i = 0; i < N; i++)
     {
         /* for glibc's sake. That only sets some unspecified fields,
            sometimes. */
@@ -1176,7 +1173,7 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP attribute_hidden do_D2POSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, ans, ansnames, klass;
-    R_xlen_t n, i;
+    R_xlen_t n;
     int valid, day, y, tmp, mon;
     struct tm tm;
 
@@ -1184,14 +1181,14 @@ SEXP attribute_hidden do_D2POSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(x = coerceVector(CAR(args), REALSXP));
     n = XLENGTH(x);
     PROTECT(ans = allocVector(VECSXP, 9));
-    for (i = 0; i < 9; i++)
+    for (int i = 0; i < 9; i++)
         SET_VECTOR_ELT(ans, i, allocVector(i > 0 ? INTSXP : REALSXP, n));
 
     PROTECT(ansnames = allocVector(STRSXP, 9));
-    for (i = 0; i < 9; i++)
+    for (int i = 0; i < 9; i++)
         SET_STRING_ELT(ansnames, i, mkChar(ltnames[i]));
 
-    for (i = 0; i < n; i++)
+    for (R_xlen_t i = 0; i < n; i++)
     {
         if (R_FINITE(REAL(x)[i]))
         {
@@ -1244,33 +1241,33 @@ SEXP attribute_hidden do_D2POSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP attribute_hidden do_POSIXlt2D(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, ans, klass;
-    R_xlen_t i, n = 0, nlen[9];
+    R_xlen_t n = 0, nlen[9];
     struct tm tm;
 
     checkArity(op, args);
     PROTECT(x = duplicate(CAR(args)));
-    if (!isVectorList(x) || LENGTH(x) != 9)
+    if (!isVectorList(x) || LENGTH(x) < 9)
         error(_("invalid '%s' argument"), "x");
 
-    for (i = 3; i < 6; i++)
+    for (int i = 3; i < 6; i++)
         if ((nlen[i] = XLENGTH(VECTOR_ELT(x, i))) > n)
             n = nlen[i];
     if ((nlen[8] = XLENGTH(VECTOR_ELT(x, 8))) > n)
         n = nlen[8];
     if (n > 0)
     {
-        for (i = 3; i < 6; i++)
+        for (int i = 3; i < 6; i++)
             if (nlen[i] == 0)
                 error(_("zero-length component in non-empty \"POSIXlt\" structure"));
         if (nlen[8] == 0)
             error(_("zero-length component in non-empty \"POSIXlt\" structure"));
     }
     /* coerce relevant fields to integer */
-    for (i = 3; i < 6; i++)
+    for (int i = 3; i < 6; i++)
         SET_VECTOR_ELT(x, i, coerceVector(VECTOR_ELT(x, i), INTSXP));
 
     PROTECT(ans = allocVector(REALSXP, n));
-    for (i = 0; i < n; i++)
+    for (R_xlen_t i = 0; i < n; i++)
     {
         tm.tm_sec = tm.tm_min = tm.tm_hour = 0;
         tm.tm_mday = INTEGER(VECTOR_ELT(x, 3))[i % nlen[3]];
