@@ -774,8 +774,10 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     SET_STRING_ELT(klass, 0, mkChar("POSIXlt"));
     SET_STRING_ELT(klass, 1, mkChar("POSIXt"));
     classgets(ans, klass);
-
     setAttrib(ans, install("tzone"), tzone);
+    SEXP nm = getAttrib(x, R_NamesSymbol);
+    if (nm != R_NilValue)
+        setAttrib(VECTOR_ELT(ans, 5), R_NamesSymbol, nm);
     UNPROTECT(6);
 
     if (settz)
@@ -1231,6 +1233,9 @@ SEXP attribute_hidden do_D2POSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     SET_STRING_ELT(klass, 1, mkChar("POSIXt"));
     classgets(ans, klass);
     setAttrib(ans, install("tzone"), mkString("UTC"));
+    SEXP nm = getAttrib(x, R_NamesSymbol);
+    if (nm != R_NilValue)
+        setAttrib(VECTOR_ELT(ans, 5), R_NamesSymbol, nm);
     UNPROTECT(4);
 
     return ans;
