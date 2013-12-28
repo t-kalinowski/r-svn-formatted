@@ -21,13 +21,9 @@
  */
 
 /*
-    These use POSIX functions that are not available on all platforms,
-    and where they are they may be partially or incorrectly
-    implemented.  A number of lightweight alternatives are supplied,
-    but generally timezone support is only available if the OS
-    supplies it (or as on Windows, we replace it).  However, as these
-    are now also mandated by C99, they are almost universally
-    available, albeit with more room for implementation variations.
+    These use POSIX functions which are now also part of C99 so are
+    almost universally available, albeit with more room for
+    implementation variations.
 
     A particular problem is the setting of the timezone TZ on
     Unix/Linux.  POSIX appears to require it, yet older Linux systems
@@ -46,8 +42,6 @@
 
 #ifdef USE_INTERNAL_MKTIME
 #include "datetime.h"
-#undef HAVE_WORKING_64BIT_MKTIME
-#define HAVE_WORKING_64BIT_MKTIME 1
 #undef MKTIME_SETS_ERRNO
 #define MKTIME_SETS_ERRNO
 #else
@@ -64,39 +58,6 @@ extern char *tzname[2];
 #include <Defn.h>
 #include <Internal.h>
 
-/* The glibc in RH8.0 was broken and assumed that dates before
-   1970-01-01 do not exist.  So does Windows, but its code was replaced
-   in R 2.7.0.  As from 1.6.2, test the actual mktime code and cache
-   the result on glibc >= 2.2. (It seems this started between 2.2.5
-   and 2.3, and RH8.0 had an unreleased version in that gap.)
-
-   Sometime in late 2004 this was reverted in glibc.
-*/
-
-static Rboolean have_broken_mktime(void)
-{
-#if defined(_AIX)
-    return TRUE; // maybe not so for AIX >= 6, which allegedly uses Olson code
-#elif defined(__GLIBC__) && defined(__GLIBC_MINOR__) && __GLIBC__ == 2 && __GLIBC_MINOR__ >= 2 && __GLIBC_MINOR__ < 10
-    static int test_result = -1;
-
-    if (test_result == -1)
-    {
-        struct tm t;
-        time_t res;
-        t.tm_sec = t.tm_min = t.tm_hour = 0;
-        t.tm_mday = t.tm_mon = 1;
-        t.tm_year = 68;
-        t.tm_isdst = -1;
-        res = mktime(&t);
-        test_result = (res == (time_t)-1);
-    }
-    return test_result > 0;
-#else
-    return FALSE;
-#endif
-}
-
 /* Substitute based on glibc code. */
 #include "Rstrptime.h"
 
@@ -104,16 +65,6 @@ static const int days_in_month[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30
 
 #define isleap(y) ((((y) % 4) == 0 && ((y) % 100) != 0) || ((y) % 400) == 0)
 #define days_in_year(year) (isleap(year) ? 366 : 365)
-
-#ifndef HAVE_POSIX_LEAPSECONDS
-/* There have been 25 leapseconds: see .leap.seconds in R
- */
-static int n_leapseconds = 25;
-static const time_t leapseconds[] = {78796800,  94694400,   126230400,  157766400, 189302400, 220924800, 252460800,
-                                     283996800, 315532800,  362793600,  394329600, 425865600, 489024000, 567993600,
-                                     631152000, 662688000,  709948800,  741484800, 773020800, 820454400, 867715200,
-                                     915148800, 1136073600, 1230768000, 1341100800};
-#endif
 
 /*
   Adjust a struct tm to be a valid date-time.
@@ -290,6 +241,72 @@ static double mktime00(struct tm *tm)
     return tm->tm_sec + (tm->tm_min * 60) + (tm->tm_hour * 3600) + (day + excess * 730485) * 86400.0;
 }
 
+#ifdef USE_INTERNAL_MKTIME
+/* Interface to mktime or mktime00 */
+static double mktime0(struct tm *tm, const int local)
+{
+    if (validate_tm(tm) < 0)
+    {
+#ifdef EOVERFLOW
+        errno = EOVERFLOW;
+#else
+        errno = 79;
+#endif
+        return -1.;
+    }
+    return local ? R_mktime(tm) : mktime00(tm);
+}
+
+/* Interface to localtime or gmtime */
+static struct tm *localtime0(const double *tp, const int local)
+{
+    time_t t = (time_t)*tp;
+    return local ? R_localtime(&t) : R_gmtime(&t);
+}
+#else
+/* The glibc in RH8.0 was broken and assumed that dates before
+   1970-01-01 do not exist.  So does Windows, but its code was replaced
+   in R 2.7.0.  As from 1.6.2, test the actual mktime code and cache
+   the result on glibc >= 2.2. (It seems this started between 2.2.5
+   and 2.3, and RH8.0 had an unreleased version in that gap.)
+
+   Sometime in late 2004 this was reverted in glibc.
+*/
+
+static Rboolean have_broken_mktime(void)
+{
+#if defined(_AIX)
+    return TRUE; // maybe not so for AIX >= 6, which allegedly uses Olson code
+#elif defined(__GLIBC__) && defined(__GLIBC_MINOR__) && __GLIBC__ == 2 && __GLIBC_MINOR__ >= 2 && __GLIBC_MINOR__ < 10
+    static int test_result = -1;
+
+    if (test_result == -1)
+    {
+        struct tm t;
+        time_t res;
+        t.tm_sec = t.tm_min = t.tm_hour = 0;
+        t.tm_mday = t.tm_mon = 1;
+        t.tm_year = 68;
+        t.tm_isdst = -1;
+        res = mktime(&t);
+        test_result = (res == (time_t)-1);
+    }
+    return test_result > 0;
+#else
+    return FALSE;
+#endif
+}
+
+#ifndef HAVE_POSIX_LEAPSECONDS
+/* There have been 25 leapseconds: see .leap.seconds in R
+ */
+static int n_leapseconds = 25;
+static const time_t leapseconds[] = {78796800,  94694400,   126230400,  157766400, 189302400, 220924800, 252460800,
+                                     283996800, 315532800,  362793600,  394329600, 425865600, 489024000, 567993600,
+                                     631152000, 662688000,  709948800,  741484800, 773020800, 820454400, 867715200,
+                                     915148800, 1136073600, 1230768000, 1341100800};
+#endif
+
 static double guess_offset(struct tm *tm)
 {
     double offset, offset1, offset2;
@@ -433,11 +450,10 @@ static double mktime0(struct tm *tm, const int local)
 }
 
 /* Interface for localtime or gmtime or internal substitute */
-static struct tm *localtime0(const double *tp, const int local, struct tm *ltm)
+static struct tm *localtime0(const double *tp, const int local)
 {
     double d = *tp;
     int y, tmp;
-    struct tm *res = ltm;
     time_t t;
 
     Rboolean OK;
@@ -467,6 +483,7 @@ static struct tm *localtime0(const double *tp, const int local, struct tm *ltm)
     int day = (int)floor(d / 86400.0);
     int left = (int)(d - day * 86400.0 + 1e-6); // allow for fractional secs
 
+    struct tm ltm0, *res = &ltm0;
     /* hour, min, and sec */
     res->tm_hour = left / 3600;
     left %= 3600;
@@ -541,6 +558,7 @@ static struct tm *localtime0(const double *tp, const int local, struct tm *ltm)
         return res;
     }
 }
+#endif
 
 static int set_tz(const char *tz, char *oldtz)
 {
@@ -713,6 +731,19 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isgmt && strlen(tz) > 0)
         settz = set_tz(tz, oldtz);
 
+    // localtime may change tzname.
+    if (isgmt)
+    {
+        PROTECT(tzone = mkString(tz));
+    }
+    else
+    {
+        PROTECT(tzone = allocVector(STRSXP, 3));
+        SET_STRING_ELT(tzone, 0, mkChar(tz));
+        SET_STRING_ELT(tzone, 1, mkChar(tzname[0]));
+        SET_STRING_ELT(tzone, 2, mkChar(tzname[1]));
+    }
+
     R_xlen_t n = XLENGTH(x);
     PROTECT(ans = allocVector(VECSXP, 9));
     for (int i = 0; i < 9; i++)
@@ -724,11 +755,11 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 
     for (R_xlen_t i = 0; i < n; i++)
     {
-        struct tm dummy, *ptm = &dummy;
+        struct tm *ptm = NULL;
         double d = REAL(x)[i];
         if (R_FINITE(d))
         {
-            ptm = localtime0(&d, 1 - isgmt, &dummy);
+            ptm = localtime0(&d, 1 - isgmt);
             /* in theory localtime/gmtime always return a valid
                struct tm pointer, but Windows uses NULL for error
                conditions (like negative times). */
@@ -743,17 +774,7 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     SET_STRING_ELT(klass, 0, mkChar("POSIXlt"));
     SET_STRING_ELT(klass, 1, mkChar("POSIXt"));
     classgets(ans, klass);
-    if (isgmt)
-    {
-        PROTECT(tzone = mkString(tz));
-    }
-    else
-    {
-        PROTECT(tzone = allocVector(STRSXP, 3));
-        SET_STRING_ELT(tzone, 0, mkChar(tz));
-        SET_STRING_ELT(tzone, 1, mkChar(tzname[0]));
-        SET_STRING_ELT(tzone, 2, mkChar(tzname[1]));
-    }
+
     setAttrib(ans, install("tzone"), tzone);
     UNPROTECT(6);
 
@@ -995,17 +1016,17 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
                 strftime(buff, 256, buf2, &tm);
                 if (UseTZ && !isNull(tz))
                 {
-                    int i = 0;
+                    int ii = 0;
                     if (LENGTH(tz) == 3)
                     {
                         if (tm.tm_isdst > 0)
-                            i = 2;
+                            ii = 2;
                         else if (tm.tm_isdst == 0)
-                            i = 1;
+                            ii = 1;
                         else
-                            i = 0; /* Use base timezone name */
+                            ii = 0; /* Use base timezone name */
                     }
-                    p = CHAR(STRING_ELT(tz, i));
+                    p = CHAR(STRING_ELT(tz, ii));
                     if (strlen(p))
                     {
                         strcat(buff, " ");
@@ -1024,7 +1045,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP x, sformat, ans, ansnames, klass, stz, tzone;
+    SEXP x, sformat, ans, ansnames, klass, stz, tzone = R_NilValue;
     int invalid, isgmt = 0, settz = 0, offset;
     struct tm tm, tm2, *ptm = &tm;
     const char *tz = NULL;
@@ -1056,6 +1077,21 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
         isgmt = 1;
     if (!isgmt && strlen(tz) > 0)
         settz = set_tz(tz, oldtz);
+
+    // in case this gets changed by conversions.
+    if (isgmt)
+    {
+        PROTECT(tzone = mkString(tz));
+    }
+    else if (strlen(tz))
+    {
+        PROTECT(tzone = allocVector(STRSXP, 3));
+        SET_STRING_ELT(tzone, 0, mkChar(tz));
+        SET_STRING_ELT(tzone, 1, mkChar(tzname[0]));
+        SET_STRING_ELT(tzone, 2, mkChar(tzname[1]));
+    }
+    else
+        PROTECT(tzone); // for balance
 
     n = XLENGTH(x);
     m = XLENGTH(sformat);
@@ -1101,7 +1137,7 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
                 if (t0 != -1)
                 {
                     t0 -= offset; /* offset = -0800 is Seattle */
-                    ptm = localtime0(&t0, 1 - isgmt, &tm2);
+                    ptm = localtime0(&t0, 1 - isgmt);
                 }
                 else
                     invalid = 1;
@@ -1126,25 +1162,12 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
     SET_STRING_ELT(klass, 0, mkChar("POSIXlt"));
     SET_STRING_ELT(klass, 1, mkChar("POSIXt"));
     classgets(ans, klass);
-    if (isgmt)
-    {
-        PROTECT(tzone = mkString(tz));
-        setAttrib(ans, install("tzone"), tzone);
-        UNPROTECT(1);
-    }
-    else if (strlen(tz))
-    {
-        PROTECT(tzone = allocVector(STRSXP, 3));
-        SET_STRING_ELT(tzone, 0, mkChar(tz));
-        SET_STRING_ELT(tzone, 1, mkChar(tzname[0]));
-        SET_STRING_ELT(tzone, 2, mkChar(tzname[1]));
-        setAttrib(ans, install("tzone"), tzone);
-        UNPROTECT(1);
-    }
     if (settz)
         reset_tz(oldtz);
+    if (isString(tzone))
+        setAttrib(ans, install("tzone"), tzone);
 
-    UNPROTECT(4);
+    UNPROTECT(5);
     return ans;
 }
 
