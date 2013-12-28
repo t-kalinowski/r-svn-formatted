@@ -32,6 +32,7 @@ use of 'unknown' isdst
 use of 64-bit time_t irrespective of platform.
 */
 
+#include <config.h>
 #include <string.h>
 #include <limits.h> /* for CHAR_BIT et al. */
 #include <time.h>
@@ -50,6 +51,7 @@ use of 64-bit time_t irrespective of platform.
 #endif
 
 #include "datetime.h"
+#define tzname R_tzname
 
 #ifndef TRUE
 #define TRUE 1
@@ -1347,9 +1349,9 @@ static struct tm *localsub(const time_t *const timep, const int_fast32_t offset,
     result = timesub(&t, ttisp->tt_gmtoff, sp, tmp);
     tmp->tm_isdst = ttisp->tt_isdst;
     tzname[tmp->tm_isdst] = &sp->chars[ttisp->tt_abbrind];
-#ifdef TM_ZONE
-    tmp->TM_ZONE = &sp->chars[ttisp->tt_abbrind];
-#endif /* defined TM_ZONE */
+#ifdef HAVE_TM_ZONE
+    tmp->tm_zone = &sp->chars[ttisp->tt_abbrind];
+#endif
     return result;
 }
 
