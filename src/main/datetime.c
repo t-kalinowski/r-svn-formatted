@@ -1238,7 +1238,7 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
         makelt(ptm, ans, i, !invalid, psecs - floor(psecs));
         if (!isgmt)
         {
-            char *p = "";
+            const char *p = "";
             if (!invalid && tm.tm_isdst >= 0)
             {
 #ifdef HAVE_TM_ZONE
