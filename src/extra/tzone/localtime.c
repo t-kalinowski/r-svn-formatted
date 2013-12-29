@@ -2004,6 +2004,13 @@ time_t mktime(struct tm *const tmp)
     return time1(tmp, localsub, 0L);
 }
 
+time_t R_timegm(struct tm *const tmp)
+{
+    if (tmp != NULL)
+        tmp->tm_isdst = 0;
+    return time1(tmp, gmtsub, 0L);
+}
+
 #ifdef STD_INSPIRED
 
 time_t timelocal(struct tm *const tmp)
@@ -2011,13 +2018,6 @@ time_t timelocal(struct tm *const tmp)
     if (tmp != NULL)
         tmp->tm_isdst = -1; /* in case it wasn't initialized */
     return mktime(tmp);
-}
-
-time_t timegm(struct tm *const tmp)
-{
-    if (tmp != NULL)
-        tmp->tm_isdst = 0;
-    return time1(tmp, gmtsub, 0L);
 }
 
 time_t timeoff(struct tm *const tmp, const long offset)
