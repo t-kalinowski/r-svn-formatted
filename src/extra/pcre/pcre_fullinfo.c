@@ -218,6 +218,10 @@ PCRE_EXP_DEFN int PCRE_CALL_CONVENTION pcre32_fullinfo(const pcre32 *argument_re
         *((pcre_uint32 *)where) = re->limit_recursion;
         break;
 
+    case PCRE_INFO_MATCH_EMPTY:
+        *((int *)where) = (re->flags & PCRE_MATCH_EMPTY) != 0;
+        break;
+
     default:
         return PCRE_ERROR_BADOPTION;
     }
