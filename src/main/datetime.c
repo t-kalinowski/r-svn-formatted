@@ -38,7 +38,7 @@
 #endif
 
 #ifdef __GLIBC__
-// to get tm_zone defined
+// to get tm_zone, tm_gmtoff defined
 #define _BSD_SOURCE
 #endif
 #include <time.h>
@@ -489,6 +489,7 @@ static struct tm *localtime0(const double *tp, const int local)
     int left = (int)(d - day * 86400.0 + 1e-6); // allow for fractional secs
 
     struct tm ltm0, *res = &ltm0;
+    memset(res, 0, sizeof(struct tm));
     /* hour, min, and sec */
     res->tm_hour = left / 3600;
     left %= 3600;
@@ -680,7 +681,8 @@ static void glibc_fix(struct tm *tm, int *invalid)
     }
 }
 
-static const char ltnames[][6] = {"sec", "min", "hour", "mday", "mon", "year", "wday", "yday", "isdst", "zone"};
+static const char ltnames[][6] = {"sec",  "min",  "hour",  "mday", "mon",   "year",
+                                  "wday", "yday", "isdst", "zone", "gmtoff"};
 
 static void makelt(struct tm *tm, SEXP ans, R_xlen_t i, int valid, double frac_secs)
 {
@@ -750,12 +752,15 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 
     R_xlen_t n = XLENGTH(x);
-    int nans = 10 - isgmt;
+    int nans = 11 - 2 * isgmt;
     PROTECT(ans = allocVector(VECSXP, nans));
     for (int i = 0; i < 9; i++)
         SET_VECTOR_ELT(ans, i, allocVector(i > 0 ? INTSXP : REALSXP, n));
     if (!isgmt)
+    {
         SET_VECTOR_ELT(ans, 9, allocVector(STRSXP, n));
+        SET_VECTOR_ELT(ans, 10, allocVector(INTSXP, n));
+    }
 
     PROTECT(ansnames = allocVector(STRSXP, nans));
     for (int i = 0; i < nans; i++)
@@ -779,11 +784,13 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!isgmt)
         {
             char *p = "";
+            // or ptm->tm_zone
             if (valid && ptm->tm_isdst >= 0)
                 p = R_tzname[ptm->tm_isdst];
             SET_STRING_ELT(VECTOR_ELT(ans, 9), i, mkChar(p));
-#ifdef HAVE_TM_ZONE
-//	    if(valid) printf("tm_zone = %s\n", ptm->tm_zone);
+#ifdef HAVE_TM_GMTOFF
+            if (valid)
+                INTEGER(VECTOR_ELT(ans, 10))[i] = (int)ptm->tm_gmtoff;
 #endif
         }
     }
@@ -986,6 +993,9 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
             if (tm.tm_isdst >= 0)
                 tzname[tm.tm_isdst] = tm_zone;
 #endif
+#ifdef HAVE_TM_GMTOFF
+            tm.tm_gmtoff = INTEGER(VECTOR_ELT(x, 10))[i % n];
+#endif
         }
         if (!R_FINITE(secs) || tm.tm_min == NA_INTEGER || tm.tm_hour == NA_INTEGER || tm.tm_mday == NA_INTEGER ||
             tm.tm_mon == NA_INTEGER || tm.tm_year == NA_INTEGER)
@@ -1149,12 +1159,15 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
     else
         N = 0;
 
-    int nans = 10 - isgmt;
+    int nans = 11 - 2 * isgmt;
     PROTECT(ans = allocVector(VECSXP, nans));
     for (int i = 0; i < 9; i++)
         SET_VECTOR_ELT(ans, i, allocVector(i > 0 ? INTSXP : REALSXP, N));
     if (!isgmt)
+    {
         SET_VECTOR_ELT(ans, 9, allocVector(STRSXP, n));
+        SET_VECTOR_ELT(ans, 10, allocVector(INTSXP, n));
+    }
 
     PROTECT(ansnames = allocVector(STRSXP, nans));
     for (int i = 0; i < nans; i++)
@@ -1164,6 +1177,7 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         /* for glibc's sake. That only sets some unspecified fields,
            sometimes. */
+        memset(&tm, 0, sizeof(struct tm));
         tm.tm_sec = tm.tm_min = tm.tm_hour = 0;
         tm.tm_year = tm.tm_mon = tm.tm_mday = tm.tm_yday = tm.tm_wday = NA_INTEGER;
         tm.tm_isdst = -1;
@@ -1211,8 +1225,18 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             char *p = "";
             if (!invalid && tm.tm_isdst >= 0)
-                p = R_tzname[tm.tm_isdst];
+            {
+#ifdef HAVE_TM_ZONE
+                p = tm.tm_zone;
+                if (!p)
+#endif
+                    p = R_tzname[tm.tm_isdst];
+            }
             SET_STRING_ELT(VECTOR_ELT(ans, 9), i, mkChar(p));
+#ifdef HAVE_TM_GMTOFF
+            if (!invalid)
+                INTEGER(VECTOR_ELT(ans, 10))[i] = (int)tm.tm_gmtoff;
+#endif
         }
     }
 
