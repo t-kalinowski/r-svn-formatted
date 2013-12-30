@@ -32,10 +32,10 @@
 
 struct lc_time_T
 {
-    char mon[MONSPERYEAR][10];
-    char month[MONSPERYEAR][20];
-    char wday[DAYSPERWEEK][10];
-    char weekday[DAYSPERWEEK][20];
+    char mon[12][10];
+    char month[12][20];
+    char wday[7][10];
+    char weekday[7][20];
     char *X_fmt;
     char am[4];
     char pm[4];
@@ -100,19 +100,12 @@ static void get_locale_strings(struct lc_time_T *Loc)
 
 static char *_add(const char *, char *, const char *);
 static char *_conv(int, const char *, char *, const char *);
-static char *_fmt(const char *, const stm *, char *, const char *, int *);
+static char *_fmt(const char *, const stm *, char *, const char *);
 static char *_yconv(int, int, int, int, char *, const char *);
-
-#define IN_NONE 0
-#define IN_SOME 1
-#define IN_THIS 2
-#define IN_ALL 3
 
 size_t R_strftime(char *const s, const size_t maxsize, const char *const format, const stm *const t)
 {
     char *p;
-    int warn;
-
     R_tzset();
 
     if (!Locale)
@@ -121,15 +114,14 @@ size_t R_strftime(char *const s, const size_t maxsize, const char *const format,
         Locale = &current;
         get_locale_strings(Locale);
     }
-    warn = IN_NONE;
-    p = _fmt(((format == NULL) ? "%c" : format), t, s, s + maxsize, &warn);
+    p = _fmt(((format == NULL) ? "%c" : format), t, s, s + maxsize);
     if (p == s + maxsize)
         return 0;
     *p = '\0';
     return p - s;
 }
 
-static char *_fmt(const char *format, const stm *const t, char *pt, const char *const ptlim, int *warnp)
+static char *_fmt(const char *format, const stm *const t, char *pt, const char *const ptlim)
 {
     for (; *format; ++format)
     {
@@ -142,40 +134,26 @@ static char *_fmt(const char *format, const stm *const t, char *pt, const char *
                 --format;
                 break;
             case 'A':
-                pt = _add((t->tm_wday < 0 || t->tm_wday >= DAYSPERWEEK) ? "?" : Locale->weekday[t->tm_wday], pt, ptlim);
+                pt = _add((t->tm_wday < 0 || t->tm_wday >= 7) ? "?" : Locale->weekday[t->tm_wday], pt, ptlim);
                 continue;
             case 'a':
-                pt = _add((t->tm_wday < 0 || t->tm_wday >= DAYSPERWEEK) ? "?" : Locale->wday[t->tm_wday], pt, ptlim);
+                pt = _add((t->tm_wday < 0 || t->tm_wday >= 7) ? "?" : Locale->wday[t->tm_wday], pt, ptlim);
                 continue;
             case 'B':
-                pt = _add((t->tm_mon < 0 || t->tm_mon >= MONSPERYEAR) ? "?" : Locale->month[t->tm_mon], pt, ptlim);
+                pt = _add((t->tm_mon < 0 || t->tm_mon >= 12) ? "?" : Locale->month[t->tm_mon], pt, ptlim);
                 continue;
             case 'b':
             case 'h':
-                pt = _add((t->tm_mon < 0 || t->tm_mon >= MONSPERYEAR) ? "?" : Locale->mon[t->tm_mon], pt, ptlim);
+                pt = _add((t->tm_mon < 0 || t->tm_mon >= 12) ? "?" : Locale->mon[t->tm_mon], pt, ptlim);
                 continue;
             case 'C':
-                /*
-                ** %C used to do a...
-                **	_fmt("%a %b %e %X %Y", t);
-                ** ...whereas now POSIX 1003.2 calls for
-                ** something completely different.
-                ** (ado, 1993-05-24)
-                */
                 pt = _yconv(t->tm_year, TM_YEAR_BASE, 1, 0, pt, ptlim);
                 continue;
-            case 'c': {
-                int warn2 = IN_SOME;
-
-                pt = _fmt("%a %b %e %T %Y", t, pt, ptlim, &warn2);
-                if (warn2 == IN_ALL)
-                    warn2 = IN_THIS;
-                if (warn2 > *warnp)
-                    *warnp = warn2;
-            }
+            case 'c':
+                pt = _fmt("%a %b %e %T %Y", t, pt, ptlim);
                 continue;
             case 'D':
-                pt = _fmt("%m/%d/%y", t, pt, ptlim, warnp);
+                pt = _fmt("%m/%d/%y", t, pt, ptlim);
                 continue;
             case 'd':
                 pt = _conv(t->tm_mday, "%02d", pt, ptlim);
@@ -196,7 +174,7 @@ static char *_fmt(const char *format, const stm *const t, char *pt, const char *
                 pt = _conv(t->tm_mday, "%2d", pt, ptlim);
                 continue;
             case 'F':
-                pt = _fmt("%Y-%m-%d", t, pt, ptlim, warnp);
+                pt = _fmt("%Y-%m-%d", t, pt, ptlim);
                 continue;
             case 'H':
                 pt = _conv(t->tm_hour, "%02d", pt, ptlim);
@@ -223,159 +201,108 @@ static char *_fmt(const char *format, const stm *const t, char *pt, const char *
                 pt = _add("\n", pt, ptlim);
                 continue;
             case 'p':
-                pt = _add((t->tm_hour >= (HOURSPERDAY / 2)) ? Locale->pm : Locale->am, pt, ptlim);
+                pt = _add((t->tm_hour >= 12) ? Locale->pm : Locale->am, pt, ptlim);
                 continue;
             case 'R':
-                pt = _fmt("%H:%M", t, pt, ptlim, warnp);
+                pt = _fmt("%H:%M", t, pt, ptlim);
                 continue;
             case 'r':
-                pt = _fmt("%I:%M:%S %p", t, pt, ptlim, warnp);
+                pt = _fmt("%I:%M:%S %p", t, pt, ptlim);
                 continue;
             case 'S':
                 pt = _conv(t->tm_sec, "%02d", pt, ptlim);
                 continue;
             case 's': {
-                stm tm;
-                char buf[22];
-                int_fast64_t mkt;
-
-                tm = *t;
-                mkt = R_mktime(&tm);
+                stm tm = *t;
+                char buf[22]; // <= 19 digs + sign + terminator
+                int_fast64_t mkt = R_mktime(&tm);
+#ifdef WIN32
                 // will be limited in range for 32-bit long.
-                (void)sprintf(buf, "%ld", (long)mkt);
+                (void)snprintf(buf, 22, "%ld", (long)mkt);
+#else
+                (void)snprintf(buf, 22, "%lld", (long long)mkt);
+#endif
                 pt = _add(buf, pt, ptlim);
             }
                 continue;
             case 'T':
-                pt = _fmt("%H:%M:%S", t, pt, ptlim, warnp);
+                pt = _fmt("%H:%M:%S", t, pt, ptlim);
                 continue;
             case 't':
                 pt = _add("\t", pt, ptlim);
                 continue;
             case 'U':
-                pt = _conv((t->tm_yday + DAYSPERWEEK - t->tm_wday) / DAYSPERWEEK, "%02d", pt, ptlim);
+                pt = _conv((t->tm_yday + 7 - t->tm_wday) / 7, "%02d", pt, ptlim);
                 continue;
             case 'u':
-                /*
-                ** From Arnold Robbins' strftime version 3.0:
-                ** "ISO 8601: Weekday as a decimal number
-                ** [1 (Monday) - 7]"
-                ** (ado, 1993-05-24)
-                */
-                pt = _conv((t->tm_wday == 0) ? DAYSPERWEEK : t->tm_wday, "%d", pt, ptlim);
+                pt = _conv((t->tm_wday == 0) ? 7 : t->tm_wday, "%d", pt, ptlim);
                 continue;
             case 'V': /* ISO 8601 week number */
             case 'G': /* ISO 8601 year (four digits) */
             case 'g': /* ISO 8601 year (two digits) */
-                      /*
-                      ** From Arnold Robbins' strftime version 3.0: "the week number of the
-                      ** year (the first Monday as the first day of week 1) as a decimal number
-                      ** (01-53)."
-                      ** (ado, 1993-05-24)
-                      **
-                      ** From "http://www.ft.uni-erlangen.de/~mskuhn/iso-time.html" by Markus Kuhn:
-                      ** "Week 01 of a year is per definition the first week which has the
-                      ** Thursday in this year, which is equivalent to the week which contains
-                      ** the fourth day of January. In other words, the first week of a new year
-                      ** is the week which has the majority of its days in the new year. Week 01
-                      ** might also contain days from the previous year and the week before week
-                      ** 01 of a year is the last week (52 or 53) of the previous year even if
-                      ** it contains days from the new year. A week starts with Monday (day 1)
-                      ** and ends with Sunday (day 7). For example, the first week of the year
-                      ** 1997 lasts from 1996-12-30 to 1997-01-05..."
-                      ** (ado, 1996-01-02)
-                      */
+            {
+                int year, base, yday, wday, w;
+
+                year = t->tm_year;
+                base = TM_YEAR_BASE;
+                yday = t->tm_yday;
+                wday = t->tm_wday;
+                for (;;)
                 {
-                    int year;
-                    int base;
-                    int yday;
-                    int wday;
-                    int w;
+                    int len, bot, top;
 
-                    year = t->tm_year;
-                    base = TM_YEAR_BASE;
-                    yday = t->tm_yday;
-                    wday = t->tm_wday;
-                    for (;;)
+                    len = isleap_sum(year, base) ? DAYSPERLYEAR : DAYSPERNYEAR;
+                    /*
+                    ** What yday (-3 ... 3) does
+                    ** the ISO year begin on?
+                    */
+                    bot = ((yday + 11 - wday) % 7) - 3;
+                    /*
+                    ** What yday does the NEXT
+                    ** ISO year begin on?
+                    */
+                    top = bot - (len % 7);
+                    if (top < -3)
+                        top += 7;
+                    top += len;
+                    if (yday >= top)
                     {
-                        int len;
-                        int bot;
-                        int top;
-
-                        len = isleap_sum(year, base) ? DAYSPERLYEAR : DAYSPERNYEAR;
-                        /*
-                        ** What yday (-3 ... 3) does
-                        ** the ISO year begin on?
-                        */
-                        bot = ((yday + 11 - wday) % DAYSPERWEEK) - 3;
-                        /*
-                        ** What yday does the NEXT
-                        ** ISO year begin on?
-                        */
-                        top = bot - (len % DAYSPERWEEK);
-                        if (top < -3)
-                            top += DAYSPERWEEK;
-                        top += len;
-                        if (yday >= top)
-                        {
-                            ++base;
-                            w = 1;
-                            break;
-                        }
-                        if (yday >= bot)
-                        {
-                            w = 1 + ((yday - bot) / DAYSPERWEEK);
-                            break;
-                        }
-                        --base;
-                        yday += isleap_sum(year, base) ? DAYSPERLYEAR : DAYSPERNYEAR;
+                        ++base;
+                        w = 1;
+                        break;
                     }
-#ifdef XPG4_1994_04_09
-                    if ((w == 52 && t->tm_mon == TM_JANUARY) || (w == 1 && t->tm_mon == TM_DECEMBER))
-                        w = 53;
-#endif /* defined XPG4_1994_04_09 */
-                    if (*format == 'V')
-                        pt = _conv(w, "%02d", pt, ptlim);
-                    else if (*format == 'g')
+                    if (yday >= bot)
                     {
-                        *warnp = IN_ALL;
-                        pt = _yconv(year, base, 0, 1, pt, ptlim);
+                        w = 1 + ((yday - bot) / 7);
+                        break;
                     }
-                    else
-                        pt = _yconv(year, base, 1, 1, pt, ptlim);
+                    --base;
+                    yday += isleap_sum(year, base) ? DAYSPERLYEAR : DAYSPERNYEAR;
                 }
+                if (*format == 'V')
+                    pt = _conv(w, "%02d", pt, ptlim);
+                else if (*format == 'g')
+                    pt = _yconv(year, base, 0, 1, pt, ptlim);
+                else // %G
+                    pt = _yconv(year, base, 1, 1, pt, ptlim);
+            }
                 continue;
             case 'v':
-                /*
-                ** From Arnold Robbins' strftime version 3.0:
-                ** "date as dd-bbb-YYYY"
-                ** (ado, 1993-05-24)
-                */
-                pt = _fmt("%e-%b-%Y", t, pt, ptlim, warnp);
+                pt = _fmt("%e-%b-%Y", t, pt, ptlim);
                 continue;
             case 'W':
-                pt = _conv((t->tm_yday + DAYSPERWEEK - (t->tm_wday ? (t->tm_wday - 1) : (DAYSPERWEEK - 1))) /
-                               DAYSPERWEEK,
-                           "%02d", pt, ptlim);
+                pt = _conv((t->tm_yday + 7 - (t->tm_wday ? (t->tm_wday - 1) : (7 - 1))) / 7, "%02d", pt, ptlim);
                 continue;
             case 'w':
                 pt = _conv(t->tm_wday, "%d", pt, ptlim);
                 continue;
             case 'X':
-                pt = _fmt(Locale->X_fmt, t, pt, ptlim, warnp);
+                pt = _fmt(Locale->X_fmt, t, pt, ptlim);
                 continue;
-            case 'x': {
-                int warn2 = IN_SOME;
-
-                pt = _fmt("%m/%d/%y", t, pt, ptlim, &warn2);
-                if (warn2 == IN_ALL)
-                    warn2 = IN_THIS;
-                if (warn2 > *warnp)
-                    *warnp = warn2;
-            }
+            case 'x':
+                pt = _fmt("%m/%d/%y", t, pt, ptlim);
                 continue;
             case 'y':
-                *warnp = IN_ALL;
                 pt = _yconv(t->tm_year, TM_YEAR_BASE, 0, 1, pt, ptlim);
                 continue;
             case 'Y':
@@ -420,14 +347,9 @@ static char *_fmt(const char *format, const stm *const t, char *pt, const char *
             }
                 continue;
             case '+':
-                pt = _fmt(Locale->date_fmt, t, pt, ptlim, warnp);
+                pt = _fmt(Locale->date_fmt, t, pt, ptlim);
                 continue;
             case '%':
-            /*
-            ** X311J/88-090 (4.12.3.5): if conversion char is
-            ** undefined, behavior is undefined. Print out the
-            ** character itself as printf(3) also does.
-            */
             default:
                 break;
             }
@@ -443,7 +365,7 @@ static char *_conv(const int n, const char *const format, char *const pt, const 
 {
     char buf[12];
 
-    (void)sprintf(buf, format, n);
+    (void)snprintf(buf, 12, format, n);
     return _add(buf, pt, ptlim);
 }
 
@@ -460,13 +382,14 @@ static char *_add(const char *str, char *pt, const char *const ptlim)
 ** Use the convention that %C concatenated with %y yields the
 ** same output as %Y, and that %Y contains at least 4 bytes,
 ** with more only if necessary.
+
+* Explained in POSIX 2008, at least.
 */
 
 static char *_yconv(const int a, const int b, const int convert_top, const int convert_yy, char *pt,
                     const char *const ptlim)
 {
-    register int lead;
-    register int trail;
+    int lead, trail;
 
 #define DIVISOR 100
     trail = a % DIVISOR + b % DIVISOR;
