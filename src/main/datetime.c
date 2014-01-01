@@ -49,8 +49,8 @@
 
 There are two implementation paths here.
 
-1) Use the system functions for mktime, gmtime, localtime, strftime.
-   Use the system's time_t and struct tm and time-zone tables.
+1) Use the system functions for mktime, gmtime[_r], localtime[_r], strftime.
+   Use the system time_t, struct tm and time-zone tables.
 
 2) Use substitutes from src/extra/tzone for mktime, gmtime, localtime,
    strftime with a R_ prefix.  The system strftime is used for
@@ -74,6 +74,8 @@ known OS with 64-bit time_t and complete tables is Linux.
 
 #ifdef USE_INTERNAL_MKTIME
 #include "datetime.h"
+#undef HAVE_LOCAL_TIME_R
+#define HAVE_LOCAL_TIME_R 1
 #undef HAVE_TM_ZONE
 #define HAVE_TM_ZONE 1
 #undef HAVE_TM_GMTOFF
@@ -295,11 +297,11 @@ static double mktime0(stm *tm, const int local)
     return local ? R_mktime(tm) : mktime00(tm);
 }
 
-/* Interface to localtime or gmtime */
-static stm *localtime0(const double *tp, const int local)
+/* Interface to localtime_r or gmtime_r */
+static stm *localtime0(const double *tp, const int local, stm *ltm)
 {
     time_t t = (time_t)*tp;
-    return local ? R_localtime(&t) : R_gmtime(&t);
+    return local ? R_localtime_r(&t, ltm) : R_gmtime_r(&t, ltm);
 }
 
 #else
@@ -486,7 +488,7 @@ static double mktime0(stm *tm, const int local)
 }
 
 /* Interface for localtime or gmtime or internal substitute */
-static stm *localtime0(const double *tp, const int local)
+static stm *localtime0(const double *tp, const int local, stm *ltm)
 {
     double d = *tp;
     int y, tmp;
@@ -513,7 +515,11 @@ static stm *localtime0(const double *tp, const int local)
             if (t > leapseconds[y] + y - 1)
                 t++;
 #endif
+#ifdef HAVE_LOCALTIME_R
+        return local ? localtime_r(&t, ltm) : gmtime_r(&t, ltm);
+#else
         return local ? localtime(&t) : gmtime(&t);
+#endif
     }
 
     /* internal substitute code.
@@ -683,7 +689,12 @@ static void glibc_fix(stm *tm, int *invalid)
 #ifndef HAVE_POSIX_LEAPSECONDS
     t -= n_leapseconds;
 #endif
+#ifdef HAVE_LOCALTIME_R
+    stm tm2;
+    tm0 = localtime_r(&t, &tm2);
+#else
     tm0 = localtime(&t);
+#endif
     if (tm->tm_year == NA_INTEGER)
         tm->tm_year = tm0->tm_year;
     if (tm->tm_mon != NA_INTEGER && tm->tm_mday != NA_INTEGER)
@@ -811,11 +822,11 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 
     for (R_xlen_t i = 0; i < n; i++)
     {
-        stm *ptm = NULL;
+        stm dummy, *ptm = &dummy;
         double d = REAL(x)[i];
         if (R_FINITE(d))
         {
-            ptm = localtime0(&d, 1 - isgmt);
+            ptm = localtime0(&d, 1 - isgmt, &dummy);
             /* in theory localtime/gmtime always return a valid
                struct tm pointer, but Windows uses NULL for error
                conditions (like negative times). */
@@ -1258,7 +1269,7 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
                 if (t0 != -1)
                 {
                     t0 -= offset; /* offset = -0800 is Seattle */
-                    ptm = localtime0(&t0, 1 - isgmt);
+                    ptm = localtime0(&t0, 1 - isgmt, &tm2);
                 }
                 else
                     invalid = 1;
