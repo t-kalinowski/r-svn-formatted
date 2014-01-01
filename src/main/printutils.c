@@ -380,6 +380,7 @@ attribute_hidden int Rstrwid(const char *str, int slen, cetype_t ienc, int quote
                         break;
                     case L'\'':
                     case L'"':
+                    case L'`':
                         len += (quote == *p) ? 2 : 1;
                         break;
                     default:
@@ -443,6 +444,7 @@ attribute_hidden int Rstrwid(const char *str, int slen, cetype_t ienc, int quote
                         break;
                     case '\'':
                     case '"':
+                    case '`':
                         len += (quote == *p) ? 2 : 1;
                         break;
                     default:
@@ -670,6 +672,7 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
                         break;
                     case L'\'':
                     case L'"':
+                    case L'`':
                         if (quote == *p)
                             *q++ = '\\';
                         *q++ = *p++;
@@ -786,6 +789,7 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
                         break;
                     case '\'':
                     case '"':
+                    case '`':
                         if (quote == *p)
                             *q++ = '\\';
                         *q++ = *p;
