@@ -106,39 +106,47 @@ static char *_fmt(const char *format, const stm *const t, char *pt, const char *
     {
         if (*format == '%')
         {
-            /* Check for POSIX 2008 modifiers */
-            char pad = '+';
+            /* Check for POSIX 2008 / GNU modifiers */
+            char pad = '\0';
+            const char *f;
             int width = -1;
-            while (1)
+            // first look to see if this is %..Y
+            for (f = format + 1; *f; f++)
+                if (!(isdigit(*f) || *f == '_' || *f == '+'))
+                    break;
+            if (*f == 'Y')
             {
-                switch (*++format)
+                while (1)
                 {
-                case '_': // pad with spaces: GNU extension
-                case '0':
-                case '+': // pad with zeroes, and more (not here)
-                    pad = *format;
-                    continue;
-                default:
+                    switch (*++format)
+                    {
+                    case '0':
+                    case '+': // pad with zeroes, and more (not here)
+                    case '_': // pad with spaces: GNU extension
+                        pad = *format;
+                        continue;
+                    default:
+                        break;
+                    }
                     break;
                 }
-                break;
-            }
-            if (isdigit(*format))
-            {
-                width = 0;
-                do
+                if (isdigit(*format))
                 {
-                    if (width > INT_MAX / 10 || (width == INT_MAX / 10 && *format - '0' > INT_MAX % 10))
-                        width = INT_MAX;
-                    else
+                    width = 0;
+                    do
                     {
-                        width *= 10;
-                        width += *format - '0';
-                    }
-                    format++;
-                } while (isdigit(*format));
+                        if (width > INT_MAX / 10 || (width == INT_MAX / 10 && *format - '0' > INT_MAX % 10))
+                            width = INT_MAX;
+                        else
+                        {
+                            width *= 10;
+                            width += *format - '0';
+                        }
+                        format++;
+                    } while (isdigit(*format));
+                }
+                --format;
             }
-            --format;
 
         label:
             switch (*++format)
@@ -375,14 +383,20 @@ static char *_fmt(const char *format, const stm *const t, char *pt, const char *
                 //		pt = _yconv(t->tm_year, TM_YEAR_BASE, 1, 1, pt, ptlim);
                 {
                     char buf[20] = "%";
+                    int year = TM_YEAR_BASE + t->tm_year;
+                    if (pad == '\0')
+                    {
+                        pad = '0';
+                        width = 4;
+                    }
                     if (pad == '0' || pad == '+')
                         strcat(buf, "0");
-                    if (pad == '+' && width < 0)
-                        width = 4;
                     if (width > 0)
                         sprintf(buf + strlen(buf), "%u", width);
+                    if (pad == '+' && year > 9999)
+                        strcat(buf, "+");
                     strcat(buf, "d");
-                    pt = _conv(TM_YEAR_BASE + t->tm_year, buf, pt, ptlim);
+                    pt = _conv(year, buf, pt, ptlim);
                 }
                 continue;
             case 'Z':
@@ -422,6 +436,9 @@ static char *_fmt(const char *format, const stm *const t, char *pt, const char *
                 diff = (diff / MINSPERHOUR) * 100 + (diff % MINSPERHOUR);
                 pt = _conv((int)diff, "%04d", pt, ptlim);
             }
+                continue;
+            case '+':
+                pt = _fmt("%a %b %e %H:%M:%S %Z %Y", t, pt, ptlim);
                 continue;
             case '%':
             default:
