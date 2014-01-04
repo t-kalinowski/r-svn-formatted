@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1999-2013  Guido Masarotto and the R Core Team
+ *  Copyright (C) 1999-2014  Guido Masarotto and the R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -543,7 +543,15 @@ int R_SaveAsTIFF(void *d, int width, int height, unsigned int (*gp)(void *, int,
     TIFFSetField(out, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
 #endif
     if (compression > 1)
-        TIFFSetField(out, TIFFTAG_COMPRESSION, compression);
+    {
+        if (compression > 10)
+        {
+            TIFFSetField(out, TIFFTAG_COMPRESSION, compression - 10);
+            TIFFSetField(out, TIFFTAG_PREDICTOR, 2);
+        }
+        else
+            TIFFSetField(out, TIFFTAG_COMPRESSION, compression);
+    }
 
     if (res > 0)
     {
