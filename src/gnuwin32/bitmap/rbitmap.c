@@ -522,10 +522,11 @@ __declspec(dllexport) int R_SaveAsTIFF(void *d, int width, int height, unsigned 
     {
         if (compression > 10)
         {
+            TIFFSetField(out, TIFFTAG_COMPRESSION, compression - 10);
             TIFFSetField(out, TIFFTAG_PREDICTOR, 2);
-            compression -= 10;
         }
-        TIFFSetField(out, TIFFTAG_COMPRESSION, compression);
+        else
+            TIFFSetField(out, TIFFTAG_COMPRESSION, compression);
     }
 
     if (res > 0)
