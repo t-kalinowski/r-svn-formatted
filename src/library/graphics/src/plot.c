@@ -27,6 +27,7 @@
 #include <float.h> /* for DBL_MAX */
 #include <Graphics.h>
 #include <Print.h>
+#include <Rmath.h> // exp10, fmin2, fmax2, imax2
 
 #include "graphics.h"
 
@@ -34,22 +35,6 @@ static R_INLINE void TypeCheck(SEXP s, SEXPTYPE type)
 {
     if (TYPEOF(s) != type)
         error("invalid type passed to graphics function");
-}
-
-#define imax2(x, y) ((x < y) ? y : x)
-
-static R_INLINE double fmin2(double x, double y)
-{
-    if (ISNAN(x) || ISNAN(y))
-        return x + y;
-    return (x < y) ? x : y;
-}
-
-static R_INLINE double fmax2(double x, double y)
-{
-    if (ISNAN(x) || ISNAN(y))
-        return x + y;
-    return (x < y) ? y : x;
 }
 
 /*
@@ -3218,8 +3203,8 @@ SEXP C_abline(SEXP args)
                 y[1] = aa + (xlog ? log10(x[1]) : x[1]) * bb;
                 if (ylog)
                 {
-                    y[0] = pow(10., y[0]);
-                    y[1] = pow(10., y[1]);
+                    y[0] = exp10(y[0]);
+                    y[1] = exp10(y[1]);
                 }
 
                 GLine(x[0], y[0], x[1], y[1], USER, dd);
