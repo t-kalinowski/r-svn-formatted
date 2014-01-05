@@ -615,8 +615,8 @@ static void Specify(const char *what, SEXP value, pGEDevDesc dd)
         {
             R_DEV_2(logusr[0]) = REAL(value)[0];
             R_DEV_2(logusr[1]) = REAL(value)[1];
-            R_DEV_2(usr[0]) = exp10(REAL(value)[0]);
-            R_DEV_2(usr[1]) = exp10(REAL(value)[1]);
+            R_DEV_2(usr[0]) = Rexp10(REAL(value)[0]);
+            R_DEV_2(usr[1]) = Rexp10(REAL(value)[1]);
         }
         else
         {
@@ -629,8 +629,8 @@ static void Specify(const char *what, SEXP value, pGEDevDesc dd)
         {
             R_DEV_2(logusr[2]) = REAL(value)[2];
             R_DEV_2(logusr[3]) = REAL(value)[3];
-            R_DEV_2(usr[2]) = exp10(REAL(value)[2]);
-            R_DEV_2(usr[3]) = exp10(REAL(value)[3]);
+            R_DEV_2(usr[2]) = Rexp10(REAL(value)[2]);
+            R_DEV_2(usr[3]) = Rexp10(REAL(value)[3]);
         }
         else
         {

@@ -188,7 +188,7 @@ static double K(int n, double d)
             eQ -= 140;
         }
     }
-    s *= exp10(eQ);
+    s *= Rexp10(eQ);
     Free(H);
     Free(Q);
     return (s);

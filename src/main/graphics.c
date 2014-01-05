@@ -61,8 +61,8 @@ void GAxisPars(double *min, double *max, int *n, Rboolean log, int axis)
             *max = 308;
         if (*min < -307)
             *min = -307;
-        *min = exp10(*min);
-        *max = exp10(*max);
+        *min = Rexp10(*min);
+        *max = Rexp10(*max);
         GLPretty(min, max, n);
     }
     else
@@ -85,8 +85,8 @@ void GAxisPars(double *min, double *max, int *n, Rboolean log, int axis)
         *max -= eps;
         if (log)
         {
-            *min = exp10(*min);
-            *max = exp10(*max);
+            *min = Rexp10(*min);
+            *max = Rexp10(*max);
         }
         *n = 1;
     }
@@ -129,8 +129,8 @@ static void GLPretty(double *ul, double *uh, int *n)
     else
     { /* extra tickmarks --> CreateAtVector() in ./plot.c */
         /* round to nice "1e<N>" */
-        *ul = exp10((double)p1);
-        *uh = exp10((double)p2);
+        *ul = Rexp10((double)p1);
+        *uh = Rexp10((double)p2);
         if (p2 - p1 <= LPR_SMALL)
             *n = 3; /* Small range :	Use 1,2,5,10 times 10^k tickmarks */
         else if (p2 - p1 <= LPR_MEDIUM)
