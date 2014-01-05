@@ -732,7 +732,7 @@ static void glibc_fix(stm *tm, int *invalid)
     }
 }
 
-static const char ltnames[][6] = {"sec",  "min",  "hour",  "mday", "mon",   "year",
+static const char ltnames[][7] = {"sec",  "min",  "hour",  "mday", "mon",   "year",
                                   "wday", "yday", "isdst", "zone", "gmtoff"};
 
 static void makelt(stm *tm, SEXP ans, R_xlen_t i, int valid, double frac_secs)
