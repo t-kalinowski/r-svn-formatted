@@ -1,7 +1,7 @@
 /*
  *  Mathlib : A C Library of Special Functions
  *  Copyright (C) 1998 Ross Ihaka
- *  Copyright (C) 2000-12 The R Core Team
+ *  Copyright (C) 2000-14 The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -84,7 +84,7 @@ double fprec(double x, double digits)
     }
     if (x == 0)
         return x;
-    dig = (int)floor(digits + 0.5);
+    dig = (int)round(digits);
     if (dig > MAX_DIGITS)
     {
         return x;
