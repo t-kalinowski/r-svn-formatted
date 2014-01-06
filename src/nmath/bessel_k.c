@@ -1,6 +1,6 @@
 /*
  *  Mathlib : A C Library of Special Functions
- *  Copyright (C) 1998-2012 Ross Ihaka and the R Core team.
+ *  Copyright (C) 1998-2014 Ross Ihaka and the R Core team.
  *  Copyright (C) 2002-3    The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -33,11 +33,11 @@
 #define min0(x, y) (((x) <= (y)) ? (x) : (y))
 #define max0(x, y) (((x) <= (y)) ? (y) : (x))
 
-static void K_bessel(double *x, double *alpha, long *nb, long *ize, double *bk, long *ncalc);
+static void K_bessel(double *x, double *alpha, int *nb, int *ize, double *bk, int *ncalc);
 
 double bessel_k(double x, double alpha, double expo)
 {
-    long nb, ncalc, ize;
+    int nb, ncalc, ize;
     double *bk;
 #ifndef MATHLIB_STANDALONE
     const void *vmax;
@@ -53,10 +53,10 @@ double bessel_k(double x, double alpha, double expo)
         ML_ERROR(ME_RANGE, "bessel_k");
         return ML_NAN;
     }
-    ize = (long)expo;
+    ize = (int)expo;
     if (alpha < 0)
         alpha = -alpha;
-    nb = 1 + (long)floor(alpha); /* nb-1 <= |alpha| < nb */
+    nb = 1 + (int)floor(alpha); /* nb-1 <= |alpha| < nb */
     alpha -= (double)(nb - 1);
 #ifdef MATHLIB_STANDALONE
     bk = (double *)calloc(nb, sizeof(double));
@@ -88,7 +88,7 @@ double bessel_k(double x, double alpha, double expo)
    allocating one. */
 double bessel_k_ex(double x, double alpha, double expo, double *bk)
 {
-    long nb, ncalc, ize;
+    int nb, ncalc, ize;
 
 #ifdef IEEE_754
     /* NaNs propagated correctly */
@@ -100,10 +100,10 @@ double bessel_k_ex(double x, double alpha, double expo, double *bk)
         ML_ERROR(ME_RANGE, "bessel_k");
         return ML_NAN;
     }
-    ize = (long)expo;
+    ize = (int)expo;
     if (alpha < 0)
         alpha = -alpha;
-    nb = 1 + (long)floor(alpha); /* nb-1 <= |alpha| < nb */
+    nb = 1 + (int)floor(alpha); /* nb-1 <= |alpha| < nb */
     alpha -= (double)(nb - 1);
     K_bessel(&x, &alpha, &nb, &ize, bk, &ncalc);
     if (ncalc != nb)
@@ -118,7 +118,7 @@ double bessel_k_ex(double x, double alpha, double expo, double *bk)
     return x;
 }
 
-static void K_bessel(double *x, double *alpha, long *nb, long *ize, double *bk, long *ncalc)
+static void K_bessel(double *x, double *alpha, int *nb, int *ize, double *bk, int *ncalc)
 {
     /*-------------------------------------------------------------------
 
@@ -236,7 +236,7 @@ static void K_bessel(double *x, double *alpha, long *nb, long *ize, double *bk, 
     const static double estf[7] = {41.8341, 7.1075, 6.4306, 42.511, 1.35633, 84.5096, 20.};
 
     /* Local variables */
-    long iend, i, j, k, m, ii, mplus1;
+    int iend, i, j, k, m, ii, mplus1;
     double x2by4, twox, c, blpha, ratio, wminf;
     double d1, d2, d3, f0, f1, f2, p0, q0, t1, t2, twonu;
     double dm, ex, bk1, bk2, nu;
@@ -442,7 +442,7 @@ static void K_bessel(double *x, double *alpha, long *nb, long *ize, double *bk, 
                    Calculation of K(ALPHA+1,X)/K(ALPHA,X),  1.0 <= X <= 4.0
                    ----------------------------------------------------------*/
                 d2 = trunc(estm[0] / ex + estm[1]);
-                m = (long)d2;
+                m = (int)d2;
                 d1 = d2 + d2;
                 d2 -= .5;
                 d2 *= d2;
@@ -457,7 +457,7 @@ static void K_bessel(double *x, double *alpha, long *nb, long *ize, double *bk, 
                    recurrence and K(ALPHA,X) from the wronskian
                    -----------------------------------------------------------*/
                 d2 = trunc(estm[2] * ex + estm[3]);
-                m = (long)d2;
+                m = (int)d2;
                 c = fabs(nu);
                 d3 = c + c;
                 d1 = d3 - 1.;
@@ -496,7 +496,7 @@ static void K_bessel(double *x, double *alpha, long *nb, long *ize, double *bk, 
                    backward recurrence, for  X > 4.0
                    ----------------------------------------------------------*/
                 dm = trunc(estm[4] / ex + estm[5]);
-                m = (long)dm;
+                m = (int)dm;
                 d2 = dm - .5;
                 d2 *= d2;
                 d1 = dm + dm;
@@ -535,7 +535,7 @@ static void K_bessel(double *x, double *alpha, long *nb, long *ize, double *bk, 
         if (iend == 1)
             return;
 
-        m = min0((long)(wminf - nu), iend);
+        m = min0((int)(wminf - nu), iend);
         for (i = 2; i <= m; ++i)
         {
             t1 = bk1;
