@@ -2826,17 +2826,22 @@ TAIL_RECURSE:
                 pcre_uchar *slot = md->name_table + GET2(ecode, 1) * md->name_entry_size;
                 ecode += 1 + 2 * IMM2_SIZE;
 
+                /* Setting the default length first and initializing 'offset' avoids
+                compiler warnings in the REF_REPEAT code. */
+
+                length = (md->jscript_compat) ? 0 : -1;
+                offset = 0;
+
                 while (count-- > 0)
                 {
                     offset = GET2(slot, 0) << 1;
                     if (offset < offset_top && md->offset_vector[offset] >= 0)
+                    {
+                        length = md->offset_vector[offset + 1] - md->offset_vector[offset];
                         break;
+                    }
                     slot += md->name_entry_size;
                 }
-                if (count < 0)
-                    length = (md->jscript_compat) ? 0 : -1;
-                else
-                    length = md->offset_vector[offset + 1] - md->offset_vector[offset];
             }
             goto REF_REPEAT;
 
@@ -7253,18 +7258,9 @@ PCRE_EXP_DEFN int PCRE_CALL_CONVENTION pcre32_exec(const pcre32 *argument_re, co
                     if (c > 255)
                         c = 255;
 #endif
-                    if ((start_bits[c / 8] & (1 << (c & 7))) == 0)
-                    {
-                        start_match++;
-#if defined SUPPORT_UTF && defined COMPILE_PCRE8
-                        /* In non 8-bit mode, the iteration will stop for
-                        characters > 255 at the beginning or not stop at all. */
-                        if (utf)
-                            ACROSSCHAR(start_match < end_subject, *start_match, start_match++);
-#endif
-                    }
-                    else
+                    if ((start_bits[c / 8] & (1 << (c & 7))) != 0)
                         break;
+                    start_match++;
                 }
             }
         } /* Starting optimizations */
