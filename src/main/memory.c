@@ -2163,11 +2163,11 @@ char *R_alloc(size_t nelem, int eltsize)
 #ifdef LONG_VECTOR_SUPPORT
         /* 64-bit platform: previous version used REALSXPs */
         if (dsize > R_XLEN_T_MAX) /* currently 4096 TB */
-            error(_("cannot allocate memory block of size %0.f Tb"), dsize / pow(1024.0, 4.0));
+            error(_("cannot allocate memory block of size %0.f Tb"), dsize / R_pow_di(1024.0, 4));
         s = allocVector(RAWSXP, size + 1);
 #else
         if (dsize > R_LEN_T_MAX) /* must be in the Gb range */
-            error(_("cannot allocate memory block of size %0.1f Gb"), dsize / pow(1024.0, 3.0));
+            error(_("cannot allocate memory block of size %0.1f Gb"), dsize / R_pow_di(1024.0, 3));
         s = allocVector(RAWSXP, size + 1);
 #endif
         ATTRIB(s) = R_VStack;
