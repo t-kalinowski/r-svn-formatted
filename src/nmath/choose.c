@@ -39,7 +39,6 @@
  */
 
 #include "nmath.h"
-#include "dpq.h"
 
 /* These are recursive, so we should do a stack check */
 
@@ -61,13 +60,13 @@ static double lfastchoose2(double n, double k, int *s_choose)
 }
 
 #define ODD(_K_) ((_K_) != 2 * floor((_K_) / 2.))
-/* matching R_D_nonint() in ./dpq.h : */
-#define R_IS_INT(x) (fabs((x)-R_D_forceint(x)) <= 1e-7)
+
+#define R_IS_INT(x) (!R_nonint(x))
 
 double lchoose(double n, double k)
 {
     double k0 = k;
-    k = R_D_forceint(k);
+    k = R_forceint(k);
 #ifdef IEEE_754
     /* NaNs propagated correctly */
     if (ISNAN(n) || ISNAN(k))
@@ -94,7 +93,7 @@ double lchoose(double n, double k)
     }
     else if (R_IS_INT(n))
     {
-        n = R_D_forceint(n);
+        n = R_forceint(n);
         if (n < k)
             return ML_NEGINF;
         /* k <= n :*/
@@ -119,7 +118,7 @@ double lchoose(double n, double k)
 double choose(double n, double k)
 {
     double r, k0 = k;
-    k = R_D_forceint(k);
+    k = R_forceint(k);
 #ifdef IEEE_754
     /* NaNs propagated correctly */
     if (ISNAN(n) || ISNAN(k))
@@ -143,7 +142,7 @@ double choose(double n, double k)
         r = n;
         for (j = 2; j <= k; j++)
             r *= (n - j + 1) / j;
-        return R_IS_INT(n) ? R_D_forceint(r) : r;
+        return R_IS_INT(n) ? R_forceint(r) : r;
         /* might have got rounding errors */
     }
     /* else: k >= k_small_max */
@@ -156,12 +155,12 @@ double choose(double n, double k)
     }
     else if (R_IS_INT(n))
     {
-        n = R_D_forceint(n);
+        n = R_forceint(n);
         if (n < k)
             return 0.;
         if (n - k < k_small_max)
             return choose(n, n - k); /* <- Symmetry */
-        return R_D_forceint(exp(lfastchoose(n, k)));
+        return R_forceint(exp(lfastchoose(n, k)));
     }
     /* else non-integer n >= 0 : */
     if (n < k - 1)
@@ -172,7 +171,3 @@ double choose(double n, double k)
     }
     return exp(lfastchoose(n, k));
 }
-
-#undef ODD
-#undef R_IS_INT
-#undef k_small_max

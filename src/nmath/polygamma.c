@@ -139,7 +139,6 @@
  */
 
 #include "nmath.h"
-#include "dpq.h"
 #ifdef MATHLIB_STANDALONE
 #include <errno.h>
 #endif
@@ -510,7 +509,7 @@ double psigamma(double x, double deriv)
 
     if (ISNAN(x))
         return x;
-    deriv = R_D_forceint(deriv);
+    deriv = R_forceint(deriv);
     n = (int)deriv;
     if (n > n_max)
     {

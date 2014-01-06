@@ -125,13 +125,13 @@ double dsignrank(double x, double n, int give_log)
     if (ISNAN(x) || ISNAN(n))
         return (x + n);
 #endif
-    n = R_D_forceint(n);
+    n = R_forceint(n);
     if (n <= 0)
         ML_ERR_return_NAN;
 
-    if (fabs(x - R_D_forceint(x)) > 1e-7)
+    if (fabs(x - R_forceint(x)) > 1e-7)
         return (R_D__0);
-    x = R_D_forceint(x);
+    x = R_forceint(x);
     if ((x < 0) || (x > (n * (n + 1) / 2)))
         return (R_D__0);
 
@@ -153,11 +153,11 @@ double psignrank(double x, double n, int lower_tail, int log_p)
 #endif
     if (!R_FINITE(n))
         ML_ERR_return_NAN;
-    n = R_D_forceint(n);
+    n = R_forceint(n);
     if (n <= 0)
         ML_ERR_return_NAN;
 
-    x = R_D_forceint(x + 1e-7);
+    x = R_forceint(x + 1e-7);
     if (x < 0.0)
         return (R_DT_0);
     if (x >= n * (n + 1) / 2)
@@ -195,7 +195,7 @@ double qsignrank(double x, double n, int lower_tail, int log_p)
         ML_ERR_return_NAN;
     R_Q_P01_check(x);
 
-    n = R_D_forceint(n);
+    n = R_forceint(n);
     if (n <= 0)
         ML_ERR_return_NAN;
 
@@ -251,7 +251,7 @@ double rsignrank(double n)
     if (ISNAN(n))
         return (n);
 #endif
-    n = R_D_forceint(n);
+    n = R_forceint(n);
     if (n < 0)
         ML_ERR_return_NAN;
 
