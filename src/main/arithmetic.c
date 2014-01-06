@@ -1596,7 +1596,7 @@ static SEXP math2B(SEXP sa, SEXP sb, double (*f)(double, double, double *), SEXP
     double ai, bi, *a, *b, *y;
     int naflag;
     double amax, *work;
-    long nw;
+    size_t nw;
 
     if (!isNumeric(sa) || !isNumeric(sb))
         errorcall(lcall, R_MSG_NONNUM_MATH);
@@ -1615,8 +1615,8 @@ static SEXP math2B(SEXP sa, SEXP sb, double (*f)(double, double, double *), SEXP
             amax = av;
     }
     const void *vmax = vmaxget();
-    nw = 1 + (long)floor(amax);
-    work = (double *)R_alloc((size_t)nw, sizeof(double));
+    nw = 1 + (size_t)floor(amax);
+    work = (double *)R_alloc(nw, sizeof(double));
 
     mod_iterate(na, nb, ia, ib)
     {
@@ -1979,7 +1979,7 @@ static SEXP math3B(SEXP sa, SEXP sb, SEXP sc, double (*f)(double, double, double
     double ai, bi, ci, *a, *b, *c, *y;
     int naflag;
     double amax, *work;
-    long nw;
+    size_t nw;
 
     SETUP_Math3;
 
@@ -1993,8 +1993,8 @@ static SEXP math3B(SEXP sa, SEXP sb, SEXP sc, double (*f)(double, double, double
             amax = av;
     }
     const void *vmax = vmaxget();
-    nw = 1 + (long)floor(amax);
-    work = (double *)R_alloc((size_t)nw, sizeof(double));
+    nw = 1 + (size_t)floor(amax);
+    work = (double *)R_alloc(nw, sizeof(double));
 
     mod_iterate3(na, nb, nc, ia, ib, ic)
     {

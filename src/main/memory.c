@@ -1970,7 +1970,7 @@ SEXP attribute_hidden do_gcinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 /* reports memory use to profiler in eval.c */
 
-void attribute_hidden get_current_mem(unsigned long *smallvsize, unsigned long *largevsize, unsigned long *nodes)
+void attribute_hidden get_current_mem(size_t *smallvsize, size_t *largevsize, size_t *nodes)
 {
     *smallvsize = R_SmallVallocSize;
     *largevsize = R_LargeVallocSize;
@@ -4013,7 +4013,7 @@ static void R_ReportAllocation(R_size_t size)
     {
         if (size > R_MemReportingThreshold)
         {
-            fprintf(R_MemReportingOutfile, "%ld :", (unsigned long)size);
+            fprintf(R_MemReportingOutfile, "%lu :", (unsigned long)size);
             R_OutputStackTrace(R_MemReportingOutfile);
         }
     }

@@ -2705,7 +2705,7 @@ static SEXP appendRawToFile(SEXP file, SEXP bytes)
 {
     FILE *fp;
     size_t len, out;
-    long pos;
+    long pos; // what ftell gives: won't work for > 2GB files
     SEXP val;
 
     if (!IS_PROPER_STRING(file))
