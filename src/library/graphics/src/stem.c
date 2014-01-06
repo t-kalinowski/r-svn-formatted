@@ -63,7 +63,8 @@ static Rboolean stem_leaf(double *x, int n, double scale, int width, double atom
     if (x[n - 1] > x[0])
     {
         r = atom + (x[n - 1] - x[0]) / scale;
-        c = Rexp10((11. - (int)(log10(r) + 10)));
+        // this needs to be exact: exp10 in glibc is not accurate
+        c = pow(10.0, 1.0 - floor(log10(r)));
         mm = imin2(2, imax2(0, (int)(r * c / 25)));
         k = 3 * mm + 2 - 150 / (n + 50);
         if ((k - 1) * (k - 2) * (k - 5) == 0)
@@ -83,8 +84,8 @@ static Rboolean stem_leaf(double *x, int n, double scale, int width, double atom
     else
     {
         r = atom + fabs(x[0]) / scale;
-        c = Rexp10((11. - (int)(log10(r) + 10)));
-        k = 2; /* not important what */
+        c = pow(10.0, 1.0 - floor(log10(r)));
+        k = 2; // not important what
     }
 
     mu = 10;
@@ -141,15 +142,11 @@ static Rboolean stem_leaf(double *x, int n, double scale, int width, double atom
 
             j++;
             if (j <= width - 12)
-            {
                 Rprintf("%1d", abs(xi) % 10);
-            }
             i++;
         } while (i < n);
         if (j > width)
-        {
             Rprintf("+%d", j - width);
-        }
         Rprintf("\n");
         if (i >= n)
             break;
