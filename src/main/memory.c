@@ -79,6 +79,7 @@
 #include <Internal.h>
 #include <R_ext/GraphicsEngine.h> /* GEDevDesc, GEgetDevice */
 #include <R_ext/Rdynload.h>
+#include <Rmath.h> // R_pow_di
 
 #if defined(Win32) && defined(LEA_MALLOC)
 /*#include <stddef.h> */
