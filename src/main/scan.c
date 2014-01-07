@@ -74,6 +74,7 @@ typedef struct
     Rboolean isLatin1;        /* = FALSE */
     Rboolean isUTF8;          /* = FALSE */
     Rboolean atStart;
+    Rboolean embedWarn;
     char convbuf[100];
 } LocalData;
 
@@ -238,7 +239,10 @@ static Rbyte strtoraw(const char *nptr, char **endptr)
 
 static R_INLINE int scanchar_raw(LocalData *d)
 {
-    return (d->ttyflag) ? ConsoleGetcharWithPushBack(d->con) : Rconn_fgetc(d->con);
+    int c = (d->ttyflag) ? ConsoleGetcharWithPushBack(d->con) : Rconn_fgetc(d->con);
+    if (c == 0)
+        d->embedWarn = TRUE;
+    return c;
 }
 
 static R_INLINE void unscanchar(int c, LocalData *d)
@@ -971,7 +975,7 @@ SEXP attribute_hidden do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
     int i, c, nlines, nmax, nskip, flush, fill, blskip, multiline, escapes;
     const char *p, *encoding;
     RCNTXT cntxt;
-    LocalData data = {NULL, 0, 0, '.', NULL, NO_COMCHAR, 0, NULL, FALSE, FALSE, 0, FALSE, FALSE};
+    LocalData data = {NULL, 0, 0, '.', NULL, NO_COMCHAR, 0, NULL, FALSE, FALSE, 0, FALSE, FALSE, FALSE};
     data.NAstrings = R_NilValue;
 
     checkArity(op, args);
@@ -1168,6 +1172,8 @@ SEXP attribute_hidden do_scan(SEXP call, SEXP op, SEXP args, SEXP rho)
         data.con->close(data.con);
     if (data.quoteset[0])
         free(data.quoteset);
+    if (data.embedWarn)
+        warning(_("embedded nul found in input"));
     return ans;
 }
 
