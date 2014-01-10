@@ -260,7 +260,7 @@ SEXP setAttrib(SEXP vec, SEXP name, SEXP val)
         error(_("attempt to set an attribute on NULL"));
 
     if (NAMED(val))
-        val = duplicate(val);
+        val = R_FixupRHS(vec, val);
     SET_NAMED(val, NAMED(val) | NAMED(vec));
     UNPROTECT(2);
 
@@ -1791,7 +1791,7 @@ SEXP R_do_slot_assign(SEXP obj, SEXP name, SEXP value)
            here we do *not* treat "names", "dimnames", "dim", .. specially : */
         PROTECT(name);
         if (NAMED(value))
-            value = duplicate(value);
+            value = R_FixupRHS(obj, value);
         SET_NAMED(value, NAMED(value) | NAMED(obj));
         UNPROTECT(1);
         installAttrib(obj, name, value);
