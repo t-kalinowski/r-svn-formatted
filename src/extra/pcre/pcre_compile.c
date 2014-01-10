@@ -3230,7 +3230,7 @@ static BOOL compare_opcodes(const pcre_uchar *code, BOOL utf, const compile_data
     const pcre_uint32 *list_ptr;
     const pcre_uchar *next_code;
     const pcre_uint8 *class_bitset;
-    const pcre_uint32 *set1, *set2, *set_end;
+    const pcre_uint8 *set1, *set2, *set_end;
     pcre_uint32 chr;
     BOOL accepted, invert_bits;
 
