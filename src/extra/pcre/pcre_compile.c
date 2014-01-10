@@ -3369,12 +3369,12 @@ static BOOL compare_opcodes(const pcre_uchar *code, BOOL utf, const compile_data
             if (base_list[0] == OP_CLASS)
 #endif
             {
-                set1 = (pcre_uint32 *)(base_end - base_list[2]);
+                set1 = (pcre_uint8 *)(base_end - base_list[2]);
                 list_ptr = list;
             }
             else
             {
-                set1 = (pcre_uint32 *)(code - list[2]);
+                set1 = (pcre_uint8 *)(code - list[2]);
                 list_ptr = base_list;
             }
 
@@ -3383,7 +3383,7 @@ static BOOL compare_opcodes(const pcre_uchar *code, BOOL utf, const compile_data
             {
             case OP_CLASS:
             case OP_NCLASS:
-                set2 = (pcre_uint32 *)((list_ptr == list ? code : base_end) - list_ptr[2]);
+                set2 = (pcre_uint8 *)((list_ptr == list ? code : base_end) - list_ptr[2]);
                 break;
 
                 /* OP_XCLASS cannot be supported here, because its bitset
@@ -3394,21 +3394,21 @@ static BOOL compare_opcodes(const pcre_uchar *code, BOOL utf, const compile_data
                 invert_bits = TRUE;
                 /* Fall through */
             case OP_DIGIT:
-                set2 = (pcre_uint32 *)(cd->cbits + cbit_digit);
+                set2 = (pcre_uint8 *)(cd->cbits + cbit_digit);
                 break;
 
             case OP_NOT_WHITESPACE:
                 invert_bits = TRUE;
                 /* Fall through */
             case OP_WHITESPACE:
-                set2 = (pcre_uint32 *)(cd->cbits + cbit_space);
+                set2 = (pcre_uint8 *)(cd->cbits + cbit_space);
                 break;
 
             case OP_NOT_WORDCHAR:
                 invert_bits = TRUE;
                 /* Fall through */
             case OP_WORDCHAR:
-                set2 = (pcre_uint32 *)(cd->cbits + cbit_word);
+                set2 = (pcre_uint8 *)(cd->cbits + cbit_word);
                 break;
 
             default:
