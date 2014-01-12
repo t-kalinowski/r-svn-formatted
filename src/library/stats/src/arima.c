@@ -41,10 +41,10 @@ extern double atanh(double x);
 /*
   KalmanLike, internal to StructTS:
   .Call(C_KalmanLike, y, mod$Z, mod$a, mod$P, mod$T, mod$V, mod$h, mod$Pn,
-        nit, FALSE, fast)
+        nit, FALSE, update)
   KalmanRun:
   .Call(C_KalmanLike, y, mod$Z, mod$a, mod$P, mod$T, mod$V, mod$h, mod$Pn,
-        nit, TRUE, fast)
+        nit, TRUE, update)
 */
 
 /* y vector length n of observations
@@ -63,10 +63,10 @@ extern double atanh(double x);
    No checking here!
  */
 
-SEXP KalmanLike(SEXP sy, SEXP sZ, SEXP sa, SEXP sP, SEXP sT, SEXP sV, SEXP sh, SEXP sPn, SEXP sUP, SEXP op, SEXP fast)
+SEXP KalmanLike(SEXP sy, SEXP sZ, SEXP sa, SEXP sP, SEXP sT, SEXP sV, SEXP sh, SEXP sPn, SEXP sUP, SEXP op, SEXP update)
 {
     SEXP res, ans = R_NilValue, resid = R_NilValue, states = R_NilValue;
-    int n, p, lop = asLogical(op), lFast = asLogical(fast);
+    int n, p, lop = asLogical(op), lUpdate = asLogical(update);
     double *y, *Z, *a, *P, *T, *V, h = asReal(sh), *Pnew;
     double sumlog = 0.0, ssq = 0, resid0, gain, tmp, *anew, *mm, *M;
     int i, j, k, l;
@@ -81,8 +81,8 @@ SEXP KalmanLike(SEXP sy, SEXP sZ, SEXP sa, SEXP sP, SEXP sT, SEXP sV, SEXP sh, S
     T = REAL(sT);
     V = REAL(sV);
 
-    /* Avoid modifying arguments unless fast=TRUE */
-    if (!lFast)
+    /* Avoid modifying arguments unless update=TRUE */
+    if (!lUpdate)
     {
         PROTECT(sP = duplicate(sP));
         PROTECT(sa = duplicate(sa));
@@ -185,17 +185,17 @@ SEXP KalmanLike(SEXP sy, SEXP sZ, SEXP sa, SEXP sP, SEXP sT, SEXP sV, SEXP sh, S
     if (lop)
     {
         SET_VECTOR_ELT(ans, 0, res = allocVector(REALSXP, 2));
-        REAL(res)[0] = ssq;
-        REAL(res)[1] = sumlog;
-        UNPROTECT(lFast ? 1 : 4);
+        REAL(res)[0] = ssq / n;
+        REAL(res)[1] = sumlog / n;
+        UNPROTECT(lUpdate ? 1 : 4);
         return ans;
     }
     else
     {
         res = allocVector(REALSXP, 2);
-        REAL(res)[0] = ssq;
-        REAL(res)[1] = sumlog;
-        if (!lFast)
+        REAL(res)[0] = ssq / n;
+        REAL(res)[1] = sumlog / n;
+        if (!lUpdate)
             UNPROTECT(3);
         return res;
     }
@@ -409,15 +409,14 @@ SEXP KalmanSmooth(SEXP sy, SEXP sZ, SEXP sa, SEXP sP, SEXP sT, SEXP sV, SEXP sh,
     return res;
 }
 
-// Only used with fast = FALSE at present.
-SEXP KalmanFore(SEXP nahead, SEXP sZ, SEXP sa0, SEXP sP0, SEXP sT, SEXP sV, SEXP sh, SEXP fast)
+SEXP KalmanFore(SEXP nahead, SEXP sZ, SEXP sa0, SEXP sP0, SEXP sT, SEXP sV, SEXP sh, SEXP update)
 {
     if (TYPEOF(sZ) != REALSXP || TYPEOF(sa0) != REALSXP || TYPEOF(sP0) != REALSXP || TYPEOF(sT) != REALSXP ||
         TYPEOF(sV) != REALSXP)
         error(_("invalid argument type"));
 
     SEXP res, forecasts, se;
-    int n = asInteger(nahead), p = LENGTH(sa0), lFast = asLogical(fast);
+    int n = asInteger(nahead), p = LENGTH(sa0), lUpdate = asLogical(update);
     double *Z = REAL(sZ), *a = REAL(sa0), *P = REAL(sP0), *T = REAL(sT), *V = REAL(sV), h = asReal(sh);
     int i, j, k, l;
     double fc, tmp, *mm, *anew, *Pnew;
@@ -436,7 +435,7 @@ SEXP KalmanFore(SEXP nahead, SEXP sZ, SEXP sa0, SEXP sP0, SEXP sT, SEXP sV, SEXP
         UNPROTECT(1);
     }
 
-    if (!lFast)
+    if (!lUpdate)
     {
         PROTECT(sa0 = duplicate(sa0));
         a = REAL(sa0);
@@ -483,7 +482,7 @@ SEXP KalmanFore(SEXP nahead, SEXP sZ, SEXP sa0, SEXP sP0, SEXP sT, SEXP sV, SEXP
             }
         REAL(se)[l] = tmp;
     }
-    UNPROTECT(lFast ? 1 : 3);
+    UNPROTECT(lUpdate ? 1 : 3);
     return res;
 }
 
