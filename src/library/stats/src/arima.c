@@ -64,7 +64,8 @@
 
 SEXP KalmanLike(SEXP sy, SEXP mod, SEXP sUP, SEXP op, SEXP update)
 {
-    int lop = asLogical(op), lUpdate = asLogical(update);
+    int lop = asLogical(op);
+    mod = PROTECT(duplicate(mod));
 
     SEXP sZ = getListElement(mod, "Z"), sa = getListElement(mod, "a"), sP = getListElement(mod, "P"),
          sT = getListElement(mod, "T"), sV = getListElement(mod, "V"), sh = getListElement(mod, "h"),
@@ -74,13 +75,6 @@ SEXP KalmanLike(SEXP sy, SEXP mod, SEXP sUP, SEXP op, SEXP update)
         TYPEOF(sPn) != REALSXP || TYPEOF(sT) != REALSXP || TYPEOF(sV) != REALSXP)
         error(_("invalid argument type"));
 
-    /* Avoid modifying argument unless update = TRUE */
-    if (!lUpdate)
-    {
-        PROTECT(sP = duplicate(sP));
-        PROTECT(sa = duplicate(sa));
-        PROTECT(sPn = duplicate(sPn));
-    }
     int n = LENGTH(sy), p = LENGTH(sa);
     double *y = REAL(sy), *Z = REAL(sZ), *T = REAL(sT), *V = REAL(sV), *P = REAL(sP), *a = REAL(sa), *Pnew = REAL(sPn),
            h = asReal(sh);
@@ -185,15 +179,18 @@ SEXP KalmanLike(SEXP sy, SEXP mod, SEXP sUP, SEXP op, SEXP update)
         SET_VECTOR_ELT(ans, 0, res);
         REAL(res)[0] = ssq / n;
         REAL(res)[1] = sumlog / n;
-        UNPROTECT(lUpdate ? 1 : 4);
+        if (asLogical(update))
+            setAttrib(ans, install("mod"), mod);
+        UNPROTECT(2);
         return ans;
     }
     else
     {
         REAL(res)[0] = ssq / n;
         REAL(res)[1] = sumlog / n;
-        if (!lUpdate)
-            UNPROTECT(3);
+        if (asLogical(update))
+            setAttrib(res, install("mod"), mod);
+        UNPROTECT(1);
         return res;
     }
 }
@@ -411,6 +408,7 @@ SEXP KalmanSmooth(SEXP sy, SEXP mod, SEXP sUP)
 
 SEXP KalmanFore(SEXP nahead, SEXP mod, SEXP update)
 {
+    mod = PROTECT(duplicate(mod));
     SEXP sZ = getListElement(mod, "Z"), sa = getListElement(mod, "a"), sP = getListElement(mod, "P"),
          sT = getListElement(mod, "T"), sV = getListElement(mod, "V"), sh = getListElement(mod, "h");
 
@@ -418,7 +416,7 @@ SEXP KalmanFore(SEXP nahead, SEXP mod, SEXP update)
         TYPEOF(sV) != REALSXP)
         error(_("invalid argument type"));
 
-    int n = asInteger(nahead), p = LENGTH(sa), lUpdate = asLogical(update);
+    int n = asInteger(nahead), p = LENGTH(sa);
     double *Z = REAL(sZ), *a = REAL(sa), *P = REAL(sP), *T = REAL(sT), *V = REAL(sV), h = asReal(sh);
     double *mm, *anew, *Pnew;
 
@@ -435,14 +433,6 @@ SEXP KalmanFore(SEXP nahead, SEXP mod, SEXP update)
         SET_STRING_ELT(nm, 1, mkChar("var"));
         setAttrib(res, R_NamesSymbol, nm);
         UNPROTECT(1);
-    }
-
-    if (!lUpdate)
-    {
-        PROTECT(sa = duplicate(sa));
-        a = REAL(sa);
-        PROTECT(sP = duplicate(sP));
-        P = REAL(sP);
     }
     for (int l = 0; l < n; l++)
     {
@@ -484,7 +474,9 @@ SEXP KalmanFore(SEXP nahead, SEXP mod, SEXP update)
             }
         REAL(se)[l] = tmp;
     }
-    UNPROTECT(lUpdate ? 1 : 3);
+    if (asLogical(update))
+        setAttrib(res, install("mod"), mod);
+    UNPROTECT(2);
     return res;
 }
 
