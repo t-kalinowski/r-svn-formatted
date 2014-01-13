@@ -98,6 +98,7 @@ SEXP KalmanLike(SEXP sy, SEXP mod, SEXP sUP, SEXP op, SEXP update)
     }
 
     double sumlog = 0.0, ssq = 0.0;
+    int nu = 0;
     for (int l = 0; l < n; l++)
     {
         for (int i = 0; i < p; i++)
@@ -128,6 +129,7 @@ SEXP KalmanLike(SEXP sy, SEXP mod, SEXP sUP, SEXP op, SEXP update)
         }
         if (!ISNAN(y[l]))
         {
+            nu++;
             double *rr = NULL /* -Wall */;
             if (lop)
                 rr = REAL(resid);
@@ -174,11 +176,11 @@ SEXP KalmanLike(SEXP sy, SEXP mod, SEXP sUP, SEXP op, SEXP update)
     }
 
     SEXP res = allocVector(REALSXP, 2);
+    REAL(res)[0] = ssq / nu;
+    REAL(res)[1] = sumlog / nu;
     if (lop)
     {
         SET_VECTOR_ELT(ans, 0, res);
-        REAL(res)[0] = ssq / n;
-        REAL(res)[1] = sumlog / n;
         if (asLogical(update))
             setAttrib(ans, install("mod"), mod);
         UNPROTECT(2);
@@ -186,8 +188,6 @@ SEXP KalmanLike(SEXP sy, SEXP mod, SEXP sUP, SEXP op, SEXP update)
     }
     else
     {
-        REAL(res)[0] = ssq / n;
-        REAL(res)[1] = sumlog / n;
         if (asLogical(update))
             setAttrib(res, install("mod"), mod);
         UNPROTECT(1);
