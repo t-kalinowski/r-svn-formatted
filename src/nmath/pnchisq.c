@@ -71,8 +71,8 @@ double pnchisq(double x, double df, double ncp, int lower_tail, int log_p)
     return log1p(-ans);
 }
 
-double attribute_hidden pnchisq_raw(double x, double f, double theta, double errmax, double reltol, int itrmax,
-                                    Rboolean lower_tail)
+double attribute_hidden pnchisq_raw(double x, double f, double theta /* = ncp */, double errmax, double reltol,
+                                    int itrmax, Rboolean lower_tail)
 {
     double lam, x2, f2, term, bound, f_x_2n, f_2n;
     double l_lam = -1., l_x = -1.; /* initialized for -Wall */
@@ -107,12 +107,16 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta, double err
         /* we need to renormalize here: the result could be very close to 1 */
         for (i = 0; i < 110; pr *= lambda / ++i)
         {
+            // pr == exp(-lambda) lambda^i / i!  ==  dpois(i, lambda)
             sum2 += pr;
             sum += pr * pchisq(x, f + 2 * i, lower_tail, FALSE);
             if (sum2 >= 1 - 1e-15)
                 break;
         }
         ans = (double)(sum / sum2);
+#ifdef DEBUG_pnch
+        REprintf("pnchisq(x=%g, f=%g, theta=%g); theta < 80: i = %d,  sum2 = %g\n", x, f, theta, i, sum2);
+#endif
         return ans;
     }
 
