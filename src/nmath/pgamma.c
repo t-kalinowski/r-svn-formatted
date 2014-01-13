@@ -274,7 +274,7 @@ static double pgamma_smallx(double x, double alph, int lower_tail, int log_p)
     } while (fabs(term) > DBL_EPSILON * fabs(sum));
 
 #ifdef DEBUG_p
-    REprintf(" %d terms --> conv.sum=%g;", n, sum);
+    REprintf("%5.0f terms --> conv.sum=%g;", n, sum);
 #endif
     if (lower_tail)
     {
