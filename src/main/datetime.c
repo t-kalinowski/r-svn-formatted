@@ -852,7 +852,7 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
                 p = R_tzname[ptm->tm_isdst];
             SET_STRING_ELT(VECTOR_ELT(ans, 9), i, mkChar(p));
 #ifdef HAVE_TM_GMTOFF
-            INTEGER(VECTOR_ELT(ans, 10))[i] = valid ? (int)ptm->tm_gmtoff : 0;
+            INTEGER(VECTOR_ELT(ans, 10))[i] = valid ? (int)ptm->tm_gmtoff : NA_INTEGER;
 #endif
         }
     }
@@ -1010,7 +1010,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
             settz = set_tz(tz1, oldtz);
     }
 
-    /* workaround for glibc/FreeBSD/MacOS X bugs in strftime: they have
+    /* workaround for glibc/FreeBSD/MacOS X strftime: they have
        non-POSIX/C99 time zone components
      */
     memset(&tm, 0, sizeof(tm));
@@ -1063,7 +1063,8 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
                 tzname[tm.tm_isdst] = tm_zone;
 #endif
 #ifdef HAVE_TM_GMTOFF
-            tm.tm_gmtoff = INTEGER(VECTOR_ELT(x, 10))[i % n];
+            int tmp = INTEGER(VECTOR_ELT(x, 10))[i % n];
+            tm.tm_gmtoff = (tmp == NA_INTEGER) ? 0 : tmp;
 #endif
         }
         if (!R_FINITE(secs) || tm.tm_min == NA_INTEGER || tm.tm_hour == NA_INTEGER || tm.tm_mday == NA_INTEGER ||
@@ -1263,7 +1264,10 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
         memset(&tm, 0, sizeof(stm));
         tm.tm_sec = tm.tm_min = tm.tm_hour = 0;
         tm.tm_year = tm.tm_mon = tm.tm_mday = tm.tm_yday = tm.tm_wday = NA_INTEGER;
+#ifdef HAVE_TM_GMTOFF
+        tm.tm_gmtoff = (long)NA_INTEGER;
         tm.tm_isdst = -1;
+#endif
         offset = NA_INTEGER;
         invalid = STRING_ELT(x, i % n) == NA_STRING ||
                   !R_strptime(translateChar(STRING_ELT(x, i % n)), translateChar(STRING_ELT(sformat, i % m)), &tm,
@@ -1318,7 +1322,7 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             SET_STRING_ELT(VECTOR_ELT(ans, 9), i, mkChar(p));
 #ifdef HAVE_TM_GMTOFF
-            INTEGER(VECTOR_ELT(ans, 10))[i] = invalid ? 0 : (int)tm.tm_gmtoff;
+            INTEGER(VECTOR_ELT(ans, 10))[i] = invalid ? NA_INTEGER : (int)tm.tm_gmtoff;
 #endif
         }
     }
