@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2000-2013  The R Core Team.
+ *  Copyright (C) 2000-2014  The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -760,6 +760,8 @@ static void makelt(stm *tm, SEXP ans, R_xlen_t i, int valid, double frac_secs)
 
 /* --------- R interfaces --------- */
 
+// We assume time zone names/abbreviations are ASCII, as all known ones are.
+
 SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP stz, x, ans, ansnames, klass, tzone;
@@ -997,7 +999,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         int needTZ = 0;
         for (R_xlen_t i = 0; i < m; i++)
         {
-            const char *p = CHAR(STRING_ELT(sformat, i));
+            const char *p = translateChar(STRING_ELT(sformat, i));
             if (strstr(p, "%Z") || strstr(p, "%z"))
             {
                 needTZ = 1;
@@ -1075,7 +1077,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
                 SET_STRING_ELT(ans, i, NA_STRING);
             else
             {
-                const char *q = CHAR(STRING_ELT(sformat, i % m));
+                const char *q = translateChar(STRING_ELT(sformat, i % m));
                 int n = (int)strlen(q) + 50;
                 char buf2[n];
                 const char *p;
@@ -1264,7 +1266,8 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
         tm.tm_isdst = -1;
         offset = NA_INTEGER;
         invalid = STRING_ELT(x, i % n) == NA_STRING ||
-                  !R_strptime(CHAR(STRING_ELT(x, i % n)), CHAR(STRING_ELT(sformat, i % m)), &tm, &psecs, &offset);
+                  !R_strptime(translateChar(STRING_ELT(x, i % n)), translateChar(STRING_ELT(sformat, i % m)), &tm,
+                              &psecs, &offset);
         if (!invalid)
         {
             /* Solaris sets missing fields to 0 */
