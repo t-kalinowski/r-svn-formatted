@@ -22,7 +22,7 @@
 /**----------- DEBUGGING -------------
  *
  *	make CFLAGS='-DDEBUG_bratio  ...'
- *MM:
+ *MM (w/ Debug, w/o Optimization):
  (cd `R-devel-pbeta-dbg RHOME`/src/nmath ; gcc -I. -I../../src/include -I../../../R/src/include  -DHAVE_CONFIG_H
  -fopenmp -g -pedantic -Wall --std=gnu99 -DDEBUG_q -DDEBUG_bratio -Wcast-align -Wclobbered  -c
  ../../../R/src/nmath/toms708.c -o toms708.o; cd ../..; make R)
@@ -165,20 +165,33 @@ void attribute_hidden bratio(double a, double b, double x, double y, double *w, 
         goto L201;
 
     eps = max(eps, 1e-15);
-    if (max(a, b) < eps * .001)
+    Rboolean a_lt_b = (a < b);
+    if (/* max(a,b) */ (a_lt_b ? b : a) < eps * .001)
     { /* procedure for a and b < 0.001 * eps */
-        /* L230: */
+        // L230:  -- result *independent* of x (!)
+        // *w  = a/(a+b)  and  w1 = b/(a+b) :
         if (log_p)
         {
-            z = log(a + b);
-            *w = log(b) - z;
-            *w1 = log(a) - z;
+            if (a_lt_b)
+            {
+                *w = log1p(-a / (a + b)); // notably if a << b
+                *w1 = log(a / (a + b));
+            }
+            else
+            { // b <= a
+                *w = log(b / (a + b));
+                *w1 = log1p(-b / (a + b));
+            }
         }
         else
         {
             *w = b / (a + b);
             *w1 = a / (a + b);
         }
+
+#ifdef DEBUG_bratio
+        REprintf("a & b very small -> simple ratios (%g,%g)\n", *w, *w1);
+#endif
         return;
     }
 
@@ -804,8 +817,8 @@ static double bup(double a, double b, double x, double y, int n, double eps, int
     }
 
     /* L10: */
-    ret_val = log_p ? brcmp1(mu, a, b, x, y, TRUE) - log(a) : brcmp1(mu, a, b, x, y, FALSE) / a;
-    if (n == 1 || (log_p && ret_val == ML_NEGINF) || (!log_p && ret_val == 0.))
+    ret_val = give_log ? brcmp1(mu, a, b, x, y, TRUE) - log(a) : brcmp1(mu, a, b, x, y, FALSE) / a;
+    if (n == 1 || (give_log && ret_val == ML_NEGINF) || (!give_log && ret_val == 0.))
         return ret_val;
 
     int nm1 = n - 1;
