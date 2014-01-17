@@ -1843,9 +1843,14 @@ double R_strtod5(const char *str, char **endptr, char dec, Rboolean NA, Rboolean
         ans *= fac;
     }
 
-    // explicit overflow to infinity
+    /* explicit overflow to infinity */
     if (ans > DBL_MAX)
+    {
+        if (endptr)
+            *endptr = (char *)p;
         return (sign > 0) ? R_PosInf : R_NegInf;
+    }
+
 done:
     if (endptr)
         *endptr = (char *)p;
