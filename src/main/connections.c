@@ -5044,7 +5044,7 @@ void con_pushback(Rconnection con, Rboolean newLine, char *line)
 
 SEXP attribute_hidden do_pushback(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    int i, n, nexists, newLine;
+    int i, n, nexists, newLine, type;
     Rconnection con = NULL;
     SEXP stext;
     const char *p;
@@ -5059,6 +5059,7 @@ SEXP attribute_hidden do_pushback(SEXP call, SEXP op, SEXP args, SEXP env)
     newLine = asLogical(CADDR(args));
     if (newLine == NA_LOGICAL)
         error(_("invalid '%s' argument"), "newLine");
+    type = asInteger(CADDDR(args));
     if (!con->canread && !con->isopen)
         error(_("can only push back on open readable connections"));
     if (!con->text)
@@ -5076,7 +5077,9 @@ SEXP attribute_hidden do_pushback(SEXP call, SEXP op, SEXP args, SEXP env)
         q += nexists;
         for (i = 0; i < n; i++)
         {
-            p = translateChar(STRING_ELT(stext, n - i - 1));
+            p = type == 1 ? translateChar(STRING_ELT(stext, n - i - 1))
+                          : ((type == 3) ? translateCharUTF8(STRING_ELT(stext, n - i - 1))
+                                         : CHAR(STRING_ELT(stext, n - i - 1)));
             *q = (char *)malloc(strlen(p) + 1 + newLine);
             if (!(*q))
                 error(_("could not allocate space for pushback"));
