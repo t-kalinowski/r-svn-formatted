@@ -525,7 +525,7 @@ SEXP eval(SEXP e, SEXP rho)
            used as values.  Setting NAMED to 2 makes sure weird calls
            to replacement functions won't modify constants in
            expressions.  */
-        if (NAMED_NOCHK(e) != 2)
+        if (NAMED(e) != 2)
             SET_NAMED(e, 2);
         return e;
     default:
@@ -602,7 +602,7 @@ SEXP eval(SEXP e, SEXP rho)
                 tmp = PRVALUE(tmp);
             SET_NAMED(tmp, 2);
         }
-        else if (!isNull(tmp) && NAMED_NOCHK(tmp) == 0)
+        else if (!isNull(tmp) && NAMED(tmp) < 1)
             SET_NAMED(tmp, 1);
         break;
     case PROMSXP:
@@ -935,8 +935,6 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedenv)
 
     PROTECT(actuals = matchArgs(formals, arglist, call));
     PROTECT(newrho = NewEnvironment(formals, actuals, savedrho));
-    for (a = actuals; a != R_NilValue; a = CDR(a))
-        a->trackrefs = TRUE;
 
     /*  Use the default code for unbound formals.  FIXME: It looks like
     this code should preceed the building of the environment so that
@@ -1283,16 +1281,12 @@ static SEXP EnsureLocal(SEXP symbol, SEXP rho)
     if ((vl = findVarInFrame3(rho, symbol, TRUE)) != R_UnboundValue)
     {
         vl = eval(symbol, rho); /* for promises */
-        if (MAYBE_SHARED(vl))
+        if (NAMED(vl) == 2)
         {
             PROTECT(vl = duplicate(vl));
             defineVar(symbol, vl, rho);
             UNPROTECT(1);
-            /* set NAMED = 1 for true duplicates which have NAMED = 0;
-               leave alone for SYMSXP and such for which duplicate()
-               just returns its argument */
-            if (NAMED_NOCHK(vl) == 0)
-                SET_NAMED(vl, 1);
+            SET_NAMED(vl, 1);
         }
         return vl;
     }
@@ -1304,11 +1298,7 @@ static SEXP EnsureLocal(SEXP symbol, SEXP rho)
     PROTECT(vl = duplicate(vl));
     defineVar(symbol, vl, rho);
     UNPROTECT(1);
-    /* set NAMED = 1 for true duplicates which have NAMED = 0;
-       leave alone for SYMSXP and such for which duplicate()
-       just returns its argument */
-    if (NAMED(vl) == 0)
-        SET_NAMED(vl, 1);
+    SET_NAMED(vl, 1);
     return vl;
 }
 
@@ -1394,7 +1384,7 @@ static R_INLINE Rboolean asLogicalNoNA(SEXP s, SEXP call)
 #define ALLOC_LOOP_VAR(v, val_type, vpi)                                                                               \
     do                                                                                                                 \
     {                                                                                                                  \
-        if (v == R_NilValue || MAYBE_SHARED(v))                                                                        \
+        if (v == R_NilValue || NAMED(v) == 2)                                                                          \
         {                                                                                                              \
             REPROTECT(v = allocVector(val_type, 1), vpi);                                                              \
             SET_NAMED(v, 1);                                                                                           \
@@ -1513,8 +1503,8 @@ SEXP attribute_hidden do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
     bgn = BodyHasBraces(body);
 
     /* bump up NAMED count of sequence to avoid modification by loop code */
-    INCREMENT_NAMED(val);
-    INCREMENT_REFCNT(val);
+    if (NAMED(val) < 2)
+        SET_NAMED(val, NAMED(val) + 1);
 
     PROTECT_WITH_INDEX(v = R_NilValue, &vpi);
 
@@ -1594,7 +1584,6 @@ SEXP attribute_hidden do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
 for_break:
     endcontext(&cntxt);
-    DECREMENT_REFCNT(val);
     UNPROTECT(5);
     SET_RDEBUG(rho, dbg);
     return R_NilValue;
@@ -1787,7 +1776,7 @@ static SEXP evalseq(SEXP expr, SEXP rho, int forcelocal, R_varloc_t tmploc)
             nval = eval(expr, ENCLOS(rho));
         }
         UNPROTECT(1);
-        return CONS_NR(nval, expr);
+        return CONS(nval, expr);
     }
     else if (isLanguage(expr))
     {
@@ -1798,7 +1787,7 @@ static SEXP evalseq(SEXP expr, SEXP rho, int forcelocal, R_varloc_t tmploc)
         PROTECT(nexpr = LCONS(CAR(expr), nexpr));
         nval = eval(nexpr, rho);
         UNPROTECT(4);
-        return CONS_NR(nval, val);
+        return CONS(nval, val);
     }
     else
         error(_("target of assignment expands to non-language object"));
@@ -1861,7 +1850,7 @@ static void tmp_cleanup(void *data)
     {                                                                                                                  \
         SEXP __lhs__ = (lhs);                                                                                          \
         SEXP __v__ = CAR(__lhs__);                                                                                     \
-        if (MAYBE_SHARED(__v__))                                                                                       \
+        if (NAMED(__v__) == 2)                                                                                         \
         {                                                                                                              \
             __v__ = duplicate(__v__);                                                                                  \
             SET_NAMED(__v__, 1);                                                                                       \
@@ -1874,23 +1863,13 @@ static void tmp_cleanup(void *data)
    necessary to make sure the RHS value returned by the assignment
    expression is correct when the RHS value is part of the LHS
    object. */
-#ifdef SWITCH_TO_REFCNT
 #define FIXUP_RHS_NAMED(r)                                                                                             \
     do                                                                                                                 \
     {                                                                                                                  \
         SEXP __rhs__ = (r);                                                                                            \
-        if (FALSE && REFCNT(__rhs__) && REFCNT(__rhs__) != REFCNTMAX)                                                  \
-            __rhs__->refcnt = REFCNTMAX;                                                                               \
-    } while (0)
-#else
-#define FIXUP_RHS_NAMED(r)                                                                                             \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        SEXP __rhs__ = (r);                                                                                            \
-        if (NAMED_NOCHK(__rhs__) && NAMED_NOCHK(__rhs__) != 2)                                                         \
+        if (NAMED(__rhs__) && NAMED(__rhs__) != 2)                                                                     \
             SET_NAMED(__rhs__, 2);                                                                                     \
     } while (0)
-#endif
 
 #define ASSIGNBUFSIZ 32
 static SEXP installAssignFcnSymbol(SEXP fun)
@@ -1926,19 +1905,6 @@ static R_INLINE SEXP getAssignFcnSymbol(SEXP fun)
     return installAssignFcnSymbol(fun);
 }
 
-static R_INLINE SEXP mkEVPROMISE(SEXP expr, SEXP val, SEXP rho, Rboolean track)
-{
-    SEXP prom = mkPROMISE(expr, rho);
-    prom->trackrefs = track;
-    SET_PRVALUE(prom, val);
-    return prom;
-}
-
-static R_INLINE SEXP mkRHSPROMISE(SEXP expr, SEXP rhs, SEXP rho)
-{
-    return mkEVPROMISE(expr, rhs, rho, FALSE);
-}
-
 static SEXP applydefine(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP expr, lhs, rhs, saverhs, tmp, afun, rhsprom;
@@ -1953,7 +1919,6 @@ static SEXP applydefine(SEXP call, SEXP op, SEXP args, SEXP rho)
     a <- (b <- c).  */
 
     PROTECT(saverhs = rhs = eval(CADR(args), rho));
-    INCREMENT_REFCNT(saverhs);
 
     /*  FIXME: We need to ensure that this works for hashed
     environments.  This code only works for unhashed ones.  the
@@ -2002,7 +1967,6 @@ static SEXP applydefine(SEXP call, SEXP op, SEXP args, SEXP rho)
         errorcall(call, _("cannot do complex assignments in base environment"));
     defineVar(R_TmpvalSymbol, R_NilValue, rho);
     PROTECT((SEXP)(tmploc = R_findVarLocInFrame(rho, R_TmpvalSymbol)));
-    ((SEXP)tmploc)->trackrefs = FALSE;
 
     /* Now set up a context to remove it when we are done, even in the
      * case of an error.  This all helps error() provide a better call.
@@ -2015,7 +1979,8 @@ static SEXP applydefine(SEXP call, SEXP op, SEXP args, SEXP rho)
     lhs = evalseq(CADR(expr), rho, PRIMVAL(op) == 1 || PRIMVAL(op) == 3, tmploc);
 
     PROTECT(lhs);
-    PROTECT(rhsprom = mkRHSPROMISE(CADR(args), rhs, rho));
+    PROTECT(rhsprom = mkPROMISE(CADR(args), rho));
+    SET_PRVALUE(rhsprom, rhs);
 
     while (isLanguage(CADR(expr)))
     {
@@ -2079,7 +2044,6 @@ static SEXP applydefine(SEXP call, SEXP op, SEXP args, SEXP rho)
 #else
     INCREMENT_NAMED(saverhs);
 #endif
-    DECREMENT_REFCNT(saverhs);
     return saverhs;
 }
 
@@ -2175,7 +2139,7 @@ SEXP attribute_hidden evalList(SEXP el, SEXP rho, SEXP call, int n)
             {
                 while (h != R_NilValue)
                 {
-                    ev = CONS_NR(eval(CAR(h), rho), R_NilValue);
+                    ev = CONS(eval(CAR(h), rho), R_NilValue);
                     if (head == R_NilValue)
                         PROTECT(head = ev);
                     else
@@ -2212,7 +2176,7 @@ SEXP attribute_hidden evalList(SEXP el, SEXP rho, SEXP call, int n)
         }
         else
         {
-            ev = CONS_NR(eval(CAR(el), rho), R_NilValue);
+            ev = CONS(eval(CAR(el), rho), R_NilValue);
             if (head == R_NilValue)
                 PROTECT(head = ev);
             else
@@ -2259,9 +2223,9 @@ SEXP attribute_hidden evalListKeepMissing(SEXP el, SEXP rho)
                 while (h != R_NilValue)
                 {
                     if (CAR(h) == R_MissingArg)
-                        ev = CONS_NR(R_MissingArg, R_NilValue);
+                        ev = CONS(R_MissingArg, R_NilValue);
                     else
-                        ev = CONS_NR(eval(CAR(h), rho), R_NilValue);
+                        ev = CONS(eval(CAR(h), rho), R_NilValue);
                     if (head == R_NilValue)
                         PROTECT(head = ev);
                     else
@@ -2277,9 +2241,9 @@ SEXP attribute_hidden evalListKeepMissing(SEXP el, SEXP rho)
         else
         {
             if (CAR(el) == R_MissingArg || (isSymbol(CAR(el)) && R_isMissing(CAR(el), rho)))
-                ev = CONS_NR(R_MissingArg, R_NilValue);
+                ev = CONS(R_MissingArg, R_NilValue);
             else
-                ev = CONS_NR(eval(CAR(el), rho), R_NilValue);
+                ev = CONS(eval(CAR(el), rho), R_NilValue);
             if (head == R_NilValue)
                 PROTECT(head = ev);
             else
@@ -2750,7 +2714,7 @@ attribute_hidden int DispatchOrEval(SEXP call, SEXP op, const char *generic, SEX
                     PROTECT(argValue = evalArgs(argValue, rho, dropmissing, call, 0));
                 else
                 {
-                    PROTECT(argValue = CONS_NR(x, evalArgs(CDR(argValue), rho, dropmissing, call, 1)));
+                    PROTECT(argValue = CONS(x, evalArgs(CDR(argValue), rho, dropmissing, call, 1)));
                     SET_TAG(argValue, CreateTag(TAG(args)));
                 }
                 nprotect++;
@@ -2795,7 +2759,6 @@ attribute_hidden int DispatchOrEval(SEXP call, SEXP op, const char *generic, SEX
                 return 1;
             }
             endcontext(&cntxt);
-            DECREMENT_REFCNT(x);
         }
     }
     if (!argsevald)
@@ -2807,7 +2770,7 @@ attribute_hidden int DispatchOrEval(SEXP call, SEXP op, const char *generic, SEX
             *ans = evalArgs(args, rho, dropmissing, call, 0);
         else
         {
-            PROTECT(*ans = CONS_NR(x, evalArgs(CDR(args), rho, dropmissing, call, 1)));
+            PROTECT(*ans = CONS(x, evalArgs(CDR(args), rho, dropmissing, call, 1)));
             SET_TAG(*ans, CreateTag(TAG(args)));
             UNPROTECT(1);
         }
@@ -3395,7 +3358,7 @@ static SEXP cmp_relop(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rho
     if (isObject(x) || isObject(y))
     {
         SEXP args, ans;
-        args = CONS_NR(x, CONS_NR(y, R_NilValue));
+        args = CONS(x, CONS(y, R_NilValue));
         PROTECT(args);
         if (DispatchGroup("Ops", call, op, args, rho, &ans))
         {
@@ -3413,7 +3376,7 @@ static SEXP cmp_arith1(SEXP call, SEXP opsym, SEXP x, SEXP rho)
     if (isObject(x))
     {
         SEXP args, ans;
-        args = CONS_NR(x, R_NilValue);
+        args = CONS(x, R_NilValue);
         PROTECT(args);
         if (DispatchGroup("Ops", call, op, args, rho, &ans))
         {
@@ -3436,7 +3399,7 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
     if (isObject(x) || isObject(y))
     {
         SEXP args, ans;
-        args = CONS_NR(x, CONS_NR(y, R_NilValue));
+        args = CONS(x, CONS(y, R_NilValue));
         PROTECT(args);
         if (DispatchGroup("Ops", call, op, args, rho, &ans))
         {
@@ -3452,7 +3415,7 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
     do                                                                                                                 \
     {                                                                                                                  \
         SEXP call = VECTOR_ELT(constants, GETOP());                                                                    \
-        SETSTACK(-1, CONS_NR(GETSTACK(-1), R_NilValue));                                                               \
+        SETSTACK(-1, CONS(GETSTACK(-1), R_NilValue));                                                                  \
         SETSTACK(-1, do_fun(call, getPrimitive(which, BUILTINSXP), GETSTACK(-1), rho));                                \
         NEXT();                                                                                                        \
     } while (0)
@@ -3461,8 +3424,8 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
     do                                                                                                                 \
     {                                                                                                                  \
         SEXP call = VECTOR_ELT(constants, GETOP());                                                                    \
-        SEXP tmp = CONS_NR(GETSTACK(-1), R_NilValue);                                                                  \
-        SETSTACK(-2, CONS_NR(GETSTACK(-2), tmp));                                                                      \
+        SEXP tmp = CONS(GETSTACK(-1), R_NilValue);                                                                     \
+        SETSTACK(-2, CONS(GETSTACK(-2), tmp));                                                                         \
         R_BCNodeStackTop--;                                                                                            \
         SETSTACK(-1, do_fun(call, getPrimitive(which, BUILTINSXP), GETSTACK(-1), rho));                                \
         NEXT();                                                                                                        \
@@ -3515,7 +3478,7 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
         }                                                                                                              \
     } while (0)
 #else
-/* these reuse one of the two values on the top of the stack if it is
+/* these reuse one of the two values on the top of the stack if itis
    of the right type and has NAMED = 0. It is known that both of these
    will have length one and have no attributes. */
 #define DO_FAST_BINOP(op, a, b)                                                                                        \
@@ -3525,9 +3488,9 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
         SEXP sa = R_BCNodeStackTop[-2];                                                                                \
         SEXP sb = R_BCNodeStackTop[-1];                                                                                \
         SEXP ans;                                                                                                      \
-        if (NO_REFERENCES(sa) && TYPEOF(sa) == REALSXP)                                                                \
+        if (NAMED(sa) == 0 && TYPEOF(sa) == REALSXP)                                                                   \
             ans = sa;                                                                                                  \
-        else if (NO_REFERENCES(sb) && TYPEOF(sb) == REALSXP)                                                           \
+        else if (NAMED(sb) == 0 && TYPEOF(sb) == REALSXP)                                                              \
             ans = sb;                                                                                                  \
         else                                                                                                           \
             ans = allocVector(REALSXP, 1);                                                                             \
@@ -3547,9 +3510,9 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
             SEXP sa = R_BCNodeStackTop[-2];                                                                            \
             SEXP sb = R_BCNodeStackTop[-1];                                                                            \
             SEXP ans;                                                                                                  \
-            if (NO_REFERENCES(sa) && TYPEOF(sa) == INTSXP)                                                             \
+            if (NAMED(sa) == 0 && TYPEOF(sa) == INTSXP)                                                                \
                 ans = sa;                                                                                              \
-            else if (NO_REFERENCES(sb) && TYPEOF(sb) == INTSXP)                                                        \
+            else if (NAMED(sb) == 0 && TYPEOF(sb) == INTSXP)                                                           \
                 ans = sb;                                                                                              \
             else                                                                                                       \
                 ans = allocVector(INTSXP, 1);                                                                          \
@@ -3946,7 +3909,7 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
         MAYBE_MISSING_ARGUMENT_ERROR(symbol, keepmiss);
     else if (TYPEOF(value) == PROMSXP)
         value = FORCE_PROMISE(value, symbol, rho, keepmiss);
-    else if (NAMED_NOCHK(value) == 0 && value != R_NilValue)
+    else if (NAMED(value) == 0 && value != R_NilValue)
         SET_NAMED(value, 1);
     return value;
 }
@@ -3978,7 +3941,7 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
             case INTSXP:                                                                                               \
             case LGLSXP:                                                                                               \
                 /* may be ok to skip this test: */                                                                     \
-                if (NAMED_NOCHK(value) == 0)                                                                           \
+                if (NAMED(value) == 0)                                                                                 \
                     SET_NAMED(value, 1);                                                                               \
                 R_Visible = TRUE;                                                                                      \
                 BCNPUSH(value);                                                                                        \
@@ -4000,7 +3963,7 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
                         else                                                                                           \
                             value = pv;                                                                                \
                     }                                                                                                  \
-                    else if (NAMED_NOCHK(value) == 0)                                                                  \
+                    else if (NAMED(value) == 0)                                                                        \
                         SET_NAMED(value, 1);                                                                           \
                     R_Visible = TRUE;                                                                                  \
                     BCNPUSH(value);                                                                                    \
@@ -4025,7 +3988,7 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
     } while (0)
 #endif
 
-#define PUSHCALLARG(v) PUSHCALLARG_CELL(CONS_NR(v, R_NilValue))
+#define PUSHCALLARG(v) PUSHCALLARG_CELL(CONS(v, R_NilValue))
 
 #define PUSHCALLARG_CELL(c)                                                                                            \
     do                                                                                                                 \
@@ -4070,8 +4033,6 @@ static int tryDispatch(char *generic, SEXP call, SEXP x, SEXP rho, SEXP *pv)
         dispatched = TRUE;
     endcontext(&cntxt);
     UNPROTECT(2);
-    if (!dispatched)
-        DECREMENT_REFCNT(x);
     return dispatched;
 }
 
@@ -4084,7 +4045,8 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
     last = ncall;
     while (CDR(last) != R_NilValue)
         last = CDR(last);
-    prom = mkRHSPROMISE(CAR(last), rhs, rho);
+    prom = mkPROMISE(CAR(last), rho);
+    SET_PRVALUE(prom, rhs);
     SETCAR(last, prom);
     result = tryDispatch(generic, ncall, lhs, rho, pv);
     UNPROTECT(1);
@@ -4106,7 +4068,7 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
         else                                                                                                           \
         {                                                                                                              \
             SEXP tag = TAG(CDR(call));                                                                                 \
-            SEXP cell = CONS_NR(value, R_NilValue);                                                                    \
+            SEXP cell = CONS(value, R_NilValue);                                                                       \
             BCNSTACKCHECK(3);                                                                                          \
             SETSTACK(0, call);                                                                                         \
             SETSTACK(1, cell);                                                                                         \
@@ -4136,7 +4098,7 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
         int label = GETOP();                                                                                           \
         SEXP lhs = GETSTACK(-2);                                                                                       \
         SEXP rhs = GETSTACK(-1);                                                                                       \
-        if (MAYBE_SHARED(lhs))                                                                                         \
+        if (NAMED(lhs) == 2)                                                                                           \
         {                                                                                                              \
             lhs = duplicate(lhs);                                                                                      \
             SETSTACK(-2, lhs);                                                                                         \
@@ -4152,7 +4114,7 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
         else                                                                                                           \
         {                                                                                                              \
             SEXP tag = TAG(CDR(call));                                                                                 \
-            SEXP cell = CONS_NR(lhs, R_NilValue);                                                                      \
+            SEXP cell = CONS(lhs, R_NilValue);                                                                         \
             BCNSTACKCHECK(3);                                                                                          \
             SETSTACK(0, call);                                                                                         \
             SETSTACK(1, cell);                                                                                         \
@@ -4206,7 +4168,7 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
         {                                                                                                              \
             SEXP call = VECTOR_ELT(constants, callidx);                                                                \
             SEXP rhs = GETSTACK(-1);                                                                                   \
-            if (MAYBE_SHARED(lhs))                                                                                     \
+            if (NAMED(lhs) == 2)                                                                                       \
             {                                                                                                          \
                 lhs = duplicate(lhs);                                                                                  \
                 SETSTACK(-2, lhs);                                                                                     \
@@ -4330,8 +4292,8 @@ static R_INLINE void VECSUBSET_PTR(R_bcstack_t *sx, R_bcstack_t *si, R_bcstack_t
 
     /* fall through to the standard default handler */
     idx = GETSTACK_PTR(si);
-    args = CONS_NR(idx, R_NilValue);
-    args = CONS_NR(vec, args);
+    args = CONS(idx, R_NilValue);
+    args = CONS(vec, args);
     PROTECT(args);
     value = do_subset_dflt(R_NilValue, R_SubsetSym, args, rho);
     UNPROTECT(1);
@@ -4407,9 +4369,9 @@ static R_INLINE void DO_MATSUBSET(SEXP rho)
     /* fall through to the standard default handler */
     idx = GETSTACK(-2);
     jdx = GETSTACK(-1);
-    args = CONS_NR(jdx, R_NilValue);
-    args = CONS_NR(idx, args);
-    args = CONS_NR(mat, args);
+    args = CONS(jdx, R_NilValue);
+    args = CONS(idx, args);
+    args = CONS(mat, args);
     SETSTACK(-1, args); /* for GC protection */
     value = do_subset_dflt(R_NilValue, R_SubsetSym, args, rho);
     R_BCNodeStackTop -= 2;
@@ -4463,7 +4425,7 @@ static R_INLINE void SETVECSUBSET_PTR(R_bcstack_t *sx, R_bcstack_t *srhs, R_bcst
     SEXP idx, args, value;
     SEXP vec = GETSTACK_PTR(sx);
 
-    if (MAYBE_SHARED(vec))
+    if (NAMED(vec) == 2)
     {
         vec = duplicate(vec);
         SETSTACK_PTR(sx, vec);
@@ -4489,10 +4451,10 @@ static R_INLINE void SETVECSUBSET_PTR(R_bcstack_t *sx, R_bcstack_t *srhs, R_bcst
     /* fall through to the standard default handler */
     value = GETSTACK_PTR(srhs);
     idx = GETSTACK_PTR(si);
-    args = CONS_NR(value, R_NilValue);
+    args = CONS(value, R_NilValue);
     SET_TAG(args, R_valueSym);
-    args = CONS_NR(idx, args);
-    args = CONS_NR(vec, args);
+    args = CONS(idx, args);
+    args = CONS(vec, args);
     PROTECT(args);
     vec = do_subassign_dflt(R_NilValue, R_SubassignSym, args, rho);
     UNPROTECT(1);
@@ -4510,7 +4472,7 @@ static R_INLINE void DO_SETMATSUBSET(SEXP rho)
     SEXP dim, idx, jdx, args, value;
     SEXP mat = GETSTACK(-4);
 
-    if (MAYBE_SHARED(mat))
+    if (NAMED(mat) > 1)
     {
         mat = duplicate(mat);
         SETSTACK(-4, mat);
@@ -4544,11 +4506,11 @@ static R_INLINE void DO_SETMATSUBSET(SEXP rho)
     value = GETSTACK(-3);
     idx = GETSTACK(-2);
     jdx = GETSTACK(-1);
-    args = CONS_NR(value, R_NilValue);
+    args = CONS(value, R_NilValue);
     SET_TAG(args, R_valueSym);
-    args = CONS_NR(jdx, args);
-    args = CONS_NR(idx, args);
-    args = CONS_NR(mat, args);
+    args = CONS(jdx, args);
+    args = CONS(idx, args);
+    args = CONS(mat, args);
     SETSTACK(-1, args); /* for GC protection */
     mat = do_subassign_dflt(R_NilValue, R_SubassignSym, args, rho);
     R_BCNodeStackTop -= 3;
@@ -4603,7 +4565,7 @@ static R_INLINE void checkForMissings(SEXP args, SEXP call)
     do                                                                                                                 \
     {                                                                                                                  \
         (var) = GETSTACK(pos);                                                                                         \
-        if (MAYBE_SHARED(var))                                                                                         \
+        if (NAMED(var) == 2)                                                                                           \
         {                                                                                                              \
             (var) = allocVector(TYPEOF(seq), 1);                                                                       \
             SETSTACK(pos, var);                                                                                        \
@@ -4616,12 +4578,6 @@ static R_INLINE void checkForMissings(SEXP args, SEXP call)
    consistent with this instruction needs to be able to distinguish a
    true BUILTIN from a .Internal. LT */
 #define IS_TRUE_BUILTIN(x) ((R_FunTab[PRIMOFFSET(x)].eval % 100) / 10 == 0)
-
-static R_INLINE SEXP BUMPREFCNT(SEXP x)
-{
-    INCREMENT_REFCNT(x);
-    return x;
-}
 
 static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
 {
@@ -4775,8 +4731,8 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             BCNPUSH(value);
 
             /* bump up NAMED count of seq to avoid modification by loop code */
-            INCREMENT_NAMED(seq);
-            INCREMENT_REFCNT(seq);
+            if (NAMED(seq) < 2)
+                SET_NAMED(seq, NAMED(seq) + 1);
 
             /* place initial loop variable value object on stack */
             switch (TYPEOF(seq))
@@ -4855,8 +4811,6 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         }
         OP(ENDFOR, 0) :
         {
-            SEXP seq = GETSTACK(-4);
-            DECREMENT_REFCNT(seq);
             R_BCNodeStackTop -= 3;
             SETSTACK(-1, R_NilValue);
             NEXT();
@@ -4899,7 +4853,15 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 loc = GET_BINDING_CELL_CACHE(symbol, rho, vcache, sidx);
             }
             value = GETSTACK(-1);
-            INCREMENT_NAMED(value);
+            switch (NAMED(value))
+            {
+            case 0:
+                SET_NAMED(value, 1);
+                break;
+            case 1:
+                SET_NAMED(value, 2);
+                break;
+            }
             if (!SET_BINDING_VALUE(loc, value))
             {
                 SEXP symbol = VECTOR_ELT(constants, sidx);
@@ -5071,7 +5033,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                             val = eval(CAR(h), rho);
                         else
                             val = mkPROMISE(CAR(h), rho);
-                        cell = CONS_NR(val, R_NilValue);
+                        cell = CONS(val, R_NilValue);
                         PUSHCALLARG_CELL(cell);
                         if (TAG(h) != R_NilValue)
                             SET_TAG(cell, CreateTag(TAG(h)));
@@ -5083,18 +5045,17 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             NEXT();
         }
         OP(PUSHARG, 0) : PUSHCALLARG(BCNPOP());
-        NEXT(); /**** CHECK FOR REFCNT */
+        NEXT();
         /**** for now PUSHCONST, PUSHTRUE, and PUSHFALSE duplicate/allocate to
           be defensive against bad package C code */
-        /***** maybe not the right place for bumping REFCNT */
         OP(PUSHCONSTARG, 1) : value = VECTOR_ELT(constants, GETOP());
-        PUSHCALLARG(BUMPREFCNT(duplicate(value)));
+        PUSHCALLARG(duplicate(value));
         NEXT();
         OP(PUSHNULLARG, 0) : PUSHCALLARG(R_NilValue);
         NEXT();
-        OP(PUSHTRUEARG, 0) : PUSHCALLARG(BUMPREFCNT(mkTrue()));
+        OP(PUSHTRUEARG, 0) : PUSHCALLARG(mkTrue());
         NEXT();
-        OP(PUSHFALSEARG, 0) : PUSHCALLARG(BUMPREFCNT(mkFalse()));
+        OP(PUSHFALSEARG, 0) : PUSHCALLARG(mkFalse());
         NEXT();
         OP(CALL, 1) :
         {
@@ -5218,13 +5179,12 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             SEXP symbol = VECTOR_ELT(constants, sidx);
             SEXP cell = GET_BINDING_CELL_CACHE(symbol, rho, vcache, sidx);
             value = BINDING_VALUE(cell);
-            if (value == R_UnboundValue || TYPEOF(value) == PROMSXP || REFCNT(value) != 1 /*NAMED(value) != 1*/)
+            if (value == R_UnboundValue || NAMED(value) != 1)
                 value = EnsureLocal(symbol, rho);
             BCNPUSH(value);
             BCNDUP2ND();
             /* top three stack entries are now RHS value, LHS value, RHS value */
             FIXUP_RHS_NAMED(GETSTACK(-1));
-            INCREMENT_REFCNT(GETSTACK(-1));
             NEXT();
         }
         OP(ENDASSIGN, 1) :
@@ -5233,7 +5193,15 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             SEXP symbol = VECTOR_ELT(constants, sidx);
             SEXP cell = GET_BINDING_CELL_CACHE(symbol, rho, vcache, sidx);
             value = GETSTACK(-1); /* leave on stack for GC protection */
-            INCREMENT_NAMED(value);
+            switch (NAMED(value))
+            {
+            case 0:
+                SET_NAMED(value, 1);
+                break;
+            case 1:
+                SET_NAMED(value, 2);
+                break;
+            }
             if (!SET_BINDING_VALUE(cell, value))
                 defineVar(symbol, value, rho);
             R_BCNodeStackTop--; /* now pop LHS value off the stack */
@@ -5244,7 +5212,6 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             SET_NAMED(GETSTACK(-1), 2);
 #else
             INCREMENT_NAMED(GETSTACK(-1));
-            DECREMENT_REFCNT(GETSTACK(-1));
 #endif
             NEXT();
         }
@@ -5286,7 +5253,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             SEXP symbol = VECTOR_ELT(constants, GETOP());
             SEXP x = GETSTACK(-2);
             SEXP rhs = GETSTACK(-1);
-            if (MAYBE_SHARED(x))
+            if (NAMED(x) == 2)
             {
                 x = duplicate(x);
                 SETSTACK(-2, x);
@@ -5298,7 +5265,8 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 PROTECT(ncall = duplicate(call));
                 /**** hack to avoid evaluating the symbol */
                 SETCAR(CDDR(ncall), ScalarString(PRINTNAME(symbol)));
-                prom = mkRHSPROMISE(CADDDR(ncall), rhs, rho);
+                prom = mkPROMISE(CADDDR(ncall), rho);
+                SET_PRVALUE(prom, rhs);
                 SETCAR(CDR(CDDR(ncall)), prom);
                 dispatched = tryDispatch("$<-", ncall, x, rho, &value);
                 UNPROTECT(1);
@@ -5404,14 +5372,21 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             BCNPUSH(value);
             /* top three stack entries are now RHS value, LHS value, RHS value */
             FIXUP_RHS_NAMED(value);
-            INCREMENT_REFCNT(value);
             NEXT();
         }
         OP(ENDASSIGN2, 1) :
         {
             SEXP symbol = VECTOR_ELT(constants, GETOP());
             value = BCNPOP();
-            INCREMENT_NAMED(value);
+            switch (NAMED(value))
+            {
+            case 0:
+                SET_NAMED(value, 1);
+                break;
+            case 1:
+                SET_NAMED(value, 2);
+                break;
+            }
             setVar(symbol, value, ENCLOS(rho));
             /* original right-hand side value is now on top of stack again */
 #ifdef OLD_RHS_NAMED
@@ -5421,7 +5396,6 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
 #else
             INCREMENT_NAMED(GETSTACK(-1));
 #endif
-            DECREMENT_REFCNT(GETSTACK(-1));
             NEXT();
         }
         OP(SETTER_CALL, 2) :
@@ -5432,7 +5406,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             SEXP call = VECTOR_ELT(constants, GETOP());
             SEXP vexpr = VECTOR_ELT(constants, GETOP());
             SEXP args, prom, last;
-            if (MAYBE_SHARED(lhs))
+            if (NAMED(lhs) == 2)
             {
                 lhs = duplicate(lhs);
                 SETSTACK(-5, lhs);
@@ -5456,26 +5430,28 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 args = duplicate(CDR(call));
                 SETSTACK(-2, args);
                 /* insert evaluated promise for LHS as first argument */
-                /* promise won't be captured so don't track refrences */
-                prom = mkEVPROMISE(R_TmpvalSymbol, lhs, rho, FALSE);
+                prom = mkPROMISE(R_TmpvalSymbol, rho);
+                SET_PRVALUE(prom, lhs);
                 SETCAR(args, prom);
                 /* insert evaluated promise for RHS as last argument */
                 last = args;
                 while (CDR(last) != R_NilValue)
                     last = CDR(last);
-                prom = mkRHSPROMISE(vexpr, rhs, rho);
+                prom = mkPROMISE(vexpr, rho);
+                SET_PRVALUE(prom, rhs);
                 SETCAR(last, prom);
                 /* make the call */
                 value = PRIMFUN(fun)(call, fun, args, rho);
                 break;
             case CLOSXP:
                 /* push evaluated promise for RHS onto arguments with 'value' tag */
-                prom = mkRHSPROMISE(vexpr, rhs, rho);
+                prom = mkPROMISE(vexpr, rho);
+                SET_PRVALUE(prom, rhs);
                 PUSHCALLARG(prom);
                 SET_TAG(GETSTACK(-1), R_valueSym);
                 /* replace first argument with evaluated promise for LHS */
-                /* promise might be captured, so track references */
-                prom = mkEVPROMISE(R_TmpvalSymbol, lhs, rho, TRUE);
+                prom = mkPROMISE(R_TmpvalSymbol, rho);
+                SET_PRVALUE(prom, lhs);
                 args = GETSTACK(-2);
                 SETCAR(args, prom);
                 /* make the call */
@@ -5510,16 +5486,16 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 args = duplicate(CDR(call));
                 SETSTACK(-2, args);
                 /* insert evaluated promise for LHS as first argument */
-                /* promise won't be captured so don't track refrences */
-                prom = mkEVPROMISE(R_TmpvalSymbol, lhs, rho, FALSE);
+                prom = mkPROMISE(R_TmpvalSymbol, rho);
+                SET_PRVALUE(prom, lhs);
                 SETCAR(args, prom);
                 /* make the call */
                 value = PRIMFUN(fun)(call, fun, args, rho);
                 break;
             case CLOSXP:
                 /* replace first argument with evaluated promise for LHS */
-                /* promise might be captured, so track references */
-                prom = mkEVPROMISE(R_TmpvalSymbol, lhs, rho, TRUE);
+                prom = mkPROMISE(R_TmpvalSymbol, rho);
+                SET_PRVALUE(prom, lhs);
                 args = GETSTACK(-2);
                 SETCAR(args, prom);
                 /* make the call */
@@ -6072,9 +6048,4 @@ SEXP attribute_hidden do_setmaxnumthreads(SEXP call, SEXP op, SEXP args, SEXP rh
             R_num_math_threads = R_max_num_math_threads;
     }
     return ScalarInteger(old);
-}
-
-SEXP R_CurrentCall()
-{
-    return R_GlobalContext->call;
 }
