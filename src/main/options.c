@@ -354,13 +354,11 @@ SEXP attribute_hidden do_options(SEXP call, SEXP op, SEXP args, SEXP rho)
         n = length(options);
         PROTECT(value = allocVector(VECSXP, n));
         PROTECT(names = allocVector(STRSXP, n));
-        i = 0;
-        while (options != R_NilValue)
+        for (i = 0; i < n; i++)
         {
             SET_STRING_ELT(names, i, PRINTNAME(TAG(options)));
             SET_VECTOR_ELT(value, i, duplicate(CAR(options)));
             options = CDR(options);
-            i++;
         }
         PROTECT(sind = allocVector(INTSXP, n));
         indx = INTEGER(sind);
