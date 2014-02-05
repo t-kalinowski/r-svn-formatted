@@ -92,7 +92,7 @@ static double approx1(double v, double *x, double *y, int n, appr_meth *Meth)
     if (Meth->kind == 1) /* linear */
         return y[i] + (y[j] - y[i]) * ((v - x[i]) / (x[j] - x[i]));
     else /* 2 : constant */
-        return y[i] * Meth->f1 + y[j] * Meth->f2;
+        return (Meth->f1 != 0.0 ? y[i] * Meth->f1 : 0.0) + (Meth->f2 != 0.0 ? y[j] * Meth->f2 : 0.0);
 } /* approx1() */
 
 /* Testing done only once - in a separate function */
