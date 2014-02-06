@@ -259,7 +259,7 @@ SEXP setAttrib(SEXP vec, SEXP name, SEXP val)
     if (vec == R_NilValue)
         error(_("attempt to set an attribute on NULL"));
 
-    if (NAMED(val))
+    if (MAYBE_REFERENCED(val))
         val = R_FixupRHS(vec, val);
     SET_NAMED(val, NAMED(val) | NAMED(vec));
     UNPROTECT(2);
@@ -514,7 +514,7 @@ static SEXP commentgets(SEXP vec, SEXP comment)
 SEXP attribute_hidden do_commentgets(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
-    if (NAMED(CAR(args)) == 2)
+    if (MAYBE_SHARED(CAR(args)))
         SETCAR(args, duplicate(CAR(args)));
     if (length(CADR(args)) == 0)
         SETCADR(args, R_NilValue);
@@ -580,7 +580,7 @@ SEXP attribute_hidden do_classgets(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     check1arg(args, call, "x");
 
-    if (NAMED(CAR(args)) == 2)
+    if (MAYBE_SHARED(CAR(args)))
         SETCAR(args, duplicate(CAR(args)));
     if (length(CADR(args)) == 0)
         SETCADR(args, R_NilValue);
@@ -847,7 +847,7 @@ SEXP attribute_hidden do_namesgets(SEXP call, SEXP op, SEXP args, SEXP env)
     if (CADR(args) == R_NilValue && getAttrib(CAR(args), R_NamesSymbol) == R_NilValue)
         return CAR(args);
     PROTECT(args = ans);
-    if (NAMED(CAR(args)) == 2)
+    if (MAYBE_SHARED(CAR(args)))
         SETCAR(args, duplicate(CAR(args)));
     if (IS_S4_OBJECT(CAR(args)))
     {
@@ -1549,7 +1549,7 @@ SEXP attribute_hidden do_attrgets(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 
     obj = CAR(args);
-    if (NAMED(obj) == 2)
+    if (MAYBE_SHARED(obj))
         PROTECT(obj = duplicate(obj));
     else
         PROTECT(obj);

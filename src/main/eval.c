@@ -525,7 +525,7 @@ SEXP eval(SEXP e, SEXP rho)
            used as values.  Setting NAMED to 2 makes sure weird calls
            to replacement functions won't modify constants in
            expressions.  */
-        if (NAMED(e) != 2)
+        if (NAMED(e) <= 1)
             SET_NAMED(e, 2);
         return e;
     default:
@@ -602,7 +602,7 @@ SEXP eval(SEXP e, SEXP rho)
                 tmp = PRVALUE(tmp);
             SET_NAMED(tmp, 2);
         }
-        else if (!isNull(tmp) && NAMED(tmp) < 1)
+        else if (!isNull(tmp) && NAMED(tmp) == 0)
             SET_NAMED(tmp, 1);
         break;
     case PROMSXP:
@@ -1281,7 +1281,7 @@ static SEXP EnsureLocal(SEXP symbol, SEXP rho)
     if ((vl = findVarInFrame3(rho, symbol, TRUE)) != R_UnboundValue)
     {
         vl = eval(symbol, rho); /* for promises */
-        if (NAMED(vl) == 2)
+        if (MAYBE_SHARED(vl))
         {
             PROTECT(vl = duplicate(vl));
             defineVar(symbol, vl, rho);
@@ -1379,12 +1379,12 @@ static R_INLINE Rboolean asLogicalNoNA(SEXP s, SEXP call)
 
 /* Allocate space for the loop variable value the first time through
    (when v == R_NilValue) and when the value has been assigned to
-   another variable (NAMED(v) == 2). This should be safe and avoid
+   another variable (NAMED(v) > 1). This should be safe and avoid
    allocation in many cases. */
 #define ALLOC_LOOP_VAR(v, val_type, vpi)                                                                               \
     do                                                                                                                 \
     {                                                                                                                  \
-        if (v == R_NilValue || NAMED(v) == 2)                                                                          \
+        if (v == R_NilValue || MAYBE_SHARED(v))                                                                        \
         {                                                                                                              \
             REPROTECT(v = allocVector(val_type, 1), vpi);                                                              \
             SET_NAMED(v, 1);                                                                                           \
@@ -1503,8 +1503,7 @@ SEXP attribute_hidden do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
     bgn = BodyHasBraces(body);
 
     /* bump up NAMED count of sequence to avoid modification by loop code */
-    if (NAMED(val) < 2)
-        SET_NAMED(val, NAMED(val) + 1);
+    INCREMENT_NAMED(val);
 
     PROTECT_WITH_INDEX(v = R_NilValue, &vpi);
 
@@ -1850,7 +1849,7 @@ static void tmp_cleanup(void *data)
     {                                                                                                                  \
         SEXP __lhs__ = (lhs);                                                                                          \
         SEXP __v__ = CAR(__lhs__);                                                                                     \
-        if (NAMED(__v__) == 2)                                                                                         \
+        if (MAYBE_SHARED(__v__))                                                                                       \
         {                                                                                                              \
             __v__ = duplicate(__v__);                                                                                  \
             SET_NAMED(__v__, 1);                                                                                       \
@@ -1867,7 +1866,7 @@ static void tmp_cleanup(void *data)
     do                                                                                                                 \
     {                                                                                                                  \
         SEXP __rhs__ = (r);                                                                                            \
-        if (NAMED(__rhs__) && NAMED(__rhs__) != 2)                                                                     \
+        if (NAMED(__rhs__) && NAMED(__rhs__) <= 1)                                                                     \
             SET_NAMED(__rhs__, 2);                                                                                     \
     } while (0)
 
@@ -3478,7 +3477,7 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
         }                                                                                                              \
     } while (0)
 #else
-/* these reuse one of the two values on the top of the stack if itis
+/* these reuse one of the two values on the top of the stack if it is
    of the right type and has NAMED = 0. It is known that both of these
    will have length one and have no attributes. */
 #define DO_FAST_BINOP(op, a, b)                                                                                        \
@@ -3488,9 +3487,9 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
         SEXP sa = R_BCNodeStackTop[-2];                                                                                \
         SEXP sb = R_BCNodeStackTop[-1];                                                                                \
         SEXP ans;                                                                                                      \
-        if (NAMED(sa) == 0 && TYPEOF(sa) == REALSXP)                                                                   \
+        if (NO_REFERENCES(sa) && TYPEOF(sa) == REALSXP)                                                                \
             ans = sa;                                                                                                  \
-        else if (NAMED(sb) == 0 && TYPEOF(sb) == REALSXP)                                                              \
+        else if (NO_REFERENCES(sb) && TYPEOF(sb) == REALSXP)                                                           \
             ans = sb;                                                                                                  \
         else                                                                                                           \
             ans = allocVector(REALSXP, 1);                                                                             \
@@ -3510,9 +3509,9 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
             SEXP sa = R_BCNodeStackTop[-2];                                                                            \
             SEXP sb = R_BCNodeStackTop[-1];                                                                            \
             SEXP ans;                                                                                                  \
-            if (NAMED(sa) == 0 && TYPEOF(sa) == INTSXP)                                                                \
+            if (NO_REFERENCES(sa) && TYPEOF(sa) == INTSXP)                                                             \
                 ans = sa;                                                                                              \
-            else if (NAMED(sb) == 0 && TYPEOF(sb) == INTSXP)                                                           \
+            else if (NO_REFERENCES(sb) && TYPEOF(sb) == INTSXP)                                                        \
                 ans = sb;                                                                                              \
             else                                                                                                       \
                 ans = allocVector(INTSXP, 1);                                                                          \
@@ -4098,7 +4097,7 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
         int label = GETOP();                                                                                           \
         SEXP lhs = GETSTACK(-2);                                                                                       \
         SEXP rhs = GETSTACK(-1);                                                                                       \
-        if (NAMED(lhs) == 2)                                                                                           \
+        if (MAYBE_SHARED(lhs))                                                                                         \
         {                                                                                                              \
             lhs = duplicate(lhs);                                                                                      \
             SETSTACK(-2, lhs);                                                                                         \
@@ -4168,7 +4167,7 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
         {                                                                                                              \
             SEXP call = VECTOR_ELT(constants, callidx);                                                                \
             SEXP rhs = GETSTACK(-1);                                                                                   \
-            if (NAMED(lhs) == 2)                                                                                       \
+            if (MAYBE_SHARED(lhs))                                                                                     \
             {                                                                                                          \
                 lhs = duplicate(lhs);                                                                                  \
                 SETSTACK(-2, lhs);                                                                                     \
@@ -4425,7 +4424,7 @@ static R_INLINE void SETVECSUBSET_PTR(R_bcstack_t *sx, R_bcstack_t *srhs, R_bcst
     SEXP idx, args, value;
     SEXP vec = GETSTACK_PTR(sx);
 
-    if (NAMED(vec) == 2)
+    if (MAYBE_SHARED(vec))
     {
         vec = duplicate(vec);
         SETSTACK_PTR(sx, vec);
@@ -4472,7 +4471,7 @@ static R_INLINE void DO_SETMATSUBSET(SEXP rho)
     SEXP dim, idx, jdx, args, value;
     SEXP mat = GETSTACK(-4);
 
-    if (NAMED(mat) > 1)
+    if (MAYBE_SHARED(mat))
     {
         mat = duplicate(mat);
         SETSTACK(-4, mat);
@@ -4565,7 +4564,7 @@ static R_INLINE void checkForMissings(SEXP args, SEXP call)
     do                                                                                                                 \
     {                                                                                                                  \
         (var) = GETSTACK(pos);                                                                                         \
-        if (NAMED(var) == 2)                                                                                           \
+        if (MAYBE_SHARED(var))                                                                                         \
         {                                                                                                              \
             (var) = allocVector(TYPEOF(seq), 1);                                                                       \
             SETSTACK(pos, var);                                                                                        \
@@ -4731,8 +4730,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             BCNPUSH(value);
 
             /* bump up NAMED count of seq to avoid modification by loop code */
-            if (NAMED(seq) < 2)
-                SET_NAMED(seq, NAMED(seq) + 1);
+            INCREMENT_NAMED(seq);
 
             /* place initial loop variable value object on stack */
             switch (TYPEOF(seq))
@@ -4853,15 +4851,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 loc = GET_BINDING_CELL_CACHE(symbol, rho, vcache, sidx);
             }
             value = GETSTACK(-1);
-            switch (NAMED(value))
-            {
-            case 0:
-                SET_NAMED(value, 1);
-                break;
-            case 1:
-                SET_NAMED(value, 2);
-                break;
-            }
+            INCREMENT_NAMED(value);
             if (!SET_BINDING_VALUE(loc, value))
             {
                 SEXP symbol = VECTOR_ELT(constants, sidx);
@@ -5193,15 +5183,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             SEXP symbol = VECTOR_ELT(constants, sidx);
             SEXP cell = GET_BINDING_CELL_CACHE(symbol, rho, vcache, sidx);
             value = GETSTACK(-1); /* leave on stack for GC protection */
-            switch (NAMED(value))
-            {
-            case 0:
-                SET_NAMED(value, 1);
-                break;
-            case 1:
-                SET_NAMED(value, 2);
-                break;
-            }
+            INCREMENT_NAMED(value);
             if (!SET_BINDING_VALUE(cell, value))
                 defineVar(symbol, value, rho);
             R_BCNodeStackTop--; /* now pop LHS value off the stack */
@@ -5253,7 +5235,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             SEXP symbol = VECTOR_ELT(constants, GETOP());
             SEXP x = GETSTACK(-2);
             SEXP rhs = GETSTACK(-1);
-            if (NAMED(x) == 2)
+            if (MAYBE_SHARED(x))
             {
                 x = duplicate(x);
                 SETSTACK(-2, x);
@@ -5378,15 +5360,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         {
             SEXP symbol = VECTOR_ELT(constants, GETOP());
             value = BCNPOP();
-            switch (NAMED(value))
-            {
-            case 0:
-                SET_NAMED(value, 1);
-                break;
-            case 1:
-                SET_NAMED(value, 2);
-                break;
-            }
+            INCREMENT_NAMED(value);
             setVar(symbol, value, ENCLOS(rho));
             /* original right-hand side value is now on top of stack again */
 #ifdef OLD_RHS_NAMED
@@ -5406,7 +5380,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             SEXP call = VECTOR_ELT(constants, GETOP());
             SEXP vexpr = VECTOR_ELT(constants, GETOP());
             SEXP args, prom, last;
-            if (NAMED(lhs) == 2)
+            if (MAYBE_SHARED(lhs))
             {
                 lhs = duplicate(lhs);
                 SETSTACK(-5, lhs);
