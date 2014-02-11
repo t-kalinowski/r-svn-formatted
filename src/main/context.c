@@ -406,7 +406,7 @@ SEXP attribute_hidden R_syscall(int n, RCNTXT *cptr)
         {
             if (n == 0)
             {
-                PROTECT(result = duplicate(cptr->call));
+                PROTECT(result = shallow_duplicate(cptr->call));
                 if (cptr->srcref && !isNull(cptr->srcref))
                     setAttrib(result, R_SrcrefSymbol, duplicate(cptr->srcref));
                 UNPROTECT(1);
@@ -419,7 +419,7 @@ SEXP attribute_hidden R_syscall(int n, RCNTXT *cptr)
     }
     if (n == 0 && cptr->nextcontext == NULL)
     {
-        PROTECT(result = duplicate(cptr->call));
+        PROTECT(result = shallow_duplicate(cptr->call));
         if (cptr->srcref && !isNull(cptr->srcref))
             setAttrib(result, R_SrcrefSymbol, duplicate(cptr->srcref));
         UNPROTECT(1);
