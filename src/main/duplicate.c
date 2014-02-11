@@ -176,7 +176,7 @@ SEXP shallow_duplicate(SEXP s)
     return t;
 }
 
-static SEXP lazy_duplicate(SEXP s)
+SEXP lazy_duplicate(SEXP s)
 {
     switch (TYPEOF(s))
     {

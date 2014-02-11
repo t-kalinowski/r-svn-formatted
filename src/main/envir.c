@@ -2033,12 +2033,12 @@ SEXP attribute_hidden do_mget(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (gmode == (SEXPTYPE)(-1))
                 error(_("invalid '%s' argument"), "mode");
         }
-        SET_VECTOR_ELT(ans, i,
-                       duplicate(gfind(translateChar(STRING_ELT(x, i % nvals)), env, gmode,
-                                       VECTOR_ELT(ifnotfound, i % nifnfnd), ginherits, rho)));
+        SEXP ans_i = gfind(translateChar(STRING_ELT(x, i % nvals)), env, gmode, VECTOR_ELT(ifnotfound, i % nifnfnd),
+                           ginherits, rho);
+        SET_VECTOR_ELT(ans, i, lazy_duplicate(ans_i));
     }
 
-    setAttrib(ans, R_NamesSymbol, duplicate(x));
+    setAttrib(ans, R_NamesSymbol, lazy_duplicate(x));
     UNPROTECT(2);
     return (ans);
 }
@@ -2281,7 +2281,7 @@ SEXP attribute_hidden do_attach(SEXP call, SEXP op, SEXP args, SEXP env)
                     p = VECTOR_ELT(HASHTAB(loadenv), i);
                     while (p != R_NilValue)
                     {
-                        defineVar(TAG(p), duplicate(CAR(p)), s);
+                        defineVar(TAG(p), lazy_duplicate(CAR(p)), s);
                         p = CDR(p);
                     }
                 }
@@ -2290,7 +2290,7 @@ SEXP attribute_hidden do_attach(SEXP call, SEXP op, SEXP args, SEXP env)
             else
             {
                 for (p = FRAME(loadenv); p != R_NilValue; p = CDR(p))
-                    defineVar(TAG(p), duplicate(CAR(p)), s);
+                    defineVar(TAG(p), lazy_duplicate(CAR(p)), s);
             }
         }
         else
@@ -2504,7 +2504,7 @@ static void FrameValues(SEXP frame, int all, SEXP values, int *indx)
                 value = eval(value, R_GlobalEnv);
                 UNPROTECT(1);
             }
-            SET_VECTOR_ELT(values, *indx, duplicate(value));
+            SET_VECTOR_ELT(values, *indx, lazy_duplicate(value));
             (*indx)++;
         }
         frame = CDR(frame);
@@ -2602,7 +2602,7 @@ static void BuiltinValues(int all, int intern, SEXP values, int *indx)
                         vl = eval(vl, R_BaseEnv);
                         UNPROTECT(1);
                     }
-                    SET_VECTOR_ELT(values, (*indx)++, duplicate(vl));
+                    SET_VECTOR_ELT(values, (*indx)++, lazy_duplicate(vl));
                 }
             }
             else
@@ -2616,7 +2616,7 @@ static void BuiltinValues(int all, int intern, SEXP values, int *indx)
                         vl = eval(vl, R_BaseEnv);
                         UNPROTECT(1);
                     }
-                    SET_VECTOR_ELT(values, (*indx)++, duplicate(vl));
+                    SET_VECTOR_ELT(values, (*indx)++, lazy_duplicate(vl));
                 }
             }
         }
@@ -2804,7 +2804,7 @@ SEXP attribute_hidden do_eapply(SEXP call, SEXP op, SEXP args, SEXP rho)
         INTEGER(ind)[0] = i + 1;
         SEXP tmp = eval(R_fcall, rho);
         if (NAMED(tmp))
-            tmp = duplicate(tmp);
+            tmp = lazy_duplicate(tmp);
         SET_VECTOR_ELT(ans, i, tmp);
     }
 

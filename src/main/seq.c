@@ -255,7 +255,7 @@ static SEXP rep2(SEXP s, SEXP ncopy)
         for (i = 0; i < nc; i++)
         {
             //	    if ((i+1) % ni == 0) R_CheckUserInterrupt();
-            SEXP elt = duplicate(VECTOR_ELT(s, i));
+            SEXP elt = lazy_duplicate(VECTOR_ELT(s, i));
             for (j = 0; j < INTEGER(t)[i]; j++)
                 SET_VECTOR_ELT(a, n++, elt);
             if (j > 1)
@@ -349,7 +349,7 @@ static SEXP rep3(SEXP s, R_xlen_t ns, R_xlen_t na)
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             if (j >= ns)
                 j = 0;
-            SET_VECTOR_ELT(a, i++, duplicate(VECTOR_ELT(s, j++)));
+            SET_VECTOR_ELT(a, i++, lazy_duplicate(VECTOR_ELT(s, j++)));
         }
         break;
     default:

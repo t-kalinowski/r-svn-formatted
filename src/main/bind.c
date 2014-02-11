@@ -224,7 +224,18 @@ static void ListAnswer(SEXP x, int recurse, struct BindData *data, SEXP call)
         else
         {
             for (i = 0; i < XLENGTH(x); i++)
+#ifdef LAZY_DUPLICATE_OK
+                /* Using lazy_duplicate here is should be OK but it
+                   causes failures in several packages, including
+                   Matrix and lme4. Presumably these packages are
+                   assuming that certain operations produce duplicates
+                   that can safely be modified in C code, but this is
+                   no longer true if lazy_duplicate is used. But I
+                   have not verified this carefully. LT */
+                LIST_ASSIGN(lazy_duplicate(VECTOR_ELT(x, i)));
+#else
                 LIST_ASSIGN(duplicate(VECTOR_ELT(x, i)));
+#endif
         }
         break;
     case LISTSXP:
@@ -239,12 +250,12 @@ static void ListAnswer(SEXP x, int recurse, struct BindData *data, SEXP call)
         else
             while (x != R_NilValue)
             {
-                LIST_ASSIGN(duplicate(CAR(x)));
+                LIST_ASSIGN(lazy_duplicate(CAR(x)));
                 x = CDR(x);
             }
         break;
     default:
-        LIST_ASSIGN(duplicate(x));
+        LIST_ASSIGN(lazy_duplicate(x));
         break;
     }
 }
@@ -1392,13 +1403,13 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode, SEXP rho, int deparse_lev
                     {
                         idx = (!umatrix) ? rows : k;
                         for (i = 0; i < idx; i++)
-                            SET_VECTOR_ELT(result, n++, duplicate(VECTOR_ELT(u, i % k)));
+                            SET_VECTOR_ELT(result, n++, lazy_duplicate(VECTOR_ELT(u, i % k)));
                     }
                     UNPROTECT(1);
                     break;
                 default:
                     for (i = 0; i < rows; i++)
-                        SET_VECTOR_ELT(result, n++, duplicate(u));
+                        SET_VECTOR_ELT(result, n++, lazy_duplicate(u));
                 }
             }
         }
@@ -1495,7 +1506,7 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode, SEXP rho, int deparse_lev
                 v = getAttrib(u, R_DimNamesSymbol);
 
                 if (have_rnames && GetRowNames(dn) == R_NilValue && GetRowNames(v) != R_NilValue)
-                    SetRowNames(dn, duplicate(GetRowNames(v)));
+                    SetRowNames(dn, lazy_duplicate(GetRowNames(v)));
 
                 /* rbind() does this only  if(have_?names) .. : */
                 /* but if tnam is non-null, have_cnames = TRUE: see above */
@@ -1516,7 +1527,7 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode, SEXP rho, int deparse_lev
                 u = getAttrib(u, R_NamesSymbol);
 
                 if (have_rnames && GetRowNames(dn) == R_NilValue && u != R_NilValue && length(u) == rows)
-                    SetRowNames(dn, duplicate(u));
+                    SetRowNames(dn, lazy_duplicate(u));
 
                 if (TAG(t) != R_NilValue)
                     SET_STRING_ELT(nam, j++, PRINTNAME(TAG(t)));
@@ -1660,7 +1671,7 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode, SEXP rho, int deparse_lev
                 idx = umatrix ? urows : (k > 0);
                 for (i = 0; i < idx; i++)
                     for (j = 0; j < cols; j++)
-                        SET_VECTOR_ELT(result, i + n + (j * rows), duplicate(VECTOR_ELT(u, (i + j * idx) % k)));
+                        SET_VECTOR_ELT(result, i + n + (j * rows), lazy_duplicate(VECTOR_ELT(u, (i + j * idx) % k)));
                 n += idx;
                 UNPROTECT(1);
             }
@@ -1771,7 +1782,7 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode, SEXP rho, int deparse_lev
                 v = getAttrib(u, R_DimNamesSymbol);
 
                 if (have_cnames && GetColNames(dn) == R_NilValue && GetColNames(v) != R_NilValue)
-                    SetColNames(dn, duplicate(GetColNames(v)));
+                    SetColNames(dn, lazy_duplicate(GetColNames(v)));
 
                 /* cbind() doesn't test have_?names BEFORE tnam!=Nil..:*/
                 /* but if tnam is non-null, have_rnames = TRUE: see above */
@@ -1795,7 +1806,7 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode, SEXP rho, int deparse_lev
                 u = getAttrib(u, R_NamesSymbol);
 
                 if (have_cnames && GetColNames(dn) == R_NilValue && u != R_NilValue && length(u) == cols)
-                    SetColNames(dn, duplicate(u));
+                    SetColNames(dn, lazy_duplicate(u));
 
                 if (TAG(t) != R_NilValue)
                     SET_STRING_ELT(nam, j++, PRINTNAME(TAG(t)));
