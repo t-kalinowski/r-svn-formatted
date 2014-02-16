@@ -145,9 +145,9 @@ void R_CheckUserInterrupt(void)
         onintr();
 #endif
 
-#ifndef IMMEDIATE_FILANIZERS
+#ifndef IMMEDIATE_FINALIZERS
     /* finalizers are run here since this should only be called at
-       points where running random code should be sate */
+       points where running arbitrary code should be safe */
     R_RunPendingFinalizers();
 #endif
 }
