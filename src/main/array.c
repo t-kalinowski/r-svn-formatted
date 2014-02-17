@@ -451,7 +451,7 @@ SEXP attribute_hidden do_drop(SEXP call, SEXP op, SEXP args, SEXP rho)
                 shorten = 1;
         if (shorten)
         {
-            if (NAMED(x))
+            if (MAYBE_REFERENCED(x))
                 x = duplicate(x);
             x = DropDims(x);
         }

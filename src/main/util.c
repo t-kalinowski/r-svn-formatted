@@ -1159,7 +1159,7 @@ SEXP attribute_hidden do_setencoding(SEXP call, SEXP op, SEXP args, SEXP rho)
     m = LENGTH(enc);
     if (m == 0)
         error(_("'value' must be of positive length"));
-    if (NAMED(x))
+    if (MAYBE_REFERENCED(x))
         x = duplicate(x);
     PROTECT(x);
     n = XLENGTH(x);

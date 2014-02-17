@@ -1148,14 +1148,14 @@ static SEXP coerceVectorList(SEXP v, SEXPTYPE type)
     if (type == VECSXP && TYPEOF(v) == EXPRSXP)
     {
         /* This is sneaky but saves us rewriting a lot of the duplicate code */
-        rval = NAMED(v) ? duplicate(v) : v;
+        rval = MAYBE_REFERENCED(v) ? duplicate(v) : v;
         SET_TYPEOF(rval, VECSXP);
         return rval;
     }
 
     if (type == EXPRSXP && TYPEOF(v) == VECSXP)
     {
-        rval = NAMED(v) ? duplicate(v) : v;
+        rval = MAYBE_REFERENCED(v) ? duplicate(v) : v;
         SET_TYPEOF(rval, EXPRSXP);
         return rval;
     }
@@ -1426,7 +1426,7 @@ static SEXP asFunction(SEXP x)
         return x;
     PROTECT(f = allocSExp(CLOSXP));
     SET_CLOENV(f, R_GlobalEnv);
-    if (NAMED(x))
+    if (MAYBE_REFERENCED(x))
         PROTECT(x = duplicate(x));
     else
         PROTECT(x);
@@ -1483,7 +1483,7 @@ static SEXP ascommon(SEXP call, SEXP u, SEXPTYPE type)
         */
         if (type != ANYSXP && TYPEOF(u) != type)
             v = coerceVector(u, type);
-        else if (NAMED(u))
+        else if (MAYBE_REFERENCED(u))
             v = duplicate(u);
 
         /* drop attributes() and class() in some cases for as.pairlist:
@@ -1579,7 +1579,7 @@ SEXP attribute_hidden do_ascharacter(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         if (ATTRIB(x) == R_NilValue)
             return x;
-        ans = NAMED(x) ? duplicate(x) : x;
+        ans = MAYBE_REFERENCED(x) ? duplicate(x) : x;
         CLEAR_ATTRIB(ans);
         return ans;
     }
@@ -1624,7 +1624,7 @@ SEXP attribute_hidden do_asvector(SEXP call, SEXP op, SEXP args, SEXP rho)
         case RAWSXP:
             if (ATTRIB(x) == R_NilValue)
                 return x;
-            ans = NAMED(x) ? duplicate(x) : x;
+            ans = MAYBE_REFERENCED(x) ? duplicate(x) : x;
             CLEAR_ATTRIB(ans);
             return ans;
         case EXPRSXP:
@@ -2594,7 +2594,7 @@ SEXP attribute_hidden do_call(SEXP call, SEXP op, SEXP args, SEXP rho)
     for (rest = evargs; rest != R_NilValue; rest = CDR(rest))
     {
         PROTECT(tmp = eval(CAR(rest), rho));
-        if (NAMED(tmp))
+        if (MAYBE_REFERENCED(tmp))
             tmp = duplicate(tmp);
         SETCAR(rest, tmp);
         UNPROTECT(1);

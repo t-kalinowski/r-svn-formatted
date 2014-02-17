@@ -765,7 +765,7 @@ SEXP attribute_hidden do_expression(SEXP call, SEXP op, SEXP args, SEXP rho)
     a = args;
     for (i = 0; i < n; i++)
     {
-        if (NAMED(CAR(a)))
+        if (MAYBE_REFERENCED(CAR(a)))
             SET_VECTOR_ELT(ans, i, duplicate(CAR(a)));
         else
             SET_VECTOR_ELT(ans, i, CAR(a));

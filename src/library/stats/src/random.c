@@ -392,7 +392,7 @@ SEXP Rmultinom(SEXP args)
     prob = CAR(args);
     prob = coerceVector(prob, REALSXP);
     k = length(prob); /* k = #{components or classes} = X-vector length */
-    if (NAMED(prob))
+    if (MAYBE_REFERENCED(prob))
         prob = duplicate(prob); /*as `do_sample' -- need this line? */
     PROTECT(prob);
     /* check and make sum = 1: */

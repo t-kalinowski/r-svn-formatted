@@ -59,7 +59,7 @@ SEXP fft(SEXP z, SEXP inverse)
         z = coerceVector(z, CPLXSXP);
         break;
     case CPLXSXP:
-        if (NAMED(z))
+        if (MAYBE_REFERENCED(z))
             z = duplicate(z);
         break;
     default:
@@ -161,7 +161,7 @@ SEXP mvfft(SEXP z, SEXP inverse)
         z = coerceVector(z, CPLXSXP);
         break;
     case CPLXSXP:
-        if (NAMED(z))
+        if (MAYBE_REFERENCED(z))
             z = duplicate(z);
         break;
     default:
