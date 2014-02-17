@@ -112,7 +112,7 @@ SEXP attribute_hidden complex_unary(ARITHOP_TYPE code, SEXP s1, SEXP call)
     case PLUSOP:
         return s1;
     case MINUSOP:
-        ans = NAMED(s1) == 0 ? s1 : duplicate(s1);
+        ans = NO_REFERENCES(s1) ? s1 : duplicate(s1);
         n = XLENGTH(s1);
         for (i = 0; i < n; i++)
         {
@@ -341,7 +341,7 @@ SEXP attribute_hidden do_cmathfuns(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
             break;
         case 5: /* Conj */
-            y = NAMED(x) == 0 ? x : allocVector(CPLXSXP, n);
+            y = NO_REFERENCES(x) ? x : allocVector(CPLXSXP, n);
             for (i = 0; i < n; i++)
             {
                 COMPLEX(y)[i].r = COMPLEX(x)[i].r;
@@ -357,7 +357,7 @@ SEXP attribute_hidden do_cmathfuns(SEXP call, SEXP op, SEXP args, SEXP env)
             PROTECT(x);
         else
             PROTECT(x = coerceVector(x, REALSXP));
-        y = NAMED(x) == 0 ? x : allocVector(REALSXP, n);
+        y = NO_REFERENCES(x) ? x : allocVector(REALSXP, n);
 
         switch (PRIMVAL(op))
         {
