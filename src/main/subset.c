@@ -654,7 +654,7 @@ static R_INLINE int R_DispatchOrEvalSP(SEXP call, SEXP op, const char *generic, 
         PROTECT(x);
         if (!OBJECT(x))
         {
-            *ans = CONS(x, evalListKeepMissing(CDR(args), rho));
+            *ans = CONS_NR(x, evalListKeepMissing(CDR(args), rho));
             UNPROTECT(1);
             return FALSE;
         }
@@ -665,6 +665,8 @@ static R_INLINE int R_DispatchOrEvalSP(SEXP call, SEXP op, const char *generic, 
     }
     PROTECT(args);
     int disp = DispatchOrEval(call, op, generic, args, rho, ans, 0, 0);
+    if (prom)
+        DECREMENT_REFCNT(PRVALUE(prom));
     UNPROTECT(1);
     return disp;
 }

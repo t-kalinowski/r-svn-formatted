@@ -159,11 +159,20 @@ static void inspect_tree(int pre, SEXP v, int deep, int pvec)
         Rprintf("MARK");
         a = 1;
     }
+#ifndef SWITCH_TO_REFCNT
     if (NAMED(v))
     {
         if (a)
             Rprintf(",");
         Rprintf("NAM(%d)", NAMED(v));
+        a = 1;
+    }
+#endif
+    if (REFCNT(v))
+    {
+        if (a)
+            Rprintf(",");
+        Rprintf("REF(%d)", REFCNT(v));
         a = 1;
     }
     if (RDEBUG(v))
