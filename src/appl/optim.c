@@ -288,7 +288,9 @@ void vmmin(int n0, double *b, double *Fmin, optimfn fminfn, optimgr fmingr, int 
 
 #define big 1.0e+35 /*a very large number*/
 
-/* Nelder-Mead */
+/* Nelder-Mead, based on Pascal code
+   in J.C. Nash, `Compact Numerical Methods for Computers', 2nd edition,
+   converted by p2c then re-crafted by B.D. Ripley */
 void nmmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, int *fail, double abstol, double intol,
            void *ex, double alpha, double bet, double gamm, int trace, int *fncount, int maxit)
 {
@@ -531,6 +533,9 @@ void nmmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, int *fa
     *fncount = funcount;
 }
 
+/* Conjugate gradients, based on Pascal code
+   in J.C. Nash, `Compact Numerical Methods for Computers', 2nd edition,
+   converted by p2c then re-crafted by B.D. Ripley */
 void cgmin(int n, double *Bvec, double *X, double *Fmin, optimfn fminfn, optimgr fmingr, int *fail, double abstol,
            double intol, void *ex, int type, int trace, int *fncount, int *grcount, int maxit)
 {
