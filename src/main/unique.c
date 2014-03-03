@@ -598,14 +598,15 @@ static SEXP Duplicated(SEXP x, Rboolean from_last, int nmax)
 }
 
 /* simpler version of the above : return 1-based index of first, or 0 : */
-int any_duplicated(SEXP x, Rboolean from_last)
+R_xlen_t any_duplicated(SEXP x, Rboolean from_last)
 {
     int result = 0;
     int nmax = NA_INTEGER;
 
     if (!isVector(x))
         error(_("'duplicated' applies only to vectors"));
-    int i, n = LENGTH(x);
+    R_xlen_t i, n = XLENGTH(x);
+
     DUPLICATED_INIT;
     PROTECT(data.HashTable);
 
@@ -644,7 +645,7 @@ static SEXP duplicated3(SEXP x, SEXP incomp, Rboolean from_last, int nmax)
 
     if (!isVector(x))
         error(_("'duplicated' applies only to vectors"));
-    int i, n = LENGTH(x);
+    R_xlen_t i, n = XLENGTH(x);
     DUPLICATED_INIT;
 
     PROTECT(data.HashTable);
@@ -686,13 +687,13 @@ static SEXP duplicated3(SEXP x, SEXP incomp, Rboolean from_last, int nmax)
 }
 
 /* return (1-based) index of first duplication, or 0 : */
-int any_duplicated3(SEXP x, SEXP incomp, Rboolean from_last)
+R_xlen_t any_duplicated3(SEXP x, SEXP incomp, Rboolean from_last)
 {
     int j, m = length(incomp), nmax = NA_INTEGER;
 
     if (!isVector(x))
         error(_("'duplicated' applies only to vectors"));
-    int i, n = LENGTH(x);
+    R_xlen_t i, n = XLENGTH(x);
     DUPLICATED_INIT;
     PROTECT(data.HashTable);
 
@@ -853,9 +854,8 @@ SEXP attribute_hidden do_duplicated(SEXP call, SEXP op, SEXP args, SEXP env)
 /* Build a hash table, ignoring information on duplication */
 static void DoHashing(SEXP table, HashData *d)
 {
-    int n = LENGTH(table);
-
-    for (int i = 0; i < n; i++)
+    R_xlen_t i, n = XLENGTH(table);
+    for (i = 0; i < n; i++)
     {
         //	if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
         (void)isDuplicated(table, i, d);
@@ -865,7 +865,7 @@ static void DoHashing(SEXP table, HashData *d)
 /* invalidate entries: normally few */
 static void UndoHashing(SEXP x, SEXP table, HashData *d)
 {
-    for (int i = 0; i < LENGTH(x); i++)
+    for (R_xlen_t i = 0; i < XLENGTH(x); i++)
         removeEntry(table, x, i, d);
 }
 
@@ -886,9 +886,9 @@ static int Lookup(SEXP table, SEXP x, R_xlen_t indx, HashData *d)
 static SEXP HashLookup(SEXP table, SEXP x, HashData *d)
 {
     SEXP ans;
-    int i, n;
+    R_xlen_t i, n;
 
-    n = LENGTH(x);
+    n = XLENGTH(x);
     PROTECT(ans = allocVector(INTSXP, n));
     for (i = 0; i < n; i++)
     {
