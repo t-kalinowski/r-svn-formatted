@@ -264,7 +264,7 @@ reg_errcode_t tre_tnfa_run_parallel(const tre_tnfa_t *tnfa, const void *string, 
     DPRINT(("-------------+------------------------------------------------\n"));
 
     reach_next_i = reach_next;
-    while (/*CONSTCOND*/ 1)
+    while (/*CONSTCOND*/ (void)1, 1)
     {
         /* If no match found yet, add the initial states to `reach_next'. */
         if (match_eo < 0)

@@ -6,6 +6,12 @@
 
 */
 
+/*
+  TODO:
+   - Fix tre_ast_to_tnfa() to recurse using a stack instead of recursive
+     function calls.
+*/
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif /* HAVE_CONFIG_H */
@@ -664,8 +670,8 @@ static reg_errcode_t tre_copy_ast(tre_mem_t mem, tre_stack_t *stack, tre_ast_nod
             case LITERAL: {
                 tre_literal_t *lit = node->obj;
                 int pos = lit->position;
-                int min = lit->code_min;
-                int max = lit->code_max;
+                int min = (int)lit->code_min;
+                int max = (int)lit->code_max;
                 if (!IS_SPECIAL(lit) || IS_BACKREF(lit))
                 {
                     /* XXX - e.g. [ab] has only one position but two
@@ -908,7 +914,7 @@ static reg_errcode_t tre_expand_ast(tre_mem_t mem, tre_stack_t *stack, tre_ast_n
                             seq2 = copy;
                         if (seq2 == NULL)
                             return REG_ESPACE;
-                        tmp = tre_ast_new_literal(mem, EMPTY, EMPTY, -1);
+                        tmp = tre_ast_new_literal(mem, EMPTY, -1, -1);
                         if (tmp == NULL)
                             return REG_ESPACE;
                         seq2 = tre_ast_new_union(mem, tmp, seq2);
@@ -1012,13 +1018,13 @@ static tre_pos_and_tags_t *tre_set_empty(tre_mem_t mem)
         return NULL;
 
     new_set[0].position = -1;
-    new_set[0].code_min = EMPTY;
-    new_set[0].code_max = EMPTY;
+    new_set[0].code_min = -1;
+    new_set[0].code_max = -1;
 
     return new_set;
 }
 
-static tre_pos_and_tags_t *tre_set_one(tre_mem_t mem, int position, int code_min, int code_max, tre_ctype_t classt,
+static tre_pos_and_tags_t *tre_set_one(tre_mem_t mem, int position, int code_min, int code_max, tre_ctype_t class,
                                        tre_ctype_t *neg_classes, int backref)
 {
     tre_pos_and_tags_t *new_set;
@@ -1030,12 +1036,12 @@ static tre_pos_and_tags_t *tre_set_one(tre_mem_t mem, int position, int code_min
     new_set[0].position = position;
     new_set[0].code_min = code_min;
     new_set[0].code_max = code_max;
-    new_set[0].classt = classt;
+    new_set[0].class = class;
     new_set[0].neg_classes = neg_classes;
     new_set[0].backref = backref;
     new_set[1].position = -1;
-    new_set[1].code_min = EMPTY;
-    new_set[1].code_max = EMPTY;
+    new_set[1].code_min = -1;
+    new_set[1].code_max = -1;
 
     return new_set;
 }
@@ -1064,7 +1070,7 @@ static tre_pos_and_tags_t *tre_set_union(tre_mem_t mem, tre_pos_and_tags_t *set1
         new_set[s1].code_min = set1[s1].code_min;
         new_set[s1].code_max = set1[s1].code_max;
         new_set[s1].assertions = set1[s1].assertions | assertions;
-        new_set[s1].classt = set1[s1].classt;
+        new_set[s1].class = set1[s1].class;
         new_set[s1].neg_classes = set1[s1].neg_classes;
         new_set[s1].backref = set1[s1].backref;
         if (set1[s1].tags == NULL && tags == NULL)
@@ -1108,7 +1114,7 @@ static tre_pos_and_tags_t *tre_set_union(tre_mem_t mem, tre_pos_and_tags_t *set1
         new_set[s1 + s2].code_max = set2[s2].code_max;
         /* XXX - why not | assertions here as well? */
         new_set[s1 + s2].assertions = set2[s2].assertions;
-        new_set[s1 + s2].classt = set2[s2].classt;
+        new_set[s1 + s2].class = set2[s2].class;
         new_set[s1 + s2].neg_classes = set2[s2].neg_classes;
         new_set[s1 + s2].backref = set2[s2].backref;
         if (set2[s2].tags == NULL)
@@ -1189,7 +1195,7 @@ static reg_errcode_t tre_match_empty(tre_stack_t *stack, tre_ast_node_t *node, i
                                 break;
                         if (tags[i] < 0)
                         {
-                            tags[i] = lit->code_max;
+                            tags[i] = (int)lit->code_max;
                             tags[i + 1] = -1;
                         }
                     }
@@ -1321,7 +1327,7 @@ static reg_errcode_t tre_compute_nfl(tre_mem_t mem, tre_stack_t *stack, tre_ast_
                     if (!node->firstpos)
                         return REG_ESPACE;
                     node->lastpos = tre_set_one(mem, lit->position, (int)lit->code_min, (int)lit->code_max,
-                                                lit->u.classt, lit->neg_classes, -1);
+                                                lit->u.class, lit->neg_classes, -1);
                     if (!node->lastpos)
                         return REG_ESPACE;
                 }
@@ -1542,11 +1548,11 @@ static reg_errcode_t tre_make_trans(tre_pos_and_tags_t *p1, tre_pos_and_tags_t *
                     (trans + 1)->state = NULL;
                 /* Use the character ranges, assertions, etc. from `p1' for
                    the transition from `p1' to `p2'. */
-                trans->code_min = p1->code_min;
-                trans->code_max = p1->code_max;
+                trans->code_min = (tre_cint_t)p1->code_min;
+                trans->code_max = (tre_cint_t)p1->code_max;
                 trans->state = transitions + offs[p2->position];
                 trans->state_id = p2->position;
-                trans->assertions = p1->assertions | p2->assertions | (p1->classt ? ASSERT_CHAR_CLASS : 0) |
+                trans->assertions = p1->assertions | p2->assertions | (p1->class ? ASSERT_CHAR_CLASS : 0) |
                                     (p1->neg_classes != NULL ? ASSERT_CHAR_CLASS_NEG : 0);
                 if (p1->backref >= 0)
                 {
@@ -1556,7 +1562,7 @@ static reg_errcode_t tre_make_trans(tre_pos_and_tags_t *p1, tre_pos_and_tags_t *
                     trans->assertions |= ASSERT_BACKREF;
                 }
                 else
-                    trans->u.classt = p1->classt;
+                    trans->u.class = p1->class;
                 if (p1->neg_classes != NULL)
                 {
                     for (i = 0; p1->neg_classes[i] != (tre_ctype_t)0; i++)
@@ -1667,8 +1673,8 @@ static reg_errcode_t tre_make_trans(tre_pos_and_tags_t *p1, tre_pos_and_tags_t *
                         DPRINT((", assert %d", trans->assertions));
                     if (trans->assertions & ASSERT_BACKREF)
                         DPRINT((", backref %d", trans->u.backref));
-                    else if (trans->u.classt)
-                        DPRINT((", class %ld", (long)trans->u.classt));
+                    else if (trans->u.class)
+                        DPRINT((", class %ld", (long)trans->u.class));
                     if (trans->neg_classes)
                         DPRINT((", neg_classes %p", trans->neg_classes));
                     if (trans->params)
@@ -1782,9 +1788,9 @@ static reg_errcode_t tre_ast_to_tnfa(tre_ast_node_t *node, tre_tnfa_transition_t
     do                                                                                                                 \
     {                                                                                                                  \
         errcode = err;                                                                                                 \
-        if (/*CONSTCOND*/ 1)                                                                                           \
+        if (/*CONSTCOND*/ (void)1, 1)                                                                                  \
             goto error_exit;                                                                                           \
-    } while (/*CONSTCOND*/ 0)
+    } while (/*CONSTCOND*/ (void)0, 0)
 
 int tre_compile(regex_t *preg, const tre_char_t *regex, size_t n, int cflags)
 {
@@ -1960,7 +1966,7 @@ int tre_compile(regex_t *preg, const tre_char_t *regex, size_t n, int cflags)
     if (TRE_MB_CUR_MAX == 1 && !tmp_ast_l->nullable)
     {
         int count = 0;
-        int k; /* [i_a] */
+        tre_cint_t k;
         DPRINT(("Characters that can start a match:"));
         tnfa->firstpos_chars = xcalloc(256, sizeof(char));
         if (tnfa->firstpos_chars == NULL)
@@ -2212,14 +2218,6 @@ int tre_config(int query, void *result)
     case TRE_CONFIG_VERSION:
         *string_result = TRE_VERSION;
         return REG_OK;
-
-    case TRE_MB_CUR_MAX_VALUE: /* [i_a] */
-#if defined(TRE_MB_CUR_MAX)
-        *int_result = TRE_MB_CUR_MAX;
-#else
-        *int_result = 1;
-#endif
-        break;
     }
 
     return REG_NOMATCH;

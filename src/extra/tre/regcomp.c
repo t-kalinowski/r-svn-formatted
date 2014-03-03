@@ -127,7 +127,6 @@ int tre_regcomp(regex_t *preg, const char *regex, int cflags)
     return tre_regncomp(preg, regex, regex ? strlen(regex) : 0, cflags);
 }
 
-/* R addition */
 int tre_regcompb(regex_t *preg, const char *regex, int cflags)
 {
     int ret;

@@ -119,7 +119,7 @@ typedef struct tre_backtrack_struct
 #define tre_bt_mem_destroy(obj)                                                                                        \
     do                                                                                                                 \
     {                                                                                                                  \
-    } while (0)
+    } while (0, 0)
 #else /* !TRE_USE_ALLOCA */
 #define tre_bt_mem_new tre_mem_new
 #define tre_bt_mem_alloc tre_mem_alloc
@@ -173,7 +173,7 @@ typedef struct tre_backtrack_struct
         for (i = 0; i < tnfa->num_tags; i++)                                                                           \
             stack->item.tags[i] = (_tags)[i];                                                                          \
         BT_STACK_MBSTATE_IN;                                                                                           \
-    } while (/*CONSTCOND*/ 0)
+    } while (/*CONSTCOND*/ (void)0, 0)
 
 #define BT_STACK_POP()                                                                                                 \
     do                                                                                                                 \
@@ -191,7 +191,7 @@ typedef struct tre_backtrack_struct
             tags[i] = stack->item.tags[i];                                                                             \
         BT_STACK_MBSTATE_OUT;                                                                                          \
         stack = stack->prev;                                                                                           \
-    } while (/*CONSTCOND*/ 0)
+    } while (/*CONSTCOND*/ (void)0, 0)
 
 #undef MIN
 #define MIN(a, b) ((a) <= (b) ? (a) : (b))
@@ -366,7 +366,7 @@ retry : {
     if (state == NULL)
         goto backtrack;
 
-    while (/*CONSTCOND*/ 1)
+    while (/*CONSTCOND*/ (void)1, 1)
     {
         tre_tnfa_transition_t *next_state;
         int empty_br_match;
