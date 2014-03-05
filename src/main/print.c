@@ -76,7 +76,8 @@ static void PrintSpecial(SEXP);
 static void PrintLanguageEtc(SEXP, Rboolean, Rboolean);
 
 #define TAGBUFLEN 256
-static char tagbuf[TAGBUFLEN + 5];
+#define TAGBUFLEN0 TAGBUFLEN + 6
+static char tagbuf[TAGBUFLEN0];
 
 /* Used in X11 module for dataentry */
 /* NB this is called by R.app even though it is in no public header, so
@@ -338,7 +339,7 @@ static void PrintGenericVector(SEXP s, SEXP env)
 {
     int i, taglen, ns, w, d, e, wr, dr, er, wi, di, ei;
     SEXP dims, t, names, newcall, tmp;
-    char pbuf[115], *ptag, save[TAGBUFLEN + 5];
+    char pbuf[115], *ptag, save[TAGBUFLEN0];
 
     ns = length(s);
     if ((dims = getAttrib(s, R_DimSymbol)) != R_NilValue && length(dims) > 1)
@@ -907,7 +908,7 @@ static void printAttributes(SEXP s, SEXP env, Rboolean useSlots)
 {
     SEXP a;
     char *ptag;
-    char save[TAGBUFLEN + 5] = "\0";
+    char save[TAGBUFLEN0] = "\0";
 
     a = ATTRIB(s);
     if (a != R_NilValue)
