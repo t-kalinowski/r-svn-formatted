@@ -793,6 +793,8 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef USE_INTERNAL_MKTIME
     else
         R_tzsetwall(); // to get the system timezone recorded
+#else
+    tzset();
 #endif
 
     // localtime may change tzname.
@@ -909,6 +911,8 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef USE_INTERNAL_MKTIME
     else
         R_tzsetwall(); // to get the system timezone recorded
+#else
+    tzset();
 #endif
 
     for (int i = 0; i < 6; i++)
@@ -1213,6 +1217,8 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef USE_INTERNAL_MKTIME
     else
         R_tzsetwall(); // to get the system timezone recorded
+#else
+    tzset();
 #endif
 
     // in case this gets changed by conversions.
