@@ -1049,8 +1049,10 @@ static size_t fifo_write(const void *ptr, size_t size, size_t nitems, Rconnectio
 #include <Windows.h>
 #include <wchar.h>
 
-// Microsoft addition
-errno_t strcat_s(char *strDestination, size_t numberOfElements, const char *strSource);
+/* Microsoft addition, not supported in Win XP
+errno_t strcat_s(char *strDestination, size_t numberOfElements,
+         const char *strSource);
+*/
 
 typedef struct fifoconn
 {
@@ -1099,7 +1101,8 @@ static Rboolean fifo_open(Rconnection con)
             if (!hch_pipename)
                 error(_("allocation of fifo name failed"));
             ZeroMemory(hch_pipename, uin_pipname_len);
-            strcpy_s(hch_pipename, uin_pipname_len, "\\\\.\\pipe\\");
+            /*	    strcpy_s(hch_pipename, uin_pipname_len, "\\\\.\\pipe\\");  Win XP doesn't support this */
+            strcpy(hch_pipename, "\\\\.\\pipe\\");
         }
         else
         {
@@ -1109,7 +1112,8 @@ static Rboolean fifo_open(Rconnection con)
             ZeroMemory(hch_pipename, uin_pipname_len);
         }
         hch_tempname = R_ExpandFileName(con->description);
-        strcat_s(hch_pipename, uin_pipname_len, hch_tempname);
+        /*	strcat_s(hch_pipename, uin_pipname_len, hch_tempname);  Win XP doesn't support this */
+        strcat(hch_pipename, hch_tempname);
     }
 
     /* Prepare FIFO open mode */
