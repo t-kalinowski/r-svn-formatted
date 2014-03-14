@@ -1024,9 +1024,6 @@ void attribute_hidden Rstd_Busy(int which)
    If ask = SA_SUICIDE, no save, no .Last, possibly other things.
  */
 
-/* in platform.c */
-void R_CleanTempDir2(void);
-
 void R_CleanTempDir(void)
 {
     char buf[1024];
@@ -1037,15 +1034,9 @@ void R_CleanTempDir(void)
         /* On Solaris the working directory must be outside this one */
         chdir(R_HomeDir());
 #endif
-        char *p = getenv("R_OSX_VALGRIND");
-        if (!p)
-        {
-            snprintf(buf, 1024, "rm -rf %s", Sys_TempDir);
-            buf[1023] = '\0';
-            R_system(buf);
-        }
-        else
-            R_CleanTempDir2();
+        snprintf(buf, 1024, "rm -rf %s", Sys_TempDir);
+        buf[1023] = '\0';
+        R_system(buf);
     }
 }
 
