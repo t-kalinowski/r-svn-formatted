@@ -3617,6 +3617,10 @@ Rboolean PSDeviceDriver(pDevDesc dd, const char *file, const char *paper, const 
     dd->right = 72 * (xoff + pd->width); /* right */
     dd->bottom = 72 * yoff;              /* bottom */
     dd->top = 72 * (yoff + pd->height);  /* top */
+    dd->clipLeft = dd->left;
+    dd->clipRight = dd->right;
+    dd->clipBottom = dd->bottom;
+    dd->clipTop = dd->top;
 
     dd->cra[0] = 0.9 * pointsize;
     dd->cra[1] = 1.2 * pointsize;
@@ -5092,6 +5096,10 @@ static Rboolean XFigDeviceDriver(pDevDesc dd, const char *file, const char *pape
     dd->right = 72 * (xoff + pd->width); /* right */
     dd->bottom = 72 * yoff;              /* bottom */
     dd->top = 72 * (yoff + pd->height);  /* top */
+    dd->clipLeft = dd->left;
+    dd->clipRight = dd->right;
+    dd->clipBottom = dd->bottom;
+    dd->clipTop = dd->top;
 
     dd->cra[0] = 0.9 * pointsize;
     dd->cra[1] = 1.2 * pointsize;
@@ -6432,6 +6440,10 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
     dd->right = 72 * (xoff + pd->width); /* right */
     dd->bottom = 72 * yoff;              /* bottom */
     dd->top = 72 * (yoff + pd->height);  /* top */
+    dd->clipLeft = dd->left;
+    dd->clipRight = dd->right;
+    dd->clipBottom = dd->bottom;
+    dd->clipTop = dd->top;
 
     dd->cra[0] = 0.9 * pointsize;
     dd->cra[1] = 1.2 * pointsize;

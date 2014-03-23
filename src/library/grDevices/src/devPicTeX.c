@@ -579,6 +579,10 @@ static Rboolean PicTeXDeviceDriver(pDevDesc dd, const char *filename, const char
     dd->right = in2dots(width); /* right */
     dd->bottom = 0;             /* bottom */
     dd->top = in2dots(height);  /* top */
+    dd->clipLeft = dd->left;
+    dd->clipRight = dd->right;
+    dd->clipBottom = dd->bottom;
+    dd->clipTop = dd->top;
     ptd->width = width;
     ptd->height = height;
 
