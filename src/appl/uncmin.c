@@ -2332,7 +2332,7 @@ static void optdrv(int nr, int n, double *x, fcn_p fcn, fcn_p d1fcn, d2fcn_p d2f
      *			      noise=10.**(-ndigit)
      */
     Rboolean mxtake = FALSE, noupdt;
-    int i, iretcd, icscmx;
+    int i, iretcd = 0, icscmx = 0;
     double dltp = 0., epsm, phip0 = 0., f, analtl;
     double dlpsav = 0., phisav = 0., dltsav = 0.; /* -Wall */
     double amusav = 0., phpsav = 0.;              /* -Wall */
