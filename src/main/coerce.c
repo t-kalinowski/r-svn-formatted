@@ -2347,7 +2347,8 @@ static Rboolean anyNA(SEXP call, SEXP op, SEXP args, SEXP env)
         call2 = PROTECT(duplicate(call));
         for (i = 0; i < n; i++, x = CDR(x))
         {
-            CAR(args2) = CADR(call2) = CAR(x);
+            SETCAR(args2, CAR(x));
+            SETCADR(call2, CAR(x));
             if ((DispatchOrEval(call2, op, "anyNA", args2, env, &ans, 0, 1) && asLogical(ans)) ||
                 anyNA(call2, op, args2, env))
             {
@@ -2364,7 +2365,8 @@ static Rboolean anyNA(SEXP call, SEXP op, SEXP args, SEXP env)
         call2 = PROTECT(duplicate(call));
         for (i = 0; i < n; i++)
         {
-            CAR(args2) = CADR(call2) = VECTOR_ELT(x, i);
+            SETCAR(args2, VECTOR_ELT(x, i));
+            SETCADR(call2, VECTOR_ELT(x, i));
             if ((DispatchOrEval(call2, op, "anyNA", args2, env, &ans, 0, 1) && asLogical(ans)) ||
                 anyNA(call2, op, args2, env))
             {
