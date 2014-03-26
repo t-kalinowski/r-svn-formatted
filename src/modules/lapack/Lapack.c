@@ -816,11 +816,12 @@ static SEXP La_svd_cmplx(SEXP jobu, SEXP x, SEXP s, SEXP u, SEXP v)
     {
         size_t f1 = 5 * mn1 + 7, f2 = 2 * mn1 + 2 * mn0 + 1;
         lrwork = (f1 > f2 ? f1 : f2) * mn0;
+        // 7 replaces 5: bug 111 in http://www.netlib.org/lapack/Errata/index2.html
     }
     else
-        lrwork = 5 * mn0;
+        lrwork = 7 * mn0;
     double *rwork = (double *)R_alloc(lrwork, sizeof(double));
-    /* ask for optimal size of work array */
+    /* ask for optimal size of lwork array */
     int lwork = -1, info;
     Rcomplex tmp;
     int ldu, ldv;
