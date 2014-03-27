@@ -961,7 +961,9 @@ static SEXP Rf_MakeRegisteredNativeSymbol(R_RegisteredNativeSymbol *symbol)
     copy = (R_RegisteredNativeSymbol *)malloc(1 * sizeof(R_RegisteredNativeSymbol));
     if (!copy)
     {
-        error(_("cannot allocate memory for registered native symbol (%d bytes)"),
+        error(ngettext("cannot allocate memory for registered native symbol (%d byte)",
+                       "cannot allocate memory for registered native symbol (%d bytes)",
+                       (int)sizeof(R_RegisteredNativeSymbol)),
               (int)sizeof(R_RegisteredNativeSymbol));
     }
     *copy = *symbol;
