@@ -682,8 +682,8 @@ static void NORET verrorcall_dflt(SEXP call, const char *format, va_list ap)
     {
         char tmp[BUFSIZE], tmp2[BUFSIZE];
         char *head = _("Error in "), *tail = "\n  ";
-        SEXP srcloc;
-        size_t len = 0; // this needs to be set!
+        SEXP srcloc = R_NilValue; // -Wall
+        size_t len = 0;           // indicates if srcloc has been set
         int protected = 0, skip = NA_INTEGER;
         SEXP opt = GetOption1(install("show.error.locations"));
         if (!isNull(opt))
