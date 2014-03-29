@@ -54,6 +54,9 @@ strsplit grep [g]sub [g]regexpr
 /* interval at which to check interrupts */
 #define NINTERRUPT 1000000
 
+/* How many encoding warnings to give */
+#define NWARN 5
+
 #include <Defn.h>
 #include <Internal.h>
 #include <R_ext/RS.h> /* for Calloc/Free */
@@ -142,6 +145,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
     const unsigned char *tables = NULL;
     Rboolean use_UTF8 = FALSE, haveBytes = FALSE;
     const void *vmax, *vmax2;
+    int nwarn = 0;
 
     checkArity(op, args);
     x = CAR(args);
@@ -249,7 +253,8 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                     buf = translateCharUTF8(STRING_ELT(x, i));
                     if (!utf8Valid(buf))
                     {
-                        warning(_("input string %d is invalid UTF-8"), i + 1);
+                        if (nwarn++ < NWARN)
+                            warning(_("input string %d is invalid UTF-8"), i + 1);
                         SET_VECTOR_ELT(ans, i, ScalarString(NA_STRING));
                         continue;
                     }
@@ -259,7 +264,8 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                     buf = translateChar(STRING_ELT(x, i));
                     if (mbcslocale && !mbcsValid(buf))
                     {
-                        warning(_("input string %d is invalid in this locale"), i + 1);
+                        if (nwarn++ < NWARN)
+                            warning(_("input string %d is invalid in this locale"), i + 1);
                         SET_VECTOR_ELT(ans, i, ScalarString(NA_STRING));
                         continue;
                     }
@@ -361,7 +367,8 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                     buf = translateCharUTF8(STRING_ELT(x, i));
                     if (!utf8Valid(buf))
                     {
-                        warning(_("input string %d is invalid UTF-8"), i + 1);
+                        if (nwarn++ < NWARN)
+                            warning(_("input string %d is invalid UTF-8"), i + 1);
                         SET_VECTOR_ELT(ans, i, ScalarString(NA_STRING));
                         continue;
                     }
@@ -371,7 +378,8 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                     buf = translateChar(STRING_ELT(x, i));
                     if (mbcslocale && !mbcsValid(buf))
                     {
-                        warning(_("input string %d is invalid in this locale"), i + 1);
+                        if (nwarn++ < NWARN)
+                            warning(_("input string %d is invalid in this locale"), i + 1);
                         SET_VECTOR_ELT(ans, i, ScalarString(NA_STRING));
                         continue;
                     }
@@ -489,7 +497,8 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                     buf = translateCharUTF8(STRING_ELT(x, i));
                     if (!utf8Valid(buf))
                     {
-                        warning(_("input string %d is invalid UTF-8"), i + 1);
+                        if (nwarn++ < NWARN)
+                            warning(_("input string %d is invalid UTF-8"), i + 1);
                         SET_VECTOR_ELT(ans, i, ScalarString(NA_STRING));
                         continue;
                     }
@@ -499,7 +508,8 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                     buf = translateChar(STRING_ELT(x, i));
                     if (mbcslocale && !mbcsValid(buf))
                     {
-                        warning(_("input string %d is invalid in this locale"), i + 1);
+                        if (nwarn++ < NWARN)
+                            warning(_("input string %d is invalid in this locale"), i + 1);
                         SET_VECTOR_ELT(ans, i, ScalarString(NA_STRING));
                         continue;
                     }
@@ -673,7 +683,8 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                     buf = translateChar(STRING_ELT(x, i));
                     if (mbcslocale && !mbcsValid(buf))
                     {
-                        warning(_("input string %d is invalid in this locale"), i + 1);
+                        if (nwarn++ < NWARN)
+                            warning(_("input string %d is invalid in this locale"), i + 1);
                         SET_VECTOR_ELT(ans, i, ScalarString(NA_STRING));
                         continue;
                     }
@@ -877,6 +888,7 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
     const unsigned char *tables = NULL /* -Wall */;
     Rboolean use_UTF8 = FALSE, use_WC = FALSE;
     const void *vmax;
+    int nwarn = 0;
 
     checkArity(op, args);
     pat = CAR(args);
@@ -1068,7 +1080,8 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
                 s = translateCharUTF8(STRING_ELT(text, i));
                 if (!utf8Valid(s))
                 {
-                    warning(_("input string %d is invalid UTF-8"), i + 1);
+                    if (nwarn++ < NWARN)
+                        warning(_("input string %d is invalid UTF-8"), i + 1);
                     continue;
                 }
             }
@@ -1077,7 +1090,8 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
                 s = translateChar(STRING_ELT(text, i));
                 if (mbcslocale && !mbcsValid(s))
                 {
-                    warning(_("input string %d is invalid in this locale"), i + 1);
+                    if (nwarn++ < NWARN)
+                        warning(_("input string %d is invalid in this locale"), i + 1);
                     continue;
                 }
             }
@@ -2773,6 +2787,7 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
         name_count, name_entry_size, info_code;
     char *name_table;
     SEXP capture_names = R_NilValue;
+    int nwarn = 0;
 
     checkArity(op, args);
     pat = CAR(args);
@@ -2993,7 +3008,8 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
                     s = translateCharUTF8(STRING_ELT(text, i));
                     if (!utf8Valid(s))
                     {
-                        warning(_("input string %d is invalid UTF-8"), i + 1);
+                        if (nwarn++ < NWARN)
+                            warning(_("input string %d is invalid UTF-8"), i + 1);
                         INTEGER(ans)[i] = INTEGER(matchlen)[i] = -1;
                         continue;
                     }
@@ -3003,7 +3019,8 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
                     s = translateChar(STRING_ELT(text, i));
                     if (mbcslocale && !mbcsValid(s))
                     {
-                        warning(_("input string %d is invalid in this locale"), i + 1);
+                        if (nwarn++ < NWARN)
+                            warning(_("input string %d is invalid in this locale"), i + 1);
                         INTEGER(ans)[i] = INTEGER(matchlen)[i] = -1;
                         continue;
                     }
@@ -3088,7 +3105,8 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
                         s = translateChar(STRING_ELT(text, i));
                     if (!useBytes && !use_UTF8 && mbcslocale && !mbcsValid(s))
                     {
-                        warning(_("input string %d is invalid in this locale"), i + 1);
+                        if (nwarn++ < NWARN)
+                            warning(_("input string %d is invalid in this locale"), i + 1);
                         elt = gregexpr_BadStringAns();
                     }
                     else
