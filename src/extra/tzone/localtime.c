@@ -367,7 +367,11 @@ static int tzload(const char *name, struct state *const sp, const int doextend)
             p = getenv("TZDIR");
             if (p == NULL)
             {
-                snprintf(buf, 1000, "%s/share/zoneinfo", getenv("R_HOME"));
+                p = getenv("R_SHARE_DIR");
+                if (p)
+                    snprintf(buf, 1000, "%s/zoneinfo", p);
+                else
+                    snprintf(buf, 1000, "%s/share/zoneinfo", getenv("R_HOME"));
                 buf[999] = '\0';
                 p = buf;
             }
