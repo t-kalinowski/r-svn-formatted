@@ -188,7 +188,7 @@ static SEXP SetOption(SEXP tag, SEXP value)
         for (; t != R_NilValue; t = CDR(t))
             if (TAG(CDR(t)) == tag)
             {
-                old = CAR(t);
+                old = CAR(CDR(t));
                 SETCDR(t, CDDR(t));
                 return old;
             }
