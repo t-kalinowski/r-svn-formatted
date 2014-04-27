@@ -1894,31 +1894,33 @@ SEXP attribute_hidden do_enc2(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         el = STRING_ELT(ans, i);
         if (el == NA_STRING)
-        { /* do nothing */
-        }
-        else if (PRIMVAL(op) && !known_to_be_utf8)
+            continue;
+        if (PRIMVAL(op) || known_to_be_utf8)
         { /* enc2utf8 */
-            if (!IS_UTF8(el) && !IS_ASCII(el))
+            if (IS_UTF8(el) || IS_ASCII(el) || IS_BYTES(el))
+                continue;
+            if (!duped)
             {
-                if (!duped)
-                {
-                    PROTECT(ans = duplicate(ans));
-                    duped = TRUE;
-                }
-                SET_STRING_ELT(ans, i, mkCharCE(translateCharUTF8(el), CE_UTF8));
+                ans = PROTECT(duplicate(ans));
+                duped = TRUE;
             }
+            SET_STRING_ELT(ans, i, mkCharCE(translateCharUTF8(el), CE_UTF8));
         }
-        else
+        else if (ENC_KNOWN(el))
         { /* enc2native */
-            if ((known_to_be_latin1 && IS_UTF8(el)) || (known_to_be_utf8 && IS_LATIN1(el)) || ENC_KNOWN(el))
+            if (IS_ASCII(el) || IS_BYTES(el))
+                continue;
+            if (known_to_be_latin1 && IS_LATIN1(el))
+                continue;
+            if (!duped)
             {
-                if (!duped)
-                {
-                    PROTECT(ans = duplicate(ans));
-                    duped = TRUE;
-                }
-                SET_STRING_ELT(ans, i, mkChar(translateChar(el)));
+                PROTECT(ans = duplicate(ans));
+                duped = TRUE;
             }
+            if (known_to_be_latin1)
+                SET_STRING_ELT(ans, i, mkCharCE(translateChar(el), CE_LATIN1));
+            else
+                SET_STRING_ELT(ans, i, mkChar(translateChar(el)));
         }
     }
     if (duped)
