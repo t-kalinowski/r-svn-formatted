@@ -177,21 +177,21 @@ static int Strtoi(const char *nptr, int base)
     return (int)res;
 }
 
-/* src/main/utils.h */
+// ../../../main/util.c
 extern double R_strtod5(const char *str, char **endptr, char dec, Rboolean NA, Rboolean exact);
 
-static double Strtod(const char *nptr, char **endptr, Rboolean NA, LocalData *d)
+static double Strtod(const char *nptr, char **endptr, Rboolean NA, LocalData *d, Rboolean exact)
 {
-    return R_strtod5(nptr, endptr, d->decchar, NA, TRUE);
+    return R_strtod5(nptr, endptr, d->decchar, NA, exact);
 }
 
-static Rcomplex strtoc(const char *nptr, char **endptr, Rboolean NA, LocalData *d)
+static Rcomplex strtoc(const char *nptr, char **endptr, Rboolean NA, LocalData *d, Rboolean exact)
 {
     Rcomplex z;
     double x, y;
     char *s, *endp;
 
-    x = Strtod(nptr, &endp, NA, d);
+    x = Strtod(nptr, &endp, NA, d, exact);
     if (isBlankString(endp))
     {
         z.r = x;
@@ -206,7 +206,7 @@ static Rcomplex strtoc(const char *nptr, char **endptr, Rboolean NA, LocalData *
     else
     {
         s = endp;
-        y = Strtod(s, &endp, NA, d);
+        y = Strtod(s, &endp, NA, d, exact);
         if (*endp == 'i')
         {
             z.r = x;
@@ -607,7 +607,7 @@ typedef struct typecvt_possible_types
  *
  * The typeInfo struct should be initialized with all fields TRUE.
  */
-static void ruleout_types(const char *s, Typecvt_Info *typeInfo, LocalData *data)
+static void ruleout_types(const char *s, Typecvt_Info *typeInfo, LocalData *data, Rboolean exact)
 {
     int res;
     char *endp;
@@ -635,20 +635,20 @@ static void ruleout_types(const char *s, Typecvt_Info *typeInfo, LocalData *data
 
     if (typeInfo->isreal)
     {
-        Strtod(s, &endp, TRUE, data);
+        Strtod(s, &endp, TRUE, data, exact);
         if (!isBlankString(endp))
             typeInfo->isreal = FALSE;
     }
 
     if (typeInfo->iscomplex)
     {
-        strtoc(s, &endp, TRUE, data);
+        strtoc(s, &endp, TRUE, data, exact);
         if (!isBlankString(endp))
             typeInfo->iscomplex = FALSE;
     }
 }
 
-/* type.convert(char, na.strings, as.is, dec) */
+/* type.convert(char, na.strings, as.is, dec, exact) */
 
 /* This is a horrible hack which is used in read.table to take a
    character variable, if possible to convert it to a logical,
@@ -660,7 +660,7 @@ SEXP typeconvert(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP cvec, a, dup, levs, dims, names, dec;
     SEXP rval = R_NilValue; /* -Wall */
-    int i, j, len, asIs;
+    int i, j, len, asIs, exact;
     Rboolean done = FALSE;
     char *endp;
     const char *tmp = NULL;
@@ -686,7 +686,6 @@ SEXP typeconvert(SEXP call, SEXP op, SEXP args, SEXP env)
         asIs = 0;
 
     dec = CADDDR(args);
-
     if (isString(dec) || isNull(dec))
     {
         if (length(dec) == 0)
@@ -694,6 +693,8 @@ SEXP typeconvert(SEXP call, SEXP op, SEXP args, SEXP env)
         else
             data.decchar = translateChar(STRING_ELT(dec, 0))[0];
     }
+
+    exact = asLogical(CAD4R(args)); // in (FALSE, TRUE, NA)
 
     cvec = CAR(args);
     len = length(cvec);
@@ -715,7 +716,7 @@ SEXP typeconvert(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     if (i < len)
     { /* not all entries are NA */
-        ruleout_types(tmp, &typeInfo, &data);
+        ruleout_types(tmp, &typeInfo, &data, exact);
     }
 
     if (typeInfo.islogical)
@@ -735,7 +736,7 @@ SEXP typeconvert(SEXP call, SEXP op, SEXP args, SEXP env)
                 else
                 {
                     typeInfo.islogical = FALSE;
-                    ruleout_types(tmp, &typeInfo, &data);
+                    ruleout_types(tmp, &typeInfo, &data, exact);
                     break;
                 }
             }
@@ -760,7 +761,7 @@ SEXP typeconvert(SEXP call, SEXP op, SEXP args, SEXP env)
                 if (INTEGER(rval)[i] == NA_INTEGER)
                 {
                     typeInfo.isinteger = FALSE;
-                    ruleout_types(tmp, &typeInfo, &data);
+                    ruleout_types(tmp, &typeInfo, &data, exact);
                     break;
                 }
             }
@@ -781,11 +782,11 @@ SEXP typeconvert(SEXP call, SEXP op, SEXP args, SEXP env)
                 REAL(rval)[i] = NA_REAL;
             else
             {
-                REAL(rval)[i] = Strtod(tmp, &endp, FALSE, &data);
+                REAL(rval)[i] = Strtod(tmp, &endp, FALSE, &data, exact);
                 if (!isBlankString(endp))
                 {
                     typeInfo.isreal = FALSE;
-                    ruleout_types(tmp, &typeInfo, &data);
+                    ruleout_types(tmp, &typeInfo, &data, exact);
                     break;
                 }
             }
@@ -806,12 +807,12 @@ SEXP typeconvert(SEXP call, SEXP op, SEXP args, SEXP env)
                 COMPLEX(rval)[i].r = COMPLEX(rval)[i].i = NA_REAL;
             else
             {
-                COMPLEX(rval)[i] = strtoc(tmp, &endp, FALSE, &data);
+                COMPLEX(rval)[i] = strtoc(tmp, &endp, FALSE, &data, exact);
                 if (!isBlankString(endp))
                 {
                     typeInfo.iscomplex = FALSE;
                     /* this is not needed, unless other cases are added */
-                    ruleout_types(tmp, &typeInfo, &data);
+                    ruleout_types(tmp, &typeInfo, &data, exact);
                     break;
                 }
             }
@@ -910,7 +911,7 @@ SEXP menu(SEXP choices)
     first = LENGTH(choices) + 1;
     if (isdigit((int)*bufp))
     {
-        first = Strtod(buffer, NULL, TRUE, &data);
+        first = Strtod(buffer, NULL, TRUE, &data, /*exact*/ FALSE);
     }
     else
     {

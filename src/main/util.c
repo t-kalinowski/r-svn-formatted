@@ -1674,7 +1674,7 @@ int attribute_hidden Rf_AdobeSymbol2ucs2(int n)
         return 0;
 }
 
-double R_strtod5(const char *str, char **endptr, char dec, Rboolean NA, Rboolean exact)
+double R_strtod5(const char *str, char **endptr, char dec, Rboolean NA, int exact)
 {
     LDOUBLE ans = 0.0, p10 = 10.0, fac = 1.0;
     int n, expn = 0, sign = 1, ndigits = 0, exph = -1;
@@ -1742,12 +1742,19 @@ double R_strtod5(const char *str, char **endptr, char dec, Rboolean NA, Rboolean
             if (exph >= 0)
                 exph += 4;
         }
-        if (exact && ans > 9e15)
-        { // lost accuracy
-            ans = NA_REAL;
-            p = str; /* back out */
-            goto done;
-        }
+#define strtod_EXACT_CLAUSE                                                                                            \
+    if ((exact || exact == NA_LOGICAL) && ans > 0x1.fffffffffffffp52)                                                  \
+    {                                                                                                                  \
+        if (exact == NA_LOGICAL)                                                                                       \
+            warning(_("accuracy loss in conversion from \"%s\" to numeric"), str);                                     \
+        else                                                                                                           \
+        {                                                                                                              \
+            ans = NA_REAL;                                                                                             \
+            p = str; /* back out */                                                                                    \
+            goto done;                                                                                                 \
+        }                                                                                                              \
+    }
+        strtod_EXACT_CLAUSE;
         if (*p == 'p' || *p == 'P')
         {
             int expsign = 1;
@@ -1794,13 +1801,7 @@ double R_strtod5(const char *str, char **endptr, char dec, Rboolean NA, Rboolean
         p = str; /* back out */
         goto done;
     }
-    if (exact && ans > 9e15)
-    {   // lost accuracy
-        //	error("lost accuracy in '%s'\n", str);
-        ans = NA_REAL;
-        p = str; /* back out */
-        goto done;
-    }
+    strtod_EXACT_CLAUSE;
 
     if (*p == 'e' || *p == 'E')
     {
