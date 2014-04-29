@@ -365,7 +365,7 @@ static SEXP GetSeedsFromVar(void)
     return seeds;
 }
 
-unsigned int TimeToSeed(void); /* datetime.c */
+unsigned int TimeToSeed(void); // times.c
 
 static void Randomize(RNGtype kind)
 {
