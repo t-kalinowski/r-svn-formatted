@@ -89,7 +89,8 @@ double dnbinom_mu(double x, double size, double mu, int give_log)
     if (x < 1e-10 * size)
     { /* don't use dbinom_raw() but MM's formula: */
         /* FIXME --- 1e-8 shows problem; rather use algdiv() from ./toms708.c */
-        return R_D_exp(x * log(size * mu / (size + mu)) - mu - lgamma(x + 1) + log1p(x * (x - 1) / (2 * size)));
+        p = (size < mu ? log(size / (1 + size / mu)) : log(mu / (1 + mu / size)));
+        return R_D_exp(x * p - mu - lgamma(x + 1) + log1p(x * (x - 1) / (2 * size)));
     }
     /* else: no unnecessary cancellation inside dbinom_raw, when
      * x_ = size and n_ = x+size are so close that n_ - x_ loses accuracy
