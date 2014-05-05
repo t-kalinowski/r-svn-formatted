@@ -291,8 +291,6 @@ void attribute_hidden bratio(double a, double b, double x, double y, double *w, 
         REprintf(" L131: bgrat(*, w1=%.15g) ", *w1);
 #endif
         bgrat(b0, a0, y0, x0, w1, 15 * eps, &ierr1, FALSE);
-        if (ierr1)
-            *ierr = 8;
 #ifdef DEBUG_bratio
         REprintf(" ==> new w1=%.15g", *w1);
         if (ierr1)
@@ -300,12 +298,13 @@ void attribute_hidden bratio(double a, double b, double x, double y, double *w, 
         else
             REprintf("\n");
 #endif
-        if (*w1 == 0.)
-        { // "almost surely" from underflow, try more: [2013-03-04]
+        if (*w1 == 0 || (0 < *w1 && *w1 < 1e-310))
+        {   // w1=0 or very close:
+            // "almost surely" from underflow, try more: [2013-03-04]
 // FIXME: it is even better to do this in bgrat *directly* at least for the case
 //  !did_bup, i.e., where *w1 = (0 or -Inf) on entry
 #ifdef DEBUG_bratio
-            REprintf(" underflow? -> retrying: ");
+            REprintf(" denormalized or underflow (?) -> retrying: ");
 #endif
             if (did_bup)
             { // re-do that part on log scale:
@@ -326,6 +325,8 @@ void attribute_hidden bratio(double a, double b, double x, double y, double *w, 
             goto L_end_from_w1_log;
         }
         // else
+        if (ierr1)
+            *ierr = 8;
         if (*w1 < 0)
             MATHLIB_WARNING4("bratio(a=%g, b=%g, x=%g): bgrat() -> w1 = %g", a, b, x, *w1);
         goto L_end_from_w1;
@@ -720,7 +721,7 @@ static double bpser(double a, double b, double x, double eps, int log_p)
                 }
 
                 z = a * log(x) - u;
-                b0 += -1.0;
+                b0 += -1.0; // => b0 in (0, 7)
                 apb = a0 + b0;
                 if (apb > 1.0)
                 {
@@ -1305,8 +1306,10 @@ static void bgrat(double a, double b, double x, double y, double *w, double eps,
            z = -nu * lnx; // z =: u in (9.1) of D.&M.(1992)
 
     if (b * z == 0.0)
-    { /* should *never* happen */
-        MATHLIB_WARNING4("bgrat(a=%g, b=%g, x=%g, y=%g): b*z == 0 should not happen: please report", a, b, x, y);
+    { // should not happen, but does, e.g.,
+        // for  pbeta(1e-320, 1e-5, 0.5)  i.e., _subnormal_ x,
+        // Warning ... bgrat(a=20.5, b=1e-05, x=1, y=9.99989e-321): ..
+        MATHLIB_WARNING4("bgrat(a=%g, b=%g, x=%g, y=%g): b*z == 0 underflow, hence inaccurate pbeta()", a, b, x, y);
         /* L_Error:    THE EXPANSION CANNOT BE COMPUTED */ *ierr = 1;
         return;
     }
@@ -1946,10 +1949,9 @@ static double gam1(double a)
 
     t = a;
     d = a - 0.5;
+    // t := if(a > 1/2)  a-1  else  a
     if (d > 0.0)
-    {
         t = d - 0.5;
-    }
     if (t < 0.0)
     { /* L30: */
         static double r[9] = {-.422784335098468,  -.771330383816272,   -.244757765222226,
@@ -1961,13 +1963,16 @@ static double gam1(double a)
             (((((((r[8] * t + r[7]) * t + r[6]) * t + r[5]) * t + r[4]) * t + r[3]) * t + r[2]) * t + r[1]) * t + r[0];
         bot = (s2 * t + s1) * t + 1.0;
         w = top / bot;
+#ifdef DEBUG_bratio
+        REprintf("  gam1(a = %.15g): t < 0: w=%.15g\n", a, w);
+#endif
         if (d > 0.0)
             return t * w / a;
         else
             return a * (w + 0.5 + 0.5);
     }
     else if (t == 0)
-    { /* L10: */
+    { // L10: a in {0, 1}
         return 0.;
     }
     else
@@ -1979,6 +1984,10 @@ static double gam1(double a)
         top = (((((p[6] * t + p[5]) * t + p[4]) * t + p[3]) * t + p[2]) * t + p[1]) * t + p[0];
         bot = (((q[4] * t + q[3]) * t + q[2]) * t + q[1]) * t + 1.0;
         w = top / bot;
+#ifdef DEBUG_bratio
+        REprintf("  gam1(a = %.15g): t > 0: (is a < 1.5 ?)  w=%.15g\n", a, w);
+#endif
+
         if (d > 0.0) /* L21: */
             return t / a * (w - 0.5 - 0.5);
         else
