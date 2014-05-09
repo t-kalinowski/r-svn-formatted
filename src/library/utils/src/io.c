@@ -649,7 +649,7 @@ static void ruleout_types(const char *s, Typecvt_Info *typeInfo, LocalData *data
     }
 }
 
-/* type.convert(char, na.strings, as.is, dec, exact) */
+/* type.convert(char, na.strings, as.is, dec, numerals) */
 
 /* This is a horrible hack which is used in read.table to take a
    character variable, if possible to convert it to a logical,
@@ -659,7 +659,7 @@ static void ruleout_types(const char *s, Typecvt_Info *typeInfo, LocalData *data
 
 SEXP typeconvert(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP cvec, a, dup, levs, dims, names, dec;
+    SEXP cvec, a, dup, levs, dims, names, dec, numerals;
     SEXP rval = R_NilValue; /* -Wall */
     int i, j, len, asIs, i_exact;
     Rboolean done = FALSE, exact;
@@ -695,8 +695,33 @@ SEXP typeconvert(SEXP call, SEXP op, SEXP args, SEXP env)
             data.decchar = translateChar(STRING_ELT(dec, 0))[0];
     }
 
-    i_exact = asLogical(CAD4R(args));                            // in {FALSE, TRUE, NA}
-    exact = (i_exact == NA_INTEGER) ? FALSE : (Rboolean)i_exact; // {FALSE, TRUE}
+    numerals = CAD4R(args); // string, one of c("allow.loss", "warn.loss", "no.loss")
+    if (isString(numerals))
+    {
+        tmp = CHAR(STRING_ELT(numerals, 0));
+        if (strcmp(tmp, "allow.loss") == 0)
+        {
+            i_exact = FALSE;
+            exact = FALSE;
+        }
+        else if (strcmp(tmp, "warn.loss") == 0)
+        {
+            i_exact = NA_INTEGER;
+            exact = FALSE;
+        }
+        else if (strcmp(tmp, "no.loss") == 0)
+        {
+            i_exact = TRUE;
+            exact = TRUE;
+        }
+        else // should never happen
+            error(_("invalid 'numerals' string: \"%s\""), tmp);
+    }
+    else
+    { // (currently never happens): use default
+        i_exact = FALSE;
+        exact = FALSE;
+    }
 
     cvec = CAR(args);
     len = length(cvec);
