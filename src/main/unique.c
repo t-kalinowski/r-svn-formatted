@@ -718,7 +718,7 @@ R_xlen_t any_duplicated3(SEXP x, SEXP incomp, Rboolean from_last)
             }                                                                                                          \
         if (isDup)                                                                                                     \
         {                                                                                                              \
-            UNPROTECT(1);                                                                                              \
+            UNPROTECT(2);                                                                                              \
             return ++i;                                                                                                \
         }                                                                                                              \
         /* else continue */                                                                                            \
