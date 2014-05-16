@@ -634,6 +634,8 @@ static Rboolean PicTeXDeviceDriver(pDevDesc dd, const char *filename, const char
  *  debug   = Rboolean; if TRUE, write TeX-Comments into output.
  */
 
+extern void GEaddDevice2f(pGEDevDesc gdd, const char *name, const char *file);
+
 SEXP PicTeX(SEXP args)
 {
     pGEDevDesc dd;
@@ -670,7 +672,7 @@ SEXP PicTeX(SEXP args)
             error(_("unable to start %s() device"), "pictex");
         }
         dd = GEcreateDevDesc(dev);
-        GEaddDevice2(dd, "pictex");
+        GEaddDevice2f(dd, "pictex", file);
     }
     END_SUSPEND_INTERRUPTS;
     vmaxset(vmax);

@@ -480,6 +480,7 @@ const static struct
 } devtable[] = {{"", WINDOW},       {"", XIMAGE},       {"png", PNG},     {"jpeg", JPEG}, {"svg", SVG},
                 {"png", PNGdirect}, {"cairo_pdf", PDF}, {"cairo_ps", PS}, {"tiff", TIFF}, {"bmp", BMP}};
 
+extern void GEaddDevice2f(pGEDevDesc gdd, const char *name, const char *file);
 /*
    cairo(filename, type, width, height, pointsize, bg, res, antialias,
          quality, family)
@@ -547,7 +548,7 @@ SEXP in_Cairo(SEXP args)
             error(_("unable to start device '%s'"), devtable[type].name);
         }
         gdd = GEcreateDevDesc(dev);
-        GEaddDevice2(gdd, devtable[type].name);
+        GEaddDevice2f(gdd, devtable[type].name, filename);
     }
     END_SUSPEND_INTERRUPTS;
 

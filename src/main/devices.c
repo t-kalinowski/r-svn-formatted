@@ -455,7 +455,7 @@ void GEaddDevice(pGEDevDesc gdd)
         gdd->dev->activate(gdd->dev);
 
     /* maintain .Devices (.Device has already been set) */
-    PROTECT(t = ScalarString(STRING_ELT(getSymbolValue(R_DeviceSymbol), 0)));
+    t = PROTECT(duplicate(getSymbolValue(R_DeviceSymbol)));
     if (appnd)
         SETCDR(s, CONS(t, R_NilValue));
     else
@@ -475,10 +475,21 @@ void GEaddDevice(pGEDevDesc gdd)
     }
 }
 
-/* convenience wrapper */
+/* convenience wrappers */
 void GEaddDevice2(pGEDevDesc gdd, const char *name)
 {
     gsetVar(R_DeviceSymbol, mkString(name), R_BaseEnv);
+    GEaddDevice(gdd);
+    GEinitDisplayList(gdd);
+}
+
+void GEaddDevice2f(pGEDevDesc gdd, const char *name, const char *file)
+{
+    SEXP f = PROTECT(mkString(name));
+    if (file)
+        setAttrib(f, install("filepath"), mkString(file));
+    gsetVar(R_DeviceSymbol, f, R_BaseEnv);
+    UNPROTECT(1);
     GEaddDevice(gdd);
     GEinitDisplayList(gdd);
 }
