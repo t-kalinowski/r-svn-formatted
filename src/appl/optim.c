@@ -749,12 +749,7 @@ void lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd, double *Fmi
 {
     char task[60];
     double f, *g, dsave[29], *wa;
-    int tr = -1, iter = 0, *iwa, isave[44], lsave[4];
-
-    /* shut up gcc -Wall in 4.6.x */
-
-    for (int i = 0; i < 4; i++)
-        lsave[i] = 0;
+    int tr = -1, iter = 0, *iwa, isave[22];
 
     if (n == 0)
     { /* not handled in setulb */
@@ -797,7 +792,7 @@ void lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd, double *Fmi
     strcpy(task, "START");
     while (1)
     {
-        setulb(n, m, x, l, u, nbd, &f, g, factr, &pgtol, wa, iwa, task, tr, lsave, isave, dsave);
+        setulb(n, m, x, l, u, nbd, &f, g, factr, &pgtol, wa, iwa, task, tr, isave, dsave);
         /*	Rprintf("in lbfgsb - %s\n", task);*/
         if (strncmp(task, "FG", 2) == 0)
         {
@@ -840,7 +835,7 @@ void lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd, double *Fmi
         }
     }
     *Fmin = f;
-    *fncount = *grcount = isave[33];
+    *fncount = *grcount = isave[12];
     if (trace)
     {
         Rprintf("final  value %f \n", *Fmin);
