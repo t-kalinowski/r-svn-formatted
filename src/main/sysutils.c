@@ -343,6 +343,15 @@ int R_system(const char *command)
     if ((res % 256) == 0)
         res = res / 256;
 #endif
+    if (res == -1)
+    {
+        /* this means that system() failed badly - it didn't
+           even get to try to run the shell */
+        warning(_("system call failed: %s"), strerror(errno));
+        /* R system() is documented to return 127 on failure, and a lot of
+           code relies on that - it will misinterpret -1 as success */
+        res = 127;
+    }
     return res;
 }
 
