@@ -338,8 +338,6 @@ int R_system(const char *command)
 #ifdef HAVE_SYS_WAIT_H
     if (WIFEXITED(res))
         res = WEXITSTATUS(res);
-    else
-        res = 0;
 #else
     /* assume that this is shifted if a multiple of 256 */
     if ((res % 256) == 0)
