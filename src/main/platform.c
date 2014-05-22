@@ -811,8 +811,6 @@ SEXP attribute_hidden do_fileinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP fn, ans, ansnames, fsize, mtime, ctime, atime, isdir, mode, xxclass;
 #ifdef UNIX_EXTRAS
     SEXP uid, gid, uname, grname;
-    struct passwd *stpwd;
-    struct group *stgrp;
 #endif
 #ifdef Win32
     SEXP exe;
@@ -926,7 +924,7 @@ SEXP attribute_hidden do_fileinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
                 SET_STRING_ELT(uname, i, STRING_ELT(uname, i - 1));
             else
             {
-                stpwd = getpwuid(sb.st_uid);
+                struct passwd *stpwd = getpwuid(sb.st_uid);
                 SET_STRING_ELT(uname, i, stpwd ? mkChar(stpwd->pw_name) : NA_STRING);
             }
 
@@ -934,7 +932,7 @@ SEXP attribute_hidden do_fileinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
                 SET_STRING_ELT(grname, i, STRING_ELT(grname, i - 1));
             else
             {
-                stgrp = getgrgid(sb.st_gid);
+                struct group *stgrp = getgrgid(sb.st_gid);
                 SET_STRING_ELT(grname, i, stgrp ? mkChar(stgrp->gr_name) : NA_STRING);
             }
 #endif
