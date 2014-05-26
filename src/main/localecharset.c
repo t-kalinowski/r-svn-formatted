@@ -59,6 +59,7 @@ typedef struct
     char *value;
 } name_value;
 
+#ifndef __APPLE__
 /*
  * codeset name defined.
  *
@@ -480,6 +481,7 @@ static const name_value guess[] = {
     {"zu_ZA", ENC_ISO8859_1},
 };
 static const int guess_count = (sizeof(guess) / sizeof(name_value));
+#endif
 
 static const name_value known[] = {
     {"iso88591", "ISO8859-1"},
