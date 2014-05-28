@@ -82,12 +82,15 @@ double beta(double a, double b)
     else
     {
         double val = lbeta(a, b);
+// underflow to 0 is not harmful per se;  exp(-999) also gives no warning
+#ifndef IEEE_754
         if (val < lnsml)
         {
             /* a and/or b so big that beta underflows */
             ML_ERROR(ME_UNDERFLOW, "beta");
             /* return ML_UNDERFLOW; pointless giving incorrect value */
         }
+#endif
         return exp(val);
     }
 }
