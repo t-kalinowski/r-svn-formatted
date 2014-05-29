@@ -1928,24 +1928,9 @@ static R_INLINE SEXP getAssignFcnSymbol(SEXP fun)
     return installAssignFcnSymbol(fun);
 }
 
-static R_INLINE SEXP mkEVPROMISE(SEXP expr, SEXP val)
-{
-    SEXP prom = mkPROMISE(expr, R_NilValue);
-    SET_PRVALUE(prom, val);
-    return prom;
-}
-
-static R_INLINE SEXP mkEVPROMISE_NR(SEXP expr, SEXP val)
-{
-    SEXP prom = mkPROMISE(expr, R_NilValue);
-    DISABLE_REFCNT(prom);
-    SET_PRVALUE(prom, val);
-    return prom;
-}
-
 static R_INLINE SEXP mkRHSPROMISE(SEXP expr, SEXP rhs)
 {
-    return mkEVPROMISE_NR(expr, rhs);
+    return R_mkEVPROMISE_NR(expr, rhs);
 }
 
 static SEXP applydefine(SEXP call, SEXP op, SEXP args, SEXP rho)
@@ -5488,7 +5473,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 SETSTACK(-2, args);
                 /* insert evaluated promise for LHS as first argument */
                 /* promise won't be captured so don't track refrences */
-                prom = mkEVPROMISE_NR(R_TmpvalSymbol, lhs);
+                prom = R_mkEVPROMISE_NR(R_TmpvalSymbol, lhs);
                 SETCAR(args, prom);
                 /* insert evaluated promise for RHS as last argument */
                 last = args;
@@ -5506,7 +5491,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 SET_TAG(GETSTACK(-1), R_valueSym);
                 /* replace first argument with evaluated promise for LHS */
                 /* promise might be captured, so track references */
-                prom = mkEVPROMISE(R_TmpvalSymbol, lhs);
+                prom = R_mkEVPROMISE(R_TmpvalSymbol, lhs);
                 args = GETSTACK(-2);
                 SETCAR(args, prom);
                 /* make the call */
@@ -5542,7 +5527,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 SETSTACK(-2, args);
                 /* insert evaluated promise for LHS as first argument */
                 /* promise won't be captured so don't track refrences */
-                prom = mkEVPROMISE_NR(R_TmpvalSymbol, lhs);
+                prom = R_mkEVPROMISE_NR(R_TmpvalSymbol, lhs);
                 SETCAR(args, prom);
                 /* make the call */
                 value = PRIMFUN(fun)(call, fun, args, rho);
@@ -5550,7 +5535,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             case CLOSXP:
                 /* replace first argument with evaluated promise for LHS */
                 /* promise might be captured, so track references */
-                prom = mkEVPROMISE(R_TmpvalSymbol, lhs);
+                prom = R_mkEVPROMISE(R_TmpvalSymbol, lhs);
                 args = GETSTACK(-2);
                 SETCAR(args, prom);
                 /* make the call */
