@@ -157,7 +157,7 @@ char *getwd();
 #define getcwd(buf, max) (getcwd)(buf, max, 0)
 #else
 /* This is naughty if already declared, but harmful on Win64 */
-#ifndef WIN64
+#ifndef _WIN64
 char *getcwd();
 #endif
 #endif
@@ -1480,7 +1480,7 @@ guess_category_value(int category, const char *categoryname, const char *locale)
             locale_defaulted = 1;
         }
     }
-#ifdef WIN32
+#ifdef _WIN32
     /* Need to translate some Windows locale names */
     const static struct
     {

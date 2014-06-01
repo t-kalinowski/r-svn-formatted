@@ -40,7 +40,7 @@ SEXP Rmd5(SEXP files)
     for (i = 0; i < nfiles; i++)
     {
         path = translateChar(STRING_ELT(files, i));
-#ifdef WIN32
+#ifdef _WIN32
         fp = fopen(path, "rb");
 #else
         fp = fopen(path, "r");

@@ -39,7 +39,7 @@ R --slave --no-restore --vanilla --file=foo [script_args]
 #include <config.h>
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <psignal.h>
 /* on some systems needs to be included before <sys/types.h> */
 #endif
@@ -69,7 +69,7 @@ R --slave --no-restore --vanilla --file=foo [script_args]
 #endif
 #endif
 
-#ifndef WIN32
+#ifndef _WIN32
 #ifndef R_ARCH /* R_ARCH should be always defined, but for safety ... */
 #define R_ARCH ""
 #endif
@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
     }
 
     p = getenv("RHOME");
-#ifdef WIN32
+#ifdef _WIN32
     if (p && *p)
         snprintf(cmd, PATH_MAX + 1, "%s\\%s\\Rterm.exe", p, BINDIR);
     else
@@ -253,7 +253,7 @@ int main(int argc, char *argv[])
     if (!set_dp && !getenv("R_DEFAULT_PACKAGES"))
         putenv("R_DEFAULT_PACKAGES=datasets,utils,grDevices,graphics,stats");
 
-#ifndef WIN32
+#ifndef _WIN32
     /* pass on r_arch from this binary to R as a default */
     if (!getenv("R_ARCH") && *rarch)
     {
@@ -276,7 +276,7 @@ int main(int argc, char *argv[])
             fprintf(stderr, " %s", av[i]);
         fprintf(stderr, "'\n\n");
     }
-#ifndef WIN32
+#ifndef _WIN32
     res = execv(cmd, av); /* will not return if R is launched */
     perror("Rscript execution error");
 #else
