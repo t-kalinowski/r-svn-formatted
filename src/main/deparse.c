@@ -1615,6 +1615,8 @@ static void vector2buff(SEXP vector, LocalParseData *d)
             else if (TYPEOF(vector) == REALSXP && (d->opts & HEXNUMERIC))
             {
                 double x = REAL(vector)[i];
+                // Windows warns here, but incorrectly as this is C99
+                // and the snprintf used from trio is compliant.
                 if (R_FINITE(x))
                 {
                     snprintf(hex, 32, "%a", x);
