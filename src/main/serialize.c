@@ -206,6 +206,7 @@ static void OutInteger(R_outpstream_t stream, int i)
     switch (stream->type)
     {
     case R_pstream_ascii_format:
+    case R_pstream_asciihex_format:
         if (i == NA_INTEGER)
             Rsnprintf(buf, sizeof(buf), "NA\n");
         else
@@ -244,6 +245,20 @@ static void OutReal(R_outpstream_t stream, double d)
             Rsnprintf(buf, sizeof(buf), "%.16g\n", d);
         stream->OutBytes(stream, buf, (int)strlen(buf));
         break;
+    case R_pstream_asciihex_format:
+        if (!R_FINITE(d))
+        {
+            if (ISNAN(d))
+                Rsnprintf(buf, sizeof(buf), "NA\n");
+            else if (d < 0)
+                Rsnprintf(buf, sizeof(buf), "-Inf\n");
+            else
+                Rsnprintf(buf, sizeof(buf), "Inf\n");
+        }
+        else
+            Rsnprintf(buf, sizeof(buf), "%a\n", d);
+        stream->OutBytes(stream, buf, (int)strlen(buf));
+        break;
     case R_pstream_binary_format:
         stream->OutBytes(stream, &d, sizeof(double));
         break;
@@ -268,6 +283,7 @@ static void OutByte(R_outpstream_t stream, Rbyte i)
     switch (stream->type)
     {
     case R_pstream_ascii_format:
+    case R_pstream_asciihex_format:
         Rsnprintf(buf, sizeof(buf), "%02x\n", i);
         stream->OutBytes(stream, buf, (int)strlen(buf));
         break;
@@ -283,7 +299,7 @@ static void OutByte(R_outpstream_t stream, Rbyte i)
 /* This assumes CHARSXPs remain limited to 2^31-1 bytes */
 static void OutString(R_outpstream_t stream, const char *s, int length)
 {
-    if (stream->type == R_pstream_ascii_format)
+    if (stream->type == R_pstream_ascii_format || stream->type == R_pstream_asciihex_format)
     {
         int i;
         char buf[128];
@@ -567,6 +583,7 @@ static void OutFormat(R_outpstream_t stream)
     switch (stream->type)
     {
     case R_pstream_ascii_format:
+    case R_pstream_asciihex_format:
         stream->OutBytes(stream, "A\n", 2);
         break;
     case R_pstream_binary_format:
@@ -2238,7 +2255,7 @@ void R_InitConnOutPStream(R_outpstream_t stream, Rconnection con, R_pstream_form
                           SEXP (*phook)(SEXP, SEXP), SEXP pdata)
 {
     CheckOutConn(con);
-    if (con->text && type != R_pstream_ascii_format)
+    if (con->text && !(type == R_pstream_ascii_format || type == R_pstream_asciihex_format))
         error(_("only ascii format can be written to text mode connections"));
     R_InitOutPStream(stream, (R_pstream_data_t)con, type, version, OutCharConn, OutBytesConn, phook, pdata);
 }
@@ -2298,7 +2315,9 @@ SEXP attribute_hidden do_serializeToConn(SEXP call, SEXP op, SEXP args, SEXP env
     if (TYPEOF(CADDR(args)) != LGLSXP)
         error(_("'ascii' must be logical"));
     ascii = INTEGER(CADDR(args))[0];
-    if (ascii)
+    if (ascii == NA_LOGICAL)
+        type = R_pstream_asciihex_format;
+    else if (ascii)
         type = R_pstream_ascii_format;
     else
         type = R_pstream_xdr_format;
@@ -2624,11 +2643,11 @@ SEXP attribute_hidden R_serialize(SEXP object, SEXP icon, SEXP ascii, SEXP Svers
 
     int asc = asLogical(ascii);
     if (asc == NA_LOGICAL)
-        type = R_pstream_binary_format;
+        type = R_pstream_asciihex_format;
     else if (asc)
         type = R_pstream_ascii_format;
     else
-        type = R_pstream_xdr_format; /**** binary or ascii if no XDR? */
+        type = R_pstream_xdr_format;
 
     if (icon == R_NilValue)
     {

@@ -2470,7 +2470,7 @@ SEXP attribute_hidden do_saveToConn(SEXP call, SEXP op, SEXP args, SEXP env)
     if (ascii)
     {
         magic = "RDA2\n";
-        type = R_pstream_ascii_format;
+        type = (ascii == NA_LOGICAL) ? R_pstream_asciihex_format : R_pstream_ascii_format;
     }
     else
     {
