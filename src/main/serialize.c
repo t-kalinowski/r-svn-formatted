@@ -2654,13 +2654,22 @@ SEXP attribute_hidden R_serialize(SEXP object, SEXP icon, SEXP ascii, SEXP Svers
 
     hook = fun != R_NilValue ? CallHook : NULL;
 
-    int asc = asLogical(ascii);
-    if (asc == NA_LOGICAL)
-        type = R_pstream_asciihex_format;
-    else if (asc)
+    int asc = asInteger(ascii);
+    switch (asc)
+    {
+    case 1:
         type = R_pstream_ascii_format;
-    else
+        break;
+    case 2:
+        type = R_pstream_asciihex_format;
+        break;
+    case 3:
+        type = R_pstream_binary_format;
+        break;
+    default:
         type = R_pstream_xdr_format;
+        break;
+    }
 
     if (icon == R_NilValue)
     {
@@ -3079,7 +3088,7 @@ SEXP attribute_hidden do_serialize(SEXP call, SEXP op, SEXP args, SEXP env)
     icon = CAR(args);
     args = CDR(args);
     type = CAR(args);
-    args = CDR(args); // ascii or xdr
+    args = CDR(args);
     ver = CAR(args);
     args = CDR(args);
     fun = CAR(args);
