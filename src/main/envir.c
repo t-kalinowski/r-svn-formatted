@@ -1463,7 +1463,9 @@ void defineVar(SEXP symbol, SEXP value, SEXP rho)
         table = (R_ObjectTable *)R_ExternalPtrAddr(HASHTAB(rho));
         if (table->assign == NULL)
             error(_("cannot assign variables to this database"));
+        PROTECT(value);
         table->assign(CHAR(PRINTNAME(symbol)), value, table);
+        UNPROTECT(1);
 #ifdef USE_GLOBAL_CACHE
         if (IS_GLOBAL_FRAME(rho))
             R_FlushGlobalCache(symbol);
@@ -1548,7 +1550,10 @@ static SEXP setVarInFrame(SEXP rho, SEXP symbol, SEXP value)
         table = (R_ObjectTable *)R_ExternalPtrAddr(HASHTAB(rho));
         if (table->assign == NULL)
             error(_("cannot assign variables to this database"));
-        return (table->assign(CHAR(PRINTNAME(symbol)), value, table));
+        PROTECT(value);
+        SEXP result = table->assign(CHAR(PRINTNAME(symbol)), value, table);
+        UNPROTECT(1);
+        return (result);
     }
 
     if (rho == R_BaseNamespace || rho == R_BaseEnv)
