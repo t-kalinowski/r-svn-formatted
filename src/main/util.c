@@ -637,7 +637,7 @@ SEXP attribute_hidden do_merge(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (INTEGER(yi)[nny] != tmp)
                 break;
         /* printf("i %d nnx %d j %d nny %d\n", i, nnx, j, nny); */
-        dnans += (nnx - i) * (nny - j);
+        dnans += ((double)(nnx - i)) * (nny - j);
     }
     if (dnans > R_XLEN_T_MAX)
         error(_("number of rows in the result exceeds maximum vector length"));
