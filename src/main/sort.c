@@ -750,11 +750,11 @@ static int equal(R_xlen_t i, R_xlen_t j, SEXP x, Rboolean nalast, SEXP rho)
     { /* so never any NAs */
         /* evaluate .gt(x, i, j) */
         SEXP si, sj, call;
-        si = ScalarInteger((int)i + 1);
-        sj = ScalarInteger((int)j + 1);
+        PROTECT(si = ScalarInteger((int)i + 1));
+        PROTECT(sj = ScalarInteger((int)j + 1));
         PROTECT(call = lang4(install(".gt"), x, si, sj));
         c = asInteger(eval(call, rho));
-        UNPROTECT(1);
+        UNPROTECT(3);
     }
     else
     {
@@ -791,11 +791,11 @@ static int greater(R_xlen_t i, R_xlen_t j, SEXP x, Rboolean nalast, Rboolean dec
     { /* so never any NAs */
         /* evaluate .gt(x, i, j) */
         SEXP si, sj, call;
-        si = ScalarInteger((int)i + 1);
-        sj = ScalarInteger((int)j + 1);
+        PROTECT(si = ScalarInteger((int)i + 1));
+        PROTECT(sj = ScalarInteger((int)j + 1));
         PROTECT(call = lang4(install(".gt"), x, si, sj));
         c = asInteger(eval(call, rho));
-        UNPROTECT(1);
+        UNPROTECT(3);
     }
     else
     {
