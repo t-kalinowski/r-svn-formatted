@@ -2074,10 +2074,10 @@ SEXP attribute_hidden do_ICUset(SEXP call, SEXP op, SEXP args, SEXP rho)
                 ucol_close(collator);
             uloc_setDefault(s, &status);
             if (U_FAILURE(status))
-                error("failed to set ICU locale");
+                error("failed to set ICU locale %s (%d)", s, status);
             collator = ucol_open(NULL, &status);
             if (U_FAILURE(status))
-                error("failed to open ICU collator");
+                error("failed to open ICU collator (%d)", status);
         }
         else
         {
@@ -2125,10 +2125,10 @@ attribute_hidden int Scollate(SEXP a, SEXP b)
         /* do better later */
         uloc_setDefault(setlocale(LC_COLLATE, NULL), &status);
         if (U_FAILURE(status))
-            error("failed to set ICU locale");
+            error("failed to set ICU locale (%d)", status);
         collator = ucol_open(NULL, &status);
         if (U_FAILURE(status))
-            error("failed to open ICU collator");
+            error("failed to open ICU collator (%d)", status);
     }
     if (collator == NULL)
         return strcoll(translateChar(a), translateChar(b));
