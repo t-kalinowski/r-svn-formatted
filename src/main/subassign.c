@@ -2033,7 +2033,7 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
             for (i = 0; i < ndims; i++)
             {
                 INTEGER(indx)
-                [i] = (int)get1index(CAR(subs), CAR(names), INTEGER(dims)[i],
+                [i] = (int)get1index(CAR(subs), VECTOR_ELT(names, i), INTEGER(dims)[i],
                                      /*partial ok*/ FALSE, -1, call);
                 subs = CDR(subs);
                 if (INTEGER(indx)[i] < 0 || INTEGER(indx)[i] >= INTEGER(dims)[i])
