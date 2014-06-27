@@ -1817,7 +1817,12 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
             {
                 x = DeleteOneVectorListItem(x, offset);
                 if (recursed)
-                    SET_VECTOR_ELT(xup, off, x);
+                {
+                    if (isVectorList(xup))
+                        SET_VECTOR_ELT(xup, off, x);
+                    else
+                        xup = SimpleListAssign(call, xup, subs, x, len - 2);
+                }
                 else
                     xtop = x;
                 UNPROTECT(1);
