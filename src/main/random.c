@@ -463,19 +463,17 @@ static void ProbSampleNoReplace(int n, double *p, int *perm, int nans, int *ans)
     }
 }
 
-void FixupProb(double *p, int n, int require_k, Rboolean replace)
+static void FixupProb(double *p, int n, int require_k, Rboolean replace)
 {
-    double sum;
-    int i, npos;
-    npos = 0;
-    sum = 0.;
-    for (i = 0; i < n; i++)
+    double sum = 0.0;
+    int npos = 0;
+    for (int i = 0; i < n; i++)
     {
         if (!R_FINITE(p[i]))
             error(_("NA in probability vector"));
-        if (p[i] < 0)
-            error(_("non-positive probability"));
-        if (p[i] > 0)
+        if (p[i] < 0.0)
+            error(_("negative probability"));
+        if (p[i] > 0.0)
         {
             npos++;
             sum += p[i];
@@ -483,7 +481,7 @@ void FixupProb(double *p, int n, int require_k, Rboolean replace)
     }
     if (npos == 0 || (!replace && require_k > npos))
         error(_("too few positive probabilities"));
-    for (i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
         p[i] /= sum;
 }
 
