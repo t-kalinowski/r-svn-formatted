@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995,1996  Robert Gentleman, Ross Ihaka
- *  Copyright (C) 1997-2013  The R Core Team
+ *  Copyright (C) 1997-2014  The R Core Team
  *  Copyright (C) 2003-2009 The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -315,10 +315,12 @@ SEXP attribute_hidden StringFromInteger(int x, int *warn)
         return mkChar(EncodeInteger(x, w));
 }
 
-static const char *dropTrailing0(char *s, char cdec)
+#if OLD
+// moved to printutils.c
+static const char *dropTrailing0(char *s, const char *dec)
 {
     /* Note that  's'  is modified */
-    char *p = s;
+    char *p = s, cdec = dec[0];
     for (p = s; *p; p++)
     {
         if (*p == cdec)
@@ -352,6 +354,7 @@ SEXP attribute_hidden StringFromReal(double x, int *warn)
         return mkChar(dropTrailing0(tmp, OutDec));
     }
 }
+#endif
 
 SEXP attribute_hidden StringFromComplex(Rcomplex x, int *warn)
 {
