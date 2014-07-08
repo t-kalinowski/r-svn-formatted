@@ -3498,6 +3498,10 @@ int(LEVELS)(SEXP x)
 {
     return LEVELS(CHK(x));
 }
+int(REFCNT)(SEXP x)
+{
+    return REFCNT(x);
+}
 
 void(SET_ATTRIB)(SEXP x, SEXP v)
 {
