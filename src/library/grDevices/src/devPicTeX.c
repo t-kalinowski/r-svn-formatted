@@ -634,8 +634,6 @@ static Rboolean PicTeXDeviceDriver(pDevDesc dd, const char *filename, const char
  *  debug   = Rboolean; if TRUE, write TeX-Comments into output.
  */
 
-extern void GEaddDevice2f(pGEDevDesc gdd, const char *name, const char *file);
-
 SEXP PicTeX(SEXP args)
 {
     pGEDevDesc dd;

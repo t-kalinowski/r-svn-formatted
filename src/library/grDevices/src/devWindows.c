@@ -3963,7 +3963,6 @@ static void SaveAsTiff(pDevDesc dd, const char *fn)
 #ifndef CLEARTYPE_QUALITY
 #define CLEARTYPE_QUALITY 5
 #endif
-extern void GEaddDevice2f(pGEDevDesc gdd, const char *name, const char *file);
 
 SEXP devga(SEXP args)
 {
