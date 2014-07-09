@@ -76,8 +76,6 @@ int trio_vsnprintf(char *buffer, size_t bufferSize, const char *format, va_list 
 #define vsnprintf trio_vsnprintf
 #endif
 
-extern int R_OutputCon; /* from connections.c */
-
 #ifndef min
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #endif

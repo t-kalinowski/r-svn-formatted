@@ -883,7 +883,6 @@ static int UsingItalics(pGEcontext gc)
     return (gc->fontface == ItalicFont || gc->fontface == BoldItalicFont);
 }
 
-extern int Rf_AdobeSymbol2ucs2(int n);
 static BBOX GlyphBBox(int chr, pGEcontext gc, pGEDevDesc dd)
 {
     BBOX bbox;
