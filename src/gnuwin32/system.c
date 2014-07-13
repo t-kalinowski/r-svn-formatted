@@ -906,8 +906,6 @@ static int isDir(char *path)
     return isdir;
 }
 
-extern void BindDomain(char *R_Home);
-
 int cmdlineoptions(int ac, char **av)
 {
     int i, ierr;

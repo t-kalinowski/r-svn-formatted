@@ -758,7 +758,7 @@ pserror:
     return 0;
 }
 
-extern int Ri18n_wcwidth(wchar_t c);
+#include <rlocale.h> /* for Ri18n_wcwidth */
 
 static double PostScriptStringWidth(const unsigned char *str, int enc, FontMetricInfo *metrics, Rboolean useKerning,
                                     int face, const char *encoding)

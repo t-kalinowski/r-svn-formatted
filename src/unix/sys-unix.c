@@ -54,8 +54,6 @@
 
 #include <errno.h>
 
-extern Rboolean LoadInitFile;
-
 /*
  *  4) INITIALIZATION AND TERMINATION ACTIONS
  */
