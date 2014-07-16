@@ -239,7 +239,7 @@ SEXPTYPE str2type(const char *s)
     return (SEXPTYPE)-1;
 }
 
-SEXP type2str(SEXPTYPE t)
+SEXP type2str_nowarn(SEXPTYPE t)
 {
     int i;
 
@@ -247,6 +247,16 @@ SEXP type2str(SEXPTYPE t)
     {
         if (TypeTable[i].type == t)
             return mkChar(TypeTable[i].str);
+    }
+    return R_NilValue;
+}
+
+SEXP type2str(SEXPTYPE t)
+{
+    SEXP s = type2str_nowarn(t);
+    if (s != R_NilValue)
+    {
+        return s;
     }
     warning(_("type %d is unimplemented in '%s'"), t, "type2str");
     char buf[50];
