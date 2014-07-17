@@ -294,13 +294,11 @@ void InitTypeTables(void)
 
 SEXP type2str_nowarn(SEXPTYPE t) /* returns a CHARSXP */
 {
-    if (t >= 0 && t < MAX_NUM_SEXPTYPE)
+    if (t < MAX_NUM_SEXPTYPE)
     { /* FIXME: branch not really needed */
         SEXP res = Type2Table[t].rcharName;
         if (res != NULL)
-        {
             return res;
-        }
     }
     return R_NilValue;
 }
@@ -320,13 +318,11 @@ SEXP type2str(SEXPTYPE t) /* returns a CHARSXP */
 
 SEXP type2rstr(SEXPTYPE t) /* returns a STRSXP */
 {
-    if (t >= 0 && t < MAX_NUM_SEXPTYPE)
+    if (t < MAX_NUM_SEXPTYPE)
     { /* FIXME: branch not really needed */
         SEXP res = Type2Table[t].rstrName;
         if (res != NULL)
-        {
             return res;
-        }
     }
     error(_("type %d is unimplemented in '%s'"), t, "type2ImmutableScalarString");
     return R_NilValue; /* for -Wall */
@@ -334,13 +330,11 @@ SEXP type2rstr(SEXPTYPE t) /* returns a STRSXP */
 
 const char *type2char(SEXPTYPE t) /* returns a char* */
 {
-    if (t >= 0 && t < MAX_NUM_SEXPTYPE)
+    if (t < MAX_NUM_SEXPTYPE)
     { /* FIXME: branch not really needed */
         const char *res = Type2Table[t].cstrName;
         if (res != NULL)
-        {
             return res;
-        }
     }
     warning(_("type %d is unimplemented in '%s'"), t, "type2char");
     static char buf[50];
