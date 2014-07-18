@@ -2143,12 +2143,14 @@ static const char *getLocale(void)
     WideCharToMultiByte(CP_ACP, 0, wcBuffer, -1, locale, BUFFER_SIZE, NULL, NULL);
     printf("locale = %s\n", locale);
     // ICU should accept almost all of these, e.g. en-US and uz-Latn-UZ
-    return "en_US";
+    const char *p = getenv("R_ICU_LOCALE");
+    return (p && p[0]) ? p : "en_US";
 }
 #else
 static const char *getLocale(void)
 {
-    return setlocale(LC_COLLATE, NULL);
+    const char *p = getenv("R_ICU_LOCALE");
+    return (p && p[0]) ? p : setlocale(LC_COLLATE, NULL);
 }
 #endif
 
@@ -2242,6 +2244,23 @@ attribute_hidden int Scollate(SEXP a, SEXP b)
             {
                 collator = NULL;
                 error("failed to open ICU collator (%d)", status);
+            }
+        }
+#else
+        {
+            const char *p = getenv("R_ICU_LOCALE");
+            if (p && p[0])
+            {
+                UErrorCode status = U_ZERO_ERROR;
+                uloc_setDefault(p, &status);
+                if (U_FAILURE(status))
+                    error("failed to set ICU locale (%d)", status);
+                collator = ucol_open(NULL, &status);
+                if (U_FAILURE(status))
+                {
+                    collator = NULL;
+                    error("failed to open ICU collator (%d)", status);
+                }
             }
         }
 #endif
