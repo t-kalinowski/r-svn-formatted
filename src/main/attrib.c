@@ -750,7 +750,6 @@ static struct
 
 static SEXP createDefaultClass(SEXP part1, SEXP part2, SEXP part3)
 {
-
     int size = 0;
     if (part1 != R_NilValue)
         size++;
@@ -760,34 +759,26 @@ static SEXP createDefaultClass(SEXP part1, SEXP part2, SEXP part3)
         size++;
 
     if (size == 0 || part2 == R_NilValue)
-    {
         return R_NilValue;
-    }
+
     SEXP res = allocVector(STRSXP, size);
     R_PreserveObject(res);
 
     int i = 0;
     if (part1 != R_NilValue)
-    {
         SET_STRING_ELT(res, i++, part1);
-    }
     if (part2 != R_NilValue)
-    {
         SET_STRING_ELT(res, i++, part2);
-    }
     if (part3 != R_NilValue)
-    {
         SET_STRING_ELT(res, i, part3);
-    }
+
     MARK_NOT_MUTABLE(res);
     return res;
 }
 
-void InitS3DefaultTypes()
+attribute_hidden void InitS3DefaultTypes()
 {
-    int type;
-
-    for (type = 0; type < MAX_NUM_SEXPTYPE; type++)
+    for (int type = 0; type < MAX_NUM_SEXPTYPE; type++)
     {
         SEXP part2 = R_NilValue;
         SEXP part3 = R_NilValue;

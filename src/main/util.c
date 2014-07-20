@@ -247,23 +247,21 @@ static struct
     SEXP rsymName;
 } Type2Table[MAX_NUM_SEXPTYPE];
 
-int findTypeInTypeTable(SEXPTYPE t)
+static int findTypeInTypeTable(SEXPTYPE t)
 {
-    int i;
-    for (i = 0; TypeTable[i].str; i++)
-    {
+    for (int i = 0; TypeTable[i].str; i++)
         if (TypeTable[i].type == t)
             return i;
-    }
+
     return -1;
 }
 
-void InitTypeTables(void)
+// called from main.c
+attribute_hidden void InitTypeTables(void)
 {
 
     /* Type2Table */
-    int type;
-    for (type = 0; type < MAX_NUM_SEXPTYPE; type++)
+    for (int type = 0; type < MAX_NUM_SEXPTYPE; type++)
     {
         int j = findTypeInTypeTable(type);
 
