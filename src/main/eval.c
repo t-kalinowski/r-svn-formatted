@@ -4017,21 +4017,74 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
     } while (0)
 #endif
 
-/* compute the type of the function on the stack for which arguments
-   are being accumulated */
-#define CALL_FRAME_FTYPE() TYPEOF(GETSTACK(-3))
+/* call frame accessors */
+#define CALL_FRAME_FUN() GETSTACK(-3)
+#define CALL_FRAME_ARGS() GETSTACK(-2)
+#define CALL_FRAME_FTYPE() TYPEOF(CALL_FRAME_FUN())
+#define CALL_FRAME_SIZE() (3)
 
-#define PUSHCALLARG(v) PUSHCALLARG_CELL(CONS_NR(v, R_NilValue))
+#define GETSTACK_BELOW_CALL_FRAME(n) GETSTACK((n)-CALL_FRAME_SIZE())
+#define SETSTACK_BELOW_CALL_FRAME(n, v) SETSTACK((n)-CALL_FRAME_SIZE(), v)
 
-#define PUSHCALLARG_CELL(c)                                                                                            \
+/* create room for accumulating the arguments. */
+#define INIT_CALL_FRAME_ARGS()                                                                                         \
     do                                                                                                                 \
     {                                                                                                                  \
-        SEXP __cell__ = (c);                                                                                           \
+        BCNSTACKCHECK(2);                                                                                              \
+        SETSTACK(0, R_NilValue);                                                                                       \
+        SETSTACK(1, R_NilValue);                                                                                       \
+        R_BCNodeStackTop += 2;                                                                                         \
+    } while (0)
+
+/* push the function and create room for accumulating the arguments. */
+#define INIT_CALL_FRAME(fun)                                                                                           \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        BCNPUSH(fun);                                                                                                  \
+        INIT_CALL_FRAME_ARGS();                                                                                        \
+    } while (0)
+
+/* remove the call frame from the stack and push the return value */
+#define POP_CALL_FRAME(value) POP_CALL_FRAME_PLUS(0, value)
+
+#define POP_CALL_FRAME_PLUS(n, value)                                                                                  \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        R_BCNodeStackTop -= (2 + (n));                                                                                 \
+        SETSTACK(-1, value);                                                                                           \
+    } while (0)
+
+#define PUSHCALLARG(v)                                                                                                 \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        SEXP __cell__ = CONS_NR(v, R_NilValue);                                                                        \
         if (GETSTACK(-2) == R_NilValue)                                                                                \
             SETSTACK(-2, __cell__);                                                                                    \
         else                                                                                                           \
             SETCDR(GETSTACK(-1), __cell__);                                                                            \
         SETSTACK(-1, __cell__);                                                                                        \
+    } while (0)
+
+/* place a tag on the most recently pushed call argument */
+#define SETCALLARG_TAG(t)                                                                                              \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        SEXP __tag__ = (t);                                                                                            \
+        if (__tag__ != R_NilValue)                                                                                     \
+        {                                                                                                              \
+            SEXP __cell__ = GETSTACK(-1);                                                                              \
+            if (__cell__ != R_NilValue)                                                                                \
+                SET_TAG(__cell__, CreateTag(__tag__));                                                                 \
+        }                                                                                                              \
+    } while (0)
+
+/* same, but tag is known to be a symbol */
+#define SETCALLARG_TAG_SYMBOL(t)                                                                                       \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        SEXP __cell__ = GETSTACK(-1);                                                                                  \
+        if (__cell__ != R_NilValue)                                                                                    \
+            SET_TAG(__cell__, t);                                                                                      \
     } while (0)
 
 static int tryDispatch(char *generic, SEXP call, SEXP x, SEXP rho, SEXP *pv)
@@ -4102,15 +4155,10 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
         else                                                                                                           \
         {                                                                                                              \
             SEXP tag = TAG(CDR(call));                                                                                 \
-            SEXP cell = CONS_NR(value, R_NilValue);                                                                    \
-            BCNSTACKCHECK(4);                                                                                          \
-            SETSTACK(0, call);                                                                                         \
-            SETSTACK(1, R_NilValue);                                                                                   \
-            SETSTACK(2, cell);                                                                                         \
-            SETSTACK(3, cell);                                                                                         \
-            R_BCNodeStackTop += 4;                                                                                     \
-            if (tag != R_NilValue)                                                                                     \
-                SET_TAG(cell, CreateTag(tag));                                                                         \
+            BCNPUSH(call);                                                                                             \
+            INIT_CALL_FRAME(R_NilValue);                                                                               \
+            PUSHCALLARG(value);                                                                                        \
+            SETCALLARG_TAG(tag);                                                                                       \
         }                                                                                                              \
         NEXT();                                                                                                        \
     } while (0)
@@ -4118,11 +4166,10 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
 #define DO_DFLTDISPATCH(fun, symbol)                                                                                   \
     do                                                                                                                 \
     {                                                                                                                  \
-        SEXP call = GETSTACK(-4);                                                                                      \
-        SEXP args = GETSTACK(-2);                                                                                      \
+        SEXP call = GETSTACK_BELOW_CALL_FRAME(-1);                                                                     \
+        SEXP args = CALL_FRAME_ARGS();                                                                                 \
         value = fun(call, symbol, args, rho);                                                                          \
-        R_BCNodeStackTop -= 4;                                                                                         \
-        SETSTACK(-1, value);                                                                                           \
+        POP_CALL_FRAME_PLUS(2, value);                                                                                 \
         NEXT();                                                                                                        \
     } while (0)
 
@@ -4149,15 +4196,10 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
         else                                                                                                           \
         {                                                                                                              \
             SEXP tag = TAG(CDR(call));                                                                                 \
-            SEXP cell = CONS_NR(lhs, R_NilValue);                                                                      \
-            BCNSTACKCHECK(4);                                                                                          \
-            SETSTACK(0, call);                                                                                         \
-            SETSTACK(1, R_NilValue);                                                                                   \
-            SETSTACK(2, cell);                                                                                         \
-            SETSTACK(3, cell);                                                                                         \
-            R_BCNodeStackTop += 4;                                                                                     \
-            if (tag != R_NilValue)                                                                                     \
-                SET_TAG(cell, CreateTag(tag));                                                                         \
+            BCNPUSH(call);                                                                                             \
+            INIT_CALL_FRAME(R_NilValue);                                                                               \
+            PUSHCALLARG(lhs);                                                                                          \
+            SETCALLARG_TAG(tag);                                                                                       \
         }                                                                                                              \
         NEXT();                                                                                                        \
     } while (0)
@@ -4165,13 +4207,12 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
 #define DO_DFLT_ASSIGN_DISPATCH(fun, symbol)                                                                           \
     do                                                                                                                 \
     {                                                                                                                  \
-        SEXP rhs = GETSTACK(-5);                                                                                       \
-        SEXP call = GETSTACK(-4);                                                                                      \
-        SEXP args = GETSTACK(-2);                                                                                      \
+        SEXP rhs = GETSTACK_BELOW_CALL_FRAME(-2);                                                                      \
+        SEXP call = GETSTACK_BELOW_CALL_FRAME(-1);                                                                     \
+        SEXP args = CALL_FRAME_ARGS();                                                                                 \
         PUSHCALLARG(rhs);                                                                                              \
         value = fun(call, symbol, args, rho);                                                                          \
-        R_BCNodeStackTop -= 5;                                                                                         \
-        SETSTACK(-1, value);                                                                                           \
+        POP_CALL_FRAME_PLUS(3, value);                                                                                 \
         NEXT();                                                                                                        \
     } while (0)
 
@@ -4933,14 +4974,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 Rprintf("trace: ");
                 PrintValue(symbol);
             }
-
-            /* initialize the function type register, push the function, and
-               push space for creating the argument list. */
-            BCNSTACKCHECK(3);
-            SETSTACK(0, value);
-            SETSTACK(1, R_NilValue);
-            SETSTACK(2, R_NilValue);
-            R_BCNodeStackTop += 3;
+            INIT_CALL_FRAME(value);
             NEXT();
         }
         OP(GETGLOBFUN, 1) :
@@ -4953,14 +4987,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 Rprintf("trace: ");
                 PrintValue(symbol);
             }
-
-            /* initialize the function type register, push the function, and
-               push space for creating the argument list. */
-            BCNSTACKCHECK(3);
-            SETSTACK(0, value);
-            SETSTACK(1, R_NilValue);
-            SETSTACK(2, R_NilValue);
-            R_BCNodeStackTop += 3;
+            INIT_CALL_FRAME(value);
             NEXT();
         }
         OP(GETSYMFUN, 1) :
@@ -4978,14 +5005,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 Rprintf("trace: ");
                 PrintValue(symbol);
             }
-
-            /* initialize the function type register, push the function, and
-               push space for creating the argument list. */
-            BCNSTACKCHECK(3);
-            SETSTACK(0, value);
-            SETSTACK(1, R_NilValue);
-            SETSTACK(2, R_NilValue);
-            R_BCNodeStackTop += 3;
+            INIT_CALL_FRAME(value);
             NEXT();
         }
         OP(GETBUILTIN, 1) :
@@ -4998,13 +5018,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 Rprintf("trace: ");
                 PrintValue(symbol);
             }
-
-            /* push the function and push space for creating the argument list. */
-            BCNSTACKCHECK(3);
-            SETSTACK(0, value);
-            SETSTACK(1, R_NilValue);
-            SETSTACK(2, R_NilValue);
-            R_BCNodeStackTop += 3;
+            INIT_CALL_FRAME(value);
             NEXT();
         }
         OP(GETINTLBUILTIN, 1) :
@@ -5014,13 +5028,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             value = INTERNAL(symbol);
             if (TYPEOF(value) != BUILTINSXP)
                 error(_("there is no .Internal function '%s'"), CHAR(PRINTNAME(symbol)));
-
-            /* push the function and push space for creating the argument list. */
-            BCNSTACKCHECK(3);
-            SETSTACK(0, value);
-            SETSTACK(1, R_NilValue);
-            SETSTACK(2, R_NilValue);
-            R_BCNodeStackTop += 3;
+            INIT_CALL_FRAME(value);
             NEXT();
         }
         OP(CHECKFUN, 0) :
@@ -5029,13 +5037,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             value = GETSTACK(-1);
             if (TYPEOF(value) != CLOSXP && TYPEOF(value) != BUILTINSXP && TYPEOF(value) != SPECIALSXP)
                 error(_("attempt to apply non-function"));
-
-            /* initialize the function type register, and push space for
-               creating the argument list. */
-            BCNSTACKCHECK(2);
-            SETSTACK(0, R_NilValue);
-            SETSTACK(1, R_NilValue);
-            R_BCNodeStackTop += 2;
+            INIT_CALL_FRAME_ARGS();
             NEXT();
         }
         OP(MAKEPROM, 1) :
@@ -5062,10 +5064,12 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         OP(SETTAG, 1) :
         {
             SEXPTYPE ftype = CALL_FRAME_FTYPE();
-            SEXP tag = VECTOR_ELT(constants, GETOP());
-            SEXP cell = GETSTACK(-1);
-            if (ftype != SPECIALSXP && cell != R_NilValue)
-                SET_TAG(cell, CreateTag(tag));
+            int tagidx = GETOP();
+            if (ftype != SPECIALSXP)
+            {
+                SEXP tag = VECTOR_ELT(constants, tagidx);
+                SETCALLARG_TAG(tag);
+            }
             NEXT();
         }
         OP(DODOTS, 0) :
@@ -5078,15 +5082,13 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 {
                     for (; h != R_NilValue; h = CDR(h))
                     {
-                        SEXP val, cell;
+                        SEXP val;
                         if (ftype == BUILTINSXP)
                             val = eval(CAR(h), rho);
                         else
                             val = mkPROMISE(CAR(h), rho);
-                        cell = CONS_NR(val, R_NilValue);
-                        PUSHCALLARG_CELL(cell);
-                        if (TAG(h) != R_NilValue)
-                            SET_TAG(cell, CreateTag(TAG(h)));
+                        PUSHCALLARG(val);
+                        SETCALLARG_TAG(TAG(h));
                     }
                 }
                 else if (h != R_MissingArg)
@@ -5109,9 +5111,9 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         NEXT();
         OP(CALL, 1) :
         {
-            SEXP fun = GETSTACK(-3);
+            SEXP fun = CALL_FRAME_FUN();
             SEXP call = VECTOR_ELT(constants, GETOP());
-            SEXP args = GETSTACK(-2);
+            SEXP args = CALL_FRAME_ARGS();
             int flag;
             switch (TYPEOF(fun))
             {
@@ -5136,15 +5138,14 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             default:
                 error(_("bad function"));
             }
-            R_BCNodeStackTop -= 2;
-            SETSTACK(-1, value);
+            POP_CALL_FRAME(value);
             NEXT();
         }
         OP(CALLBUILTIN, 1) :
         {
-            SEXP fun = GETSTACK(-3);
+            SEXP fun = CALL_FRAME_FUN();
             SEXP call = VECTOR_ELT(constants, GETOP());
-            SEXP args = GETSTACK(-2);
+            SEXP args = CALL_FRAME_ARGS();
             int flag;
             const void *vmax = vmaxget();
             if (TYPEOF(fun) != BUILTINSXP)
@@ -5168,8 +5169,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             if (flag < 2)
                 R_Visible = flag != 1;
             vmaxset(vmax);
-            R_BCNodeStackTop -= 2;
-            SETSTACK(-1, value);
+            POP_CALL_FRAME(value);
             NEXT();
         }
         OP(CALLSPECIAL, 1) :
@@ -5442,16 +5442,16 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         }
         OP(SETTER_CALL, 2) :
         {
-            SEXP lhs = GETSTACK(-5);
-            SEXP rhs = GETSTACK(-4);
-            SEXP fun = GETSTACK(-3);
+            SEXP lhs = GETSTACK_BELOW_CALL_FRAME(-2);
+            SEXP rhs = GETSTACK_BELOW_CALL_FRAME(-1);
+            SEXP fun = CALL_FRAME_FUN();
             SEXP call = VECTOR_ELT(constants, GETOP());
             SEXP vexpr = VECTOR_ELT(constants, GETOP());
             SEXP args, prom, last;
             if (MAYBE_SHARED(lhs))
             {
                 lhs = shallow_duplicate(lhs);
-                SETSTACK(-5, lhs);
+                SETSTACK_BELOW_CALL_FRAME(-2, lhs);
                 SET_NAMED(lhs, 1);
             }
             switch (TYPEOF(fun))
@@ -5459,9 +5459,9 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             case BUILTINSXP:
                 /* push RHS value onto arguments with 'value' tag */
                 PUSHCALLARG(rhs);
-                SET_TAG(GETSTACK(-1), R_valueSym);
+                SETCALLARG_TAG_SYMBOL(R_valueSym);
                 /* replace first argument with LHS value */
-                args = GETSTACK(-2);
+                args = CALL_FRAME_ARGS();
                 SETCAR(args, lhs);
                 /* make the call */
                 checkForMissings(args, call);
@@ -5488,11 +5488,11 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 /* push evaluated promise for RHS onto arguments with 'value' tag */
                 prom = mkRHSPROMISE(vexpr, rhs);
                 PUSHCALLARG(prom);
-                SET_TAG(GETSTACK(-1), R_valueSym);
+                SETCALLARG_TAG_SYMBOL(R_valueSym);
                 /* replace first argument with evaluated promise for LHS */
                 /* promise might be captured, so track references */
                 prom = R_mkEVPROMISE(R_TmpvalSymbol, lhs);
-                args = GETSTACK(-2);
+                args = CALL_FRAME_ARGS();
                 SETCAR(args, prom);
                 /* make the call */
                 value = applyClosure(call, fun, args, rho, R_BaseEnv);
@@ -5500,21 +5500,20 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             default:
                 error(_("bad function"));
             }
-            R_BCNodeStackTop -= 4;
-            SETSTACK(-1, value);
+            POP_CALL_FRAME_PLUS(2, value);
             NEXT();
         }
         OP(GETTER_CALL, 1) :
         {
-            SEXP lhs = GETSTACK(-5);
-            SEXP fun = GETSTACK(-3);
+            SEXP lhs = GETSTACK_BELOW_CALL_FRAME(-2);
+            SEXP fun = CALL_FRAME_FUN();
             SEXP call = VECTOR_ELT(constants, GETOP());
             SEXP args, prom;
             switch (TYPEOF(fun))
             {
             case BUILTINSXP:
                 /* replace first argument with LHS value */
-                args = GETSTACK(-2);
+                args = CALL_FRAME_ARGS();
                 SETCAR(args, lhs);
                 /* make the call */
                 checkForMissings(args, call);
@@ -5535,7 +5534,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 /* replace first argument with evaluated promise for LHS */
                 /* promise might be captured, so track references */
                 prom = R_mkEVPROMISE(R_TmpvalSymbol, lhs);
-                args = GETSTACK(-2);
+                args = CALL_FRAME_ARGS();
                 SETCAR(args, prom);
                 /* make the call */
                 value = applyClosure(call, fun, args, rho, R_BaseEnv);
@@ -5543,8 +5542,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             default:
                 error(_("bad function"));
             }
-            R_BCNodeStackTop -= 2;
-            SETSTACK(-1, value);
+            POP_CALL_FRAME(value);
             NEXT();
         }
         OP(SWAP, 0) :
