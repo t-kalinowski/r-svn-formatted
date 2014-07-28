@@ -3619,7 +3619,7 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
 #define BCNSTACKCHECK(n)                                                                                               \
     do                                                                                                                 \
     {                                                                                                                  \
-        if (R_BCNodeStackTop + 1 > R_BCNodeStackEnd)                                                                   \
+        if (R_BCNodeStackTop + (n) > R_BCNodeStackEnd)                                                                 \
             nodeStackOverflow();                                                                                       \
     } while (0)
 
