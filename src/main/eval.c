@@ -3293,7 +3293,7 @@ static R_INLINE int bcStackScalar(R_bcstack_t *s, scalar_value_t *v)
         switch (TYPEOF(x))
         {
         case REALSXP:
-            if (LENGTH(x) == 1)
+            if (XLENGTH(x) == 1)
             {
                 v->dval = REAL(x)[0];
                 return REALSXP;
@@ -3301,7 +3301,7 @@ static R_INLINE int bcStackScalar(R_bcstack_t *s, scalar_value_t *v)
             else
                 return 0;
         case INTSXP:
-            if (LENGTH(x) == 1)
+            if (XLENGTH(x) == 1)
             {
                 v->ival = INTEGER(x)[0];
                 return INTSXP;
@@ -3309,7 +3309,7 @@ static R_INLINE int bcStackScalar(R_bcstack_t *s, scalar_value_t *v)
             else
                 return 0;
         case LGLSXP:
-            if (LENGTH(x) == 1)
+            if (XLENGTH(x) == 1)
             {
                 v->ival = LOGICAL(x)[0];
                 return LGLSXP;
@@ -4318,22 +4318,22 @@ static void loopWithContext(volatile SEXP code, volatile SEXP rho)
     endcontext(&cntxt);
 }
 
-static R_INLINE int bcStackIndex(R_bcstack_t *s)
+static R_INLINE R_xlen_t bcStackIndex(R_bcstack_t *s)
 {
     SEXP idx = *s;
     switch (TYPEOF(idx))
     {
     case INTSXP:
-        if (LENGTH(idx) == 1 && INTEGER(idx)[0] != NA_INTEGER)
+        if (XLENGTH(idx) == 1 && INTEGER(idx)[0] != NA_INTEGER)
             return INTEGER(idx)[0];
         else
             return -1;
     case REALSXP:
-        if (LENGTH(idx) == 1)
+        if (XLENGTH(idx) == 1)
         {
             double val = REAL(idx)[0];
-            if (!ISNAN(val) && val <= INT_MAX && val > INT_MIN)
-                return (int)val;
+            if (!ISNAN(val) && val <= R_XLEN_T_MAX && val > 0)
+                return (R_xlen_t)val;
             else
                 return -1;
         }
@@ -4473,14 +4473,14 @@ static R_INLINE void DO_MATSUBSET(SEXP rho)
 #define INTEGER_TO_REAL(x) ((x) == NA_INTEGER ? NA_REAL : (x))
 #define LOGICAL_TO_REAL(x) ((x) == NA_LOGICAL ? NA_REAL : (x))
 
-static R_INLINE Rboolean setElementFromScalar(SEXP vec, int i, int typev, scalar_value_t *v)
+static R_INLINE Rboolean setElementFromScalar(SEXP vec, R_xlen_t i, int typev, scalar_value_t *v)
 {
     if (i < 0)
         return FALSE;
 
     if (TYPEOF(vec) == REALSXP)
     {
-        if (LENGTH(vec) <= i)
+        if (XLENGTH(vec) <= i)
             return FALSE;
         switch (typev)
         {
@@ -4497,7 +4497,7 @@ static R_INLINE Rboolean setElementFromScalar(SEXP vec, int i, int typev, scalar
     }
     else if (typev == TYPEOF(vec))
     {
-        if (LENGTH(vec) <= i)
+        if (XLENGTH(vec) <= i)
             return FALSE;
         switch (typev)
         {
@@ -4505,7 +4505,7 @@ static R_INLINE Rboolean setElementFromScalar(SEXP vec, int i, int typev, scalar
             INTEGER(vec)[i] = v->ival;
             return TRUE;
         case LGLSXP:
-            LOGICAL(vec)[i] = v->ival;
+            LOGICAL(vec)[i] = v->ival ? TRUE : FALSE;
             return TRUE;
         }
     }
