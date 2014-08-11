@@ -48,7 +48,7 @@
 
    level 0 is no additional instrumentation
    level 1 marks uninitialized numeric, logical, integer, raw,
-          complex vectors and R_alloc memory
+           complex vectors and R_alloc memory
    level 2 marks the data section of vector nodes as inaccessible
            when they are freed.
    level 3 marks the first three bytes of sxpinfo and the ATTRIB
@@ -1732,7 +1732,7 @@ again:
 
     FORWARD_NODE(R_VStack); /* R_alloc stack */
 
-    for (SEXP *sp = R_BCNodeStackBase; sp < R_BCNodeStackTop; sp++)
+    for (R_bcstack_t *sp = R_BCNodeStackBase; sp < R_BCNodeStackTop; sp++)
         FORWARD_NODE(*sp);
 
     /* main processing loop */
@@ -2196,7 +2196,7 @@ void attribute_hidden InitMemory()
     ATTRIB(R_NilValue) = R_NilValue;
     MARK_NOT_MUTABLE(R_NilValue);
 
-    R_BCNodeStackBase = (SEXP *)malloc(R_BCNODESTACKSIZE * sizeof(SEXP));
+    R_BCNodeStackBase = (R_bcstack_t *)malloc(R_BCNODESTACKSIZE * sizeof(R_bcstack_t));
     if (R_BCNodeStackBase == NULL)
         R_Suicide("couldn't allocate node stack");
 #ifdef BC_INT_STACK
@@ -3926,7 +3926,7 @@ void(SET_RSTEP)(SEXP x, int v)
 /* These are only needed with the write barrier on */
 #ifdef TESTING_WRITE_BARRIER
 /* Primitive Accessors */
-int(PRIMOFFSET)(SEXP x)
+attribute_hidden int(PRIMOFFSET)(SEXP x)
 {
     return PRIMOFFSET(x);
 }

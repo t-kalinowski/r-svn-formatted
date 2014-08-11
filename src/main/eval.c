@@ -3589,7 +3589,7 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
         R_bcstack_t *__ntop__ = R_BCNodeStackTop + 1;                                                                  \
         if (__ntop__ > R_BCNodeStackEnd)                                                                               \
             nodeStackOverflow();                                                                                       \
-        __ntop__[-1] = __value__;                                                                                      \
+        SETSTACK(0, __value__);                                                                                        \
         R_BCNodeStackTop = __ntop__;                                                                                   \
     } while (0)
 
@@ -4758,7 +4758,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             nodeStackOverflow();
         while (n > 0)
         {
-            *R_BCNodeStackTop = R_NilValue;
+            SETSTACK(0, R_NilValue);
             R_BCNodeStackTop++;
             n--;
         }
