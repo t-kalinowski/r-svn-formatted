@@ -707,7 +707,7 @@ FUNTAB R_FunTab[] = {
     {"bodyCode", do_bodyCode, 0, 11, 1, {PP_FUNCALL, PREC_FN, 0}},
     {"environment", do_envir, 0, 11, 1, {PP_FUNCALL, PREC_FN, 0}},
     {"environmentName", do_envirName, 0, 11, 1, {PP_FUNCALL, PREC_FN, 0}},
-    {"env2list", do_env2list, 0, 11, 2, {PP_FUNCALL, PREC_FN, 0}},
+    {"env2list", do_env2list, 0, 11, 3, {PP_FUNCALL, PREC_FN, 0}},
     {"reg.finalizer", do_regFinaliz, 0, 11, 3, {PP_FUNCALL, PREC_FN, 0}},
     {"options", do_options, 0, 211, 1, {PP_FUNCALL, PREC_FN, 0}},
     {"sink", do_sink, 0, 111, 4, {PP_FUNCALL, PREC_FN, 0}},
