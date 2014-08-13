@@ -2653,12 +2653,12 @@ SEXP attribute_hidden do_ls(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (sort_nms == NA_LOGICAL)
         sort_nms = 0;
 
-    return R_lsInternal(env, all, sort_nms);
+    return R_lsInternal3(env, all, sort_nms);
 }
 
 /* takes a *list* of environments and a boolean indicating whether to get all
    names */
-SEXP R_lsInternal(SEXP env, Rboolean all, Rboolean sorted)
+SEXP R_lsInternal3(SEXP env, Rboolean all, Rboolean sorted)
 {
     int k;
     SEXP ans;
@@ -2694,6 +2694,12 @@ SEXP R_lsInternal(SEXP env, Rboolean all, Rboolean sorted)
     if (sorted)
         sortVector(ans, FALSE);
     return ans;
+}
+
+/* non-API version used in several packages */
+SEXP R_lsInternal(SEXP env, Rboolean all)
+{
+    return R_lsInternal3(env, all, TRUE);
 }
 
 /* transform an environment into a named list: as.list.environment(.) */

@@ -4421,8 +4421,8 @@ static R_INLINE void DO_MATSUBSET(SEXP rho)
 
     if (dim != R_NilValue)
     {
-        int i = bcStackIndex(R_BCNodeStackTop - 2);
-        int j = bcStackIndex(R_BCNodeStackTop - 1);
+        int i = (int)bcStackIndex(R_BCNodeStackTop - 2);
+        int j = (int)bcStackIndex(R_BCNodeStackTop - 1);
         int nrow = INTEGER(dim)[0];
         int ncol = INTEGER(dim)[1];
         if (i > 0 && j > 0 && i <= nrow && j <= ncol)
@@ -4576,8 +4576,8 @@ static R_INLINE void DO_SETMATSUBSET(SEXP rho)
 
     if (dim != R_NilValue)
     {
-        int i = bcStackIndex(R_BCNodeStackTop - 2);
-        int j = bcStackIndex(R_BCNodeStackTop - 1);
+        int i = (int)bcStackIndex(R_BCNodeStackTop - 2);
+        int j = (int)bcStackIndex(R_BCNodeStackTop - 1);
         int nrow = INTEGER(dim)[0];
         int ncol = INTEGER(dim)[1];
         if (i > 0 && j > 0 && i <= nrow && j <= ncol)
