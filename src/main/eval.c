@@ -3513,8 +3513,8 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
     } while (0)
 #else
 /* these reuse one of the two values on the top of the stack if it is
-   of the right type and has NAMED = 0. It is known that both of these
-   will have length one and have no attributes. */
+   of the right type and has no references. It is known that both of
+   these will have length one and have no attributes. */
 #define DO_FAST_BINOP(op, a, b)                                                                                        \
     do                                                                                                                 \
     {                                                                                                                  \
@@ -4409,7 +4409,7 @@ static R_INLINE SEXP getMatrixDim(SEXP mat)
     if (!OBJECT(mat) && TAG(ATTRIB(mat)) == R_DimSymbol && CDR(ATTRIB(mat)) == R_NilValue)
     {
         SEXP dim = CAR(ATTRIB(mat));
-        if (TYPEOF(dim) == INTSXP && XLENGTH(dim) == 2)
+        if (TYPEOF(dim) == INTSXP && LENGTH(dim) == 2)
             return dim;
         else
             return R_NilValue;
