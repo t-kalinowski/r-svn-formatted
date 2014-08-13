@@ -2656,15 +2656,12 @@ SEXP attribute_hidden do_ls(SEXP call, SEXP op, SEXP args, SEXP rho)
     return R_lsInternal3(env, all, sort_nms);
 }
 
-/* takes a *list* of environments and a boolean indicating whether to get all
-   names */
+/* takes a *list* of environments, a boolean indicating whether to get all
+   names and a boolean if sorted is desired */
 SEXP R_lsInternal3(SEXP env, Rboolean all, Rboolean sorted)
 {
-    int k;
-    SEXP ans;
-
     /* Step 1 : Compute the Vector Size */
-    k = 0;
+    int k = 0;
     if (env == R_BaseEnv || env == R_BaseNamespace)
         k += BuiltinSize(all, 0);
     else if (isEnvironment(env) || isEnvironment(env = simple_as_environment(env)))
@@ -2678,7 +2675,7 @@ SEXP R_lsInternal3(SEXP env, Rboolean all, Rboolean sorted)
         error(_("invalid '%s' argument"), "envir");
 
     /* Step 2 : Allocate and Fill the Result */
-    PROTECT(ans = allocVector(STRSXP, k));
+    SEXP ans = PROTECT(allocVector(STRSXP, k));
     k = 0;
     if (env == R_BaseEnv || env == R_BaseNamespace)
         BuiltinNames(all, 0, ans, &k);
