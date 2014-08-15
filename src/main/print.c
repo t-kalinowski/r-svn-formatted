@@ -944,8 +944,8 @@ static void printAttributes(SEXP s, SEXP env, Rboolean useSlots)
                 if (TAG(a) == R_NamesSymbol)
                     goto nextattr;
             }
-            if (TAG(a) == R_CommentSymbol || TAG(a) == R_SourceSymbol || TAG(a) == R_SrcrefSymbol ||
-                TAG(a) == R_WholeSrcrefSymbol || TAG(a) == R_SrcfileSymbol)
+            if (TAG(a) == R_CommentSymbol || TAG(a) == R_SrcrefSymbol || TAG(a) == R_WholeSrcrefSymbol ||
+                TAG(a) == R_SrcfileSymbol)
                 goto nextattr;
             if (useSlots)
                 sprintf(ptag, "Slot \"%s\":", EncodeString(PRINTNAME(TAG(a)), 0, 0, Rprt_adj_left));
