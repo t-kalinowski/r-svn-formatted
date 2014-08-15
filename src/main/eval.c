@@ -2817,7 +2817,7 @@ attribute_hidden int DispatchOrEval(SEXP call, SEXP op, const char *generic, SEX
 
 /* gr needs to be protected on return from this function */
 static void findmethod(SEXP Class, const char *group, const char *generic, SEXP *sxp, SEXP *gr, SEXP *meth, int *which,
-                       char *buf, SEXP rho)
+                       SEXP rho)
 {
     int len, whichclass;
     const void *vmax = vmaxget();
@@ -2831,20 +2831,14 @@ static void findmethod(SEXP Class, const char *group, const char *generic, SEXP 
     for (whichclass = 0; whichclass < len; whichclass++)
     {
         const char *ss = translateChar(STRING_ELT(Class, whichclass));
-        if (strlen(generic) + strlen(ss) + 2 > 512)
-            error(_("class name too long in '%s'"), generic);
-        sprintf(buf, "%s.%s", generic, ss);
-        *meth = install(buf);
+        *meth = installS3Signature(generic, ss);
         *sxp = R_LookupMethod(*meth, rho, rho, R_BaseEnv);
         if (isFunction(*sxp))
         {
             *gr = mkString("");
             break;
         }
-        if (strlen(group) + strlen(ss) + 2 > 512)
-            error(_("class name too long in '%s'"), group);
-        sprintf(buf, "%s.%s", group, ss);
-        *meth = install(buf);
+        *meth = installS3Signature(group, ss);
         *sxp = R_LookupMethod(*meth, rho, rho, R_BaseEnv);
         if (isFunction(*sxp))
         {
@@ -2861,7 +2855,7 @@ attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP a
     int i, j, nargs, lwhich, rwhich, set;
     SEXP lclass, s, t, m, lmeth, lsxp, lgr, newrho;
     SEXP rclass, rmeth, rgr, rsxp, value;
-    char lbuf[512], rbuf[512], generic[128], *pt;
+    char *generic;
     Rboolean useS4 = TRUE, isOps = FALSE;
 
     /* pre-test to avoid string computations when there is nothing to
@@ -2897,13 +2891,8 @@ attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP a
     /* check whether we are processing the default method */
     if (isSymbol(CAR(call)))
     {
-        if (strlen(CHAR(PRINTNAME(CAR(call)))) >= 512)
-            error(_("call name too long in '%s'"), EncodeChar(PRINTNAME(CAR(call))));
-        sprintf(lbuf, "%s", CHAR(PRINTNAME(CAR(call))));
-        pt = strtok(lbuf, ".");
-        pt = strtok(NULL, ".");
-
-        if (pt != NULL && !strcmp(pt, "default"))
+        const char *cstr = strchr(CHAR(PRINTNAME(CAR(call))), '.');
+        if (cstr && !strcmp(cstr + 1, "default"))
             return 0;
     }
 
@@ -2918,9 +2907,7 @@ attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP a
     if (!isObject(CAR(args)) && !isObject(CADR(args)))
         return 0;
 
-    if (strlen(PRIMNAME(op)) >= 128)
-        error(_("generic name too long in '%s'"), PRIMNAME(op));
-    sprintf(generic, "%s", PRIMNAME(op));
+    generic = PRIMNAME(op);
 
     lclass = IS_S4_OBJECT(CAR(args)) ? R_data_class2(CAR(args)) : getAttrib(CAR(args), R_ClassSymbol);
 
@@ -2936,7 +2923,7 @@ attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP a
     rgr = R_NilValue;
     rmeth = R_NilValue;
 
-    findmethod(lclass, group, generic, &lsxp, &lgr, &lmeth, &lwhich, lbuf, rho);
+    findmethod(lclass, group, generic, &lsxp, &lgr, &lmeth, &lwhich, rho);
     PROTECT(lgr);
     const void *vmax = vmaxget();
     if (isFunction(lsxp) && IS_S4_OBJECT(CAR(args)) && lwhich > 0 &&
@@ -2953,7 +2940,7 @@ attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP a
     }
 
     if (nargs == 2)
-        findmethod(rclass, group, generic, &rsxp, &rgr, &rmeth, &rwhich, rbuf, rho);
+        findmethod(rclass, group, generic, &rsxp, &rgr, &rmeth, &rwhich, rho);
     else
         rwhich = 0;
 
@@ -3003,7 +2990,6 @@ attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP a
             lgr = rgr;
             lclass = rclass;
             lwhich = rwhich;
-            strcpy(lbuf, rbuf);
         }
     }
 
@@ -3023,7 +3009,7 @@ attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP a
             {
                 if (!strcmp(translateChar(STRING_ELT(t, j)), translateChar(STRING_ELT(lclass, lwhich))))
                 {
-                    SET_STRING_ELT(m, i, mkChar(lbuf));
+                    SET_STRING_ELT(m, i, PRINTNAME(lmeth));
                     set = 1;
                     break;
                 }
