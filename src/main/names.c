@@ -1159,10 +1159,6 @@ SEXP install(const char *name)
     SEXP sym;
     int i, hashcode;
 
-    if (*name == '\0')
-        error(_("attempt to use zero-length variable name"));
-    if (strlen(name) > MAXIDSIZE)
-        error(_("variable names are limited to %d bytes"), MAXIDSIZE);
     hashcode = R_Newhashpjw(name);
     i = hashcode % HSIZE;
     /* Check to see if the symbol is already present;  if it is, return it. */
@@ -1170,6 +1166,10 @@ SEXP install(const char *name)
         if (strcmp(name, CHAR(PRINTNAME(CAR(sym)))) == 0)
             return (CAR(sym));
     /* Create a new symbol node and link it into the table. */
+    if (*name == '\0')
+        error(_("attempt to use zero-length variable name"));
+    if (strlen(name) > MAXIDSIZE)
+        error(_("variable names are limited to %d bytes"), MAXIDSIZE);
     sym = mkSYMSXP(mkChar(name), R_UnboundValue);
     SET_HASHVALUE(PRINTNAME(sym), hashcode);
     SET_HASHASH(PRINTNAME(sym), 1);
