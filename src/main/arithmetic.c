@@ -1799,13 +1799,13 @@ SEXP attribute_hidden do_log(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     PROTECT(args = evalListKeepMissing(args, env));
     int n = length(args);
-    static SEXP do_log_formals = NULL;
+    SEXP res;
 
     if (n == 1 && TAG(args) == R_NilValue)
     {
+        /* log(x) is handled here */
         SEXP x = CAR(args);
-        SEXP res;
-        if (!OBJECT(x))
+        if (x != R_MissingArg && !OBJECT(x))
         {
             if (isComplex(x))
                 res = complex_math1(call, op, args, env);
@@ -1820,8 +1820,7 @@ SEXP attribute_hidden do_log(SEXP call, SEXP op, SEXP args, SEXP env)
         /* log(x, y) or log(x, base = y) are handled here */
         SEXP x = CAR(args);
         SEXP y = CADR(args);
-        SEXP res;
-        if (!OBJECT(x) && !OBJECT(y))
+        if (x != R_MissingArg && y != R_MissingArg && !OBJECT(x) && !OBJECT(y))
         {
             if (isComplex(x) || isComplex(y))
                 res = complex_math2(call, op, args, env);
@@ -1832,7 +1831,15 @@ SEXP attribute_hidden do_log(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
 
-    SEXP res, call2;
+    static SEXP do_log_formals = NULL;
+    static SEXP R_x_Symbol = NULL;
+    if (do_log_formals == NULL)
+    {
+        R_x_Symbol = install("x");
+        do_log_formals = allocFormalsList2(R_x_Symbol, R_baseSymbol);
+    }
+
+    SEXP call2;
     int nprotect = 2;
 
     if (n >= 2 && CADR(args) == R_MissingArg)
@@ -1859,8 +1866,6 @@ SEXP attribute_hidden do_log(SEXP call, SEXP op, SEXP args, SEXP env)
             break;
         case 2: {
             /* match argument names if supplied */
-            if (do_log_formals == NULL)
-                do_log_formals = allocFormalsList2(install("x"), R_baseSymbol);
             PROTECT(args = matchArgs(do_log_formals, args, call));
             nprotect++;
             if (length(CADR(args)) == 0)
