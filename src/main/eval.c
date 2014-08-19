@@ -35,8 +35,9 @@
 
 static SEXP bcEval(SEXP, SEXP, Rboolean);
 
-/* BC_PROILFING needs to be defined here and in registration.c */
-/*#define BC_PROFILING*/
+/* BC_PROILFING needs to be enabled at build time. It is not enabled
+   by default as enabling it disabled the more efficient threaded code
+   implementation of the byte code interpreter. */
 #ifdef BC_PROFILING
 static Rboolean bc_profiling = FALSE;
 #endif
@@ -6006,7 +6007,7 @@ SEXP attribute_hidden do_getconst(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 #ifdef BC_PROFILING
-SEXP R_getbcprofcounts()
+SEXP do_bcprofcounts(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP val;
     int i;
@@ -6024,7 +6025,7 @@ static void dobcprof(int sig)
     signal(SIGPROF, dobcprof);
 }
 
-SEXP R_startbcprof()
+SEXP do_bcprofstart(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     struct itimerval itv;
     int interval;
@@ -6064,7 +6065,7 @@ static void dobcprof_null(int sig)
     signal(SIGPROF, dobcprof_null);
 }
 
-SEXP R_stopbcprof()
+SEXP do_bcprofstop(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     struct itimerval itv;
 
@@ -6081,6 +6082,19 @@ SEXP R_stopbcprof()
     bc_profiling = FALSE;
 
     return R_NilValue;
+}
+#else
+SEXP do_bcprofcounts(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    error(_("byte code profiling is not supported in this build"));
+}
+SEXP do_bcprofstart(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    error(_("byte code profiling is not supported in this build"));
+}
+SEXP do_bcprofstop(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    error(_("byte code profiling is not supported in this build"));
 }
 #endif
 
