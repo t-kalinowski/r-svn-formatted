@@ -1893,7 +1893,7 @@ SEXP attribute_hidden do_typeof(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 
 /* Define many of the <primitive> "is.xxx" functions :
-   Note that  isNull, isNumeric, etc are defined in util.c or Rinlinedfuns.h
+   Note that  isNull, isNumeric, etc are defined in util.c or ../include/Rinlinedfuns.h
 */
 SEXP attribute_hidden do_is(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
@@ -2832,7 +2832,7 @@ SEXP attribute_hidden do_quote(SEXP call, SEXP op, SEXP args, SEXP rho)
     check1arg(args, call, "expr");
     SEXP val = CAR(args);
     /* Make sure expression has NAMED == 2 before being returning
-       in to avoid modification of source code */
+       in order to avoid modification of source code */
     if (NAMED(val) != 2)
         SET_NAMED(val, 2);
     return (val);
