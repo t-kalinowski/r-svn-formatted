@@ -426,7 +426,7 @@ static SEXP coerceToSymbol(SEXP v)
     }
     if (warn)
         CoercionWarning(warn); /*2000/10/23*/
-    ans = install(CHAR(ans));
+    ans = installChar(ans);
     UNPROTECT(1);
     return ans;
 }
@@ -1380,7 +1380,7 @@ SEXP CreateTag(SEXP x)
         x = installTrChar(STRING_ELT(x, 0));
     }
     else
-        x = install(CHAR(STRING_ELT(deparse1(x, 1, SIMPLEDEPARSE), 0)));
+        x = installChar(STRING_ELT(deparse1(x, 1, SIMPLEDEPARSE), 0));
     return x;
 }
 

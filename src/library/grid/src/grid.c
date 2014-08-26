@@ -173,7 +173,7 @@ SEXP doSetViewport(SEXP vp,
          * NOTE that we are deliberately using defineVar to
          * assign the vp SEXP itself, NOT a copy.
          */
-        defineVar(install(CHAR(STRING_ELT(VECTOR_ELT(vp, VP_NAME), 0))), vp, VECTOR_ELT(parent, PVP_CHILDREN));
+        defineVar(installChar(STRING_ELT(VECTOR_ELT(vp, VP_NAME), 0)), vp, VECTOR_ELT(parent, PVP_CHILDREN));
     }
     /* Calculate the transformation for the viewport.
      * This will hopefully only involve updating the transformation
@@ -398,7 +398,7 @@ static SEXP findInChildren(SEXP name, SEXP strict, SEXP children, int depth)
     PROTECT(result);
     while (count < n && !found)
     {
-        result = findViewport(name, strict, findVar(install(CHAR(STRING_ELT(childnames, count))), children), depth);
+        result = findViewport(name, strict, findVar(installChar(STRING_ELT(childnames, count)), children), depth);
         found = INTEGER(VECTOR_ELT(result, 0))[0] > 0;
         count = count + 1;
     }
@@ -453,7 +453,7 @@ static SEXP findViewport(SEXP name, SEXP strict, SEXP vp, int depth)
                        /*
                         * Does this do inherits=FALSE?
                         */
-                       findVar(install(CHAR(STRING_ELT(name, 0))), viewportChildren(vp)));
+                       findVar(installChar(STRING_ELT(name, 0)), viewportChildren(vp)));
     }
     else
     {
@@ -557,7 +557,7 @@ static SEXP findvppathInChildren(SEXP path, SEXP name, SEXP strict, SEXP pathsof
     while (count < n && !found)
     {
         SEXP vp, newpathsofar;
-        PROTECT(vp = findVar(install(CHAR(STRING_ELT(childnames, count))), children));
+        PROTECT(vp = findVar(installChar(STRING_ELT(childnames, count)), children));
         PROTECT(newpathsofar = growPath(pathsofar, VECTOR_ELT(vp, VP_NAME)));
         result = findvppath(path, name, strict, newpathsofar, vp, depth);
         found = INTEGER(VECTOR_ELT(result, 0))[0] > 0;
@@ -606,7 +606,7 @@ static SEXP findvppath(SEXP path, SEXP name, SEXP strict, SEXP pathsofar, SEXP v
                        /*
                         * Does this do inherits=FALSE?
                         */
-                       findVar(install(CHAR(STRING_ELT(name, 0))), viewportChildren(vp)));
+                       findVar(installChar(STRING_ELT(name, 0)), viewportChildren(vp)));
     }
     else
     {

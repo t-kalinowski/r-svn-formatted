@@ -54,7 +54,7 @@ SEXP getvar(SEXP name, SEXP rho)
         error("name is not a single string");
     if (!isEnvironment(rho))
         error("rho should be an environment");
-    ans = findVar(install(CHAR(STRING_ELT(name, 0))), rho);
+    ans = findVar(installChar(STRING_ELT(name, 0)), rho);
     Rprintf("first value is %f\n", REAL(ans)[0]);
     return R_NilValue;
 }
@@ -306,7 +306,7 @@ SEXP numeric_deriv(SEXP args)
 
     for (i = 0, start = 0; i < LENGTH(theta); i++, start += LENGTH(ans))
     {
-        PROTECT(par = findVar(install(CHAR(STRING_ELT(theta, i))), rho));
+        PROTECT(par = findVar(installChar(STRING_ELT(theta, i)), rho));
         tt = REAL(par)[0];
         xx = fabs(tt);
         delta = (xx < 1) ? eps : xx * eps;
