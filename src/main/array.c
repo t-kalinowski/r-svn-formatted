@@ -755,18 +755,32 @@ SEXP attribute_hidden do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (ldx != 2 && ldy != 2)
     { /* x and y non-matrices */
-        if (PRIMVAL(op) == 0)
+        // for crossprod, allow two cases: n x n ==> (1,n) x (n,1);  1 x n = (n, 1) x (1, n)
+        if (PRIMVAL(op) == 1 && LENGTH(x) == 1)
         {
-            nrx = 1;
-            ncx = LENGTH(x);
+            nrx = ncx = nry = 1;
+            ncy = LENGTH(y);
         }
         else
         {
-            nrx = LENGTH(x);
-            ncx = 1;
+            nry = LENGTH(y);
+            ncy = 1;
+            if (PRIMVAL(op) == 0)
+            {
+                nrx = 1;
+                ncx = LENGTH(x);
+                if (ncx == 1)
+                { // y as row vector
+                    ncy = nry;
+                    nry = 1;
+                }
+            }
+            else
+            {
+                nrx = LENGTH(x);
+                ncx = 1;
+            }
         }
-        nry = LENGTH(y);
-        ncy = 1;
     }
     else if (ldx != 2)
     { /* x not a matrix */
@@ -837,11 +851,24 @@ SEXP attribute_hidden do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
                 nry = nrx;
                 ncy = 1;
             }
+            else if (nrx == 1)
+            { // y as row vector
+                nry = 1;
+                ncy = LENGTH(y);
+            }
         }
         else
-        { /* tcrossprod --		y is a col vector */
-            nry = LENGTH(y);
-            ncy = 1;
+        { // tcrossprod
+            if (nrx == 1)
+            { // y as row vector
+                nry = 1;
+                ncy = LENGTH(y);
+            }
+            else
+            { // y is a col vector
+                nry = LENGTH(y);
+                ncy = 1;
+            }
         }
     }
     else
