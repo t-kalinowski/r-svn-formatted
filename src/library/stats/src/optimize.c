@@ -574,7 +574,8 @@ static void fcn(int n, const double x[], double *f, function_info *state)
         return;
     }
     /* calculate for a new value of x */
-    s = CADR(R_fcall);
+    s = allocVector(REALSXP, n);
+    SETCADR(R_fcall, s);
     for (i = 0; i < n; i++)
     {
         if (!R_FINITE(x[i]))
@@ -862,12 +863,10 @@ SEXP nlm(SEXP call, SEXP op, SEXP args, SEXP rho)
     R_gradientSymbol = install("gradient");
     R_hessianSymbol = install("hessian");
 
-    /* This vector is shared with all subsequent calls */
     v = allocVector(REALSXP, n);
     for (i = 0; i < n; i++)
         REAL(v)[i] = x[i];
     SETCADR(state->R_fcall, v);
-    SET_NAMED(v, 2); // in case the functions try to alter it
     value = eval(state->R_fcall, state->R_env);
 
     v = getAttrib(value, R_gradientSymbol);
