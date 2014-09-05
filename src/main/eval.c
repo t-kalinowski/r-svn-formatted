@@ -3243,15 +3243,7 @@ SEXP do_subassign2_dflt(SEXP, SEXP, SEXP, SEXP);
 
 #define SETSTACK_INTEGER(i, v) SETSTACK_INTEGER_PTR(R_BCNodeStackTop + (i), v)
 
-#define SETSTACK_LOGICAL_PTR(s, v)                                                                                     \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        int __ssl_v__ = (v);                                                                                           \
-        if (__ssl_v__ == NA_LOGICAL)                                                                                   \
-            SETSTACK_PTR(s, ScalarLogical(NA_LOGICAL));                                                                \
-        else                                                                                                           \
-            SETSTACK_PTR(s, __ssl_v__ ? R_TrueValue : R_FalseValue);                                                   \
-    } while (0)
+#define SETSTACK_LOGICAL_PTR(s, v) SETSTACK_PTR(s, ScalarLogical(v))
 
 #define SETSTACK_LOGICAL(i, v) SETSTACK_LOGICAL_PTR(R_BCNodeStackTop + (i), v)
 
@@ -4235,7 +4227,7 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
 #define DO_ISTYPE(type)                                                                                                \
     do                                                                                                                 \
     {                                                                                                                  \
-        SETSTACK(-1, TYPEOF(GETSTACK(-1)) == type ? mkTrue() : mkFalse());                                             \
+        SETSTACK(-1, TYPEOF(GETSTACK(-1)) == type ? R_TrueValue : R_FalseValue);                                       \
         NEXT();                                                                                                        \
     } while (0)
 #define isNumericOnly(x) (isNumeric(x) && !isLogical(x))
@@ -5113,10 +5105,10 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         BCNPUSH(R_NilValue);
         NEXT();
         OP(LDTRUE, 0) : R_Visible = TRUE;
-        BCNPUSH(mkTrue());
+        BCNPUSH(R_TrueValue);
         NEXT();
         OP(LDFALSE, 0) : R_Visible = TRUE;
-        BCNPUSH(mkFalse());
+        BCNPUSH(R_FalseValue);
         NEXT();
         OP(GETVAR, 1) : DO_GETVAR(FALSE, FALSE);
         OP(DDVAL, 1) : DO_GETVAR(TRUE, FALSE);
@@ -5283,9 +5275,9 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         NEXT();
         OP(PUSHNULLARG, 0) : PUSHCALLARG(R_NilValue);
         NEXT();
-        OP(PUSHTRUEARG, 0) : PUSHCALLARG(BUMPREFCNT(mkTrue()));
+        OP(PUSHTRUEARG, 0) : PUSHCALLARG(R_TrueValue);
         NEXT();
-        OP(PUSHFALSEARG, 0) : PUSHCALLARG(BUMPREFCNT(mkFalse()));
+        OP(PUSHFALSEARG, 0) : PUSHCALLARG(R_FalseValue);
         NEXT();
         OP(CALL, 1) :
         {
@@ -5509,7 +5501,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         {
             SEXP arg = GETSTACK(-1);
             Rboolean test = (TYPEOF(arg) == INTSXP) && !inherits(arg, "factor");
-            SETSTACK(-1, test ? mkTrue() : mkFalse());
+            SETSTACK(-1, test ? R_TrueValue : R_FalseValue);
             NEXT();
         }
         OP(ISDOUBLE, 0) : DO_ISTYPE(REALSXP);
