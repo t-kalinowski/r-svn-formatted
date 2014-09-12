@@ -30,7 +30,7 @@
  *  INDENTATION:
  *
  *  Indentation is carried out in the routine printtab2buff at the
- *  botton of this file.  It seems like this should be settable via
+ *  bottom of this file.  It seems like this should be settable via
  *  options.
  *
  *
@@ -1340,13 +1340,28 @@ static void deparse2buff(SEXP s, LocalParseData *d)
         d->sourceable = FALSE;
         print2buff("<weak reference>", d);
         break;
-    case S4SXP:
-        d->sourceable = FALSE;
+    case S4SXP: {
+        SEXP class = getAttrib(s, R_ClassSymbol);
         d->isS4 = TRUE;
+
+#ifndef _TRY_S4_DEPARSE_
+        d->sourceable = FALSE;
         print2buff("<S4 object of class ", d);
-        deparse2buff(getAttrib(s, R_ClassSymbol), d);
+        deparse2buff(class, d);
         print2buff(">", d);
+#else
+        /* somewhat like the  VECSXP [ "list()" ] case : */
+        /* 	if (localOpts & SHOWATTRIBUTES) attr1(s, d); */
+        print2buff("new(\"", d);
+        print2buff(translateChar(STRING_ELT(class, 0)), d);
+        print2buff("\",\n", d);
+        //>>>> call vec2buf on the  Attributes >>>>>>>>>  vec2buff(s, d);
+        print2buff(")", d);
+        /* 	if (localOpts & SHOWATTRIBUTES) attr2(s, d); */
+
+#endif
         break;
+    }
     default:
         d->sourceable = FALSE;
         UNIMPLEMENTED_TYPE("deparse2buff", s);
@@ -1715,10 +1730,8 @@ static Rboolean src2buff(SEXP sv, int k, LocalParseData *d)
         return FALSE;
 }
 
-/* vec2buff : New Code */
-/* Deparse vectors of S-expressions. */
-/* In particular, this deparses objects of mode expression. */
-
+/* Deparse vectors of S-expressions, i.e., list() and expression() objects.
+   In particular, this deparses objects of mode expression. */
 static void vec2buff(SEXP v, LocalParseData *d)
 {
     SEXP nv, sv;
