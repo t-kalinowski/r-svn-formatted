@@ -837,7 +837,7 @@ static int TranslatedSymbol(SEXP expr)
         code == 0321 ||                   /* nabla */
         0)
         return code;
-    else
+    else // not translated
         return 0;
 }
 
@@ -1979,7 +1979,7 @@ static BBOX RenderGroup(SEXP expr, int draw, mathContext *mc, pGEcontext gc, pGE
     code = DelimCode(expr, CADR(expr));
     gc->cex = DelimSymbolMag * gc->cex;
     if (code == 2)
-    {
+    { // "||"
         bbox = RenderSymbolChar('|', draw, mc, gc, dd);
         bbox = RenderSymbolChar('|', draw, mc, gc, dd);
     }
@@ -2025,7 +2025,7 @@ static BBOX RenderDelim(int which, double dist, int draw, mathContext *mc, pGEco
         return NullBBox();
         break;
     case '|':
-    case 2:
+    case 2: // "||"
         top = 239;
         ext = 239;
         bot = 239;
