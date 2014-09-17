@@ -533,12 +533,10 @@ SEXP classgets(SEXP vec, SEXP klass)
 {
     if (isNull(klass) || isString(klass))
     {
-        int ncl = length(klass);
-        if (ncl <= 0)
+        if (length(klass) <= 0)
         {
             SET_ATTRIB(vec, stripAttrib(R_ClassSymbol, ATTRIB(vec)));
             SET_OBJECT(vec, 0);
-            // problems when package building:  UNSET_S4_OBJECT(vec);
         }
         else
         {
@@ -549,12 +547,13 @@ SEXP classgets(SEXP vec, SEXP klass)
 
             /* HOWEVER, it is the way that the object bit gets set/unset */
 
+            int i;
             Rboolean isfactor = FALSE;
 
             if (vec == R_NilValue)
                 error(_("attempt to set an attribute on NULL"));
 
-            for (int i = 0; i < ncl; i++)
+            for (i = 0; i < length(klass); i++)
                 if (streql(CHAR(STRING_ELT(klass, i)), "factor"))
                 { /* ASCII */
                     isfactor = TRUE;
@@ -565,30 +564,9 @@ SEXP classgets(SEXP vec, SEXP klass)
                 /* we cannot coerce vec here, so just fail */
                 error(_("adding class \"factor\" to an invalid object"));
             }
+
             installAttrib(vec, R_ClassSymbol, klass);
             SET_OBJECT(vec, 1);
-
-            if (isMethodsDispatchOn() && ncl == 1)
-            { // isMeth..(): do not act too early
-                SEXP cld = R_getClassDef_R(klass);
-                if (!isNull(cld))
-                {
-                    PROTECT(cld);
-                    /* More efficient? can we protect? -- rather *assign* in method-ns?
-                       static SEXP oldCl = NULL;
-                       if(!oldCl) oldCl = R_getClassDef("oldClass");
-                       if(!oldCl) oldCl = mkString("oldClass");
-                       PROTECT(oldCl);
-                    */
-                    if (!R_isVirtualClass(cld, R_GlobalEnv) &&
-                        !R_extends(cld, mkString("oldClass"), R_GlobalEnv)) // set S4 bit :
-                        // !R_extends(cld, oldCl, R_GlobalEnv)) // set S4 bit :
-
-                        SET_S4_OBJECT(vec);
-
-                    UNPROTECT(1); // UNPROTECT(2);
-                }
-            }
         }
         return R_NilValue;
     }
@@ -901,12 +879,12 @@ SEXP attribute_hidden R_data_class2(SEXP obj)
     }
 }
 
-// class() & .cache_class() :
+/* class() : */
 SEXP attribute_hidden R_do_data_class(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     if (PRIMVAL(op) == 1)
-    { // .cache_class() :
+    {
         const char *class;
         SEXP klass;
         check1arg(args, call, "class");
@@ -916,7 +894,6 @@ SEXP attribute_hidden R_do_data_class(SEXP call, SEXP op, SEXP args, SEXP env)
         class = translateChar(STRING_ELT(klass, 0));
         return cache_class(class, CADR(args));
     }
-    // class():
     check1arg(args, call, "x");
     return R_data_class(CAR(args), FALSE);
 }
