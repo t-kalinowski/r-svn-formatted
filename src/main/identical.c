@@ -94,9 +94,7 @@ Rboolean R_compute_identical(SEXP x, SEXP y, int flags)
     SEXP ax, ay, atrx, atry;
     if (x == y) /* same pointer */
         return TRUE;
-    if (TYPEOF(x) != TYPEOF(y))
-        return FALSE;
-    if (OBJECT(x) != OBJECT(y))
+    if (TYPEOF(x) != TYPEOF(y) || OBJECT(x) != OBJECT(y) || IS_S4_OBJECT(x) != IS_S4_OBJECT(y))
         return FALSE;
 
     /* Skip attribute checks for CHARSXP
