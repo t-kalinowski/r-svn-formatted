@@ -4601,6 +4601,57 @@ static R_INLINE R_xlen_t bcStackIndex(R_bcstack_t *s)
         return -1;
 }
 
+static R_INLINE SEXP mkVector1(SEXP s)
+{
+    SEXP t = allocVector(VECSXP, 1);
+    SET_VECTOR_ELT(t, 0, s);
+    return t;
+}
+
+#define DO_FAST_VECELT(sv, vec, i, subset2)                                                                            \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        switch (TYPEOF(vec))                                                                                           \
+        {                                                                                                              \
+        case REALSXP:                                                                                                  \
+            if (XLENGTH(vec) <= i)                                                                                     \
+                break;                                                                                                 \
+            SETSTACK_REAL_PTR(sv, REAL(vec)[i]);                                                                       \
+            return;                                                                                                    \
+        case INTSXP:                                                                                                   \
+            if (XLENGTH(vec) <= i)                                                                                     \
+                break;                                                                                                 \
+            SETSTACK_INTEGER_PTR(sv, INTEGER(vec)[i]);                                                                 \
+            return;                                                                                                    \
+        case LGLSXP:                                                                                                   \
+            if (XLENGTH(vec) <= i)                                                                                     \
+                break;                                                                                                 \
+            SETSTACK_LOGICAL_PTR(sv, LOGICAL(vec)[i]);                                                                 \
+            return;                                                                                                    \
+        case CPLXSXP:                                                                                                  \
+            if (XLENGTH(vec) <= i)                                                                                     \
+                break;                                                                                                 \
+            SETSTACK_PTR(sv, ScalarComplex(COMPLEX(vec)[i]));                                                          \
+            return;                                                                                                    \
+        case RAWSXP:                                                                                                   \
+            if (XLENGTH(vec) <= i)                                                                                     \
+                break;                                                                                                 \
+            SETSTACK_PTR(sv, ScalarRaw(RAW(vec)[i]));                                                                  \
+            return;                                                                                                    \
+        case VECSXP:                                                                                                   \
+            if (XLENGTH(vec) <= i)                                                                                     \
+                break;                                                                                                 \
+            SEXP elt = VECTOR_ELT(vec, i);                                                                             \
+            if (NAMED(vec) > NAMED(elt))                                                                               \
+                SET_NAMED(elt, NAMED(vec));                                                                            \
+            if (subset2)                                                                                               \
+                SETSTACK_PTR(sv, elt);                                                                                 \
+            else                                                                                                       \
+                SETSTACK_PTR(sv, mkVector1(elt));                                                                      \
+            return;                                                                                                    \
+        }                                                                                                              \
+    } while (0)
+
 static R_INLINE void VECSUBSET_PTR(R_bcstack_t *sx, R_bcstack_t *si, R_bcstack_t *sv, SEXP rho, SEXP consts,
                                    int callidx, Rboolean subset2)
 {
@@ -4609,36 +4660,7 @@ static R_INLINE void VECSUBSET_PTR(R_bcstack_t *sx, R_bcstack_t *si, R_bcstack_t
     R_xlen_t i = bcStackIndex(si) - 1;
 
     if (ATTRIB(vec) == R_NilValue && i >= 0)
-    {
-        switch (TYPEOF(vec))
-        {
-        case REALSXP:
-            if (XLENGTH(vec) <= i)
-                break;
-            SETSTACK_REAL_PTR(sv, REAL(vec)[i]);
-            return;
-        case INTSXP:
-            if (XLENGTH(vec) <= i)
-                break;
-            SETSTACK_INTEGER_PTR(sv, INTEGER(vec)[i]);
-            return;
-        case LGLSXP:
-            if (XLENGTH(vec) <= i)
-                break;
-            SETSTACK_LOGICAL_PTR(sv, LOGICAL(vec)[i]);
-            return;
-        case CPLXSXP:
-            if (XLENGTH(vec) <= i)
-                break;
-            SETSTACK_PTR(sv, ScalarComplex(COMPLEX(vec)[i]));
-            return;
-        case RAWSXP:
-            if (XLENGTH(vec) <= i)
-                break;
-            SETSTACK_PTR(sv, ScalarRaw(RAW(vec)[i]));
-            return;
-        }
-    }
+        DO_FAST_VECELT(sv, vec, i, subset2);
 
     /* fall through to the standard default handler */
     idx = GETSTACK_PTR(si);
@@ -4732,29 +4754,7 @@ static R_INLINE void MATSUBSET_PTR(R_bcstack_t *sx, R_bcstack_t *si, R_bcstack_t
         if (i > 0 && j > 0 && i <= nrow && j <= ncol)
         {
             R_xlen_t k = i - 1 + nrow * (j - 1);
-            switch (TYPEOF(mat))
-            {
-            case REALSXP:
-                if (XLENGTH(mat) <= k)
-                    break;
-                SETSTACK_REAL_PTR(sv, REAL(mat)[k]);
-                return;
-            case INTSXP:
-                if (XLENGTH(mat) <= k)
-                    break;
-                SETSTACK_INTEGER_PTR(sv, INTEGER(mat)[k]);
-                return;
-            case LGLSXP:
-                if (XLENGTH(mat) <= k)
-                    break;
-                SETSTACK_LOGICAL_PTR(sv, LOGICAL(mat)[k]);
-                return;
-            case CPLXSXP:
-                if (XLENGTH(mat) <= k)
-                    break;
-                SETSTACK_PTR(sv, ScalarComplex(COMPLEX(mat)[k]));
-                return;
-            }
+            DO_FAST_VECELT(sv, mat, k, subset2);
         }
     }
 
@@ -4807,31 +4807,7 @@ static R_INLINE void SUBSET_N_PTR(R_bcstack_t *sx, int rank, R_bcstack_t *si, R_
     {
         R_xlen_t k = colMajorStackIndex(dim, rank, si);
         if (k >= 0)
-        {
-            switch (TYPEOF(x))
-            {
-            case REALSXP:
-                if (XLENGTH(x) <= k)
-                    break;
-                SETSTACK_REAL_PTR(sv, REAL(x)[k]);
-                return;
-            case INTSXP:
-                if (XLENGTH(x) <= k)
-                    break;
-                SETSTACK_INTEGER_PTR(sv, INTEGER(x)[k]);
-                return;
-            case LGLSXP:
-                if (XLENGTH(x) <= k)
-                    break;
-                SETSTACK_LOGICAL_PTR(sv, LOGICAL(x)[k]);
-                return;
-            case CPLXSXP:
-                if (XLENGTH(x) <= k)
-                    break;
-                SETSTACK_PTR(sv, ScalarComplex(COMPLEX(x)[k]));
-                return;
-            }
-        }
+            DO_FAST_VECELT(sv, x, k, subset2);
     }
 
     /* fall through to the standard default handler */
@@ -4894,6 +4870,25 @@ static R_INLINE Rboolean setElementFromScalar(SEXP vec, R_xlen_t i, int typev, s
     return FALSE;
 }
 
+#define DO_FAST_SETVECELT(sv, srhs, vec, i, subset2)                                                                   \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        scalar_value_t v;                                                                                              \
+        int typev = bcStackScalar(srhs, &v);                                                                           \
+        if (setElementFromScalar(vec, i, typev, &v))                                                                   \
+        {                                                                                                              \
+            SETSTACK_PTR(sv, vec);                                                                                     \
+            return;                                                                                                    \
+        }                                                                                                              \
+        else if (subassign2 && TYPEOF(vec) == VECSXP && i < XLENGTH(vec))                                              \
+        {                                                                                                              \
+            SEXP rhs = R_FixupRHS(vec, GETSTACK_PTR(srhs));                                                            \
+            SET_VECTOR_ELT(vec, i, rhs);                                                                               \
+            SETSTACK_PTR(sv, vec);                                                                                     \
+            return;                                                                                                    \
+        }                                                                                                              \
+    } while (0)
+
 static R_INLINE void VECSUBASSIGN_PTR(R_bcstack_t *sx, R_bcstack_t *srhs, R_bcstack_t *si, R_bcstack_t *sv, SEXP rho,
                                       SEXP consts, int callidx, Rboolean subassign2)
 {
@@ -4910,17 +4905,9 @@ static R_INLINE void VECSUBASSIGN_PTR(R_bcstack_t *sx, R_bcstack_t *srhs, R_bcst
 
     if (ATTRIB(vec) == R_NilValue)
     {
-        R_xlen_t i = bcStackIndex(si);
-        if (i > 0)
-        {
-            scalar_value_t v;
-            int typev = bcStackScalar(srhs, &v);
-            if (setElementFromScalar(vec, i - 1, typev, &v))
-            {
-                SETSTACK_PTR(sv, vec);
-                return;
-            }
-        }
+        R_xlen_t i = bcStackIndex(si) - 1;
+        if (i >= 0)
+            DO_FAST_SETVECELT(sv, srhs, vec, i, subset2);
     }
 
     /* fall through to the standard default handler */
@@ -4973,14 +4960,8 @@ static R_INLINE void MATSUBASSIGN_PTR(R_bcstack_t *sx, R_bcstack_t *srhs, R_bcst
         R_xlen_t ncol = INTEGER(dim)[1];
         if (i > 0 && j > 0 && i <= nrow && j <= ncol)
         {
-            scalar_value_t v;
-            int typev = bcStackScalar(srhs, &v);
             R_xlen_t k = i - 1 + nrow * (j - 1);
-            if (setElementFromScalar(mat, k, typev, &v))
-            {
-                SETSTACK_PTR(sv, mat);
-                return;
-            }
+            DO_FAST_SETVECELT(sv, srhs, mat, k, subset2);
         }
     }
 
@@ -5032,15 +5013,7 @@ static R_INLINE void SUBASSIGN_N_PTR(R_bcstack_t *sx, int rank, R_bcstack_t *srh
     {
         R_xlen_t k = colMajorStackIndex(dim, rank, si);
         if (k >= 0)
-        {
-            scalar_value_t v;
-            int typev = bcStackScalar(srhs, &v);
-            if (setElementFromScalar(x, k, typev, &v))
-            {
-                SETSTACK_PTR(sv, x);
-                return;
-            }
-        }
+            DO_FAST_SETVECELT(sv, srhs, x, k, subset2);
     }
 
     /* fall through to the standard default handler */
