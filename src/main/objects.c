@@ -1269,7 +1269,7 @@ static SEXP *prim_generics;
 static SEXP *prim_mlist;
 #define DEFAULT_N_PRIM_METHODS 100
 
-/* This is used in the methods package, in src/methods_list_dispatch.c */
+// Called from methods package, ../library/methods/src/methods_list_dispatch.c
 SEXP R_set_prim_method(SEXP fname, SEXP op, SEXP code_vec, SEXP fundef, SEXP mlist)
 {
     const char *code_string;
@@ -1281,8 +1281,7 @@ SEXP R_set_prim_method(SEXP fname, SEXP op, SEXP code_vec, SEXP fundef, SEXP mli
      recursion in methods computations*/
     if (op == R_NilValue)
     {
-        SEXP value;
-        value = allowPrimitiveMethods ? mkTrue() : mkFalse();
+        SEXP value = allowPrimitiveMethods ? mkTrue() : mkFalse();
         switch (code_string[0])
         {
         case 'c':
@@ -1327,7 +1326,7 @@ SEXP R_primitive_generic(SEXP op)
     }
 }
 
-/* This is used in the methods package, in src/methods_list_dispatch.c */
+// used in the methods package, but also here
 SEXP do_set_prim_method(SEXP op, const char *code_string, SEXP fundef, SEXP mlist)
 {
     int offset = 0;

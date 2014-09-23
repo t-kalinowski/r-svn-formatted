@@ -448,10 +448,7 @@ SEXP attribute_hidden do_format(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (isEnvironment(x = CAR(args)))
     {
-        PROTECT(y = allocVector(STRSXP, 1));
-        SET_STRING_ELT(y, 0, mkChar(EncodeEnvironment(x)));
-        UNPROTECT(1);
-        return y;
+        return mkString(EncodeEnvironment(x));
     }
     else if (!isVector(x))
         error(_("first argument must be atomic"));
