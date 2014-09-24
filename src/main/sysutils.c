@@ -1438,6 +1438,7 @@ void reEnc2(const char *x, char *y, int ny, cetype_t ce_in, cetype_t ce_out, int
     R_StringBuffer cbuff = {NULL, 0, MAXELTSIZE};
 
     strncpy(y, x, ny);
+    y[ny - 1] = '\0';
 
     if (ce_in == ce_out || ce_in == CE_ANY || ce_out == CE_ANY)
         return;
@@ -1613,6 +1614,7 @@ size_t ucstomb(char *s, const unsigned int wc)
             char tocode[128];
             /* locale set fuzzy case */
             strncpy(tocode, locale2charset(NULL), sizeof(tocode));
+            tocode[sizeof(tocode) - 1] = '\0';
             if ((void *)(-1) == (cd = Riconv_open(tocode, UNICODE)))
                 return (size_t)(-1);
 #else

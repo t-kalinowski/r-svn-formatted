@@ -2901,6 +2901,7 @@ SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (dates == NA_LOGICAL)
             error(_("invalid '%s' argument"), "copy.dates");
         strncpy(dir, R_ExpandFileName(translateChar(STRING_ELT(to, 0))), PATH_MAX);
+        dir[PATH_MAX - 1] = '\0';
         if (*(dir + (strlen(dir) - 1)) != '/')
             strncat(dir, "/", PATH_MAX);
         for (i = 0; i < nfiles; i++)
@@ -2908,6 +2909,7 @@ SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (STRING_ELT(fn, i) != NA_STRING)
             {
                 strncpy(from, R_ExpandFileName(translateChar(STRING_ELT(fn, i))), PATH_MAX);
+                from[PATH_MAX - 1] = '\0';
                 size_t ll = strlen(from);
                 if (ll)
                 { // people do pass ""
@@ -2919,11 +2921,13 @@ SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
                     if (p)
                     {
                         strncpy(name, p + 1, PATH_MAX);
+                        name[PATH_MAX - 1] = '\0';
                         *(p + 1) = '\0';
                     }
                     else
                     {
                         strncpy(name, from, PATH_MAX);
+                        name[PATH_MAX - 1] = '\0';
                         strncpy(from, "./", PATH_MAX);
                     }
                     nfail = do_copy(from, name, dir, over, recursive, perms, dates, 1);

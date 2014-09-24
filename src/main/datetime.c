@@ -1056,6 +1056,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         if (have_zone)
         {
             strncpy(tm_zone, CHAR(STRING_ELT(VECTOR_ELT(x, 9), i)), 20);
+            tm_zone[20 - 1] = '\0';
 #ifdef HAVE_TM_ZONE
             tm.tm_zone = tm_zone;
 #elif defined USE_INTERNAL_MKTIME

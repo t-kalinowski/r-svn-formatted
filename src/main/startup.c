@@ -116,6 +116,7 @@ static char workspace_name[PATH_MAX] = ".RData";
 attribute_hidden void set_workspace_name(const char *fn)
 {
     strncpy(workspace_name, fn, PATH_MAX);
+    workspace_name[PATH_MAX - 1] = '\0';
 }
 #endif
 
