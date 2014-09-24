@@ -2651,6 +2651,7 @@ SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (dates == NA_LOGICAL)
             error(_("invalid '%s' argument"), "copy.dates");
         wcsncpy(dir, filenameToWchar(STRING_ELT(to, 0), TRUE), PATH_MAX);
+        dir[PATH_MAX - 1] = L'\0';
         if (*(dir + (wcslen(dir) - 1)) != L'\\')
             wcsncat(dir, L"\\", PATH_MAX);
         for (i = 0; i < nfiles; i++)
@@ -2658,6 +2659,7 @@ SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (STRING_ELT(fn, i) != NA_STRING)
             {
                 wcsncpy(from, filenameToWchar(STRING_ELT(fn, i), TRUE), PATH_MAX);
+                from[PATH_MAX - 1] = L'\0';
                 if (wcslen(from))
                 {
                     /* If there was a trailing sep, this is a mistake */
@@ -2668,6 +2670,7 @@ SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
                     if (p)
                     {
                         wcsncpy(name, p + 1, PATH_MAX);
+                        name[PATH_MAX - 1] = L'\0';
                         *(p + 1) = L'\0';
                     }
                     else
@@ -2675,11 +2678,13 @@ SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
                         if (wcslen(from) > 2 && from[1] == L':')
                         {
                             wcsncpy(name, from + 2, PATH_MAX);
+                            name[PATH_MAX - 1] = L'\0';
                             from[2] = L'\0';
                         }
                         else
                         {
                             wcsncpy(name, from, PATH_MAX);
+                            name[PATH_MAX - 1] = L'\0';
                             wcsncpy(from, L".\\", PATH_MAX);
                         }
                     }
