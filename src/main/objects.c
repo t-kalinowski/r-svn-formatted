@@ -33,16 +33,9 @@
 
 static SEXP GetObject(RCNTXT *cptr)
 {
-    SEXP s, sysp, b, formals, funcall, tag;
-    sysp = R_GlobalContext->sysparent;
+    SEXP s, b, formals, tag;
 
-    PROTECT(funcall = R_syscall(0, cptr));
-
-    if (TYPEOF(CAR(funcall)) == SYMSXP)
-        PROTECT(b = findFun(CAR(funcall), sysp));
-    else
-        PROTECT(b = eval(CAR(funcall), sysp));
-    /**** use R_sysfunction here instead */
+    b = cptr->callfun;
     if (TYPEOF(b) != CLOSXP)
         error(_("generic 'function' is not a function"));
     formals = FORMALS(b);
@@ -88,7 +81,6 @@ static SEXP GetObject(RCNTXT *cptr)
     else
         s = CAR(cptr->promargs);
 
-    UNPROTECT(2);
     if (TYPEOF(s) == PROMSXP)
     {
         if (PRVALUE(s) == R_UnboundValue)
@@ -206,22 +198,22 @@ attribute_hidden SEXP R_LookupMethod(SEXP method, SEXP rho, SEXP callrho, SEXP d
     SEXP val;
     static SEXP s_S3MethodsTable = NULL;
 
-    if (TYPEOF(callrho) == NILSXP)
+    if (TYPEOF(callrho) != ENVSXP)
     {
-        error(_("use of NULL environment is defunct"));
-        callrho = R_BaseEnv;
+        if (TYPEOF(callrho) == NILSXP)
+            error(_("use of NULL environment is defunct"));
+        else
+            error(_("bad generic call environment"));
     }
-    else if (TYPEOF(callrho) != ENVSXP)
-        error(_("bad generic call environment"));
-    if (TYPEOF(defrho) == NILSXP)
-    {
-        error(_("use of NULL environment is defunct"));
-        defrho = R_BaseEnv;
-    }
-    else if (TYPEOF(defrho) != ENVSXP)
-        error(_("bad generic definition environment"));
     if (defrho == R_BaseEnv)
         defrho = R_BaseNamespace;
+    else if (TYPEOF(defrho) != ENVSXP)
+    {
+        if (TYPEOF(defrho) == NILSXP)
+            error(_("use of NULL environment is defunct"));
+        else
+            error(_("bad generic definition environment"));
+    }
 
     /* This evaluates promises */
     val = findVar1(method, callrho, FUNSXP, TRUE);
@@ -240,8 +232,7 @@ attribute_hidden SEXP R_LookupMethod(SEXP method, SEXP rho, SEXP callrho, SEXP d
             val = findVarInFrame3(table, method, TRUE);
             if (TYPEOF(val) == PROMSXP)
                 val = eval(val, rho);
-            if (val != R_UnboundValue)
-                return val;
+            return val;
         }
         return R_UnboundValue;
     }
@@ -345,27 +336,7 @@ attribute_hidden int usemethod(const char *generic, SEXP obj, SEXP call, SEXP ar
     /* Get the context which UseMethod was called from. */
 
     cptr = R_GlobalContext;
-    if (!(cptr->callflag & CTXT_FUNCTION) || cptr->cloenv != rho)
-        error(_("'UseMethod' used in an inappropriate fashion"));
-
-    op = CAR(cptr->call);
-    switch (TYPEOF(op))
-    {
-    case SYMSXP:
-        PROTECT(op = findFun(op, cptr->sysparent));
-        break;
-    case LANGSXP:
-        PROTECT(op = eval(op, cptr->sysparent));
-        break;
-    case CLOSXP:
-    case BUILTINSXP:
-    case SPECIALSXP:
-        PROTECT(op);
-        break;
-    default:
-        error(_("invalid generic function in 'usemethod'"));
-    }
-
+    op = cptr->callfun;
     PROTECT(klass = R_data_class2(obj));
 
     nclass = length(klass);
@@ -391,7 +362,7 @@ attribute_hidden int usemethod(const char *generic, SEXP obj, SEXP call, SEXP ar
             {
                 *ans = dispatchMethod(op, sxp, klass, cptr, method, generic, rho, callrho, defrho);
             }
-            UNPROTECT(2); /* op, klass */
+            UNPROTECT(1); /* klass */
             return 1;
         }
     }
@@ -400,10 +371,10 @@ attribute_hidden int usemethod(const char *generic, SEXP obj, SEXP call, SEXP ar
     if (isFunction(sxp))
     {
         *ans = dispatchMethod(op, sxp, R_NilValue, cptr, method, generic, rho, callrho, defrho);
-        UNPROTECT(2); /* op, klass */
+        UNPROTECT(1); /* klass */
         return 1;
     }
-    UNPROTECT(2); /* op, klass */
+    UNPROTECT(1); /* klass */
     cptr->callflag = CTXT_RETURN;
     return 0;
 }
@@ -461,21 +432,7 @@ SEXP attribute_hidden do_usemethod(SEXP call, SEXP op, SEXP args, SEXP env)
     if (CADR(argList) != R_MissingArg)
         PROTECT(obj = eval(CADR(argList), env));
     else
-    {
-        cptr = R_GlobalContext;
-        while (cptr != NULL)
-        {
-            if ((cptr->callflag & CTXT_FUNCTION) && cptr->cloenv == env)
-                break;
-            cptr = cptr->nextcontext;
-        }
-        if (cptr == NULL)
-            errorcall(call, _("'UseMethod' called from outside a function"));
         PROTECT(obj = GetObject(cptr));
-    }
-
-    if (TYPEOF(generic) != STRSXP || LENGTH(generic) < 1 || CHAR(STRING_ELT(generic, 0))[0] == '\0')
-        errorcall(call, _("first argument must be a generic name"));
 
     if (usemethod(translateChar(STRING_ELT(generic, 0)), obj, call, CDR(args), env, callenv, defenv, &ans) == 1)
     {
@@ -546,7 +503,7 @@ static SEXP fixcall(SEXP call, SEXP args)
 
 /*
    equalS3Signature: compares "signature" and "left.right"
-   all argumebts must be non-null
+   all arguments must be non-null
 */
 static Rboolean equalS3Signature(const char *signature, const char *left, const char *right)
 {
