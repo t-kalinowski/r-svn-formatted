@@ -91,7 +91,7 @@ static SEXP GetObject(RCNTXT *cptr)
     return (s);
 }
 
-static SEXP applyMethod(SEXP call, SEXP op, SEXP args, SEXP rho, SEXP newrho)
+static SEXP applyMethod(SEXP call, SEXP op, SEXP args, SEXP rho, SEXP newvars)
 {
     SEXP ans;
     if (TYPEOF(op) == SPECIALSXP)
@@ -125,7 +125,7 @@ static SEXP applyMethod(SEXP call, SEXP op, SEXP args, SEXP rho, SEXP newrho)
     }
     else if (TYPEOF(op) == CLOSXP)
     {
-        ans = applyClosure(call, op, args, rho, newrho);
+        ans = applyClosure(call, op, args, rho, newvars);
     }
     else
         ans = R_NilValue; /* for -Wall */
@@ -275,14 +275,43 @@ Rboolean R_has_methods_attached(void)
             !R_BindingIsLocked(install(".BasicFunsList"), R_MethodsNamespace));
 }
 
+static R_INLINE SEXP addS3Var(SEXP vars, SEXP name, SEXP value)
+{
+
+    if (value != NULL)
+    {
+        SEXP res = CONS(value, vars);
+        SET_TAG(res, name);
+        return res;
+    }
+    else
+        return vars;
+}
+
+attribute_hidden SEXP createS3Vars(SEXP dotGeneric, SEXP dotGroup, SEXP dotClass, SEXP dotMethod,
+                                   SEXP dotGenericCallEnv, SEXP dotGenericDefEnv)
+{
+
+    SEXP v = R_NilValue;
+    v = addS3Var(v, R_dot_GenericDefEnv, dotGenericDefEnv);
+    v = addS3Var(v, R_dot_GenericCallEnv, dotGenericCallEnv);
+    v = addS3Var(v, R_dot_Group, dotGroup);
+    v = addS3Var(v, R_dot_Method, dotMethod);
+    v = addS3Var(v, R_dot_Class, dotClass);
+    v = addS3Var(v, R_dot_Generic, dotGeneric);
+
+    return v;
+}
+
 static SEXP dispatchMethod(SEXP op, SEXP sxp, SEXP dotClass, RCNTXT *cptr, SEXP method, const char *generic, SEXP rho,
                            SEXP callrho, SEXP defrho)
 {
 
+    SEXP newvars = PROTECT(createS3Vars(PROTECT(mkString(generic)), NULL, dotClass,
+                                        PROTECT(ScalarString(PRINTNAME(method))), callrho, defrho));
+
     /* Create a new environment without any */
     /* of the formals to the generic in it. */
-
-    SEXP newrho = PROTECT(allocSExp(ENVSXP));
 
     if (TYPEOF(op) == CLOSXP)
     {
@@ -300,7 +329,11 @@ static SEXP dispatchMethod(SEXP op, SEXP sxp, SEXP dotClass, RCNTXT *cptr, SEXP 
                     break;
                 }
             if (!matched)
-                defineVar(TAG(s), CAR(s), newrho);
+            {
+                UNPROTECT(1); /* newvars */
+                newvars = PROTECT(CONS(CAR(s), newvars));
+                SET_TAG(newvars, TAG(s));
+            }
         }
     }
 
@@ -308,19 +341,14 @@ static SEXP dispatchMethod(SEXP op, SEXP sxp, SEXP dotClass, RCNTXT *cptr, SEXP 
     {
         SET_RSTEP(sxp, 1);
     }
-    defineVar(R_dot_Generic, mkString(generic), newrho);
-    defineVar(R_dot_Class, dotClass, newrho);
-    defineVar(R_dot_Method, ScalarString(PRINTNAME(method)), newrho);
-    defineVar(R_dot_GenericCallEnv, callrho, newrho);
-    defineVar(R_dot_GenericDefEnv, defrho, newrho);
 
     SEXP newcall = PROTECT(duplicate(cptr->call));
     SETCAR(newcall, method);
     R_GlobalContext->callflag = CTXT_GENERIC;
-    SEXP matchedarg = PROTECT(cptr->promargs);
-    SEXP ans = applyMethod(newcall, sxp, matchedarg, rho, newrho);
+    SEXP matchedarg = PROTECT(cptr->promargs); /* ? is this PROTECT needed ? */
+    SEXP ans = applyMethod(newcall, sxp, matchedarg, rho, newvars);
     R_GlobalContext->callflag = CTXT_RETURN;
-    UNPROTECT(3); /* newrho, newcall, matchedarg */
+    UNPROTECT(5); /* "generic,method", newvars, newcall, matchedarg */
 
     return ans;
 }
@@ -824,8 +852,6 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     PROTECT(s = stringSuffix(klass, i));
     setAttrib(s, R_PreviousSymbol, klass);
-    PROTECT(m = allocSExp(ENVSXP));
-    defineVar(R_dot_Class, s, m);
     /* It is possible that if a method was called directly that
     'method' is unset */
     if (method != R_UnboundValue)
@@ -840,11 +866,9 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     else
         PROTECT(method = PRINTNAME(nextfunSignature));
-    defineVar(R_dot_Method, method, m);
-    defineVar(R_dot_GenericCallEnv, callenv, m);
-    defineVar(R_dot_GenericDefEnv, defenv, m);
-    defineVar(R_dot_Generic, generic, m);
-    defineVar(R_dot_Group, group, m);
+
+    SEXP newvars = PROTECT(createS3Vars(generic, group, s, method, callenv, defenv));
+
     SETCAR(newcall, nextfunSignature);
 
     /* applyMethod expects that the parent of the caller is the caller
@@ -852,7 +876,7 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
        PR#15267 --pd */
     R_GlobalContext->sysparent = callenv;
 
-    ans = applyMethod(newcall, nextfun, matchedarg, env, m);
+    ans = applyMethod(newcall, nextfun, matchedarg, env, newvars);
     vmaxset(vmax);
     UNPROTECT(9);
     return (ans);
@@ -1552,12 +1576,12 @@ SEXP attribute_hidden R_possible_dispatch(SEXP call, SEXP op, SEXP args, SEXP rh
                     error(_("dispatch error"));
                 for (a = args, b = s; a != R_NilValue; a = CDR(a), b = CDR(b))
                     SET_PRVALUE(CAR(b), CAR(a));
-                value = applyClosure(call, value, s, rho, R_BaseEnv);
+                value = applyClosure(call, value, s, rho, R_NilValue);
                 UNPROTECT(1);
                 return value;
             }
             else
-                return applyClosure(call, value, args, rho, R_BaseEnv);
+                return applyClosure(call, value, args, rho, R_NilValue);
         }
         /* else, need to perform full method search */
     }
@@ -1573,11 +1597,11 @@ SEXP attribute_hidden R_possible_dispatch(SEXP call, SEXP op, SEXP args, SEXP rh
             error(_("dispatch error"));
         for (a = args, b = s; a != R_NilValue; a = CDR(a), b = CDR(b))
             SET_PRVALUE(CAR(b), CAR(a));
-        value = applyClosure(call, fundef, s, rho, R_BaseEnv);
+        value = applyClosure(call, fundef, s, rho, R_NilValue);
         UNPROTECT(1);
     }
     else
-        value = applyClosure(call, fundef, args, rho, R_BaseEnv);
+        value = applyClosure(call, fundef, args, rho, R_NilValue);
     prim_methods[offset] = current;
     if (value == deferred_default_object)
         return NULL;
