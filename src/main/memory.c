@@ -3769,6 +3769,10 @@ SEXP(CDDR)(SEXP e)
 {
     return CHK(CDDR(CHK(e)));
 }
+SEXP(CDDDR)(SEXP e)
+{
+    return CHK(CDDDR(CHK(e)));
+}
 SEXP(CADDR)(SEXP e)
 {
     return CHK(CADDR(CHK(e)));
@@ -3837,8 +3841,6 @@ SEXP(SETCADDR)(SEXP x, SEXP y)
     CAR(cell) = y;
     return y;
 }
-
-#define CDDDR(x) CDR(CDR(CDR(x)))
 
 SEXP(SETCADDDR)(SEXP x, SEXP y)
 {

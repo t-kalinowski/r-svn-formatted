@@ -1150,7 +1150,8 @@ static int ParseBrowser(SEXP CExpr, SEXP rho)
     return rval;
 }
 
-/* browser(text = "", condition = NULL, expr = TRUE, skipCalls = 0L) */
+/* browser(text = "", condition = NULL, expr = TRUE, skipCalls = 0L)
+ * ------- but also called from ./eval.c */
 SEXP attribute_hidden do_browser(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     RCNTXT *saveToplevelContext;
@@ -1164,7 +1165,7 @@ SEXP attribute_hidden do_browser(SEXP call, SEXP op, SEXP args, SEXP rho)
     SET_TAG(ap, install("text"));
     SET_TAG(CDR(ap), install("condition"));
     SET_TAG(CDDR(ap), install("expr"));
-    SET_TAG(CDR(CDDR(ap)), install("skipCalls"));
+    SET_TAG(CDDDR(ap), install("skipCalls"));
     argList = matchArgs(ap, args, call);
     UNPROTECT(1);
     PROTECT(argList);
@@ -1176,7 +1177,7 @@ SEXP attribute_hidden do_browser(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (CADDR(argList) == R_MissingArg)
         SETCAR(CDDR(argList), ScalarLogical(1));
     if (CADDDR(argList) == R_MissingArg)
-        SETCAR(CDR(CDDR(argList)), ScalarInteger(0));
+        SETCAR(CDDDR(argList), ScalarInteger(0));
 
     /* return if 'expr' is not TRUE */
     if (!asLogical(CADDR(argList)))
