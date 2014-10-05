@@ -1734,7 +1734,12 @@ again:
     FORWARD_NODE(R_VStack); /* R_alloc stack */
 
     for (R_bcstack_t *sp = R_BCNodeStackBase; sp < R_BCNodeStackTop; sp++)
+#ifdef TYPED_STACK
+        if (sp->tag == 0 || IS_PARTIAL_SXP_TAG(sp->tag))
+            FORWARD_NODE(sp->u.sxpval);
+#else
         FORWARD_NODE(*sp);
+#endif
 
     /* main processing loop */
     PROCESS_NODES();
