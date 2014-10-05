@@ -278,14 +278,9 @@ Rboolean R_has_methods_attached(void)
 static R_INLINE SEXP addS3Var(SEXP vars, SEXP name, SEXP value)
 {
 
-    if (value != NULL)
-    {
-        SEXP res = CONS(value, vars);
-        SET_TAG(res, name);
-        return res;
-    }
-    else
-        return vars;
+    SEXP res = CONS(value, vars);
+    SET_TAG(res, name);
+    return res;
 }
 
 attribute_hidden SEXP createS3Vars(SEXP dotGeneric, SEXP dotGroup, SEXP dotClass, SEXP dotMethod,
@@ -307,7 +302,7 @@ static SEXP dispatchMethod(SEXP op, SEXP sxp, SEXP dotClass, RCNTXT *cptr, SEXP 
                            SEXP callrho, SEXP defrho)
 {
 
-    SEXP newvars = PROTECT(createS3Vars(PROTECT(mkString(generic)), NULL, dotClass,
+    SEXP newvars = PROTECT(createS3Vars(PROTECT(mkString(generic)), R_BlankScalarString, dotClass,
                                         PROTECT(ScalarString(PRINTNAME(method))), callrho, defrho));
 
     /* Create a new environment without any */
@@ -592,32 +587,30 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     if (TYPEOF(CAR(cptr->call)) == LANGSXP)
         error(_("'NextMethod' called from an anonymous function"));
 
+    readS3VarsFromFrame(sysp, &generic, &group, &klass, &method, &callenv, &defenv);
+
     /* Find dispatching environments. Promises shouldn't occur, but
        check to be on the safe side.  If the variables are not in the
        environment (the method was called outside a method dispatch)
        then chose reasonable defaults. */
-    callenv = findVarInFrame3(R_GlobalContext->sysparent, R_dot_GenericCallEnv, TRUE);
     if (TYPEOF(callenv) == PROMSXP)
         callenv = eval(callenv, R_BaseEnv);
     else if (callenv == R_UnboundValue)
         callenv = env;
-    defenv = findVarInFrame3(R_GlobalContext->sysparent, R_dot_GenericDefEnv, TRUE);
     if (TYPEOF(defenv) == PROMSXP)
         defenv = eval(defenv, R_BaseEnv);
     else if (defenv == R_UnboundValue)
         defenv = R_GlobalEnv;
 
     /* set up the arglist */
-    if (TYPEOF(CAR(cptr->call)) == CLOSXP)
-        // e.g., in do.call(function(x) NextMethod('foo'),list())
-        s = CAR(cptr->call);
-    else
-        s = R_LookupMethod(CAR(cptr->call), env, callenv, defenv);
-    if (TYPEOF(s) == SYMSXP && s == R_UnboundValue)
-        error(_("no calling generic was found: was a method called directly?"));
+    s = cptr->callfun;
+
     if (TYPEOF(s) != CLOSXP)
     { /* R_LookupMethod looked for a function */
-        errorcall(R_NilValue, _("'function' is not a function, but of type %d"), TYPEOF(s));
+        if (s == R_UnboundValue)
+            error(_("no calling generic was found: was a method called directly?"));
+        else
+            errorcall(R_NilValue, _("'function' is not a function, but of type %d"), TYPEOF(s));
     }
     /* get formals and actuals; attach the names of the formals to
        the actuals, expanding any ... that occurs */
@@ -709,10 +702,10 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
       the second argument to NextMethod is another option but
       isn't currently used).
     */
-    klass = findVarInFrame3(R_GlobalContext->sysparent, R_dot_Class, TRUE);
-
     if (klass == R_UnboundValue)
     {
+        /* we can get the object from actuals directly, but this
+           branch seems to be very cold if not dead */
         s = GetObject(cptr);
         if (!isObject(s))
             error(_("object not specified"));
@@ -720,7 +713,6 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 
     /* the generic comes from either the sysparent or it's named */
-    generic = findVarInFrame3(R_GlobalContext->sysparent, R_dot_Generic, TRUE);
     if (generic == R_UnboundValue)
         generic = eval(CAR(args), env);
     if (generic == R_NilValue)
@@ -734,22 +726,22 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
         error(_("generic function not specified"));
 
     /* determine whether we are in a Group dispatch */
-
-    group = findVarInFrame3(R_GlobalContext->sysparent, R_dot_Group, TRUE);
-    if (group == R_UnboundValue)
-        PROTECT(group = mkString(""));
-    else
-        PROTECT(group);
-
-    if (!isString(group) || length(group) != 1)
-        error(_("invalid 'group' argument found in 'NextMethod'"));
-
     /* determine the root: either the group or the generic will be it */
-
-    if (CHAR(STRING_ELT(group, 0))[0] == '\0')
+    if (group == R_UnboundValue)
+    {
+        group = R_BlankScalarString;
         basename = generic;
+    }
     else
-        basename = group;
+    {
+        if (!isString(group) || length(group) != 1)
+            error(_("invalid 'group' argument found in 'NextMethod'"));
+        if (CHAR(STRING_ELT(group, 0))[0] == '\0')
+            basename = generic;
+        else
+            basename = group;
+    }
+    PROTECT(group);
 
     nextfun = R_NilValue;
     nextfunSignature = R_NilValue;
@@ -758,8 +750,6 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
        Find the method currently being invoked and jump over the current call
        If t is R_UnboundValue then we called the current method directly
     */
-
-    method = findVarInFrame3(R_GlobalContext->sysparent, R_dot_Method, TRUE);
     const void *vmax = vmaxget(); /* needed for translateChar */
     const char *b = NULL;
     if (method != R_UnboundValue)
@@ -792,7 +782,7 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         sk = translateChar(STRING_ELT(klass, j));
         if (equalS3Signature(b, sb, sk))
-        { /*  b == sb.sk */
+        { /* b == sb.sk */
             foundSignature = TRUE;
             break;
         }
@@ -801,7 +791,7 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
     if (foundSignature) /* we found a match and start from there */
         j++;
     else
-        j = 0; /*no match so start with the first element of .Class */
+        j = 0; /* no match so start with the first element of .Class */
 
     /* we need the value of i on exit from the for loop to figure out
        how many classes to drop. */

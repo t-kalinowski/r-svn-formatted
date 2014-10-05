@@ -1675,6 +1675,7 @@ again:
     FORWARD_NODE(R_NilValue); /* Builtin constants */
     FORWARD_NODE(NA_STRING);
     FORWARD_NODE(R_BlankString);
+    FORWARD_NODE(R_BlankScalarString);
     FORWARD_NODE(R_UnboundValue);
     FORWARD_NODE(R_RestartToken);
     FORWARD_NODE(R_MissingArg);

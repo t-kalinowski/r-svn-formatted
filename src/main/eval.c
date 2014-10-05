@@ -2847,7 +2847,7 @@ static void findmethod(SEXP Class, const char *group, const char *generic, SEXP 
         *sxp = R_LookupMethod(*meth, rho, rho, R_BaseEnv);
         if (isFunction(*sxp))
         {
-            *gr = mkString("");
+            *gr = R_BlankScalarString;
             if (whichclass > 0)
                 updateObjFromS4Slot(objSlot, ss);
             break;
