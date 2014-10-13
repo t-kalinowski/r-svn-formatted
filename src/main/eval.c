@@ -1008,7 +1008,8 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedvars)
 
     /* Debugging */
 
-    SET_RDEBUG(newrho, RDEBUG(op) || RSTEP(op) || (RDEBUG(rho) && R_BrowserLastCommand == 's'));
+    SET_RDEBUG(newrho,
+               (RDEBUG(op) && R_current_debug_state()) || RSTEP(op) || (RDEBUG(rho) && R_BrowserLastCommand == 's'));
     if (RSTEP(op))
         SET_RSTEP(op, 0);
     if (RDEBUG(newrho))
@@ -1080,10 +1081,10 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedvars)
     {
         PROTECT(tmp = eval(body, newrho));
     }
-    cntxt.returnValue = tmp;
+    cntxt.returnValue = tmp; /* make it available to on.exit */
     endcontext(&cntxt);
 
-    if (RDEBUG(op))
+    if (RDEBUG(op) && R_current_debug_state())
     {
         Rprintf("exiting from: ");
         PrintValueRec(call, rho);
@@ -1115,6 +1116,7 @@ static SEXP R_execClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP newrh
     }
 
     begincontext(&cntxt, CTXT_RETURN, call, newrho, rho, arglist, op);
+    /* *** from here on : "Copy-Paste from applyClosure" (~ l.965) above ***/
 
     /* The default return value is NULL.  FIXME: Is this really needed
        or do we always get a sensible value returned?  */
@@ -1123,22 +1125,34 @@ static SEXP R_execClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP newrh
 
     /* Debugging */
 
-    SET_RDEBUG(newrho, RDEBUG(op) || RSTEP(op) || (RDEBUG(rho) && R_BrowserLastCommand == 's'));
+    SET_RDEBUG(newrho,
+               (RDEBUG(op) && R_current_debug_state()) || RSTEP(op) || (RDEBUG(rho) && R_BrowserLastCommand == 's'));
     if (RSTEP(op))
         SET_RSTEP(op, 0);
-    if (RDEBUG(op))
+    //  RDEBUG(op) .. FIXME? applyClosure has RDEBUG(newrho) which has just been set
+    if (RDEBUG(op) && R_current_debug_state())
     {
+        int old_bl = R_BrowseLines, blines = asInteger(GetOption1(install("deparse.max.lines")));
         SEXP savesrcref;
+        cntxt.browserfinish = 0; /* Don't want to inherit the "f" */
         /* switch to interpreted version when debugging compiled code */
         if (TYPEOF(body) == BCODESXP)
             body = bytecodeExpr(body);
         Rprintf("debugging in: ");
+        if (blines != NA_INTEGER && blines > 0)
+            R_BrowseLines = blines;
         PrintValueRec(call, rho);
-        /* Find out if the body is function with only one statement. */
-        if (isSymbol(CAR(body)))
-            tmp = findFun(CAR(body), rho);
-        else
-            tmp = eval(CAR(body), rho);
+        R_BrowseLines = old_bl;
+
+        /* Is the body a bare symbol (PR#6804) */
+        if (!isSymbol(body) & !isVectorAtomic(body))
+        {
+            /* Find out if the body is function with only one statement. */
+            if (isSymbol(CAR(body)))
+                tmp = findFun(CAR(body), rho);
+            else
+                tmp = eval(CAR(body), rho);
+        }
         savesrcref = R_Srcref;
         PROTECT(R_Srcref = getSrcref(getBlockSrcrefs(body), 0));
         SrcrefPrompt("debug", R_Srcref);
@@ -1153,12 +1167,11 @@ static SEXP R_execClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP newrh
     arguments) it might just be perfect.  */
 
 #ifdef HASHING
-#define HASHTABLEGROWTHRATE 1.2
     {
-        SEXP R_NewHashTable(int, double);
+        SEXP R_NewHashTable(int);
         SEXP R_HashFrame(SEXP);
         int nargs = length(arglist);
-        HASHTAB(newrho) = R_NewHashTable(nargs, HASHTABLEGROWTHRATE);
+        HASHTAB(newrho) = R_NewHashTable(nargs);
         newrho = R_HashFrame(newrho);
     }
 #endif
@@ -1185,7 +1198,7 @@ static SEXP R_execClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP newrh
     cntxt.returnValue = tmp; /* make it available to on.exit */
     endcontext(&cntxt);
 
-    if (RDEBUG(op))
+    if (RDEBUG(op) && R_current_debug_state())
     {
         Rprintf("exiting from: ");
         PrintValueRec(call, rho);
@@ -6002,7 +6015,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 /**** hack to avoid evaluating the symbol */
                 SETCAR(CDDR(ncall), ScalarString(PRINTNAME(symbol)));
                 prom = mkRHSPROMISE(CADDDR(ncall), rhs);
-                SETCAR(CDR(CDDR(ncall)), prom);
+                SETCAR(CDDDR(ncall), prom);
                 dispatched = tryDispatch("$<-", ncall, x, rho, &value);
                 UNPROTECT(1);
             }
