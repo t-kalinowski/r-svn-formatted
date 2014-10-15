@@ -186,7 +186,8 @@ SEXP attribute_hidden matchArgExact(SEXP tag, SEXP *list)
 
 SEXP attribute_hidden matchArgs(SEXP formals, SEXP supplied, SEXP call)
 {
-    int i, seendots, arg_i = 0;
+    Rboolean seendots;
+    int i, arg_i = 0;
     SEXP f, a, b, dots, actuals;
 
     actuals = R_NilValue;
@@ -225,10 +226,9 @@ SEXP attribute_hidden matchArgs(SEXP formals, SEXP supplied, SEXP call)
     {
         if (TAG(f) != R_DotsSymbol)
         {
-            i = 1;
-            for (b = supplied; b != R_NilValue; b = CDR(b))
+            for (b = supplied, i = 1; b != R_NilValue; b = CDR(b), i++)
             {
-                if (TAG(b) != R_NilValue && pmatch(TAG(f), TAG(b), 1))
+                if (TAG(b) != R_NilValue && pmatch(TAG(f), TAG(b), /*exact*/ TRUE))
                 {
                     if (fargused[arg_i] == 2)
                         error(_("formal argument \"%s\" matched by multiple actual arguments"),
@@ -241,7 +241,6 @@ SEXP attribute_hidden matchArgs(SEXP formals, SEXP supplied, SEXP call)
                     SET_ARGUSED(b, 2);
                     fargused[arg_i] = 2;
                 }
-                i++;
             }
         }
         f = CDR(f);
@@ -254,7 +253,7 @@ SEXP attribute_hidden matchArgs(SEXP formals, SEXP supplied, SEXP call)
     /* The location of the first ... is saved in "dots" */
 
     dots = R_NilValue;
-    seendots = 0;
+    seendots = FALSE;
     f = formals;
     a = actuals;
     arg_i = 0;
@@ -266,12 +265,11 @@ SEXP attribute_hidden matchArgs(SEXP formals, SEXP supplied, SEXP call)
             {
                 /* Record where ... value goes */
                 dots = a;
-                seendots = 1;
+                seendots = TRUE;
             }
             else
             {
-                i = 1;
-                for (b = supplied; b != R_NilValue; b = CDR(b))
+                for (b = supplied, i = 1; b != R_NilValue; b = CDR(b), i++)
                 {
                     if (ARGUSED(b) != 2 && TAG(b) != R_NilValue && pmatch(TAG(f), TAG(b), seendots))
                     {
@@ -291,7 +289,6 @@ SEXP attribute_hidden matchArgs(SEXP formals, SEXP supplied, SEXP call)
                         SET_ARGUSED(b, 1);
                         fargused[arg_i] = 1;
                     }
-                    i++;
                 }
             }
         }
@@ -310,14 +307,14 @@ SEXP attribute_hidden matchArgs(SEXP formals, SEXP supplied, SEXP call)
     f = formals;
     a = actuals;
     b = supplied;
-    seendots = 0;
+    seendots = FALSE;
 
     while (f != R_NilValue && b != R_NilValue && !seendots)
     {
         if (TAG(f) == R_DotsSymbol)
         {
             /* Skip ... matching until all tags done */
-            seendots = 1;
+            seendots = TRUE;
             f = CDR(f);
             a = CDR(a);
         }
