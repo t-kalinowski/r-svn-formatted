@@ -684,7 +684,8 @@ void *in_R_HTTPOpen(const char *url, const char *headers, const int cacheOK)
             {
                 REprintf("Content type '%s'", type ? type : "unknown");
                 if (len > 1024 * 1024)
-                    REprintf(" length %ld bytes (%0.1f Mb)\n", len, len / 1024.0 / 1024.0);
+                    // might be longer than long, and is on 64-bit windows
+                    REprintf(" length %0.0f bytes (%0.1f Mb)\n", (double)len, len / 1024.0 / 1024.0);
                 else if (len > 10240)
                     REprintf(" length %d bytes (%d Kb)\n", len, len / 1024);
                 else if (len >= 0)
@@ -930,7 +931,9 @@ static void *in_R_HTTPOpen(const char *url, const char *headers, const int cache
     if (!IDquiet)
     {
         if (status > 1024 * 1024)
-            REprintf("Content type '%s' length %d bytes (%0.1f Mb)\n", buf, status, status / 1024.0 / 1024.0);
+            // might be longer than long, and is on 64-bit windows
+            REprintf("Content type '%s' length %0.0f bytes (%0.1f Mb)\n", buf, (double)status,
+                     status / 1024.0 / 1024.0);
         else if (status > 10240)
             REprintf("Content type '%s' length %d bytes (%d Kb)\n", buf, status, status / 1024);
         else
