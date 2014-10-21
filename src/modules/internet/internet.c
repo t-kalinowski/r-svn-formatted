@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2000-12   The R Core Team.
+ *  Copyright (C) 2000-2014   The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -227,9 +227,9 @@ static Rconnection in_R_newurl(const char *description, const char *const mode)
 }
 
 #ifndef Win32
-static void putdots(int *pold, int new)
+static void putdots(ssize_t *pold, ssize_t new)
 {
-    int i, old = *pold;
+    ssize_t i, old = *pold;
     *pold = new;
     for (i = old; i < new; i++)
     {
@@ -257,7 +257,7 @@ static void putdashes(int *pold, int new)
 /* note, ALL the possible structures have the first two elements */
 typedef struct
 {
-    int length;
+    ssize_t length;
     char *type;
     void *ctxt;
 } inetconn;
@@ -390,10 +390,11 @@ static SEXP in_do_download(SEXP args)
 
         FILE *out;
         void *ctxt;
-        int len, total, guess, nbytes = 0;
+        ssize_t len, total, guess, nbytes = 0;
         char buf[IBUFSIZE];
 #ifndef Win32
-        int ndots = 0;
+        int ndashes = 0;
+        ssize_t ndots = 0;
 #endif
 
         out = R_fopen(R_ExpandFileName(file), mode);
@@ -473,7 +474,7 @@ static SEXP in_do_download(SEXP args)
                     if (guess <= 0)
                         putdots(&ndots, nbytes / 1024);
                     else
-                        putdashes(&ndots, 50 * nbytes / guess);
+                        putdashes(&ndashes, (int)(50 * nbytes / guess));
                 }
 #endif
             }
@@ -511,10 +512,11 @@ static SEXP in_do_download(SEXP args)
 
         FILE *out;
         void *ctxt;
-        int len, total, guess, nbytes = 0;
+        ssize_t len, total, guess, nbytes = 0;
         char buf[IBUFSIZE];
 #ifndef Win32
-        int ndots = 0;
+        int ndashes = 0;
+        ssize_t ndots = 0;
 #endif
 
         out = R_fopen(R_ExpandFileName(file), mode);
@@ -597,7 +599,7 @@ static SEXP in_do_download(SEXP args)
                     if (guess <= 0)
                         putdots(&ndots, nbytes / 1024);
                     else
-                        putdashes(&ndots, 50 * nbytes / guess);
+                        putdashes(&ndashes, (int)(50 * nbytes / guess));
                 }
 #endif
             }
@@ -645,7 +647,7 @@ void *in_R_HTTPOpen(const char *url, const char *headers, const int cacheOK)
     inetconn *con;
     void *ctxt;
     int timeout = asInteger(GetOption1(install("timeout")));
-    int len = -1;
+    ssize_t len = -1;
     char *type = NULL;
 
     if (timeout == NA_INTEGER || timeout <= 0)
@@ -670,7 +672,7 @@ void *in_R_HTTPOpen(const char *url, const char *headers, const int cacheOK)
             {
                 REprintf("Content type '%s'", type ? type : "unknown");
                 if (len > 1024 * 1024)
-                    REprintf(" length %d bytes (%0.1f Mb)\n", len, len / 1024.0 / 1024.0);
+                    REprintf(" length %ld bytes (%0.1f Mb)\n", len, len / 1024.0 / 1024.0);
                 else if (len > 10240)
                     REprintf(" length %d bytes (%d Kb)\n", len, len / 1024);
                 else if (len >= 0)
@@ -714,7 +716,7 @@ static void *in_R_FTPOpen(const char *url)
     inetconn *con;
     void *ctxt;
     int timeout = asInteger(GetOption1(install("timeout")));
-    int len = 0;
+    ssize_t len = 0;
 
     if (timeout == NA_INTEGER || timeout <= 0)
         timeout = 60;
@@ -726,7 +728,7 @@ static void *in_R_FTPOpen(const char *url)
     {
         len = RxmlNanoFTPContentLength(ctxt);
         if (len >= 0)
-            REprintf("ftp data connection made, file length %d bytes\n", len);
+            REprintf("ftp data connection made, file length %ld bytes\n", len);
         else
             REprintf("ftp data connection made, file length unknown\n");
 #ifdef Win32

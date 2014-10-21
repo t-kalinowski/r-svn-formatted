@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2001-6  The R Core Team.
+ *  Copyright (C) 2001-2014  The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,6 +31,8 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#include <sys/types.h> // for ssize_t
 
 #ifdef ENABLE_NLS
 #include <libintl.h>
@@ -146,7 +148,7 @@ typedef struct RxmlNanoFTPCtxt
     SOCKET dataFd;              /* the file descriptor for the data socket */
     int state;                  /* WRITE / READ / CLOSED */
     int returnValue;            /* the protocol return value */
-    int contentLength;
+    ssize_t contentLength;
     /* buffer for data received from the control connection */
     char controlBuf[FTP_BUF_SIZE + 1];
     int controlBufIndex;
@@ -641,7 +643,6 @@ static int RxmlNanoFTPGetMore(void *ctx)
 static void RxmlFindLength(void *ctxt, char *ptr)
 {
     char *p, *q;
-    int len;
 
     p = strrchr(ptr, '(');
     if (p)
@@ -650,7 +651,7 @@ static void RxmlFindLength(void *ctxt, char *ptr)
         q = strchr(p, 'b');
         if (!q || strncmp(q, "bytes)", 6) != 0)
             return;
-        len = atoi(p);
+        ssize_t len = (ssize_t)atol(p);
         if (len >= 0)
             ((RxmlNanoFTPCtxtPtr)ctxt)->contentLength = len;
     }
@@ -795,7 +796,7 @@ static int RxmlNanoFTPSendUser(void *ctx)
     RxmlNanoFTPCtxtPtr ctxt = (RxmlNanoFTPCtxtPtr)ctx;
     char buf[200];
     int len;
-    ssize_t res;
+    int res;
 
     if (ctxt->user == NULL)
         snprintf(buf, sizeof(buf), "USER anonymous\r\n");
@@ -804,7 +805,7 @@ static int RxmlNanoFTPSendUser(void *ctx)
     buf[sizeof(buf) - 1] = 0;
     len = (int)strlen(buf);
     RxmlMessage(0, "%s", buf);
-    res = send(ctxt->controlFd, buf, len, 0);
+    res = (int)send(ctxt->controlFd, buf, len, 0);
     if (res < 0)
     {
         RxmlMessage(1, "send failed");
@@ -822,7 +823,7 @@ static int RxmlNanoFTPSendPasswd(void *ctx)
     RxmlNanoFTPCtxtPtr ctxt = (RxmlNanoFTPCtxtPtr)ctx;
     char buf[200];
     int len;
-    ssize_t res;
+    int res;
 
     if (ctxt->passwd == NULL)
         snprintf(buf, sizeof(buf), "PASS anonymous@\r\n");
@@ -831,7 +832,7 @@ static int RxmlNanoFTPSendPasswd(void *ctx)
     buf[sizeof(buf) - 1] = 0;
     len = (int)strlen(buf);
     RxmlMessage(0, "%s", buf);
-    res = send(ctxt->controlFd, buf, len, 0);
+    res = (int)send(ctxt->controlFd, buf, len, 0);
     if (res < 0)
     {
         RxmlMessage(1, "send failed");
@@ -1000,7 +1001,7 @@ static int RxmlNanoFTPConnect(void *ctx)
                 RxmlMessage(1, "send failed");
                 closesocket(ctxt->controlFd);
                 ctxt->controlFd = -1;
-                return (res);
+                return ((int)res);
             }
             res = RxmlNanoFTPGetResponse(ctxt);
             switch (res)
@@ -1022,7 +1023,7 @@ static int RxmlNanoFTPConnect(void *ctx)
                     RxmlMessage(1, "send failed");
                     closesocket(ctxt->controlFd);
                     ctxt->controlFd = -1;
-                    return (res);
+                    return ((int)res);
                 }
                 res = RxmlNanoFTPGetResponse(ctxt);
                 if (res > 3)
@@ -1065,7 +1066,7 @@ static int RxmlNanoFTPConnect(void *ctx)
                 closesocket(ctxt->controlFd);
                 ctxt->controlFd = -1;
                 ctxt->controlFd = -1;
-                return (res);
+                return ((int)res);
             }
             res = RxmlNanoFTPGetResponse(ctxt);
             if (res == 2)
@@ -1097,7 +1098,7 @@ static int RxmlNanoFTPConnect(void *ctx)
                 closesocket(ctxt->controlFd);
                 ctxt->controlFd = -1;
                 ctxt->controlFd = -1;
-                return (res);
+                return ((int)res);
             }
             res = RxmlNanoFTPGetResponse(ctxt);
             if ((res == 1) || (res == 2))
@@ -1121,7 +1122,7 @@ static int RxmlNanoFTPConnect(void *ctx)
                 closesocket(ctxt->controlFd);
                 ctxt->controlFd = -1;
                 ctxt->controlFd = -1;
-                return (res);
+                return ((int)res);
             }
             res = RxmlNanoFTPGetResponse(ctxt);
             if ((res == 1) || (res == 2))
@@ -1244,7 +1245,7 @@ static int RxmlNanoFTPGetConnection(void *ctx)
 #ifdef DEBUG_FTP
         RxmlMessage(0, "%s", buf);
 #endif
-        res = send(ctxt->controlFd, buf, len, 0);
+        res = (int)send(ctxt->controlFd, buf, len, 0);
         if (res < 0)
         {
             RxmlMessage(1, "send failed");
@@ -1326,7 +1327,7 @@ static int RxmlNanoFTPGetConnection(void *ctx)
         RxmlMessage(1, "%s", buf);
 #endif
 
-        res = send(ctxt->controlFd, buf, len, 0);
+        res = (int)send(ctxt->controlFd, buf, len, 0);
         if (res < 0)
         {
             RxmlMessage(1, "send failed");
@@ -1373,7 +1374,7 @@ static int RxmlNanoFTPGetSocket(void *ctx, const char *filename)
 #ifdef DEBUG_FTP
     RxmlMessage(0, "%s", buf);
 #endif
-    res = send(ctxt->controlFd, buf, len, 0);
+    res = (int)send(ctxt->controlFd, buf, len, 0);
     if (res < 0)
     {
         RxmlMessage(1, "send failed");
@@ -1397,7 +1398,7 @@ static int RxmlNanoFTPGetSocket(void *ctx, const char *filename)
 #ifdef DEBUG_FTP
     RxmlMessage(0, "%s", buf);
 #endif
-    res = send(ctxt->controlFd, buf, len, 0);
+    res = (int)send(ctxt->controlFd, buf, len, 0);
     if (res < 0)
     {
         RxmlMessage(1, "send failed");
@@ -1519,7 +1520,7 @@ int RxmlNanoFTPRead(void *ctx, void *dest, int len)
 #endif
 
         /* was the socket */
-        got = recv(ctxt->dataFd, dest, len, 0);
+        got = (int)recv(ctxt->dataFd, dest, len, 0);
         if (got < 0)
         {
             closesocket(ctxt->dataFd);
@@ -1613,7 +1614,7 @@ void RxmlNanoFTPTimeout(int delay)
     timeout = (unsigned int)delay;
 }
 
-int RxmlNanoFTPContentLength(void *ctx)
+ssize_t RxmlNanoFTPContentLength(void *ctx)
 {
     RxmlNanoFTPCtxtPtr ctxt = (RxmlNanoFTPCtxtPtr)ctx;
 
