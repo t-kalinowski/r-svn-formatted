@@ -1237,7 +1237,7 @@ static int RxmlNanoHTTPConnectHost(const char *host, int port)
         {
             /* A records (IPv4) */
             memcpy(&ia, h->h_addr_list[i], h->h_length);
-            sockin.sin_family = (sa_family_t)h->h_addrtype;
+            sockin.sin_family = h->h_addrtype;
             sockin.sin_addr = ia;
             sockin.sin_port = htons(port);
             addr = (struct sockaddr *)&sockin;
@@ -1247,7 +1247,7 @@ static int RxmlNanoHTTPConnectHost(const char *host, int port)
         {
             /* AAAA records (IPv6) */
             memcpy(&ia6, h->h_addr_list[i], h->h_length);
-            sockin6.sin6_family = (sa_family_t)h->h_addrtype;
+            sockin6.sin6_family = h->h_addrtype;
             sockin6.sin6_addr = ia6;
             sockin6.sin6_port = htons(port);
             addr = (struct sockaddr *)&sockin6;
