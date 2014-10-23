@@ -506,7 +506,7 @@ static SEXP in_do_download(SEXP args)
             }
 #endif
             if (total > 0 && total != nbytes)
-                warning(_("downloaded length %d != reported length %d"), nbytes, total);
+                warning(_("downloaded length %0.f != reported length %0.f"), (double)nbytes, (double)total);
         }
         fclose(out);
         R_Busy(0);
@@ -637,7 +637,7 @@ static SEXP in_do_download(SEXP args)
             }
 #endif
             if (total > 0 && total != nbytes)
-                warning(_("downloaded length %d != reported length %d"), nbytes, total);
+                warning(_("downloaded length %0.f != reported length %0.f"), (double)nbytes, (double)total);
         }
         R_Busy(0);
         fclose(out);
@@ -687,9 +687,9 @@ void *in_R_HTTPOpen(const char *url, const char *headers, const int cacheOK)
                     // might be longer than long, and is on 64-bit windows
                     REprintf(" length %0.0f bytes (%0.1f MB)\n", (double)len, len / 1024.0 / 1024.0);
                 else if (len > 10240)
-                    REprintf(" length %d bytes (%d KB)\n", len, len / 1024);
+                    REprintf(" length %d bytes (%d KB)\n", (int)len, (int)(len / 1024));
                 else if (len >= 0)
-                    REprintf(" length %d bytes\n", len);
+                    REprintf(" length %d bytes\n", (int)len);
                 else
                     REprintf(" length unknown\n", len);
 #ifdef Win32
@@ -935,9 +935,9 @@ static void *in_R_HTTPOpen(const char *url, const char *headers, const int cache
             REprintf("Content type '%s' length %0.0f bytes (%0.1f MB)\n", buf, (double)status,
                      status / 1024.0 / 1024.0);
         else if (status > 10240)
-            REprintf("Content type '%s' length %d bytes (%d KB)\n", buf, status, status / 1024);
+            REprintf("Content type '%s' length %d bytes (%d KB)\n", buf, (int)status, (int)(status / 1024));
         else
-            REprintf("Content type '%s' length %d bytes\n", buf, status);
+            REprintf("Content type '%s' length %d bytes\n", buf, (int)status);
         R_FlushConsole();
     }
 
