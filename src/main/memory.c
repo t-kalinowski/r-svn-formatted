@@ -2278,6 +2278,15 @@ char *R_alloc(size_t nelem, int eltsize)
         return NULL;
 }
 
+#include <stdint.h>
+long double *R_allocLD(size_t nelem)
+{
+    // This asumes 16-byte alignment suffices.
+    uintptr_t tmp = (uintptr_t)R_alloc(nelem + 1, sizeof(long double));
+    tmp = (tmp + 15) & ~0x0F;
+    return (long double *)tmp;
+}
+
 /* S COMPATIBILITY */
 
 char *S_alloc(long nelem, int eltsize)
