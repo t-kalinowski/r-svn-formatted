@@ -2294,7 +2294,7 @@ long double *R_allocLD(size_t nelem)
     size_t ld_align = offsetof(
         struct {
             char __a;
-            type __b;
+            long double __b;
         },
         __b);
 #else
