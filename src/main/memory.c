@@ -2298,7 +2298,7 @@ long double *R_allocLD(size_t nelem)
         },
         __b);
 #else
-    size_t ld_align 0x0F; // value of x86_64, known others are 4 or 8
+    size_t ld_align = 0x0F; // value of x86_64, known others are 4 or 8
 #endif
     if (ld_align > 8)
     {
