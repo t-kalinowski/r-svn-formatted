@@ -4917,6 +4917,8 @@ static int StringValue(int c, Rboolean forSymbol)
                     xxungetc(c);
                     CTEXT_POP();
                 }
+                if (!octal)
+                    error(_("nul character not allowed (line %d)"), ParseState.xxlineno);
                 c = octal;
                 oct_or_hex = TRUE;
             }
@@ -4948,6 +4950,8 @@ static int StringValue(int c, Rboolean forSymbol)
                     }
                     val = 16 * val + ext;
                 }
+                if (!val)
+                    error(_("nul character not allowed (line %d)"), ParseState.xxlineno);
                 c = val;
                 oct_or_hex = TRUE;
             }
@@ -4997,6 +5001,8 @@ static int StringValue(int c, Rboolean forSymbol)
                     else
                         CTEXT_PUSH(c);
                 }
+                if (!val)
+                    error(_("nul character not allowed (line %d)"), ParseState.xxlineno);
                 WTEXT_PUSH(val); /* this assumes wchar_t is Unicode */
                 use_wcs = TRUE;
                 continue;
@@ -5046,6 +5052,8 @@ static int StringValue(int c, Rboolean forSymbol)
                     else
                         CTEXT_PUSH(c);
                 }
+                if (!val)
+                    error(_("nul character not allowed (line %d)"), ParseState.xxlineno);
                 WTEXT_PUSH(val);
                 use_wcs = TRUE;
                 continue;
