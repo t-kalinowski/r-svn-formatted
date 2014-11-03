@@ -1395,6 +1395,7 @@ SEXP attribute_hidden do_abs(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     else if (isComplex(x))
     {
+        SET_TAG(args, R_NilValue); /* cmathfuns want "z"; we might have "x" PR#16047 */
         return do_cmathfuns(call, op, args, env);
     }
     else
