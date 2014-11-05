@@ -142,11 +142,11 @@ const char *EncodeLogical(int x, int w)
 {
     static char buff[NB];
     if (x == NA_LOGICAL)
-        snprintf(buff, NB, "%*s", w, CHAR(R_print.na_string));
+        snprintf(buff, NB, "%*s", min(w, (NB - 1)), CHAR(R_print.na_string));
     else if (x)
-        snprintf(buff, NB, "%*s", w, "TRUE");
+        snprintf(buff, NB, "%*s", min(w, (NB - 1)), "TRUE");
     else
-        snprintf(buff, NB, "%*s", w, "FALSE");
+        snprintf(buff, NB, "%*s", min(w, (NB - 1)), "FALSE");
     buff[NB - 1] = '\0';
     return buff;
 }
@@ -155,7 +155,7 @@ const char *EncodeInteger(int x, int w)
 {
     static char buff[NB];
     if (x == NA_INTEGER)
-        snprintf(buff, NB, "%*s", w, CHAR(R_print.na_string));
+        snprintf(buff, NB, "%*s", min(w, (NB - 1)), CHAR(R_print.na_string));
     else
         snprintf(buff, NB, "%*d", min(w, (NB - 1)), x);
     buff[NB - 1] = '\0';
@@ -209,13 +209,13 @@ const char *EncodeReal0(double x, int w, int d, int e, const char *dec)
     if (!R_FINITE(x))
     {
         if (ISNA(x))
-            snprintf(buff, NB, "%*s", w, CHAR(R_print.na_string));
+            snprintf(buff, NB, "%*s", min(w, (NB - 1)), CHAR(R_print.na_string));
         else if (ISNAN(x))
-            snprintf(buff, NB, "%*s", w, "NaN");
+            snprintf(buff, NB, "%*s", min(w, (NB - 1)), "NaN");
         else if (x > 0)
-            snprintf(buff, NB, "%*s", w, "Inf");
+            snprintf(buff, NB, "%*s", min(w, (NB - 1)), "Inf");
         else
-            snprintf(buff, NB, "%*s", w, "-Inf");
+            snprintf(buff, NB, "%*s", min(w, (NB - 1)), "-Inf");
     }
     else if (e)
     {
@@ -266,13 +266,13 @@ static const char *EncodeRealDrop0(double x, int w, int d, int e, const char *de
     if (!R_FINITE(x))
     {
         if (ISNA(x))
-            snprintf(buff, NB, "%*s", w, CHAR(R_print.na_string));
+            snprintf(buff, NB, "%*s", min(w, (NB - 1)), CHAR(R_print.na_string));
         else if (ISNAN(x))
-            snprintf(buff, NB, "%*s", w, "NaN");
+            snprintf(buff, NB, "%*s", min(w, (NB - 1)), "NaN");
         else if (x > 0)
-            snprintf(buff, NB, "%*s", w, "Inf");
+            snprintf(buff, NB, "%*s", min(w, (NB - 1)), "Inf");
         else
-            snprintf(buff, NB, "%*s", w, "-Inf");
+            snprintf(buff, NB, "%*s", min(w, (NB - 1)), "-Inf");
     }
     else if (e)
     {
@@ -349,13 +349,13 @@ attribute_hidden const char *EncodeReal2(double x, int w, int d, int e)
     if (!R_FINITE(x))
     {
         if (ISNA(x))
-            snprintf(buff, NB, "%*s", w, CHAR(R_print.na_string));
+            snprintf(buff, NB, "%*s", min(w, (NB - 1)), CHAR(R_print.na_string));
         else if (ISNAN(x))
-            snprintf(buff, NB, "%*s", w, "NaN");
+            snprintf(buff, NB, "%*s", min(w, (NB - 1)), "NaN");
         else if (x > 0)
-            snprintf(buff, NB, "%*s", w, "Inf");
+            snprintf(buff, NB, "%*s", min(w, (NB - 1)), "Inf");
         else
-            snprintf(buff, NB, "%*s", w, "-Inf");
+            snprintf(buff, NB, "%*s", min(w, (NB - 1)), "-Inf");
     }
     else if (e)
     {
@@ -398,7 +398,7 @@ const char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, in
     if (ISNA(x.r) || ISNA(x.i))
     {
         snprintf(buff, NB, "%*s", /* was "%*s%*s", R_print.gap, "", */
-                 wr + wi + 2, CHAR(R_print.na_string));
+                 min(wr + wi + 2, (NB - 1)), CHAR(R_print.na_string));
     }
     else
     {
