@@ -68,7 +68,7 @@
 #endif
 
 #ifndef NVALGRIND
-#include "memcheck.h"
+#include "valgrind/memcheck.h"
 #endif
 
 #ifndef VALGRIND_LEVEL
