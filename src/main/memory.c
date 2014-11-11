@@ -76,7 +76,7 @@
 #endif
 // for later external headers: currently only levels 1 and 2 work.
 #if defined(__VALGRIND_MAJOR__) && defined(__VALGRIND_MINOR__) &&                                                      \
-    (__VALGRIND_MAJOR__ > 3 || (__VALGRIND_MAJOR__ == 3 && __VALGRIND_MINOR__ >= 10))
+    (__VALGRIND_MAJOR__ > 3 || (__VALGRIND_MAJOR__ == 3 && __VALGRIND_MINOR__ >= 8))
 #define VALGRIND_MAKE_NOACCESS VALGRIND_MAKE_MEM_NOACCESS
 #define VALGRIND_MAKE_READABLE VALGRIND_MAKE_MEM_DEFINED
 #define VALGRIND_MAKE_WRITABLE VALGRIND_MAKE_MEM_UNDEFINED
