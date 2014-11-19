@@ -30,7 +30,7 @@ extern LZMA_API(const char *) lzma_version_string(void)
 // Memory allocation //
 ///////////////////////
 
-extern void *lzma_attribute((malloc)) lzma_alloc(size_t size, lzma_allocator *allocator)
+extern void *lzma_attribute((__malloc__)) lzma_attr_alloc_size(1) lzma_alloc(size_t size, lzma_allocator *allocator)
 {
     // Some malloc() variants return NULL if called with size == 0.
     if (size == 0)

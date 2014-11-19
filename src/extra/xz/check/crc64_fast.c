@@ -23,7 +23,7 @@
 #define A1 A
 #endif
 
-// Used in package utils, so needs to be visible
+// R_Change: Used in package utils, so needs to be visible
 #include <R_ext/Visibility.h>
 // See the comments in crc32_fast.c. They aren't duplicated here.
 extern attribute_visible LZMA_API(uint64_t) lzma_crc64(const uint8_t *buf, size_t size, uint64_t crc)

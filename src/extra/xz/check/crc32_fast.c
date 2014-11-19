@@ -19,7 +19,7 @@
 #include "check.h"
 #include "crc_macros.h"
 
-// If you make any changes, do some bench marking! Seemingly unrelated
+// If you make any changes, do some benchmarking! Seemingly unrelated
 // changes can very easily ruin the performance (and very probably is
 // very compiler dependent).
 extern LZMA_API(uint32_t) lzma_crc32(const uint8_t *buf, size_t size, uint32_t crc)
