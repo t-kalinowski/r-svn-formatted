@@ -1284,7 +1284,11 @@ SEXP coerceVector(SEXP v, SEXPTYPE type)
         n = length(v);
         PROTECT(ans = allocVector(type, n));
         if (n == 0)
-            break; /* Can this actually happen? */
+        {
+            /* Can this actually happen? */
+            UNPROTECT(1);
+            break;
+        }
         i = 0;
         op = CAR(v);
         /* The case of practical relevance is "lhs ~ rhs", which

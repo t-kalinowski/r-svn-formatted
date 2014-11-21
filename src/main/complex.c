@@ -827,7 +827,10 @@ SEXP attribute_hidden complex_math2(SEXP call, SEXP op, SEXP args, SEXP env)
     na = XLENGTH(sa);
     nb = XLENGTH(sb);
     if ((na == 0) || (nb == 0))
+    {
+        UNPROTECT(2);
         return (allocVector(CPLXSXP, 0));
+    }
     n = (na < nb) ? nb : na;
     PROTECT(sy = allocVector(CPLXSXP, n));
     a = COMPLEX(sa);
