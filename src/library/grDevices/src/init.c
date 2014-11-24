@@ -80,6 +80,7 @@ static const R_CallMethodDef CallEntries[] = {CALLDEF(Type1FontInUse, 2),
 #else
                                               CALLDEF(bringToTop, 2),
                                               CALLDEF(msgWindow, 2),
+                                              CALLDEF(bmVersion, 0),
 #endif
                                               {NULL, NULL, 0}};
 
