@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Langage for Statistical Data Analysis
- *  Copyright (C) 2011     The R Core Team
+ *  Copyright (C) 2011-2014     The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -63,10 +63,7 @@ SEXP devCairo(SEXP args)
 SEXP cairoVersion(void)
 {
     if (Load_Rcairo_Dll() < 0)
-    {
-        warning("failed to load cairo DLL");
         return mkString("");
-    }
     else
         return (R_cairoVersion)();
 }
