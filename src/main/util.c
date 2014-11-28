@@ -2252,7 +2252,11 @@ SEXP attribute_hidden do_ICUget(SEXP call, SEXP op, SEXP args, SEXP rho)
     const char *ans = "unknown", *res;
     checkArity(op, args);
 
-    if (collator)
+    if (collationLocaleSet == 2)
+    {
+        ans = "ASCII";
+    }
+    else if (collator)
     {
         UErrorCode status = U_ZERO_ERROR;
         int type = asInteger(CAR(args));
