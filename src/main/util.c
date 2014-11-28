@@ -2101,8 +2101,7 @@ const char *ucol_getLocaleByType(const UCollator *coll, ULocDataLocaleType type,
 #endif
 
 static UCollator *collator = NULL;
-
-static Rboolean collationLocaleSet = FALSE;
+static int collationLocaleSet = 0;
 
 /* called from platform.c */
 void attribute_hidden resetICUcollator(void)
@@ -2110,7 +2109,7 @@ void attribute_hidden resetICUcollator(void)
     if (collator)
         ucol_close(collator);
     collator = NULL;
-    collationLocaleSet = FALSE;
+    collationLocaleSet = 0;
 }
 
 static const struct
@@ -2193,22 +2192,29 @@ SEXP attribute_hidden do_ICUset(SEXP call, SEXP op, SEXP args, SEXP rho)
                 ucol_close(collator);
                 collator = NULL;
             }
-            if (strcmp(s, "none"))
+            if (streql(s, "ASCII"))
             {
-                if (streql(s, "default"))
-                    uloc_setDefault(getLocale(), &status);
-                else
-                    uloc_setDefault(s, &status);
-                if (U_FAILURE(status))
-                    error("failed to set ICU locale %s (%d)", s, status);
-                collator = ucol_open(NULL, &status);
-                if (U_FAILURE(status))
-                {
-                    collator = NULL;
-                    error("failed to open ICU collator (%d)", status);
-                }
+                collationLocaleSet = 2;
             }
-            collationLocaleSet = TRUE;
+            else
+            {
+                if (strcmp(s, "none"))
+                {
+                    if (streql(s, "default"))
+                        uloc_setDefault(getLocale(), &status);
+                    else
+                        uloc_setDefault(s, &status);
+                    if (U_FAILURE(status))
+                        error("failed to set ICU locale %s (%d)", s, status);
+                    collator = ucol_open(NULL, &status);
+                    if (U_FAILURE(status))
+                    {
+                        collator = NULL;
+                        error("failed to open ICU collator (%d)", status);
+                    }
+                }
+                collationLocaleSet = 1;
+            }
         }
         else
         {
@@ -2268,7 +2274,7 @@ attribute_hidden int Scollate(SEXP a, SEXP b)
 {
     if (!collationLocaleSet)
     {
-        collationLocaleSet = TRUE;
+        collationLocaleSet = 1;
 #ifndef Win32
         if (strcmp("C", getLocale()))
         {
@@ -2290,7 +2296,8 @@ attribute_hidden int Scollate(SEXP a, SEXP b)
         }
     }
     if (collator == NULL)
-        return strcoll(translateChar(a), translateChar(b));
+        return collationLocaleSet == 2 ? strcmp(translateChar(a), translateChar(b))
+                                       : strcoll(translateChar(a), translateChar(b));
 
     UCharIterator aIter, bIter;
     const char *as = translateCharUTF8(a), *bs = translateCharUTF8(b);
