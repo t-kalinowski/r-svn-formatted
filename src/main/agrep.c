@@ -222,10 +222,11 @@ SEXP attribute_hidden do_agrep(SEXP call, SEXP op, SEXP args, SEXP env)
         return ans;
     }
 
+    SEXP s_nchar = install("nchar");
     if (useBytes)
-        PROTECT(call = lang3(install("nchar"), pat, ScalarString(mkChar("bytes"))));
+        PROTECT(call = lang3(s_nchar, pat, ScalarString(mkChar("bytes"))));
     else
-        PROTECT(call = lang3(install("nchar"), pat, ScalarString(mkChar("chars"))));
+        PROTECT(call = lang3(s_nchar, pat, ScalarString(mkChar("chars"))));
     patlen = asInteger(eval(call, env));
     UNPROTECT(1);
     if (!patlen)
@@ -979,10 +980,11 @@ SEXP attribute_hidden do_aregexec(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
 
+    SEXP s_nchar = install("nchar");
     if (useBytes)
-        PROTECT(call = lang3(install("nchar"), pat, ScalarString(mkChar("bytes"))));
+        PROTECT(call = lang3(s_nchar, pat, ScalarString(mkChar("bytes"))));
     else
-        PROTECT(call = lang3(install("nchar"), pat, ScalarString(mkChar("chars"))));
+        PROTECT(call = lang3(s_nchar, pat, ScalarString(mkChar("chars"))));
     patlen = asInteger(eval(call, env));
     UNPROTECT(1);
     if (!patlen)

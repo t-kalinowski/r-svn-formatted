@@ -2479,7 +2479,7 @@ static SEXP gregexpr_Regexc(const regex_t *reg, SEXP sstr, int useBytes, int use
     setAttrib(ans, install("match.length"), matchlen);
     if (useBytes)
     {
-        setAttrib(ans, install("useBytes"), ScalarLogical(TRUE));
+        setAttrib(ans, install("useBytes"), R_TrueValue);
     }
     UNPROTECT(4);
     return ans;
@@ -2567,7 +2567,7 @@ static SEXP gregexpr_fixed(const char *pattern, const char *string, Rboolean use
     setAttrib(ans, install("match.length"), matchlen);
     if (useBytes)
     {
-        setAttrib(ans, install("useBytes"), ScalarLogical(TRUE));
+        setAttrib(ans, install("useBytes"), R_TrueValue);
     }
     UNPROTECT(4);
     return ans;
@@ -2709,7 +2709,7 @@ static SEXP gregexpr_perl(const char *pattern, const char *string, pcre *re_pcre
     setAttrib(ans, install("match.length"), matchlen);
     if (useBytes)
     {
-        setAttrib(ans, install("useBytes"), ScalarLogical(TRUE));
+        setAttrib(ans, install("useBytes"), R_TrueValue);
     }
     UNPROTECT(1);
     if (foundAny)
@@ -2977,7 +2977,7 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
         setAttrib(ans, install("match.length"), matchlen);
         if (useBytes)
         {
-            setAttrib(ans, install("useBytes"), ScalarLogical(TRUE));
+            setAttrib(ans, install("useBytes"), R_TrueValue);
         }
         UNPROTECT(1);
         if (perl_opt && capture_count)
@@ -3274,7 +3274,8 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
         if (STRING_ELT(vec, i) == NA_STRING)
         {
             PROTECT(matchpos = ScalarInteger(NA_INTEGER));
-            setAttrib(matchpos, install("match.length"), ScalarInteger(NA_INTEGER));
+            SEXP s_match_length = install("match.length");
+            setAttrib(matchpos, s_match_length, ScalarInteger(NA_INTEGER));
             SET_VECTOR_ELT(ans, i, matchpos);
             UNPROTECT(1);
         }
@@ -3308,7 +3309,7 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
                 setAttrib(matchpos, install("match.length"), matchlen);
                 if (useBytes)
-                    setAttrib(matchpos, install("useBytes"), ScalarLogical(TRUE));
+                    setAttrib(matchpos, install("useBytes"), R_TrueValue);
                 SET_VECTOR_ELT(ans, i, matchpos);
                 UNPROTECT(2);
             }
