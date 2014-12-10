@@ -77,8 +77,8 @@ static void my_png_warning(png_structp png_ptr, png_const_charp msg)
     warning("libpng: %s", (char *)msg);
 }
 
-__declspec(dllexport) int R_SaveAsPng(void *d, int width, int height, unsigned int (*gp)(void *, int, int), int bgr,
-                                      FILE *fp, unsigned int transparent, int res)
+int R_SaveAsPng(void *d, int width, int height, unsigned int (*gp)(void *, int, int), int bgr, FILE *fp,
+                unsigned int transparent, int res)
 {
     png_structp png_ptr;
     png_infop info_ptr;
@@ -367,8 +367,8 @@ static void my_output_message(j_common_ptr cinfo)
     R_ShowMessage(buffer);
 }
 
-__declspec(dllexport) int R_SaveAsJpeg(void *d, int width, int height, unsigned int (*gp)(void *, int, int), int bgr,
-                                       int quality, FILE *outfile, int res)
+int R_SaveAsJpeg(void *d, int width, int height, unsigned int (*gp)(void *, int, int), int bgr, int quality,
+                 FILE *outfile, int res)
 {
     struct jpeg_compress_struct cinfo;
     struct my_error_mgr jerr;
@@ -469,8 +469,8 @@ __declspec(dllexport) int R_SaveAsJpeg(void *d, int width, int height, unsigned 
 #ifdef HAVE_TIFF
 #include <tiffio.h>
 
-__declspec(dllexport) int R_SaveAsTIFF(void *d, int width, int height, unsigned int (*gp)(void *, int, int), int bgr,
-                                       const char *outfile, int res, int compression)
+int R_SaveAsTIFF(void *d, int width, int height, unsigned int (*gp)(void *, int, int), int bgr, const char *outfile,
+                 int res, int compression)
 {
     TIFF *out;
     int sampleperpixel;
@@ -591,8 +591,7 @@ __declspec(dllexport) int R_SaveAsTIFF(void *d, int width, int height, unsigned 
         BMPERROR;
 #define HEADERSIZE 54
 
-__declspec(dllexport) int R_SaveAsBmp(void *d, int width, int height, unsigned int (*gp)(void *, int, int), int bgr,
-                                      FILE *fp, int res)
+int R_SaveAsBmp(void *d, int width, int height, unsigned int (*gp)(void *, int, int), int bgr, FILE *fp, int res)
 {
     unsigned int col, palette[256];
     int i, j, r, ncols, mid, high, low, withpalette;
@@ -747,7 +746,7 @@ __declspec(dllexport) int R_SaveAsBmp(void *d, int width, int height, unsigned i
     return 1;
 }
 
-__declspec(dllexport) const char *R_pngVersion(void)
+const char *R_pngVersion(void)
 {
 #ifdef HAVE_PNG
     return png_get_header_ver(NULL /*ignored*/);
@@ -755,7 +754,7 @@ __declspec(dllexport) const char *R_pngVersion(void)
     return "";
 #endif
 }
-__declspec(dllexport) const char *R_jpegVersion(void)
+const char *R_jpegVersion(void)
 {
 #ifdef HAVE_JPEG
     static char ans[10];
@@ -769,7 +768,7 @@ __declspec(dllexport) const char *R_jpegVersion(void)
     return "";
 #endif
 }
-__declspec(dllexport) const char *R_tiffVersion(void)
+const char *R_tiffVersion(void)
 {
 #ifdef HAVE_TIFF
     return TIFFGetVersion();
