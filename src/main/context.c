@@ -195,7 +195,7 @@ void attribute_hidden R_restore_globals(RCNTXT *cptr)
 
 /* jumpfun - jump to the named context */
 
-static void jumpfun(RCNTXT *cptr, int mask, SEXP val)
+static void NORET jumpfun(RCNTXT *cptr, int mask, SEXP val)
 {
     Rboolean savevis = R_Visible;
 
@@ -279,7 +279,7 @@ void endcontext(RCNTXT *cptr)
 
 /* findcontext - find the correct context */
 
-void attribute_hidden findcontext(int mask, SEXP env, SEXP val)
+void attribute_hidden NORET findcontext(int mask, SEXP env, SEXP val)
 {
     RCNTXT *cptr;
     cptr = R_GlobalContext;
@@ -299,7 +299,7 @@ void attribute_hidden findcontext(int mask, SEXP env, SEXP val)
     }
 }
 
-void attribute_hidden R_JumpToContext(RCNTXT *target, int mask, SEXP val)
+void attribute_hidden NORET R_JumpToContext(RCNTXT *target, int mask, SEXP val)
 {
     RCNTXT *cptr;
     for (cptr = R_GlobalContext; cptr != NULL && cptr->callflag != CTXT_TOPLEVEL; cptr = cptr->nextcontext)

@@ -1687,10 +1687,9 @@ SEXP attribute_hidden do_repeat(SEXP call, SEXP op, SEXP args, SEXP rho)
     return R_NilValue;
 }
 
-SEXP attribute_hidden do_break(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden NORET do_break(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     findcontext(PRIMVAL(op), rho, R_NilValue);
-    return R_NilValue;
 }
 
 SEXP attribute_hidden do_paren(SEXP call, SEXP op, SEXP args, SEXP rho)
@@ -1724,7 +1723,7 @@ SEXP attribute_hidden do_begin(SEXP call, SEXP op, SEXP args, SEXP rho)
     return s;
 }
 
-SEXP attribute_hidden do_return(SEXP call, SEXP op, SEXP args, SEXP rho)
+SEXP attribute_hidden NORET do_return(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP v;
 
@@ -1739,8 +1738,6 @@ SEXP attribute_hidden do_return(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
 
     findcontext(CTXT_BROWSER | CTXT_FUNCTION, rho, v);
-
-    return R_NilValue; /*NOTREACHED*/
 }
 
 /* Declared with a variable number of args in names.c */
@@ -4075,13 +4072,13 @@ static R_INLINE SEXP getForLoopSeq(int offset, Rboolean *iscompact)
 
 #define BCCONSTS(e) BCODE_CONSTS(e)
 
-static void nodeStackOverflow()
+static void NORET nodeStackOverflow()
 {
     error(_("node stack overflow"));
 }
 
 #ifdef BC_INT_STACK
-static void intStackOverflow()
+static void NORET intStackOverflow()
 {
     error(_("integer stack overflow"));
 }
@@ -4295,7 +4292,7 @@ static R_INLINE SEXP GET_BINDING_CELL_CACHE(SEXP symbol, SEXP rho, R_binding_cac
     }
 }
 
-static void MISSING_ARGUMENT_ERROR(SEXP symbol)
+static void NORET MISSING_ARGUMENT_ERROR(SEXP symbol)
 {
     const char *n = CHAR(PRINTNAME(symbol));
     if (*n)
@@ -4311,7 +4308,7 @@ static void MISSING_ARGUMENT_ERROR(SEXP symbol)
             MISSING_ARGUMENT_ERROR(symbol);                                                                            \
     } while (0)
 
-static void UNBOUND_VARIABLE_ERROR(SEXP symbol)
+static void NORET UNBOUND_VARIABLE_ERROR(SEXP symbol)
 {
     error(_("object '%s' not found"), EncodeChar(PRINTNAME(symbol)));
 }
@@ -6819,15 +6816,15 @@ SEXP do_bcprofstop(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 }
 #else
-SEXP do_bcprofcounts(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP NORET do_bcprofcounts(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     error(_("byte code profiling is not supported in this build"));
 }
-SEXP do_bcprofstart(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP NORET do_bcprofstart(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     error(_("byte code profiling is not supported in this build"));
 }
-SEXP do_bcprofstop(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP NORET do_bcprofstop(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     error(_("byte code profiling is not supported in this build"));
 }
