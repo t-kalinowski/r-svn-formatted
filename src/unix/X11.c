@@ -122,7 +122,7 @@ Rboolean attribute_hidden R_ReadClipboard(Rclpconn clpcon, char *type)
     }
 }
 
-attribute_hidden SEXP do_bmVersion(void)
+SEXP do_bmVersion(void)
 {
     SEXP ans = PROTECT(allocVector(STRSXP, 3)), nms = PROTECT(allocVector(STRSXP, 3));
     setAttrib(ans, R_NamesSymbol, nms);
