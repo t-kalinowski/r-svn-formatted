@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2001-2013   The R Core Team.
+ *  Copyright (C) 2001-2014   The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -821,7 +821,6 @@ static SEXP R_loadMethod(SEXP def, SEXP fname, SEXP ev)
         }
     }
     defineVar(R_dot_Method, def, ev);
-    UNPROTECT(1);
 
     if (found < length(attrib))
     {
@@ -830,7 +829,6 @@ static SEXP R_loadMethod(SEXP def, SEXP fname, SEXP ev)
         if (strcmp(CHAR(asChar(fname)), "loadMethod") == 0)
             return def;
         SEXP e, val;
-        PROTECT(def);
         PROTECT(e = allocVector(LANGSXP, 4));
         SETCAR(e, R_loadMethod_name);
         val = CDR(e);
@@ -844,7 +842,10 @@ static SEXP R_loadMethod(SEXP def, SEXP fname, SEXP ev)
         return val;
     }
     else
+    {
+        UNPROTECT(1);
         return def;
+    }
 }
 
 static SEXP R_selectByPackage(SEXP table, SEXP classes, int nargs)
