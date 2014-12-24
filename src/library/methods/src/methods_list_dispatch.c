@@ -827,7 +827,10 @@ static SEXP R_loadMethod(SEXP def, SEXP fname, SEXP ev)
         /* this shouldn't be needed but check the generic being
            "loadMethod", which would produce a recursive loop */
         if (strcmp(CHAR(asChar(fname)), "loadMethod") == 0)
+        {
+            UNPROTECT(1);
             return def;
+        }
         SEXP e, val;
         PROTECT(e = allocVector(LANGSXP, 4));
         SETCAR(e, R_loadMethod_name);
