@@ -314,7 +314,9 @@ SEXP attribute_hidden do_printdefault(SEXP call, SEXP op, SEXP args, SEXP rho)
             SEXP methodsNS = R_FindNamespace(mkString("methods"));
             if (methodsNS == R_UnboundValue)
                 error("missing methods namespace: this should not happen");
+            PROTECT(methodsNS);
             showS = findVarInFrame3(methodsNS, install("show"), TRUE);
+            UNPROTECT(1);
             if (showS == R_UnboundValue)
                 error("missing show() in methods namespace: this should not happen");
         }
@@ -979,7 +981,9 @@ static void printAttributes(SEXP s, SEXP env, Rboolean useSlots)
                     SEXP methodsNS = R_FindNamespace(mkString("methods"));
                     if (methodsNS == R_UnboundValue)
                         error("missing methods namespace: this should not happen");
+                    PROTECT(showS);
                     showS = findVarInFrame3(methodsNS, install("show"), TRUE);
+                    UNPROTECT(1);
                     if (showS == R_UnboundValue)
                         error("missing show() in methods namespace: this should not happen");
                 }
@@ -1064,7 +1068,9 @@ void attribute_hidden PrintValueEnv(SEXP s, SEXP env)
                 SEXP methodsNS = R_FindNamespace(mkString("methods"));
                 if (methodsNS == R_UnboundValue)
                     error("missing methods namespace: this should not happen");
+                PROTECT(methodsNS);
                 showS = findVarInFrame3(methodsNS, install("show"), TRUE);
+                UNPROTECT(1);
                 if (showS == R_UnboundValue)
                     error("missing show() in methods namespace: this should not happen");
             }
