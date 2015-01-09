@@ -4170,6 +4170,8 @@ static SEXP readOneString(Rconnection con)
     {
         p = buf + pos;
         m = (int)con->read(p, sizeof(char), 1, con);
+        if (m < 0)
+            error("error reading from the connection");
         if (!m)
         {
             if (pos > 0)
@@ -4331,6 +4333,8 @@ SEXP attribute_hidden do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 size_t n1 = (n0 < BLOCK) ? n0 : BLOCK;
                 m0 = con->read(pp, size, n1, con);
+                if (m0 < 0)
+                    error("error reading from the connection");
                 m += m0;
                 if (m0 < n1)
                     break;
@@ -4437,7 +4441,9 @@ SEXP attribute_hidden do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
         if (size == sizedef)
         {
             if (isRaw)
+            {
                 m = rawRead(p, size, n, bytes, nbytes, &np);
+            }
             else
             {
                 /* Do this in blocks to avoid large buffers in the connection */
@@ -4448,6 +4454,8 @@ SEXP attribute_hidden do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
                 {
                     size_t n1 = (n0 < BLOCK) ? n0 : BLOCK;
                     m0 = con->read(pp, size, n1, con);
+                    if (m0 < 0)
+                        error("error reading from the connection");
                     m += m0;
                     if (m0 < n1)
                         break;
@@ -4468,6 +4476,8 @@ SEXP attribute_hidden do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
                 for (i = 0, m = 0; i < n; i++)
                 {
                     s = isRaw ? rawRead(buf, size, 1, bytes, nbytes, &np) : (int)con->read(buf, size, 1, con);
+                    if (s < 0)
+                        error("error reading from the connection");
                     if (s)
                         m++;
                     else
@@ -4507,6 +4517,8 @@ SEXP attribute_hidden do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
                 for (i = 0, m = 0; i < n; i++)
                 {
                     s = isRaw ? rawRead(buf, size, 1, bytes, nbytes, &np) : (int)con->read(buf, size, 1, con);
+                    if (s < 0)
+                        error("error reading from the connection");
                     if (s)
                         m++;
                     else
