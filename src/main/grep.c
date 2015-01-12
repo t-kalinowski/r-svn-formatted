@@ -142,7 +142,6 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
     char *pt = NULL;
     wchar_t *wpt = NULL;
     const char *buf, *split = "", *bufp;
-    const unsigned char *tables = NULL;
     Rboolean use_UTF8 = FALSE, haveBytes = FALSE;
     const void *vmax, *vmax2;
     int nwarn = 0;
@@ -467,9 +466,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                     error(_("'split' string %d is invalid in this locale"), itok + 1);
             }
 
-            if (!tables)
-                tables = pcre_maketables();
-            re_pcre = pcre_compile(split, options, &errorptr, &erroffset, tables);
+            re_pcre = pcre_compile(split, options, &errorptr, &erroffset, NULL);
             if (!re_pcre)
             {
                 if (errorptr)
@@ -742,8 +739,6 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
     UNPROTECT(1);
     Free(pt);
     Free(wpt);
-    if (tables)
-        pcre_free((void *)tables);
     return ans;
 }
 
@@ -885,7 +880,6 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
     const char *spat = NULL;
     pcre *re_pcre = NULL /* -Wall */;
     pcre_extra *re_pe = NULL;
-    const unsigned char *tables = NULL /* -Wall */;
     Rboolean use_UTF8 = FALSE, use_WC = FALSE;
     const void *vmax;
     int nwarn = 0;
@@ -1038,8 +1032,7 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
             cflags |= PCRE_CASELESS;
         if (!useBytes && use_UTF8)
             cflags |= PCRE_UTF8;
-        tables = pcre_maketables();
-        re_pcre = pcre_compile(spat, cflags, &errorptr, &erroffset, tables);
+        re_pcre = pcre_compile(spat, cflags, &errorptr, &erroffset, NULL);
         if (!re_pcre)
         {
             if (errorptr)
@@ -1129,7 +1122,6 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
         if (re_pe)
             pcre_free(re_pe);
         pcre_free(re_pcre);
-        pcre_free((void *)tables);
     }
     else
         tre_regfree(&reg);
@@ -1829,7 +1821,6 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     const wchar_t *wrep = NULL;
     pcre *re_pcre = NULL;
     pcre_extra *re_pe = NULL;
-    const unsigned char *tables = NULL;
     const void *vmax = vmaxget();
 
     checkArity(op, args);
@@ -1985,8 +1976,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             cflags |= PCRE_UTF8;
         if (igcase_opt)
             cflags |= PCRE_CASELESS;
-        tables = pcre_maketables();
-        re_pcre = pcre_compile(spat, cflags, &errorptr, &erroffset, tables);
+        re_pcre = pcre_compile(spat, cflags, &errorptr, &erroffset, NULL);
         if (!re_pcre)
         {
             if (errorptr)
@@ -2369,7 +2359,6 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
         if (re_pe)
             pcre_free(re_pe);
         pcre_free(re_pcre);
-        pcre_free((void *)tables);
     }
     else
         tre_regfree(&reg);
@@ -2788,7 +2777,6 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     const char *s = NULL;
     pcre *re_pcre = NULL /* -Wall */;
     pcre_extra *re_pe = NULL;
-    const unsigned char *tables = NULL /* -Wall */;
     Rboolean use_UTF8 = FALSE, use_WC = FALSE;
     const void *vmax;
     int capture_count, *ovector = NULL, ovector_size = 0, /* -Wall */
@@ -2920,8 +2908,7 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
             cflags |= PCRE_CASELESS;
         if (!useBytes && use_UTF8)
             cflags |= PCRE_UTF8;
-        tables = pcre_maketables();
-        re_pcre = pcre_compile(spat, cflags, &errorptr, &erroffset, tables);
+        re_pcre = pcre_compile(spat, cflags, &errorptr, &erroffset, NULL);
         if (!re_pcre)
         {
             if (errorptr)
@@ -3145,7 +3132,6 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
         if (re_pe)
             pcre_free(re_pe);
         pcre_free(re_pcre);
-        pcre_free((void *)tables);
         UNPROTECT(1);
         free(ovector);
     }
