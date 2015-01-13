@@ -103,6 +103,10 @@ SEXP attribute_hidden do_curlGetHeaders(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (redirect)
         curl_easy_setopt(hnd, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(hnd, CURLOPT_MAXREDIRS, 50L);
+
+    int timeout0 = asInteger(GetOption1(install("timeout")));
+    long timeout = timeout0 = NA_INTEGER ? 0 : 1000L * timeout0;
+    curl_easy_setopt(hnd, CURLOPT_CONNECTTIMEOUT_MS, timeout);
     char errbuf[CURL_ERROR_SIZE];
     curl_easy_setopt(hnd, CURLOPT_ERRORBUFFER, errbuf);
     CURLcode ret = curl_easy_perform(hnd);
@@ -162,6 +166,20 @@ SEXP attribute_hidden do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho)
     cacheOK = asLogical(CAR(args));
     if (cacheOK == NA_LOGICAL)
         error(_("invalid '%s' argument"), "cacheOK");
+    int timeout0 = asInteger(GetOption1(install("timeout")));
+    long timeout = timeout0 = NA_INTEGER ? 0 : 1000L * timeout0;
+
+    /* This comes mainly from curl --libcurl on the call used by
+       download.file(method = "curl").
+
+       It blocks, and will be changed to use curl_multi_perform shortly.
+
+       A less elegant solution would be to use a writedata callback
+       and call R_CheckUserInterrupts or similar from there.
+
+       It would be a good idea to use a custom progress callback, and
+       it is said that in future libcurl may not have one at all.
+    */
 
     CURL *hnd = curl_easy_init();
     curl_easy_setopt(hnd, CURLOPT_URL, url);
@@ -169,9 +187,15 @@ SEXP attribute_hidden do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho)
         curl_easy_setopt(hnd, CURLOPT_NOPROGRESS, 0L);
     const char *ua = translateChar(STRING_ELT(CADR(args), 0));
     curl_easy_setopt(hnd, CURLOPT_USERAGENT, ua);
+    /* Users will normally expect to follow redirections, although
+       that is not the default in either curl or libcurl.
+
+       What this does not cope with is sites which want to set a cookie. */
     curl_easy_setopt(hnd, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(hnd, CURLOPT_MAXREDIRS, 50L);
     curl_easy_setopt(hnd, CURLOPT_TCP_KEEPALIVE, 1L);
+    curl_easy_setopt(hnd, CURLOPT_CONNECTTIMEOUT_MS, timeout);
+    curl_easy_setopt(hnd, CURLOPT_TIMEOUT_MS, timeout);
     if (!cacheOK)
     {
         slist1 = curl_slist_append(slist1, "Pragma: no-cache");
