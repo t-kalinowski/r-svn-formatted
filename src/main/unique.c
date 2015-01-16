@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2014  The R Core Team
+ *  Copyright (C) 1997--2015  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -738,9 +738,9 @@ R_xlen_t any_duplicated3(SEXP x, SEXP incomp, Rboolean from_last)
 #undef IS_DUPLICATED_CHECK
 #undef DUPLICATED_INIT
 
-/* .Internal(duplicated(x))       [op=0]
-  .Internal(unique(x))	          [op=1]
-   .Internal(anyDuplicated(x))    [op=2]
+/* .Internal(duplicated(x))	  [op=0]
+  .Internal(unique(x))		  [op=1]
+   .Internal(anyDuplicated(x))	  [op=2]
 */
 SEXP attribute_hidden do_duplicated(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -918,7 +918,7 @@ static SEXP match_transform(SEXP s, SEXP env)
             return asCharacterFactor(s);
         else if (inherits(s, "POSIXlt"))
         { /* and maybe more classes in the future:
-           * Call R's (generic)  as.character(s) : */
+           * Call R's (generic)	 as.character(s) : */
             SEXP call, r;
             PROTECT(call = lang2(install("as.character"), s));
             r = eval(call, env);
@@ -955,7 +955,7 @@ SEXP match5(SEXP itable, SEXP ix, int nmatch, SEXP incomp, SEXP env)
     nprot++;
     PROTECT(table = match_transform(itable, env));
     nprot++;
-    /* or should we use PROTECT_WITH_INDEX  and  REPROTECT below ? */
+    /* or should we use PROTECT_WITH_INDEX and REPROTECT below ? */
 
     /* Coerce to a common type; type == NILSXP is ok here.
      * Note that above we coerce factors and "POSIXlt", only to character.
@@ -1069,12 +1069,12 @@ SEXP attribute_hidden do_match(SEXP call, SEXP op, SEXP args, SEXP env)
 /* Partial Matching of Strings */
 /* Fully S Compatible version. */
 
-/* Hmm, this was not all S compatible!  The desired behaviour is:
+/* Hmm, this was not all S compatible!	The desired behaviour is:
  * First do exact matches, and mark elements as used as they are matched
  *   unless dup_ok is true.
  * Then do partial matching, from left to right, using up the table
  *   unless dup_ok is true.  Multiple partial matches are ignored.
- * Empty strings are unmatched                        BDR 2000/2/16
+ * Empty strings are unmatched			      BDR 2000/2/16
  */
 
 SEXP attribute_hidden do_pmatch(SEXP call, SEXP op, SEXP args, SEXP env)
