@@ -146,6 +146,8 @@ static void url_close(Rconnection con)
     case FTPsh:
         in_R_FTPClose(((Rurlconn)(con->private))->ctxt);
         break;
+    default:
+        break;
     }
     con->isopen = FALSE;
 }
@@ -166,6 +168,8 @@ static int url_fgetc_internal(Rconnection con)
     case FTPsh:
         n = in_R_FTPRead(ctxt, (char *)&c, 1);
         break;
+    default:
+        break;
     }
     return (n == 1) ? c : R_EOF;
 }
@@ -184,6 +188,8 @@ static size_t url_read(void *ptr, size_t size, size_t nitems, Rconnection con)
         break;
     case FTPsh:
         n = in_R_FTPRead(ctxt, ptr, (int)(size * nitems));
+        break;
+    default:
         break;
     }
     return n / size;
