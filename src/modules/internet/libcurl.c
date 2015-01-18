@@ -165,7 +165,6 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
     const char *url, *file, *mode;
     int quiet, cacheOK;
     struct curl_slist *slist1 = NULL;
-    FILE *out;
 
     scmd = CAR(args);
     args = CDR(args);
@@ -209,6 +208,7 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
     CURLM *mhnd = curl_multi_init();
     int still_running, repeats = 0;
     CURL **hnd[nurls];
+    FILE *out[nurls];
 
     for (int i = 0; i < nurls; i++)
     {
@@ -234,8 +234,8 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
         */
 
         file = translateChar(STRING_ELT(sfile, i));
-        out = R_fopen(R_ExpandFileName(file), mode);
-        if (!out)
+        out[i] = R_fopen(R_ExpandFileName(file), mode);
+        if (!out[i])
             error(_("cannot open destfile '%s', reason '%s'"), file, strerror(errno));
         curl_easy_setopt(hnd[i], CURLOPT_WRITEDATA, out);
 
@@ -282,10 +282,9 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
         }
     }
 
-    fclose(out);
-
     for (int i = 0; i < nurls; i++)
     {
+        fclose(out[i]);
         curl_multi_remove_handle(mhnd, hnd[i]);
         curl_easy_cleanup(hnd[i]);
     }
