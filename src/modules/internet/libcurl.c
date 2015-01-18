@@ -113,7 +113,7 @@ SEXP attribute_hidden in_do_curlGetHeaders(SEXP call, SEXP op, SEXP args, SEXP r
 {
     checkArity(op, args);
 #ifndef HAVE_CURL_CURL_H
-    error("curlGetHeaders is not supported on this platform");
+    error(_("curlGetHeaders is not supported on this platform"));
     return R_NilValue;
 #else
     if (!isString(CAR(args)) || LENGTH(CAR(args)) != 1)
@@ -122,7 +122,7 @@ SEXP attribute_hidden in_do_curlGetHeaders(SEXP call, SEXP op, SEXP args, SEXP r
     used = 0;
     int redirect = asLogical(CADR(args));
     if (redirect == NA_LOGICAL)
-        error("invalid %s argument", "redirect");
+        error(_("invalid %s argument"), "redirect");
 
     CURL *hnd = curl_easy_init();
     curl_easy_setopt(hnd, CURLOPT_URL, url);
@@ -136,7 +136,7 @@ SEXP attribute_hidden in_do_curlGetHeaders(SEXP call, SEXP op, SEXP args, SEXP r
     curl_easy_setopt(hnd, CURLOPT_ERRORBUFFER, errbuf);
     CURLcode ret = curl_easy_perform(hnd);
     if (ret != CURLE_OK)
-        error("libcurl error code %d\n\t%s\n", ret, errbuf);
+        error(_("libcurl error code %d\n\t%s\n"), ret, errbuf);
     long http_code = 0;
     curl_easy_getinfo(hnd, CURLINFO_RESPONSE_CODE, &http_code);
     curl_easy_cleanup(hnd);
@@ -158,7 +158,7 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
 {
     checkArity(op, args);
 #ifndef HAVE_CURL_CURL_H
-    error("download.file(method = \"libcurl\") is not supported on this platform");
+    error(_("download.file(method = \"libcurl\") is not supported on this platform"));
     return R_NilValue;
 #else
     SEXP scmd, sfile, smode;
@@ -177,7 +177,7 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
     if (!isString(sfile) || length(sfile) < 1)
         error(_("invalid '%s' argument"), "destfile");
     if (length(sfile) != length(scmd))
-        error("lengths of 'url' and 'destfile' must match");
+        error(_("lengths of 'url' and 'destfile' must match"));
     quiet = asLogical(CAR(args));
     args = CDR(args);
     if (quiet == NA_LOGICAL)
@@ -249,7 +249,7 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
     {
         int numfds; // This needs curl >= 7.28.0
         CURLMcode mc = curl_multi_wait(mhnd, NULL, 0, 100, &numfds);
-        if (mc != CURLM_OK)
+        if (mc != CURLM_OK) // internal, do not translate
             error("curl_multi_wait() failed, code %d", mc);
         if (!numfds)
         {
@@ -306,7 +306,7 @@ Rconnection in_newCurlUrl(const char *description, const char *const mode)
 #ifdef HAVE_CURL_CURL_H
     error("not yet implemented");
 #else
-    error("url(method = \"libcurl\") is not supported on this platform");
+    error(_("url(method = \"libcurl\") is not supported on this platform"));
 #endif
     return (Rconnection)0; /* -Wall */
 }

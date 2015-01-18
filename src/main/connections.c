@@ -5714,6 +5714,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
         con = newfile(url + nh, ienc, strlen(open) ? open : "r", raw);
         class2 = "file";
 #ifdef HAVE_INTERNET
+        // we could pass others to libcurl.
     }
     else if (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0 || strncmp(url, "ftp://", 6) == 0 ||
              strncmp(url, "ftps://", 7) == 0)
@@ -5812,7 +5813,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         else
         {
-            error(_("unsupported URL scheme"));
+            error(_("URL scheme unsupported by this method"));
         }
     }
 
