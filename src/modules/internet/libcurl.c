@@ -150,6 +150,49 @@ SEXP attribute_hidden in_do_curlGetHeaders(SEXP call, SEXP op, SEXP args, SEXP r
 #endif
 }
 
+static double total, nbytes;
+static int ndashes;
+static void putdashes(int *pold, int new)
+{
+    int i, old = *pold;
+    *pold = new;
+    for (i = old; i < new; i++)
+        REprintf("=");
+#ifdef Win32
+    R_FlushConsole();
+#else
+    if (R_Consolefile)
+        fflush(R_Consolefile);
+#endif
+}
+
+static int progress(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow)
+{
+    // we only use downloads.  dltotal may be zero.
+    if (dltotal > 0.)
+    {
+        if (total == 0.)
+        {
+            total = dltotal;
+            if (total > 1024.0 * 1024.0)
+                // might be longer than long, and is on 64-bit windows
+                REprintf("Content length %0.0f bytes (%0.1f MB)\n", total, total / 1024.0 / 1024.0);
+            else if (total > 10240)
+                REprintf("Content length %d bytes (%d KB)\n", (int)total, (int)(total / 1024));
+            else
+                REprintf("Content length %d bytes\n", (int)total);
+#ifdef Win32
+            R_FlushConsole();
+#else
+            if (R_Consolefile)
+                fflush(R_Consolefile);
+#endif
+        }
+        putdashes(&ndashes, (int)(50 * dlnow / total));
+    }
+    return 0;
+}
+
 extern void Rsleep(double timeint);
 
 /* download(url, destfile, quiet, mode, headers, cacheOK) */
@@ -193,9 +236,6 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
     /* This comes mainly from curl --libcurl on the call used by
        download.file(method = "curl").
        Also http://curl.haxx.se/libcurl/c/multi-single.html.
-
-       It would be a good idea to use a custom progress callback, and
-       it is said that in future libcurl may not have one at all.
     */
 
     if (!cacheOK)
@@ -218,8 +258,15 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
         url = CHAR(STRING_ELT(scmd, i));
         curl_easy_setopt(hnd[i], CURLOPT_URL, url);
         curl_easy_setopt(hnd[i], CURLOPT_HEADER, 0L);
-        if (!quiet && nurls <= 1)
-            curl_easy_setopt(hnd[i], CURLOPT_NOPROGRESS, 0L);
+        curl_easy_setopt(hnd[i], CURLOPT_NOPROGRESS, 0L);
+        if (R_Interactive && !quiet && nurls <= 1)
+        {
+            // curl_easy_setopt(hnd[i], CURLOPT_NOPROGRESS, 1L);
+            // For libcurl >= 7.32.0 use CURLOPT_XFERINFOFUNCTION
+            nbytes = total = 0;
+            ndashes = 0;
+            curl_easy_setopt(hnd[i], CURLOPT_PROGRESSFUNCTION, progress);
+        }
         /* Users will normally expect to follow redirections, although
            that is not the default in either curl or libcurl. */
         curlCommon(hnd[i], 1);
@@ -266,7 +313,16 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
         curl_multi_perform(mhnd, &still_running);
     } while (still_running);
     R_Busy(0);
-
+    if (total > 0.)
+    {
+        REprintf("\n");
+#ifdef Win32
+        R_FlushConsole();
+#else
+        if (R_Consolefile)
+            fflush(R_Consolefile);
+#endif
+    }
     // report all the pending messages.
     for (int n = 1; n > 0;)
     {
