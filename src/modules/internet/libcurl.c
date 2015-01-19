@@ -227,9 +227,8 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
         if (!cacheOK)
             curl_easy_setopt(hnd[i], CURLOPT_HTTPHEADER, slist1);
 
-        /* This allows the negotiation of compressed HTTP transfers,
+        /* This would allow the negotiation of compressed HTTP transfers,
            but it is not clear it is always a good idea.
-
            curl_easy_setopt(hnd[i], CURLOPT_ACCEPT_ENCODING, "gzip, deflate");
         */
 
@@ -244,10 +243,11 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
     }
 
     R_Busy(1);
+    //  curl_multi_wait needs curl >= 7.28.0 .
     curl_multi_perform(mhnd, &still_running);
     do
     {
-        int numfds; // This needs curl >= 7.28.0
+        int numfds;
         CURLMcode mc = curl_multi_wait(mhnd, NULL, 0, 100, &numfds);
         if (mc != CURLM_OK) // internal, do not translate
             error("curl_multi_wait() failed, code %d", mc);
@@ -255,11 +255,11 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
         {
             /* 'numfds' being zero means either a timeout or no file
                descriptors to wait for. Try timeout on first
-               occurrence, then assume no file descriptors and no file
-               descriptors to wait for means 'sleep for 100 milliseconds'.
+               occurrence, then assume no file descriptors to wait for
+               means 'sleep for 100 milliseconds'.
             */
             if (repeats++ > 0)
-                Rsleep(0.1);
+                Rsleep(0.1); // do not block R process
         }
         else
             repeats = 0;
@@ -267,6 +267,7 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
     } while (still_running);
     R_Busy(0);
 
+    // report all the pending messages.
     for (int n = 1; n > 0;)
     {
         CURLMsg *msg = curl_multi_info_read(mhnd, &n);
@@ -338,10 +339,13 @@ static size_t rcvData(void *ptr, size_t size, size_t nitems, void *ctx)
     size_t add = size * nitems;
     if (add)
     {
-        /* allocate more space if required: unlikely */
+        /* Allocate more space if required: unlikely.
+           Do so as an integer multiple of the current size.
+         */
         if (ctxt->filled + add > ctxt->bufsize)
         {
-            size_t newbufsize = 2 * ctxt->bufsize;
+            int mult = (int)ceil((double)(ctxt->filled + add) / ctxt->bufsize);
+            size_t newbufsize = mult * ctxt->bufsize;
             void *newbuf = realloc(ctxt->buf, newbufsize);
             if (!newbuf)
                 error("Failure in re-allocation in rcvData");
