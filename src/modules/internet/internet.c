@@ -801,7 +801,7 @@ static void in_R_FTPClose(void *ctx)
 #include <wininet.h>
 typedef struct wictxt
 {
-    int length;
+    DLsize_t length;
     char *type;
     HINTERNET hand;
     HINTERNET session;
@@ -887,10 +887,10 @@ static void *in_R_HTTPOpen(const char *url, const char *headers, const int cache
 
     wictxt->session = (HINTERNET)callback_res->dwResult;
 #else
-    /*    if(!IDquiet) {
-        REprintf("using Synchronous WinInet calls\n");
-        R_FlushConsole();
-        } */
+    /* if(!IDquiet) {
+    REprintf("using Synchronous WinInet calls\n");
+    R_FlushConsole();
+    } */
     wictxt->session =
         InternetOpenUrl(wictxt->hand, url, NULL, 0, INTERNET_FLAG_KEEP_CONNECTION | INTERNET_FLAG_NO_CACHE_WRITE, 0);
 #endif /* USE_WININET_ASYNC */
@@ -946,13 +946,13 @@ static void *in_R_HTTPOpen(const char *url, const char *headers, const int cache
 
     HttpQueryInfo(wictxt->session, HTTP_QUERY_CONTENT_TYPE, &buf, &d3, &d2);
     d2 = 0;
+    // NB: this can only retrieve in a DWORD, so up to 2GB or 4GB?
     HttpQueryInfo(wictxt->session, HTTP_QUERY_CONTENT_LENGTH | HTTP_QUERY_FLAG_NUMBER, &status, &d1, &d2);
     wictxt->length = status;
     wictxt->type = strdup(buf);
     if (!IDquiet)
     {
         if (status > 1024 * 1024)
-            // might be longer than long, and is on 64-bit windows
             REprintf("Content type '%s' length %0.0f bytes (%0.1f MB)\n", buf, (double)status,
                      status / 1024.0 / 1024.0);
         else if (status > 10240)

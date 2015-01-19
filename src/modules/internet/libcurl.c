@@ -403,6 +403,9 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
         }
         else
             repeats = 0;
+#ifdef Win32
+        R_ProcessEvents();
+#endif
         curl_multi_perform(mhnd, &still_running);
     } while (still_running);
     R_Busy(0);
@@ -558,6 +561,9 @@ void fetchData(RCurlconn ctxt)
         curl_multi_perform(ctxt->mh, &ctxt->sr);
         if (ctxt->available)
             break;
+#ifdef Win32
+        R_ProcessEvents();
+#endif
     } while (ctxt->sr);
 
     for (int msg = 1; msg > 0;)
