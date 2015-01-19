@@ -152,9 +152,16 @@ SEXP attribute_hidden in_do_curlGetHeaders(SEXP call, SEXP op, SEXP args, SEXP r
     return ans;
 #endif
 }
+
+#ifdef HAVE_CURL_CURL_H
+static double total;
+
 #ifdef Win32
+// ------- Windows progress bar -----------
 #include <ga.h>
 
+/* We could share this window with internet.c, then re-positioning
+   would apply to both */
 typedef struct
 {
     window wprog;
@@ -171,7 +178,6 @@ static void doneprogressbar(void *data)
     winprogressbar *pbar = data;
     hide(pbar->wprog);
 }
-static double total;
 
 static int progress(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow)
 {
@@ -214,16 +220,16 @@ static int progress(void *clientp, double dltotal, double dlnow, double ultotal,
 }
 
 #else
-static double total, nbytes;
+// ------- Unix-alike progress bar -----------
+
 static int ndashes;
 static void putdashes(int *pold, int new)
 {
-    int i, old = *pold;
-    *pold = new;
-    for (i = old; i < new; i++)
+    for (int i = *pold; i < new; i++)
         REprintf("=");
     if (R_Consolefile)
         fflush(R_Consolefile);
+    *pold = new;
 }
 
 static int progress(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow)
@@ -234,13 +240,17 @@ static int progress(void *clientp, double dltotal, double dlnow, double ultotal,
         if (total == 0.)
         {
             total = dltotal;
+            char *type = NULL;
+            CURL *hnd = (CURL *)clientp;
+            curl_easy_getinfo(hnd, CURLINFO_CONTENT_TYPE, &type);
+            REprintf("Content type '%s'", type ? type : "unknown");
             if (total > 1024.0 * 1024.0)
                 // might be longer than long, and is on 64-bit windows
-                REprintf("Content length %0.0f bytes (%0.1f MB)\n", total, total / 1024.0 / 1024.0);
+                REprintf(" length %0.0f bytes (%0.1f MB)\n", total, total / 1024.0 / 1024.0);
             else if (total > 10240)
-                REprintf("Content length %d bytes (%d KB)\n", (int)total, (int)(total / 1024));
+                REprintf(" length %d bytes (%d KB)\n", (int)total, (int)(total / 1024));
             else
-                REprintf("Content length %d bytes\n", (int)total);
+                REprintf(" length %d bytes\n", (int)total);
             if (R_Consolefile)
                 fflush(R_Consolefile);
         }
@@ -251,6 +261,7 @@ static int progress(void *clientp, double dltotal, double dlnow, double ultotal,
 #endif
 
 extern void Rsleep(double timeint);
+#endif
 
 /* download(url, destfile, quiet, mode, headers, cacheOK) */
 
@@ -315,11 +326,13 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
         url = CHAR(STRING_ELT(scmd, i));
         curl_easy_setopt(hnd[i], CURLOPT_URL, url);
         curl_easy_setopt(hnd[i], CURLOPT_HEADER, 0L);
-        curl_easy_setopt(hnd[i], CURLOPT_NOPROGRESS, 0L);
+
+        total = 0.;
         if (R_Interactive && !quiet && nurls <= 1)
         {
-            // curl_easy_setopt(hnd[i], CURLOPT_NOPROGRESS, 1L);
-            // For libcurl >= 7.32.0 use CURLOPT_XFERINFOFUNCTION
+            // It would in principle be possible to have
+            // multiple progress bars on Windows.
+            curl_easy_setopt(hnd[i], CURLOPT_NOPROGRESS, 0L);
 #ifdef Win32
             if (!pbar.wprog)
             {
@@ -338,11 +351,15 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
             pbar.cntxt.cend = &doneprogressbar;
             pbar.cntxt.cenddata = &pbar;
 #else
-            nbytes = total = 0;
             ndashes = 0;
 #endif
+            // For libcurl >= 7.32.0 use CURLOPT_XFERINFOFUNCTION
             curl_easy_setopt(hnd[i], CURLOPT_PROGRESSFUNCTION, progress);
+            curl_easy_setopt(hnd[i], CURLOPT_PROGRESSDATA, hnd[i]);
         }
+        else
+            curl_easy_setopt(hnd[i], CURLOPT_NOPROGRESS, 1L);
+
         /* Users will normally expect to follow redirections, although
            that is not the default in either curl or libcurl. */
         curlCommon(hnd[i], 1);
@@ -396,9 +413,29 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
         doneprogressbar(&pbar);
     }
 #else
-    if (R_Consolefile && total > 0.)
+    if (total > 0.)
+        REprintf("\n");
+    if (R_Consolefile)
         fflush(R_Consolefile);
 #endif
+    if (nurls == 1)
+    {
+        double cl, dl;
+        curl_easy_getinfo(hnd[0], CURLINFO_SIZE_DOWNLOAD, &dl);
+        if (!quiet)
+        {
+            if (dl > 1024 * 1024)
+                REprintf("downloaded %0.1f MB\n\n", (double)dl / 1024 / 1024);
+            else if (dl > 10240)
+                REprintf("downloaded %d KB\n\n", (int)dl / 1024);
+            else
+                REprintf("downloaded %d bytes\n\n", (int)dl);
+        }
+        curl_easy_getinfo(hnd[0], CURLINFO_CONTENT_LENGTH_DOWNLOAD, &cl);
+        if (cl >= 0 && dl != cl)
+            warning(_("downloaded length %0.f != reported length %0.f"), dl, cl);
+    }
+
     // report all the pending messages.
     for (int n = 1; n > 0;)
     {
@@ -449,6 +486,7 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
 
 #define R_MIN(a, b) ((a) < (b) ? (a) : (b))
 
+#ifdef HAVE_CURL_CURL_H
 typedef struct Curlconn
 {
     char *buf, *current;    // base of buffer, last read address
@@ -609,6 +647,7 @@ static int Curl_fgetc_internal(Rconnection con)
     size_t n = Curl_read(&c, 1, 1, con);
     return (n == 1) ? c : R_EOF;
 }
+#endif
 
 Rconnection in_newCurlUrl(const char *description, const char *const mode)
 {
