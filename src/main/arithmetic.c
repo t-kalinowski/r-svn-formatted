@@ -1608,9 +1608,9 @@ SEXP attribute_hidden do_math2(SEXP call, SEXP op, SEXP args, SEXP env)
     case 0:
         return Math2(args, atan2);
     case 10001:
-        return Math2(args, fround); /* round(), src/nmath/fround.c */
+        return Math2(args, fround); // round(),  ../nmath/fround.c
     case 10004:
-        return Math2(args, fprec); /* signif(), src/nmath/fprec.c */
+        return Math2(args, fprec); // signif(), ../nmath/fprec.c
 
     case 2:
         return Math2(args, lbeta);
@@ -1796,7 +1796,7 @@ SEXP attribute_hidden do_log_builtin(SEXP call, SEXP op, SEXP args, SEXP env)
             return res;
         }
     }
-    else if (n == 2 && TAG(args) == R_NilValue && (TAG(CDR(args)) == R_NilValue || TAG(CDR(args)) == R_baseSymbol))
+    else if (n == 2 && TAG(args) == R_NilValue && (TAG(CDR(args)) == R_NilValue || TAG(CDR(args)) == R_BaseSymbol))
     {
         /* log(x, y) or log(x, base = y) are handled here */
         SEXP x = CAR(args);
@@ -1817,7 +1817,7 @@ SEXP attribute_hidden do_log_builtin(SEXP call, SEXP op, SEXP args, SEXP env)
     if (do_log_formals == NULL)
     {
         R_x_Symbol = install("x");
-        do_log_formals = allocFormalsList2(R_x_Symbol, R_baseSymbol);
+        do_log_formals = allocFormalsList2(R_x_Symbol, R_BaseSymbol);
     }
 
     if (n == 1)
