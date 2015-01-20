@@ -5620,7 +5620,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP scmd, sopen, ans, class, enc;
     char *class2 = "url";
     const char *url, *open;
-    int ncon, block, raw = 0, meth = 0;
+    int ncon, block, raw = 0, meth = 0, urlmeth = UseInternet2;
     cetype_t ienc = CE_NATIVE;
     Rconnection con = NULL;
 #ifdef HAVE_INTERNET
@@ -5684,7 +5684,17 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     if (PRIMVAL(op) == 0)
     {
         const char *cmeth = CHAR(asChar(CAD4R(args)));
-        meth = strcmp(cmeth, "internal");
+        meth = streql(cmeth, "libcurl");
+        if (streql(cmeth, "wininet"))
+        {
+#ifdef Win32
+            urlmeth = 1;
+#else
+            error(_("method = \"wininet\" is only supported on Windows"));
+#endif
+        }
+        else if (streql(cmeth, "internal"))
+            urlmeth = 0;
     }
 
     if (!meth)
@@ -5696,7 +5706,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
             error("ftps:// URLs are not supported");
 #endif
 #ifdef Win32
-        if (!UseInternet2 && strncmp(url, "https://", 8) == 0)
+        if (!urlmeth && strncmp(url, "https://", 8) == 0)
             error("for https:// URLs use setInternet2(TRUE)");
 #else
         if (strncmp(url, "https://", 8) == 0)
@@ -5737,7 +5747,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
         else
         {
 #ifdef Win32
-            con = R_newurl(url, strlen(open) ? open : "r", UseInternet2);
+            con = R_newurl(url, strlen(open) ? open : "r", urlmeth);
 #else
             con = R_newurl(url, strlen(open) ? open : "r", 0);
 #endif
