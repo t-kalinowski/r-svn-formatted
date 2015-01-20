@@ -74,11 +74,7 @@ R_InternetRoutines *R_setInternetRoutines(R_InternetRoutines *routines)
 static void internet_Init(void)
 {
     int res;
-#ifdef Win32
-    res = UseInternet2 ? R_moduleCdynload("internet2", 1, 1) : R_moduleCdynload("internet", 1, 1);
-#else
     res = R_moduleCdynload("internet", 1, 1);
-#endif
     initialized = -1;
     if (!res)
         return;
@@ -123,7 +119,6 @@ SEXP attribute_hidden do_setInternet2(SEXP call, SEXP op, SEXP args, SEXP env)
             if (initialized)
                 warning(_("internet routines were already initialized"));
             UseInternet2 = newUseInternet2;
-            initialized = 0;
         }
     }
     UNPROTECT(1);
