@@ -369,13 +369,12 @@ static Rconnection in_R_newurl(const char *description, const char *const mode, 
     new = (Rconnection)malloc(sizeof(struct Rconn));
     if (!new)
         error(_("allocation of url connection failed"));
-    new->class = (char *)malloc(strlen("url") + 1);
+    new->class = (char *)malloc(strlen("url-wininet") + 1);
     if (!new->class)
     {
         free(new);
         error(_("allocation of url connection failed"));
     }
-    strcpy(new->class, "url");
     new->description = (char *)malloc(strlen(description) + 1);
     if (!new->description)
     {
@@ -392,6 +391,7 @@ static Rconnection in_R_newurl(const char *description, const char *const mode, 
         new->read = &url_read2;
         new->close = &url_close2;
         new->fgetc_internal = &url_fgetc_internal2;
+        strcpy(new->class, "url-wininet");
     }
     else
 #endif
@@ -400,6 +400,7 @@ static Rconnection in_R_newurl(const char *description, const char *const mode, 
         new->read = &url_read;
         new->close = &url_close;
         new->fgetc_internal = &url_fgetc_internal;
+        strcpy(new->class, "url");
     }
     new->fgetc = &dummy_fgetc;
     new->private = (void *)malloc(sizeof(struct urlconn));
