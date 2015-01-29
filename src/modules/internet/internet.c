@@ -525,7 +525,7 @@ static SEXP in_do_download(SEXP args)
     else
         headers = CHAR(STRING_ELT(sheaders, 0));
 #ifdef Win32
-    if (!quiet && R_Interactive && !pbar.wprog)
+    if (!quiet && !pbar.wprog)
     {
         pbar.wprog = newwindow(_("Download progress"), rect(0, 0, 540, 100), Titlebar | Centered);
         setbackground(pbar.wprog, dialog_bg());
@@ -623,7 +623,7 @@ static SEXP in_do_download(SEXP args)
             }
             else
                 strcat(buf, url);
-            if (!quiet && R_Interactive)
+            if (!quiet)
             {
                 settext(pbar.l_url, buf);
                 setprogressbarrange(pbar.pb, 0, guess / factor);
@@ -643,7 +643,7 @@ static SEXP in_do_download(SEXP args)
                     error(_("write failed"));
                 nbytes += len;
 #ifdef Win32
-                if (!quiet && R_Interactive)
+                if (!quiet)
                 {
                     if (nbytes > guess)
                     {
@@ -690,7 +690,7 @@ static SEXP in_do_download(SEXP args)
             }
 #ifdef Win32
             R_FlushConsole();
-            if (!quiet && R_Interactive)
+            if (!quiet)
             {
                 endcontext(&(pbar.cntxt));
                 doneprogressbar(&pbar);
@@ -752,7 +752,7 @@ static SEXP in_do_download(SEXP args)
             }
             else
                 strcat(buf, url);
-            if (!quiet && R_Interactive)
+            if (!quiet)
             {
                 settext(pbar.l_url, buf);
                 setprogressbarrange(pbar.pb, 0, guess / factor);
@@ -775,7 +775,7 @@ static SEXP in_do_download(SEXP args)
                     error(_("write failed"));
                 nbytes += len;
 #ifdef Win32
-                if (!quiet && R_Interactive)
+                if (!quiet)
                 {
                     if (nbytes > guess)
                     {
@@ -822,7 +822,7 @@ static SEXP in_do_download(SEXP args)
             }
 #ifdef Win32
             R_FlushConsole();
-            if (!quiet && R_Interactive)
+            if (!quiet)
             {
                 endcontext(&(pbar.cntxt));
                 doneprogressbar(&pbar);
