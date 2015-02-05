@@ -596,8 +596,7 @@ static SEXP in_do_download(SEXP args)
             status = 1;
         else
         {
-            if (!quiet)
-                REprintf(_("opened URL\n"), url);
+            //	    if(!quiet) REprintf(_("opened URL\n"), url);
             guess = total = ((inetconn *)ctxt)->length;
 #ifdef Win32
             if (R_Interactive)
@@ -731,8 +730,7 @@ static SEXP in_do_download(SEXP args)
             status = 1;
         else
         {
-            if (!quiet)
-                REprintf(_("opened URL\n"), url);
+            //	    if(!quiet) REprintf(_("opened URL\n"), url);
             guess = total = ((inetconn *)ctxt)->length;
 #ifdef Win32
             if (R_Interactive && !quiet)
