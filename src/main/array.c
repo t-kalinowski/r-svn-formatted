@@ -502,7 +502,7 @@ static R_xlen_t getElementLength(SEXP x, R_xlen_t i, SEXP call, SEXP rho)
         }
         if (DispatchOrEval(call, length_op, "length", args, rho, &len, 0, 1))
         {
-            return (R_xlen_t)TYPEOF(len) == REALSXP ? REAL(len)[0] : asInteger(len);
+            return (R_xlen_t)(TYPEOF(len) == REALSXP ? REAL(len)[0] : asInteger(len));
         }
         UNPROTECT(1);
     }
