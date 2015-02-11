@@ -310,6 +310,9 @@ SEXP doTabExpand(SEXP strings, SEXP starts) /* does tab expansion for UTF-8 stri
     return result;
 }
 
+/* This could be done in wchar_t, but it is only used for
+   ASCII delimiters which are not lead bytes in UTF-8 or
+   DBCS encodings. */
 SEXP splitString(SEXP string, SEXP delims)
 {
     if (!isString(string) || length(string) != 1)
@@ -317,13 +320,13 @@ SEXP splitString(SEXP string, SEXP delims)
     if (!isString(delims) || length(delims) != 1)
         error("first arg must be a single character string");
     const char *in = CHAR(STRING_ELT(string, 0)), *del = CHAR(STRING_ELT(delims, 0));
+    cetype_t ienc = getCharCE(STRING_ELT(string, 0));
     int nc = (int)strlen(in), used = 0;
 
     // Used for short strings, so OK to over-allocate wildly
     SEXP out = PROTECT(allocVector(STRSXP, nc));
     const char *p;
     char tmp[nc], *this = tmp;
-    memset(tmp, 0, nc);
     int nthis = 0;
     for (p = in; *p; p++)
     {
@@ -331,13 +334,12 @@ SEXP splitString(SEXP string, SEXP delims)
         {
             // put out current string (if any)
             if (nthis)
-                SET_STRING_ELT(out, used++, mkCharLen(tmp, nthis));
+                SET_STRING_ELT(out, used++, mkCharLenCE(tmp, nthis, ienc));
             // put out delimiter
             SET_STRING_ELT(out, used++, mkCharLen(p, 1));
             // restart
             this = tmp;
             nthis = 0;
-            memset(tmp, 0, nc);
         }
         else
         {
@@ -346,7 +348,7 @@ SEXP splitString(SEXP string, SEXP delims)
         }
     }
     if (nthis)
-        SET_STRING_ELT(out, used++, mkCharLen(tmp, nthis));
+        SET_STRING_ELT(out, used++, mkCharLenCE(tmp, nthis, ienc));
 
     SEXP ans = lengthgets(out, used);
     UNPROTECT(1);
