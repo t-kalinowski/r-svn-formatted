@@ -58,6 +58,9 @@ int vfprintf(FILE *file, const char *format, va_list args)
     return trio_vfprintf(file, format, args);
 }
 
+#ifndef Win32
+/* These are needed as MinGW's stdio.h has inline snprintf and vnsprintf.
+   Include the trioremap.h header file to get the replacements */
 int snprintf(char *buffer, size_t max, const char *format, ...)
 {
     int res;
@@ -73,9 +76,6 @@ int vsnprintf(char *buffer, size_t bufferSize, const char *format, va_list args)
     return trio_vsnprintf(buffer, bufferSize, format, args);
 }
 
-#ifndef _W64
-/* This is needed as MinGW's stdio.h has an inline vnsprintf mapping to
-   _vsnprintf: MinGW-w64's maps to __imp__vsnprintf */
 int _vsnprintf(char *buffer, size_t bufferSize, const char *format, va_list args)
 {
     return trio_vsnprintf(buffer, bufferSize, format, args);

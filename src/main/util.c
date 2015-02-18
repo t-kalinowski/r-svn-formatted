@@ -2673,10 +2673,8 @@ SEXP attribute_hidden do_formatC(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 #ifdef Win32
 /* avoid latest MinGW's redefinition in stdio.h */
-int trio_sprintf(char *buffer, const char *format, ...);
-#define sprintf trio_sprintf
+#include <trioremap.h>
 #endif
-
 #include <Rmath.h> /* fround */
 
 static void str_signif(void *x, R_xlen_t n, const char *type, int width, int digits, const char *format,
