@@ -58,7 +58,8 @@ double bessel_j(double x, double alpha)
     {
         /* Using Abramowitz & Stegun  9.1.2
          * this may not be quite optimal (CPU and accuracy wise) */
-        return (bessel_j(x, -alpha) * cospi(alpha) + ((alpha == na) ? 0 : bessel_y(x, -alpha) * sinpi(alpha)));
+        return (((alpha - na == 0.5) ? 0 : bessel_j(x, -alpha) * cospi(alpha)) +
+                ((alpha == na) ? 0 : bessel_y(x, -alpha) * sinpi(alpha)));
     }
     else if (alpha > 1e7)
     {
@@ -115,7 +116,7 @@ double bessel_j_ex(double x, double alpha, double *bj)
     {
         /* Using Abramowitz & Stegun  9.1.2
          * this may not be quite optimal (CPU and accuracy wise) */
-        return (bessel_j_ex(x, -alpha, bj) * cospi(alpha) +
+        return (((alpha - na == 0.5) ? 0 : bessel_j_ex(x, -alpha, bj) * cospi(alpha)) +
                 ((alpha == na) ? 0 : bessel_y_ex(x, -alpha, bj) * sinpi(alpha)));
     }
     else if (alpha > 1e7)
