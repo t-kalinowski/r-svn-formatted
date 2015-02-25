@@ -31,11 +31,13 @@
 #include "dpq.h"
 
 #ifdef DEBUG_qbeta
-/* for REprintf */
 #include <R_ext/Print.h>
+#define R_ifDEBUG_printf(...) REprintf(__VA_ARGS__)
+#else
+#define R_ifDEBUG_printf(...)
 #endif
 
-/* set the exponent of accu to -2r-2 for r digits of accuracy */
+/* set the exponent of acu to -2r-2 for r digits of accuracy */
 /*---- NEW ---- -- still fails for p = 1e11, q=.5*/
 
 #define fpu 3e-308
@@ -78,9 +80,8 @@ double qbeta(double alpha, double p, double q, int lower_tail, int log_p)
     if (p == 0 || q == 0 || !R_FINITE(p) || !R_FINITE(q))
     {
         // We know 0 < p_ < 1 : pbeta() is constant and trivial in {0, 1/2, 1}
-#ifdef DEBUG_qbeta
-        REprintf("qbeta(%g, %g, %g, lower_t=%d, log_p=%d): (p,q)-boundary: trivial\n", alpha, p, q, lower_tail, log_p);
-#endif
+        R_ifDEBUG_printf("qbeta(%g, %g, %g, lower_t=%d, log_p=%d): (p,q)-boundary: trivial\n", alpha, p, q, lower_tail,
+                         log_p);
         if (p == 0 && q == 0)
         { // point mass 1/2 at each of {0,1} :
             if (alpha < R_D_half)
@@ -128,12 +129,11 @@ double qbeta(double alpha, double p, double q, int lower_tail, int log_p)
         swap_tail = 1;
     }
 
-#ifdef DEBUG_qbeta
-    REprintf("qbeta(%g, %g, %g, lower_t=%d, log_p=%d):%s\n"
-             "  swap_tail=%d, la=%g: ",
-             alpha, p, q, lower_tail, log_p, (log_p && (p_ == 0. || p_ == 1.)) ? (p_ == 0. ? " p_=0" : " p_=1") : "",
-             swap_tail, la);
-#endif
+    R_ifDEBUG_printf("qbeta(%g, %g, %g, lower_t=%d, log_p=%d):%s\n"
+                     "  swap_tail=%d, la=%g: ",
+                     alpha, p, q, lower_tail, log_p,
+                     (log_p && (p_ == 0. || p_ == 1.)) ? (p_ == 0. ? " p_=0" : " p_=1") : "", swap_tail, la);
+
     /* calculate the initial approximation */
 
     /* y := {fast approximation of} qnorm(1 - a) :*/
@@ -146,9 +146,7 @@ double qbeta(double alpha, double p, double q, int lower_tail, int log_p)
         t = 1. / (qq + qq - 1.);
         h = 2. / (s + t);
         w = y * sqrt(h + r) / h - (t - s) * (r + 5. / 6. - 2. / (3. * h));
-#ifdef DEBUG_qbeta
-        REprintf("p,q > 1 => w=%g", w);
-#endif
+        R_ifDEBUG_printf("p,q > 1 => w=%g", w);
         xinbta = pp / (pp + qq * exp(w + w));
     }
     else
@@ -156,22 +154,16 @@ double qbeta(double alpha, double p, double q, int lower_tail, int log_p)
         r = qq + qq;
         t = 1. / (9. * qq);
         t = r * R_pow_di(1. - t + y * sqrt(t), 3);
-#ifdef DEBUG_qbeta
-        REprintf("min(p,q) <= 1: t=%g", t);
-#endif
+        R_ifDEBUG_printf("min(p,q) <= 1: t=%g", t);
         if (t <= 0.)
         {
-#ifdef DEBUG_qbeta
-            REprintf(" t <= 0: log1p(-a)=%.15g\n", log1p(-a));
-#endif
+            R_ifDEBUG_printf(" t <= 0: log1p(-a)=%.15g\n", log1p(-a));
             xinbta = 1. - exp((log1p(-a) + log(qq) + logbeta) / qq);
         }
         else
         {
             t = (4. * pp + r - 2.) / t;
-#ifdef DEBUG_qbeta
-            REprintf(" t >= 0:  new t = %g ( > 1 ?)\n", t);
-#endif
+            R_ifDEBUG_printf(" t >= 0:  new t = %g ( > 1 ?)\n", t);
             if (t <= 1.)
                 xinbta = exp((log(a * pp) + logbeta) / pp);
             else
@@ -190,9 +182,7 @@ double qbeta(double alpha, double p, double q, int lower_tail, int log_p)
     */
     acu = fmax2(acu_min, pow(10.0, -13.0 - 2.5 / (pp * pp) - 0.5 / (a * a)));
 
-#ifdef DEBUG_qbeta
-    REprintf(" -> xinbta = %.16g (Newton acu=%g)\n", xinbta, acu);
-#endif
+    R_ifDEBUG_printf(" -> xinbta = %.16g (Newton acu=%g)\n", xinbta, acu);
 
     /* solve for x by a modified newton-raphson method, */
     /* using the function pbeta_raw */
@@ -222,9 +212,7 @@ double qbeta(double alpha, double p, double q, int lower_tail, int log_p)
         if (w * wprev <= 0.)
             prev = fmax2(fabs(adj), fpu);
         g = 1;
-#ifdef DEBUG_qbeta
-        REprintf("N(i=%d): x0=%.15g, pb(x0)=%.15g, w=%.15g, prev=%g,", i_pb, xinbta, y, w, prev);
-#endif
+        R_ifDEBUG_printf("N(i=%d): x0=%.15g, pb(x0)=%.15g, w=%.15g, prev=%g,", i_pb, xinbta, y, w, prev);
         for (i_inn = 0; i_inn < 1000; i_inn++)
         {
             adj = g * w;
@@ -235,10 +223,9 @@ double qbeta(double alpha, double p, double q, int lower_tail, int log_p)
                 {
                     if (prev <= acu || fabs(w) <= acu)
                     {
-#ifdef DEBUG_qbeta
-                        REprintf(" it{in}=%d, delta(x)=%g, %s <= acu  ==> convergence\n", i_inn, -adj,
-                                 (prev <= acu) ? "prev" : "|w|");
-#endif
+                        R_ifDEBUG_printf(" it{in}=%d, delta(x)=%g, %s <= acu  ==> convergence\n", i_inn, -adj,
+                                         (prev <= acu) ? "prev" : "|w|");
+
                         goto L_converged;
                     }
                     if (tx != 0. && tx != 1)
@@ -247,9 +234,7 @@ double qbeta(double alpha, double p, double q, int lower_tail, int log_p)
             }
             g /= 3;
         }
-#ifdef DEBUG_qbeta
-        REprintf(" it{in}=%d, delta(x)=%g\n", i_inn, -adj);
-#endif
+        R_ifDEBUG_printf(" it{in}=%d, delta(x)=%g\n", i_inn, -adj);
         if (fabs(tx - xinbta) <= 1e-15 * xinbta) // "<=" for xinbta == 0
             goto L_converged;
         xinbta = tx;
@@ -262,8 +247,7 @@ double qbeta(double alpha, double p, double q, int lower_tail, int log_p)
     ML_ERROR(ME_PRECISION, "qbeta");
 
 L_converged:
-#ifdef DEBUG_qbeta
-    REprintf(" %s: Final delta(y) = %g\n", warned ? "_NO_ convergence" : "converged", y - a);
-#endif
+    R_ifDEBUG_printf(" %s: Final delta(y) = %g\n", warned ? "_NO_ convergence" : "converged", y - a);
+
     return swap_tail ? 1 - xinbta : xinbta;
 }
