@@ -44,6 +44,9 @@
 #define n_NEWTON_FREE 4
 //                   --- based on some testing; had = 10
 
+#define MLOGICAL_NA -1
+// an "NA_LOGICAL" substitute for Mathlib {only used here, for now}
+
 attribute_hidden void qbeta_raw(double alpha, double p, double q, int lower_tail, int log_p, int swap_01,
                                 double log_q_cut, int n_N, double *qb);
 
@@ -60,7 +63,7 @@ double qbeta(double alpha, double p, double q, int lower_tail, int log_p)
     // allowing p==0 and q==0  <==> treat as one- or two-point mass
 
     double qbet[2]; // = { qbeta(), 1 - qbeta() }
-    qbeta_raw(alpha, p, q, lower_tail, log_p, NA_LOGICAL, USE_LOG_X_CUTOFF, n_NEWTON_FREE, qbet);
+    qbeta_raw(alpha, p, q, lower_tail, log_p, MLOGICAL_NA, USE_LOG_X_CUTOFF, n_NEWTON_FREE, qbet);
     return qbet[0];
 }
 
@@ -107,7 +110,7 @@ attribute_hidden void qbeta_raw(double alpha, double p, double q, int lower_tail
                                 int n_N,    // number of "unconstrained" Newton steps before switching to constrained
                                 double *qb) // = qb[0:1] = { qbeta(), 1 - qbeta() }
 {
-    Rboolean swap_choose = (swap_01 == NA_LOGICAL), swap_tail, log_, give_log_q = (log_q_cut == ML_POSINF),
+    Rboolean swap_choose = (swap_01 == MLOGICAL_NA), swap_tail, log_, give_log_q = (log_q_cut == ML_POSINF),
              use_log_x = give_log_q, // or u < log_q_cut  below
         warned = FALSE, add_N_step = TRUE;
     int i_pb, i_inn;
