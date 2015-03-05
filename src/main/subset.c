@@ -752,6 +752,15 @@ SEXP attribute_hidden do_subset_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
                 if (i >= 1 && i <= XLENGTH(x))
                     return ScalarLogical(LOGICAL(x)[i - 1]);
                 break;
+                //	    do the more rare cases as well, since we've already prepared everything:
+            case CPLXSXP:
+                if (i >= 1 && i <= XLENGTH(x))
+                    return ScalarComplex(COMPLEX(x)[i - 1]);
+                break;
+            case RAWSXP:
+                if (i >= 1 && i <= XLENGTH(x))
+                    return ScalarRaw(RAW(x)[i - 1]);
+                break;
             default:
                 break;
             }
@@ -793,6 +802,14 @@ SEXP attribute_hidden do_subset_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
                     case LGLSXP:
                         if (k < LENGTH(x))
                             return ScalarLogical(LOGICAL(x)[k]);
+                        break;
+                    case CPLXSXP:
+                        if (k < LENGTH(x))
+                            return ScalarComplex(COMPLEX(x)[k]);
+                        break;
+                    case RAWSXP:
+                        if (k < LENGTH(x))
+                            return ScalarRaw(RAW(x)[k]);
                         break;
                     default:
                         break;
