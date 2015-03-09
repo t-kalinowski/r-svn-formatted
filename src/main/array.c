@@ -1,8 +1,8 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998-2014   The R Core Team
- *  Copyright (C) 2002-2008   The R Foundation
+ *  Copyright (C) 1998-2015   The R Core Team
+ *  Copyright (C) 2002-2015   The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -530,12 +530,11 @@ SEXP attribute_hidden do_lengths(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP x = CAR(args), ans;
     R_xlen_t x_len, i;
     int *ans_elt;
-
+    int useNames = asLogical(CADR(args));
+    if (useNames == NA_LOGICAL)
+        error(_("invalid '%s' value"), "USE.NAMES");
     if (!isVectorList(x))
-    {
-        error(_("'x' must be a list"));
-    }
-
+        error(_("'%s' must be a list"), "x");
     x_len = xlength(x);
     PROTECT(ans = allocVector(INTSXP, x_len));
     for (i = 0, ans_elt = INTEGER(ans); i < x_len; i++, ans_elt++)
@@ -552,10 +551,12 @@ SEXP attribute_hidden do_lengths(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     UNPROTECT(1);
 
-    SEXP names = getAttrib(x, R_NamesSymbol);
-    if (!isNull(names))
-        setAttrib(ans, R_NamesSymbol, names);
-
+    if (useNames)
+    {
+        SEXP names = getAttrib(x, R_NamesSymbol);
+        if (!isNull(names))
+            setAttrib(ans, R_NamesSymbol, names);
+    }
     return ans;
 }
 
