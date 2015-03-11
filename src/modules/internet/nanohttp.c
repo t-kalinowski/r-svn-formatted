@@ -772,6 +772,12 @@ static int RxmlNanoHTTPRecv(RxmlNanoHTTPCtxtPtr ctxt)
 #if defined(EAGAIN) && EAGAIN != EWOULDBLOCK
                 case EAGAIN:
 #endif
+#if defined(WSAEINPROGRESS) && WSAEINPROGRESS != EINPROGRESS
+                case WSAEINPROGRESS:
+#endif
+#if defined(WSAEWOULDBLOCK) && WSAEWOULDBLOCK != EWOULDBLOCK
+                case WSAEWOULDBLOCK:
+#endif
                     break;
 
                 default:
@@ -1103,6 +1109,12 @@ static int RxmlNanoHTTPConnectAttempt(struct sockaddr *addr)
         {
         case EINPROGRESS:
         case EWOULDBLOCK:
+#if defined(WSAEINPROGRESS) && WSAEINPROGRESS != EINPROGRESS
+        case WSAEINPROGRESS:
+#endif
+#if defined(WSAEWOULDBLOCK) && WSAEWOULDBLOCK != EWOULDBLOCK
+        case WSAEWOULDBLOCK:
+#endif
             break;
         default:
             perror("connect");
