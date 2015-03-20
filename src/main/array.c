@@ -497,18 +497,15 @@ static R_xlen_t getElementLength(SEXP x, R_xlen_t i, SEXP call, SEXP rho)
         SEXP args, len;
         PROTECT(args = list1(x_elt));
         if (length_op == NULL)
-        {
             length_op = R_Primitive("length");
-        }
         if (DispatchOrEval(call, length_op, "length", args, rho, &len, 0, 1))
-        {
             return (R_xlen_t)(TYPEOF(len) == REALSXP ? REAL(len)[0] : asInteger(len));
-        }
         UNPROTECT(1);
     }
     return (xlength(x_elt));
 }
 
+#ifdef LONG_VECTOR_SUPPORT
 static SEXP do_lengths_long(SEXP x, SEXP call, SEXP rho)
 {
     SEXP ans;
@@ -518,12 +515,11 @@ static SEXP do_lengths_long(SEXP x, SEXP call, SEXP rho)
     x_len = xlength(x);
     PROTECT(ans = allocVector(REALSXP, x_len));
     for (i = 0, ans_elt = REAL(ans); i < x_len; i++, ans_elt++)
-    {
         *ans_elt = getElementLength(x, i, call, rho);
-    }
     UNPROTECT(1);
     return ans;
 }
+#endif
 
 SEXP attribute_hidden do_lengths(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
