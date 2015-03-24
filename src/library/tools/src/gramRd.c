@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.0.2.  */
+/* A Bison parser, made by GNU Bison 2.7.12-4996.  */
 
 /* Bison implementation for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2013 Free Software Foundation, Inc.
+      Copyright (C) 1984, 1989-1990, 2000-2013 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@
 #define YYBISON 1
 
 /* Bison version.  */
-#define YYBISON_VERSION "3.0.2"
+#define YYBISON_VERSION "2.7.12-4996"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -59,7 +59,6 @@
 #define YYPULL 1
 
 /* Copy the first part of user declarations.  */
-#line 1 "gramRd.y" /* yacc.c:339  */
 
 /*
  *  R : A Computer Langage for Statistical Data Analysis
@@ -237,13 +236,11 @@ static int mkComment(int);
 
 #define YYSTYPE SEXP
 
-#line 248 "gramRd.c" /* yacc.c:339  */
-
-#ifndef YY_NULLPTR
+#ifndef YY_NULL
 #if defined __cplusplus && 201103L <= __cplusplus
-#define YY_NULLPTR nullptr
+#define YY_NULL nullptr
 #else
-#define YY_NULLPTR 0
+#define YY_NULL 0
 #endif
 #endif
 
@@ -255,7 +252,7 @@ static int mkComment(int);
 #define YYERROR_VERBOSE 0
 #endif
 
-/* Debug traces.  */
+/* Enabling traces.  */
 #ifndef YYDEBUG
 #define YYDEBUG 0
 #endif
@@ -263,9 +260,11 @@ static int mkComment(int);
 extern int yydebug;
 #endif
 
-/* Token type.  */
+/* Tokens.  */
 #ifndef YYTOKENTYPE
 #define YYTOKENTYPE
+/* Put the tokens into the symbol table, so that GDB and other debuggers
+   know about them.  */
 enum yytokentype
 {
     END_OF_INPUT = 258,
@@ -311,35 +310,86 @@ enum yytokentype
     STARTFRAGMENT = 298
 };
 #endif
+/* Tokens.  */
+#define END_OF_INPUT 258
+#define ERROR 259
+#define SECTIONHEADER 260
+#define RSECTIONHEADER 261
+#define VSECTIONHEADER 262
+#define SECTIONHEADER2 263
+#define RCODEMACRO 264
+#define SEXPR 265
+#define RDOPTS 266
+#define LATEXMACRO 267
+#define VERBMACRO 268
+#define OPTMACRO 269
+#define ESCAPE 270
+#define LISTSECTION 271
+#define ITEMIZE 272
+#define DESCRIPTION 273
+#define NOITEM 274
+#define LATEXMACRO2 275
+#define VERBMACRO2 276
+#define VERBLATEX 277
+#define LATEXMACRO3 278
+#define NEWCOMMAND 279
+#define USERMACRO 280
+#define USERMACRO1 281
+#define USERMACRO2 282
+#define USERMACRO3 283
+#define USERMACRO4 284
+#define USERMACRO5 285
+#define USERMACRO6 286
+#define USERMACRO7 287
+#define USERMACRO8 288
+#define USERMACRO9 289
+#define IFDEF 290
+#define ENDIF 291
+#define TEXT 292
+#define RCODE 293
+#define VERB 294
+#define COMMENT 295
+#define UNKNOWN 296
+#define STARTFILE 297
+#define STARTFRAGMENT 298
 
-/* Value type.  */
 #if !defined YYSTYPE && !defined YYSTYPE_IS_DECLARED
 typedef int YYSTYPE;
 #define YYSTYPE_IS_TRIVIAL 1
+#define yystype YYSTYPE /* obsolescent; will be withdrawn */
 #define YYSTYPE_IS_DECLARED 1
 #endif
 
-/* Location type.  */
 #if !defined YYLTYPE && !defined YYLTYPE_IS_DECLARED
-typedef struct YYLTYPE YYLTYPE;
-struct YYLTYPE
+typedef struct YYLTYPE
 {
     int first_line;
     int first_column;
     int last_line;
     int last_column;
-};
+} YYLTYPE;
+#define yyltype YYLTYPE /* obsolescent; will be withdrawn */
 #define YYLTYPE_IS_DECLARED 1
 #define YYLTYPE_IS_TRIVIAL 1
 #endif
 
 extern YYSTYPE yylval;
 extern YYLTYPE yylloc;
+#ifdef YYPARSE_PARAM
+#if defined __STDC__ || defined __cplusplus
+int yyparse(void *YYPARSE_PARAM);
+#else
+int yyparse();
+#endif
+#else /* ! YYPARSE_PARAM */
+#if defined __STDC__ || defined __cplusplus
 int yyparse(void);
+#else
+int yyparse();
+#endif
+#endif /* ! YYPARSE_PARAM */
 
 /* Copy the second part of user declarations.  */
-
-#line 354 "gramRd.c" /* yacc.c:358  */
 
 #ifdef short
 #undef short
@@ -353,8 +403,10 @@ typedef unsigned char yytype_uint8;
 
 #ifdef YYTYPE_INT8
 typedef YYTYPE_INT8 yytype_int8;
-#else
+#elif (defined __STDC__ || defined __C99__FUNC__ || defined __cplusplus || defined _MSC_VER)
 typedef signed char yytype_int8;
+#else
+typedef short int yytype_int8;
 #endif
 
 #ifdef YYTYPE_UINT16
@@ -374,7 +426,7 @@ typedef short int yytype_int16;
 #define YYSIZE_T __SIZE_TYPE__
 #elif defined size_t
 #define YYSIZE_T size_t
-#elif !defined YYSIZE_T
+#elif !defined YYSIZE_T && (defined __STDC__ || defined __C99__FUNC__ || defined __cplusplus || defined _MSC_VER)
 #include <stddef.h> /* INFRINGES ON USER NAME SPACE */
 #define YYSIZE_T size_t
 #else
@@ -396,28 +448,10 @@ typedef short int yytype_int16;
 #endif
 #endif
 
-#ifndef YY_ATTRIBUTE
-#if (defined __GNUC__ && (2 < __GNUC__ || (__GNUC__ == 2 && 96 <= __GNUC_MINOR__))) ||                                 \
-    defined __SUNPRO_C && 0x5110 <= __SUNPRO_C
-#define YY_ATTRIBUTE(Spec) __attribute__(Spec)
-#else
-#define YY_ATTRIBUTE(Spec) /* empty */
-#endif
-#endif
-
-#ifndef YY_ATTRIBUTE_PURE
-#define YY_ATTRIBUTE_PURE YY_ATTRIBUTE((__pure__))
-#endif
-
-#ifndef YY_ATTRIBUTE_UNUSED
-#define YY_ATTRIBUTE_UNUSED YY_ATTRIBUTE((__unused__))
-#endif
-
-#if !defined _Noreturn && (!defined __STDC_VERSION__ || __STDC_VERSION__ < 201112)
-#if defined _MSC_VER && 1200 <= _MSC_VER
-#define _Noreturn __declspec(noreturn)
-#else
-#define _Noreturn YY_ATTRIBUTE((__noreturn__))
+#ifndef __attribute__
+/* This feature is available in gcc versions 2.5 and later.  */
+#if (!defined __GNUC__ || __GNUC__ < 2 || (__GNUC__ == 2 && __GNUC_MINOR__ < 5))
+#define __attribute__(Spec) /* empty */
 #endif
 #endif
 
@@ -428,21 +462,18 @@ typedef short int yytype_int16;
 #define YYUSE(E) /* empty */
 #endif
 
-#if defined __GNUC__ && 407 <= __GNUC__ * 100 + __GNUC_MINOR__
-/* Suppress an incorrect diagnostic about yylval being uninitialized.  */
-#define YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN                                                                            \
-    _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wuninitialized\"")                               \
-        _Pragma("GCC diagnostic ignored \"-Wmaybe-uninitialized\"")
-#define YY_IGNORE_MAYBE_UNINITIALIZED_END _Pragma("GCC diagnostic pop")
+/* Identity function, used to suppress warnings about constant conditions.  */
+#ifndef lint
+#define YYID(N) (N)
 #else
-#define YY_INITIAL_VALUE(Value) Value
+#if (defined __STDC__ || defined __C99__FUNC__ || defined __cplusplus || defined _MSC_VER)
+static int YYID(int yyi)
+#else
+static int YYID(yyi) int yyi;
 #endif
-#ifndef YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
-#define YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
-#define YY_IGNORE_MAYBE_UNINITIALIZED_END
-#endif
-#ifndef YY_INITIAL_VALUE
-#define YY_INITIAL_VALUE(Value) /* Nothing. */
+{
+    return yyi;
+}
 #endif
 
 #if !defined yyoverflow || YYERROR_VERBOSE
@@ -462,7 +493,8 @@ typedef short int yytype_int16;
 #define alloca _alloca
 #else
 #define YYSTACK_ALLOC alloca
-#if !defined _ALLOCA_H && !defined EXIT_SUCCESS
+#if !defined _ALLOCA_H && !defined EXIT_SUCCESS &&                                                                     \
+    (defined __STDC__ || defined __C99__FUNC__ || defined __cplusplus || defined _MSC_VER)
 #include <stdlib.h> /* INFRINGES ON USER NAME SPACE */
 /* Use EXIT_SUCCESS as a witness for stdlib.h.  */
 #ifndef EXIT_SUCCESS
@@ -474,12 +506,12 @@ typedef short int yytype_int16;
 #endif
 
 #ifdef YYSTACK_ALLOC
-/* Pacify GCC's 'empty if-body' warning.  */
+/* Pacify GCC's `empty if-body' warning.  */
 #define YYSTACK_FREE(Ptr)                                                                                              \
     do                                                                                                                 \
     { /* empty */                                                                                                      \
         ;                                                                                                              \
-    } while (0)
+    } while (YYID(0))
 #ifndef YYSTACK_ALLOC_MAXIMUM
 /* The OS might guarantee only one guard page at the bottom of the stack,
    and a page size can be as small as 4096 bytes.  So we cannot safely
@@ -502,13 +534,15 @@ typedef short int yytype_int16;
 #endif
 #ifndef YYMALLOC
 #define YYMALLOC malloc
-#if !defined malloc && !defined EXIT_SUCCESS
+#if !defined malloc && !defined EXIT_SUCCESS &&                                                                        \
+    (defined __STDC__ || defined __C99__FUNC__ || defined __cplusplus || defined _MSC_VER)
 void *malloc(YYSIZE_T); /* INFRINGES ON USER NAME SPACE */
 #endif
 #endif
 #ifndef YYFREE
 #define YYFREE free
-#if !defined free && !defined EXIT_SUCCESS
+#if !defined free && !defined EXIT_SUCCESS &&                                                                          \
+    (defined __STDC__ || defined __C99__FUNC__ || defined __cplusplus || defined _MSC_VER)
 void free(void *);      /* INFRINGES ON USER NAME SPACE */
 #endif
 #endif
@@ -547,7 +581,7 @@ union yyalloc {
         Stack = &yyptr->Stack_alloc;                                                                                   \
         yynewbytes = yystacksize * sizeof(*Stack) + YYSTACK_GAP_MAXIMUM;                                               \
         yyptr += yynewbytes / sizeof(*yyptr);                                                                          \
-    } while (0)
+    } while (YYID(0))
 
 #endif
 
@@ -564,7 +598,7 @@ union yyalloc {
         YYSIZE_T yyi;                                                                                                  \
         for (yyi = 0; yyi < (Count); yyi++)                                                                            \
             (Dst)[yyi] = (Src)[yyi];                                                                                   \
-    } while (0)
+    } while (YYID(0))
 #endif
 #endif
 #endif /* !YYCOPY_NEEDED */
@@ -580,18 +614,16 @@ union yyalloc {
 #define YYNNTS 31
 /* YYNRULES -- Number of rules.  */
 #define YYNRULES 89
-/* YYNSTATES -- Number of states.  */
+/* YYNRULES -- Number of states.  */
 #define YYNSTATES 194
 
-/* YYTRANSLATE[YYX] -- Symbol number corresponding to YYX as returned
-   by yylex, with out-of-bounds checking.  */
+/* YYTRANSLATE(YYLEX) -- Bison symbol number corresponding to YYLEX.  */
 #define YYUNDEFTOK 2
 #define YYMAXUTOK 298
 
 #define YYTRANSLATE(YYX) ((unsigned int)(YYX) <= YYMAXUTOK ? yytranslate[YYX] : YYUNDEFTOK)
 
-/* YYTRANSLATE[TOKEN-NUM] -- Symbol number corresponding to TOKEN-NUM
-   as returned by yylex, without out-of-bounds checking.  */
+/* YYTRANSLATE[YYLEX] -- Bison symbol number corresponding to YYLEX.  */
 static const yytype_uint8 yytranslate[] = {
     0,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
     2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
@@ -606,7 +638,29 @@ static const yytype_uint8 yytranslate[] = {
     25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43};
 
 #if YYDEBUG
-/* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
+/* YYPRHS[YYN] -- Index of the first RHS symbol of rule number YYN in
+   YYRHS.  */
+static const yytype_uint16 yyprhs[] = {
+    0,   0,   3,   7,   11,  13,  16,  18,  20,  23,  26,  29,  32,  35,  38,  42,  47,  52,  56,  61,  63,  65,  67,
+    70,  72,  75,  77,  79,  81,  83,  85,  87,  89,  91,  94,  97,  101, 106, 109, 112, 116, 121, 124, 128, 133, 136,
+    139, 143, 145, 150, 155, 159, 163, 165, 168, 172, 177, 183, 190, 198, 208, 219, 231, 234, 237, 240, 243, 246, 249,
+    254, 258, 261, 264, 269, 273, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 289, 292, 297, 301, 306};
+
+/* YYRHS -- A `-1'-separated list of the rules' RHS.  */
+static const yytype_int8 yyrhs[] = {
+    49, 0,  -1, 42, 51, 3,  -1, 43, 50, 3,  -1, 1,  -1, 68, 54, -1, 52, -1, 53, -1, 52, 53, -1, 7,  64, -1, 11, 64, -1,
+    6,  62, -1, 5,  58, -1, 16, 61, -1, 8,  58, 59, -1, 35, 67, 52, 36, -1, 35, 67, 52, 1,  -1, 10, 71, 63, -1, 10, 71,
+    78, 63, -1, 40, -1, 37, -1, 57, -1, 1,  53, -1, 55, -1, 54, 55, -1, 37, -1, 38, -1, 39, -1, 40, -1, 41, -1, 77, -1,
+    56, -1, 57, -1, 1,  55, -1, 12, 58, -1, 20, 58, 59, -1, 23, 58, 59, 59, -1, 17, 60, -1, 18, 61, -1, 14, 71, 58, -1,
+    14, 71, 78, 58, -1, 9,  62, -1, 10, 71, 63, -1, 10, 71, 78, 63, -1, 13, 64, -1, 21, 65, -1, 21, 65, 66, -1, 15, -1,
+    35, 67, 54, 36, -1, 35, 67, 54, 1,  -1, 22, 64, 59, -1, 24, 65, 64, -1, 25, -1, 26, 64, -1, 27, 64, 64, -1, 28, 64,
+    64, 64, -1, 29, 64, 64, 64, 64, -1, 30, 64, 64, 64, 64, 64, -1, 31, 64, 64, 64, 64, 64, 64, -1, 32, 64, 64, 64, 64,
+    64, 64, 64, 64, -1, 33, 64, 64, 64, 64, 64, 64, 64, 64, 64, -1, 34, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, -1, 68,
+    77, -1, 68, 77, -1, 68, 37, -1, 75, 77, -1, 76, 77, -1, 69, 77, -1, 44, 70, 54, 45, -1, 44, 70, 45, -1, 72, 77, -1,
+    73, 77, -1, 44, 74, 54, 45, -1, 44, 74, 45, -1, 68, 37, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 44, 54, 45, -1, 44,
+    45, -1, 44, 54, 1,  45, -1, 44, 1,  45, -1, 44, 54, 1,  3,  -1, 46, 55, 47, -1};
+
+/* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] = {
     0,   214, 214, 215, 216, 219, 222, 225, 226, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241,
     243, 244, 246, 247, 248, 249, 250, 251, 252, 253, 254, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267,
@@ -696,27 +750,49 @@ static const char *const yytname[] = {"$end",
                                       "goItem2",
                                       "Arg",
                                       "Option",
-                                      YY_NULLPTR};
+                                      YY_NULL};
 #endif
 
 #ifdef YYPRINT
-/* YYTOKNUM[NUM] -- (External) token number corresponding to the
-   (internal) symbol number NUM (which must be that of a token).  */
+/* YYTOKNUM[YYLEX-NUM] -- Internal token number corresponding to
+   token YYLEX-NUM.  */
 static const yytype_uint16 yytoknum[] = {0,   256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270,
                                          271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286,
                                          287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 123, 125, 91,  93};
 #endif
 
-#define YYPACT_NINF -94
+/* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
+static const yytype_uint8 yyr1[] = {0,  48, 49, 49, 49, 50, 51, 52, 52, 53, 53, 53, 53, 53, 53, 53, 53, 53,
+                                    53, 53, 53, 53, 53, 54, 54, 55, 55, 55, 55, 55, 55, 55, 55, 55, 56, 56,
+                                    56, 56, 56, 56, 56, 56, 56, 56, 56, 56, 56, 56, 56, 56, 56, 57, 57, 57,
+                                    57, 57, 57, 57, 57, 57, 57, 57, 58, 59, 59, 60, 61, 62, 63, 63, 64, 65,
+                                    66, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 77, 77, 77, 77, 78};
 
-#define yypact_value_is_default(Yystate) (!!((Yystate) == (-94)))
+/* YYR2[YYN] -- Number of symbols composing right hand side of rule YYN.  */
+static const yytype_uint8 yyr2[] = {0, 2, 3, 3, 1, 2, 1, 1, 2, 2, 2, 2, 2, 2, 3,  4,  4, 3, 4, 1, 1, 1, 2,
+                                    1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 3, 4, 2,  2,  3, 4, 2, 3, 4, 2, 2,
+                                    3, 1, 4, 4, 3, 3, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 2, 2, 2, 2, 2, 2, 4,
+                                    3, 2, 2, 4, 3, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0,  3,  2, 4, 3, 4, 3};
 
-#define YYTABLE_NINF -50
+/* YYDEFACT[STATE-NAME] -- Default reduction number in state STATE-NUM.
+   Performed when YYTABLE doesn't specify something else to do.  Zero
+   means the default is an error.  */
+static const yytype_uint8 yydefact[] = {
+    0,  4,  0,  75, 0,  0,  75, 76, 79, 75, 78, 79, 83, 80, 52, 79, 79, 79, 79, 79, 79, 79, 79, 79, 75, 20, 19, 0,
+    0,  7,  21, 0,  0,  1,  22, 12, 0,  11, 0,  9,  0,  75, 0,  10, 13, 0,  79, 0,  53, 79, 79, 79, 79, 79, 79, 79,
+    79, 0,  0,  2,  8,  3,  0,  76, 78, 75, 79, 78, 47, 82, 83, 75, 80, 79, 75, 75, 25, 26, 27, 28, 29, 0,  0,  23,
+    31, 32, 30, 62, 67, 70, 14, 0,  77, 0,  17, 0,  66, 51, 71, 54, 79, 79, 79, 79, 79, 79, 79, 0,  74, 33, 41, 0,
+    34, 44, 75, 37, 0,  38, 75, 45, 75, 75, 0,  0,  85, 0,  24, 64, 63, 0,  0,  18, 55, 79, 79, 79, 79, 79, 79, 0,
+    15, 42, 0,  39, 75, 65, 35, 81, 46, 50, 75, 0,  87, 0,  84, 69, 0,  89, 56, 79, 79, 79, 79, 79, 43, 40, 0,  36,
+    0,  48, 88, 86, 68, 57, 79, 79, 79, 79, 73, 0,  58, 79, 79, 79, 72, 79, 79, 79, 59, 79, 79, 60, 79, 61};
 
-#define yytable_value_is_error(Yytable_value) 0
+/* YYDEFGOTO[NTERM-NUM].  */
+static const yytype_int16 yydefgoto[] = {-1, 4,  31,  27, 28, 29, 82,  83, 84, 85, 35,  90,  115, 44, 37, 94,
+                                         39, 46, 148, 57, 36, 38, 129, 42, 40, 47, 166, 116, 45,  86, 95};
 
 /* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
    STATE-NUM.  */
+#define YYPACT_NINF -94
 static const yytype_int16 yypact[] = {
     28,  -94, 792, -94, 20,  792, -94, -94, -94, -94, -94, -94, -94, -94, -94, -94, -94, -94, -94, -94, -94, -94,
     -94, -94, -94, -94, -94, 29,  718, -94, -94, 34,  638, -94, -94, -94, -19, -94, -19, -94, -19, -94, -30, -94,
@@ -728,29 +804,14 @@ static const yytype_int16 yypact[] = {
     -94, -94, 429, -94, -94, -94, -94, -94, -94, -94, -94, -94, 470, -94, 179, -94, -94, -94, -94, -94, -94, -94,
     -94, -94, -94, 511, -94, -94, -94, -94, -94, -94, -94, -94, -94, -94, -94, -94, -94, -94};
 
-/* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
-   Performed when YYTABLE does not specify something else to do.  Zero
-   means the default is an error.  */
-static const yytype_uint8 yydefact[] = {
-    0,  4,  0,  75, 0,  0,  75, 76, 79, 75, 78, 79, 83, 80, 52, 79, 79, 79, 79, 79, 79, 79, 79, 79, 75, 20, 19, 0,
-    0,  7,  21, 0,  0,  1,  22, 12, 0,  11, 0,  9,  0,  75, 0,  10, 13, 0,  79, 0,  53, 79, 79, 79, 79, 79, 79, 79,
-    79, 0,  0,  2,  8,  3,  0,  76, 78, 75, 79, 78, 47, 82, 83, 75, 80, 79, 75, 75, 25, 26, 27, 28, 29, 0,  0,  23,
-    31, 32, 30, 62, 67, 70, 14, 0,  77, 0,  17, 0,  66, 51, 71, 54, 79, 79, 79, 79, 79, 79, 79, 0,  74, 33, 41, 0,
-    34, 44, 75, 37, 0,  38, 75, 45, 75, 75, 0,  0,  85, 0,  24, 64, 63, 0,  0,  18, 55, 79, 79, 79, 79, 79, 79, 0,
-    15, 42, 0,  39, 75, 65, 35, 81, 46, 50, 75, 0,  87, 0,  84, 69, 0,  89, 56, 79, 79, 79, 79, 79, 43, 40, 0,  36,
-    0,  48, 88, 86, 68, 57, 79, 79, 79, 79, 73, 0,  58, 79, 79, 79, 72, 79, 79, 79, 59, 79, 79, 60, 79, 61};
-
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] = {-94, -94, -94, -94, 3,  -2,  -64, -10, -94, 22,  -8,  -43, -94, -9,  -4, -93,
                                       -11, -5,  -94, -7,  10, -94, -94, -31, -94, -94, -94, -94, -94, -17, -58};
 
-/* YYDEFGOTO[NTERM-NUM].  */
-static const yytype_int16 yydefgoto[] = {-1, 4,  31,  27, 28, 29, 82,  83, 84, 85, 35,  90,  115, 44, 37, 94,
-                                         39, 46, 148, 57, 36, 38, 129, 42, 40, 47, 166, 116, 45,  86, 95};
-
-/* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
-   positive, shift that token.  If negative, reduce the rule whose
+/* YYTABLE[YYPACT[STATE-NUM]].  What to do in state STATE-NUM.  If
+   positive, shift that token.  If negative, reduce the rule which
    number is the opposite.  If YYTABLE_NINF, syntax error.  */
+#define YYTABLE_NINF -50
 static const yytype_int16 yytable[] = {
     43,  41,  131, 34,  48,  49,  50,  51,  52,  53,  54,  55,  56,  32,  92,  127, 93,  125, 141, 87,  33,  88,  81,
     89,  30,  81,  60,  30,  96,  1,   98,  108, 59,  111, 58,  97,  114, 61,  99,  100, 101, 102, 103, 104, 105, 106,
@@ -789,6 +850,10 @@ static const yytype_int16 yytable[] = {
     16,  17,  18,  19,  20,  21,  22,  23,  24,  140, 25,  5,   0,   26,  0,   6,   7,   8,   9,   0,   10,  11,  0,
     0,   0,   0,   12,  0,   0,   0,   0,   0,   0,   0,   13,  14,  15,  16,  17,  18,  19,  20,  21,  22,  23,  24,
     0,   25,  0,   0,   26};
+
+#define yypact_value_is_default(Yystate) (!!((Yystate) == (-94)))
+
+#define yytable_value_is_error(Yytable_value) YYID(0)
 
 static const yytype_int16 yycheck[] = {
     11, 9,   95,  5,   15,  16,  17,  18,  19,  20,  21,  22,  23, 3,   44,  37, 46,  81,  111, 36,  0,   38,  44,  40,
@@ -838,19 +903,6 @@ static const yytype_uint8 yystos[] = {
     36, 63, 78, 58, 78, 77, 59, 44, 66, 59, 59, 54, 45, 1,  45, 45, 54, 47, 64, 64, 64, 64, 64, 64, 63, 58, 74, 59,
     1,  36, 3,  45, 45, 64, 64, 64, 64, 64, 45, 54, 64, 64, 64, 64, 45, 64, 64, 64, 64, 64, 64, 64, 64, 64};
 
-/* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
-static const yytype_uint8 yyr1[] = {0,  48, 49, 49, 49, 50, 51, 52, 52, 53, 53, 53, 53, 53, 53, 53, 53, 53,
-                                    53, 53, 53, 53, 53, 54, 54, 55, 55, 55, 55, 55, 55, 55, 55, 55, 56, 56,
-                                    56, 56, 56, 56, 56, 56, 56, 56, 56, 56, 56, 56, 56, 56, 56, 57, 57, 57,
-                                    57, 57, 57, 57, 57, 57, 57, 57, 58, 59, 59, 60, 61, 62, 63, 63, 64, 65,
-                                    66, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 77, 77, 77, 77, 78};
-
-/* YYR2[YYN] -- Number of symbols on the right hand side of rule YYN.  */
-static const yytype_uint8 yyr2[] = {0, 2, 3, 3, 1, 2, 1, 1, 2, 2, 2, 2, 2, 2, 3,  4,  4, 3, 4, 1, 1, 1, 2,
-                                    1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 3, 4, 2,  2,  3, 4, 2, 3, 4, 2, 2,
-                                    3, 1, 4, 4, 3, 3, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 2, 2, 2, 2, 2, 2, 4,
-                                    3, 2, 2, 4, 3, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0,  3,  2, 4, 3, 4, 3};
-
 #define yyerrok (yyerrstatus = 0)
 #define yyclearin (yychar = YYEMPTY)
 #define YYEMPTY (-2)
@@ -859,6 +911,21 @@ static const yytype_uint8 yyr2[] = {0, 2, 3, 3, 1, 2, 1, 1, 2, 2, 2, 2, 2, 2, 3,
 #define YYACCEPT goto yyacceptlab
 #define YYABORT goto yyabortlab
 #define YYERROR goto yyerrorlab
+
+/* Like YYERROR except do call yyerror.  This remains here temporarily
+   to ease the transition to the new meaning of YYERROR, for GCC.
+   Once GCC version 2 has supplanted version 1, this can go.  However,
+   YYFAIL appears to be in use.  Nevertheless, it is formally deprecated
+   in Bison 2.4.2's NEWS entry, where a plan to phase it out is
+   discussed.  */
+
+#define YYFAIL goto yyerrlab
+#if defined YYFAIL
+/* This is here to suppress warnings from the GCC cpp's
+   -Wunused-macros.  Normally we don't worry about that warning, but
+   some users do, and we want to make it easy for users to remove
+   YYFAIL uses, which will produce warnings from Bison 2.5.  */
+#endif
 
 #define YYRECOVERING() (!!yyerrstatus)
 
@@ -877,7 +944,7 @@ static const yytype_uint8 yyr2[] = {0, 2, 3, 3, 1, 2, 1, 1, 2, 2, 2, 2, 2, 2, 3,
             yyerror(YY_("syntax error: cannot back up"));                                                              \
             YYERROR;                                                                                                   \
         }                                                                                                              \
-    while (0)
+    while (YYID(0))
 
 /* Error token number */
 #define YYTERROR 1
@@ -890,7 +957,7 @@ static const yytype_uint8 yyr2[] = {0, 2, 3, 3, 1, 2, 1, 1, 2, 2, 2, 2, 2, 2, 3,
 #ifndef YYLLOC_DEFAULT
 #define YYLLOC_DEFAULT(Current, Rhs, N)                                                                                \
     do                                                                                                                 \
-        if (N)                                                                                                         \
+        if (YYID(N))                                                                                                   \
         {                                                                                                              \
             (Current).first_line = YYRHSLOC(Rhs, 1).first_line;                                                        \
             (Current).first_column = YYRHSLOC(Rhs, 1).first_column;                                                    \
@@ -902,10 +969,64 @@ static const yytype_uint8 yyr2[] = {0, 2, 3, 3, 1, 2, 1, 1, 2, 2, 2, 2, 2, 2, 3,
             (Current).first_line = (Current).last_line = YYRHSLOC(Rhs, 0).last_line;                                   \
             (Current).first_column = (Current).last_column = YYRHSLOC(Rhs, 0).last_column;                             \
         }                                                                                                              \
-    while (0)
+    while (YYID(0))
 #endif
 
 #define YYRHSLOC(Rhs, K) ((Rhs)[K])
+
+/* YY_LOCATION_PRINT -- Print the location on the stream.
+   This macro was not mandated originally: define only if we know
+   we won't break user code: when these are the locations we know.  */
+
+#ifndef YY_LOCATION_PRINT
+#if defined YYLTYPE_IS_TRIVIAL && YYLTYPE_IS_TRIVIAL
+
+/* Print *YYLOCP on YYO.  Private, do not rely on its existence. */
+
+__attribute__((__unused__))
+#if (defined __STDC__ || defined __C99__FUNC__ || defined __cplusplus || defined _MSC_VER)
+static unsigned
+yy_location_print_(FILE *yyo, YYLTYPE const *const yylocp)
+#else
+static unsigned yy_location_print_(yyo, yylocp) FILE *yyo;
+YYLTYPE const *const yylocp;
+#endif
+{
+    unsigned res = 0;
+    int end_col = 0 != yylocp->last_column ? yylocp->last_column - 1 : 0;
+    if (0 <= yylocp->first_line)
+    {
+        res += fprintf(yyo, "%d", yylocp->first_line);
+        if (0 <= yylocp->first_column)
+            res += fprintf(yyo, ".%d", yylocp->first_column);
+    }
+    if (0 <= yylocp->last_line)
+    {
+        if (yylocp->first_line < yylocp->last_line)
+        {
+            res += fprintf(yyo, "-%d", yylocp->last_line);
+            if (0 <= end_col)
+                res += fprintf(yyo, ".%d", end_col);
+        }
+        else if (0 <= end_col && yylocp->first_column < end_col)
+            res += fprintf(yyo, "-%d", end_col);
+    }
+    return res;
+}
+
+#define YY_LOCATION_PRINT(File, Loc) yy_location_print_(File, &(Loc))
+
+#else
+#define YY_LOCATION_PRINT(File, Loc) ((void)0)
+#endif
+#endif
+
+/* YYLEX -- calling `yylex' with the right arguments.  */
+#ifdef YYLEX_PARAM
+#define YYLEX yylex(YYLEX_PARAM)
+#else
+#define YYLEX yylex()
+#endif
 
 /* Enable debugging if requested.  */
 #if YYDEBUG
@@ -920,48 +1041,7 @@ static const yytype_uint8 yyr2[] = {0, 2, 3, 3, 1, 2, 1, 1, 2, 2, 2, 2, 2, 2, 3,
     {                                                                                                                  \
         if (yydebug)                                                                                                   \
             YYFPRINTF Args;                                                                                            \
-    } while (0)
-
-/* YY_LOCATION_PRINT -- Print the location on the stream.
-   This macro was not mandated originally: define only if we know
-   we won't break user code: when these are the locations we know.  */
-
-#ifndef YY_LOCATION_PRINT
-#if defined YYLTYPE_IS_TRIVIAL && YYLTYPE_IS_TRIVIAL
-
-/* Print *YYLOCP on YYO.  Private, do not rely on its existence. */
-
-YY_ATTRIBUTE_UNUSED
-static unsigned yy_location_print_(FILE *yyo, YYLTYPE const *const yylocp)
-{
-    unsigned res = 0;
-    int end_col = 0 != yylocp->last_column ? yylocp->last_column - 1 : 0;
-    if (0 <= yylocp->first_line)
-    {
-        res += YYFPRINTF(yyo, "%d", yylocp->first_line);
-        if (0 <= yylocp->first_column)
-            res += YYFPRINTF(yyo, ".%d", yylocp->first_column);
-    }
-    if (0 <= yylocp->last_line)
-    {
-        if (yylocp->first_line < yylocp->last_line)
-        {
-            res += YYFPRINTF(yyo, "-%d", yylocp->last_line);
-            if (0 <= end_col)
-                res += YYFPRINTF(yyo, ".%d", end_col);
-        }
-        else if (0 <= end_col && yylocp->first_column < end_col)
-            res += YYFPRINTF(yyo, "-%d", end_col);
-    }
-    return res;
-}
-
-#define YY_LOCATION_PRINT(File, Loc) yy_location_print_(File, &(Loc))
-
-#else
-#define YY_LOCATION_PRINT(File, Loc) ((void)0)
-#endif
-#endif
+    } while (YYID(0))
 
 #define YY_SYMBOL_PRINT(Title, Type, Value, Location)                                                                  \
     do                                                                                                                 \
@@ -972,23 +1052,33 @@ static unsigned yy_location_print_(FILE *yyo, YYLTYPE const *const yylocp)
             yy_symbol_print(stderr, Type, Value, Location);                                                            \
             YYFPRINTF(stderr, "\n");                                                                                   \
         }                                                                                                              \
-    } while (0)
+    } while (YYID(0))
 
-/*----------------------------------------.
-| Print this symbol's value on YYOUTPUT.  |
-`----------------------------------------*/
+/*--------------------------------.
+| Print this symbol on YYOUTPUT.  |
+`--------------------------------*/
 
+/*ARGSUSED*/
+#if (defined __STDC__ || defined __C99__FUNC__ || defined __cplusplus || defined _MSC_VER)
 static void yy_symbol_value_print(FILE *yyoutput, int yytype, YYSTYPE const *const yyvaluep,
                                   YYLTYPE const *const yylocationp)
+#else
+static void yy_symbol_value_print(yyoutput, yytype, yyvaluep, yylocationp) FILE *yyoutput;
+int yytype;
+YYSTYPE const *const yyvaluep;
+YYLTYPE const *const yylocationp;
+#endif
 {
     FILE *yyo = yyoutput;
     YYUSE(yyo);
-    YYUSE(yylocationp);
     if (!yyvaluep)
         return;
+    YYUSE(yylocationp);
 #ifdef YYPRINT
     if (yytype < YYNTOKENS)
         YYPRINT(yyoutput, yytoknum[yytype], *yyvaluep);
+#else
+    YYUSE(yyoutput);
 #endif
     YYUSE(yytype);
 }
@@ -997,9 +1087,19 @@ static void yy_symbol_value_print(FILE *yyoutput, int yytype, YYSTYPE const *con
 | Print this symbol on YYOUTPUT.  |
 `--------------------------------*/
 
+#if (defined __STDC__ || defined __C99__FUNC__ || defined __cplusplus || defined _MSC_VER)
 static void yy_symbol_print(FILE *yyoutput, int yytype, YYSTYPE const *const yyvaluep, YYLTYPE const *const yylocationp)
+#else
+static void yy_symbol_print(yyoutput, yytype, yyvaluep, yylocationp) FILE *yyoutput;
+int yytype;
+YYSTYPE const *const yyvaluep;
+YYLTYPE const *const yylocationp;
+#endif
 {
-    YYFPRINTF(yyoutput, "%s %s (", yytype < YYNTOKENS ? "token" : "nterm", yytname[yytype]);
+    if (yytype < YYNTOKENS)
+        YYFPRINTF(yyoutput, "token %s (", yytname[yytype]);
+    else
+        YYFPRINTF(yyoutput, "nterm %s (", yytname[yytype]);
 
     YY_LOCATION_PRINT(yyoutput, *yylocationp);
     YYFPRINTF(yyoutput, ": ");
@@ -1012,7 +1112,12 @@ static void yy_symbol_print(FILE *yyoutput, int yytype, YYSTYPE const *const yyv
 | TOP (included).                                                   |
 `------------------------------------------------------------------*/
 
+#if (defined __STDC__ || defined __C99__FUNC__ || defined __cplusplus || defined _MSC_VER)
 static void yy_stack_print(yytype_int16 *yybottom, yytype_int16 *yytop)
+#else
+static void yy_stack_print(yybottom, yytop) yytype_int16 *yybottom;
+yytype_int16 *yytop;
+#endif
 {
     YYFPRINTF(stderr, "Stack now");
     for (; yybottom <= yytop; yybottom++)
@@ -1028,23 +1133,29 @@ static void yy_stack_print(yytype_int16 *yybottom, yytype_int16 *yytop)
     {                                                                                                                  \
         if (yydebug)                                                                                                   \
             yy_stack_print((Bottom), (Top));                                                                           \
-    } while (0)
+    } while (YYID(0))
 
 /*------------------------------------------------.
 | Report that the YYRULE is going to be reduced.  |
 `------------------------------------------------*/
 
-static void yy_reduce_print(yytype_int16 *yyssp, YYSTYPE *yyvsp, YYLTYPE *yylsp, int yyrule)
+#if (defined __STDC__ || defined __C99__FUNC__ || defined __cplusplus || defined _MSC_VER)
+static void yy_reduce_print(YYSTYPE *yyvsp, YYLTYPE *yylsp, int yyrule)
+#else
+static void yy_reduce_print(yyvsp, yylsp, yyrule) YYSTYPE *yyvsp;
+YYLTYPE *yylsp;
+int yyrule;
+#endif
 {
-    unsigned long int yylno = yyrline[yyrule];
     int yynrhs = yyr2[yyrule];
     int yyi;
+    unsigned long int yylno = yyrline[yyrule];
     YYFPRINTF(stderr, "Reducing stack by rule %d (line %lu):\n", yyrule - 1, yylno);
     /* The symbols being reduced.  */
     for (yyi = 0; yyi < yynrhs; yyi++)
     {
         YYFPRINTF(stderr, "   $%d = ", yyi + 1);
-        yy_symbol_print(stderr, yystos[yyssp[yyi + 1 - yynrhs]], &(yyvsp[(yyi + 1) - (yynrhs)]),
+        yy_symbol_print(stderr, yyrhs[yyprhs[yyrule] + yyi], &(yyvsp[(yyi + 1) - (yynrhs)]),
                         &(yylsp[(yyi + 1) - (yynrhs)]));
         YYFPRINTF(stderr, "\n");
     }
@@ -1054,8 +1165,8 @@ static void yy_reduce_print(yytype_int16 *yyssp, YYSTYPE *yyvsp, YYLTYPE *yylsp,
     do                                                                                                                 \
     {                                                                                                                  \
         if (yydebug)                                                                                                   \
-            yy_reduce_print(yyssp, yyvsp, yylsp, Rule);                                                                \
-    } while (0)
+            yy_reduce_print(yyvsp, yylsp, Rule);                                                                       \
+    } while (YYID(0))
 
 /* Nonzero means print parse trace.  It is left uninitialized so that
    multiple parsers can coexist.  */
@@ -1090,7 +1201,11 @@ int yydebug;
 #define yystrlen strlen
 #else
 /* Return the length of YYSTR.  */
+#if (defined __STDC__ || defined __C99__FUNC__ || defined __cplusplus || defined _MSC_VER)
 static YYSIZE_T yystrlen(const char *yystr)
+#else
+static YYSIZE_T yystrlen(yystr) const char *yystr;
+#endif
 {
     YYSIZE_T yylen;
     for (yylen = 0; yystr[yylen]; yylen++)
@@ -1106,7 +1221,12 @@ static YYSIZE_T yystrlen(const char *yystr)
 #else
 /* Copy YYSRC to YYDEST, returning the address of the terminating '\0' in
    YYDEST.  */
+#if (defined __STDC__ || defined __C99__FUNC__ || defined __cplusplus || defined _MSC_VER)
 static char *yystpcpy(char *yydest, const char *yysrc)
+#else
+static char *yystpcpy(yydest, yysrc) char *yydest;
+const char *yysrc;
+#endif
 {
     char *yyd = yydest;
     const char *yys = yysrc;
@@ -1176,14 +1296,14 @@ static YYSIZE_T yytnamerr(char *yyres, const char *yystr)
    required number of bytes is too large to store.  */
 static int yysyntax_error(YYSIZE_T *yymsg_alloc, char **yymsg, yytype_int16 *yyssp, int yytoken)
 {
-    YYSIZE_T yysize0 = yytnamerr(YY_NULLPTR, yytname[yytoken]);
+    YYSIZE_T yysize0 = yytnamerr(YY_NULL, yytname[yytoken]);
     YYSIZE_T yysize = yysize0;
     enum
     {
         YYERROR_VERBOSE_ARGS_MAXIMUM = 5
     };
     /* Internationalized format string. */
-    const char *yyformat = YY_NULLPTR;
+    const char *yyformat = YY_NULL;
     /* Arguments of yyformat. */
     char const *yyarg[YYERROR_VERBOSE_ARGS_MAXIMUM];
     /* Number of reported tokens (one for the "unexpected", one per
@@ -1191,6 +1311,10 @@ static int yysyntax_error(YYSIZE_T *yymsg_alloc, char **yymsg, yytype_int16 *yys
     int yycount = 0;
 
     /* There are many possibilities here to consider:
+       - Assume YYFAIL is not used.  It's too flawed to consider.  See
+         <http://lists.gnu.org/archive/html/bison-patches/2009-12/msg00024.html>
+         for details.  YYERROR is fine as it does not invoke this
+         function.
        - If this state is a consistent state with a default action, then
          the only way this function was invoked is if the default action
          is an error action.  In that case, don't check for expected
@@ -1239,7 +1363,7 @@ static int yysyntax_error(YYSIZE_T *yymsg_alloc, char **yymsg, yytype_int16 *yys
                     }
                     yyarg[yycount++] = yytname[yyx];
                     {
-                        YYSIZE_T yysize1 = yysize + yytnamerr(YY_NULLPTR, yytname[yyx]);
+                        YYSIZE_T yysize1 = yysize + yytnamerr(YY_NULL, yytname[yyx]);
                         if (!(yysize <= yysize1 && yysize1 <= YYSTACK_ALLOC_MAXIMUM))
                             return 2;
                         yysize = yysize1;
@@ -1304,466 +1428,430 @@ static int yysyntax_error(YYSIZE_T *yymsg_alloc, char **yymsg, yytype_int16 *yys
 | Release the memory associated to this symbol.  |
 `-----------------------------------------------*/
 
+/*ARGSUSED*/
+#if (defined __STDC__ || defined __C99__FUNC__ || defined __cplusplus || defined _MSC_VER)
 static void yydestruct(const char *yymsg, int yytype, YYSTYPE *yyvaluep, YYLTYPE *yylocationp)
+#else
+static void yydestruct(yymsg, yytype, yyvaluep, yylocationp) const char *yymsg;
+int yytype;
+YYSTYPE *yyvaluep;
+YYLTYPE *yylocationp;
+#endif
 {
     YYUSE(yyvaluep);
     YYUSE(yylocationp);
+
     if (!yymsg)
         yymsg = "Deleting";
     YY_SYMBOL_PRINT(yymsg, yytype, yyvaluep, yylocationp);
 
-    YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
     switch (yytype)
     {
-    case 5:          /* SECTIONHEADER  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
-    {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1511 "gramRd.c" /* yacc.c:1257  */
-    break;
+    case 5: /* SECTIONHEADER */
 
-    case 6:          /* RSECTIONHEADER  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1517 "gramRd.c" /* yacc.c:1257  */
-    break;
+        UNPROTECT_PTR((*yyvaluep));
+    };
 
-    case 7:          /* VSECTIONHEADER  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
-    {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1523 "gramRd.c" /* yacc.c:1257  */
     break;
+    case 6: /* RSECTIONHEADER */
 
-    case 8:          /* SECTIONHEADER2  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1529 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 7: /* VSECTIONHEADER */
 
-    case 9:          /* RCODEMACRO  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1535 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 8: /* SECTIONHEADER2 */
 
-    case 10:         /* SEXPR  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1541 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 9: /* RCODEMACRO */
 
-    case 12:         /* LATEXMACRO  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1547 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 10: /* SEXPR */
 
-    case 13:         /* VERBMACRO  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1553 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 12: /* LATEXMACRO */
 
-    case 14:         /* OPTMACRO  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1559 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 13: /* VERBMACRO */
 
-    case 15:         /* ESCAPE  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1565 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 14: /* OPTMACRO */
 
-    case 16:         /* LISTSECTION  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1571 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 15: /* ESCAPE */
 
-    case 17:         /* ITEMIZE  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1577 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 16: /* LISTSECTION */
 
-    case 18:         /* DESCRIPTION  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1583 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 17: /* ITEMIZE */
 
-    case 19:         /* NOITEM  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1589 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 18: /* DESCRIPTION */
 
-    case 20:         /* LATEXMACRO2  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1595 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 19: /* NOITEM */
 
-    case 21:         /* VERBMACRO2  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1601 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 20: /* LATEXMACRO2 */
 
-    case 22:         /* VERBLATEX  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1607 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 21: /* VERBMACRO2 */
 
-    case 23:         /* LATEXMACRO3  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1613 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 22: /* VERBLATEX */
 
-    case 24:         /* NEWCOMMAND  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1619 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 23: /* LATEXMACRO3 */
 
-    case 25:         /* USERMACRO  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1625 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 24: /* NEWCOMMAND */
 
-    case 26:         /* USERMACRO1  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1631 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 25: /* USERMACRO */
 
-    case 27:         /* USERMACRO2  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1637 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 26: /* USERMACRO1 */
 
-    case 28:         /* USERMACRO3  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1643 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 27: /* USERMACRO2 */
 
-    case 29:         /* USERMACRO4  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1649 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 28: /* USERMACRO3 */
 
-    case 30:         /* USERMACRO5  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1655 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 29: /* USERMACRO4 */
 
-    case 31:         /* USERMACRO6  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1661 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 30: /* USERMACRO5 */
 
-    case 32:         /* USERMACRO7  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1667 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 31: /* USERMACRO6 */
 
-    case 33:         /* USERMACRO8  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1673 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 32: /* USERMACRO7 */
 
-    case 34:         /* USERMACRO9  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1679 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 33: /* USERMACRO8 */
 
-    case 35:         /* IFDEF  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1685 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 34: /* USERMACRO9 */
 
-    case 36:         /* ENDIF  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1691 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 35: /* IFDEF */
 
-    case 37:         /* TEXT  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1697 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 36: /* ENDIF */
 
-    case 38:         /* RCODE  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1703 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 37: /* TEXT */
 
-    case 39:         /* VERB  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1709 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 38: /* RCODE */
 
-    case 40:         /* COMMENT  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1715 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 39: /* VERB */
 
-    case 41:         /* UNKNOWN  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1721 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 40: /* COMMENT */
 
-    case 42:         /* STARTFILE  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1727 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 41: /* UNKNOWN */
 
-    case 43:         /* STARTFRAGMENT  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1733 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 42: /* STARTFILE */
 
-    case 54:         /* ArgItems  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1739 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 43: /* STARTFRAGMENT */
 
-    case 58:         /* LatexArg  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1745 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 54: /* ArgItems */
 
-    case 63:         /* RLikeArg2  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1751 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 58: /* LatexArg */
 
-    case 65:         /* VerbatimArg1  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1757 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 63: /* RLikeArg2 */
 
-    case 66:         /* VerbatimArg2  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1763 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 65: /* VerbatimArg1 */
 
-    case 67:         /* IfDefTarget  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1769 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 66: /* VerbatimArg2 */
 
-    case 68:         /* goLatexLike  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1775 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 67: /* IfDefTarget */
 
-    case 69:         /* goRLike  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1781 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 68: /* goLatexLike */
 
-    case 70:         /* goRLike2  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1787 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 69: /* goRLike */
 
-    case 71:         /* goOption  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1793 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 70: /* goRLike2 */
 
-    case 72:         /* goVerbatim  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1799 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 71: /* goOption */
 
-    case 73:         /* goVerbatim1  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1805 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 72: /* goVerbatim */
 
-    case 74:         /* goVerbatim2  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1811 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 73: /* goVerbatim1 */
 
-    case 75:         /* goItem0  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1817 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 74: /* goVerbatim2 */
 
-    case 76:         /* goItem2  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1823 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
+    case 75: /* goItem0 */
 
-    case 78:         /* Option  */
-#line 202 "gramRd.y" /* yacc.c:1257  */
     {
-        UNPROTECT_PTR(((*yyvaluep)));
-    }
-#line 1829 "gramRd.c" /* yacc.c:1257  */
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
+    break;
+    case 76: /* goItem2 */
+
+    {
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
+    break;
+    case 78: /* Option */
+
+    {
+        UNPROTECT_PTR((*yyvaluep));
+    };
+
     break;
 
     default:
         break;
     }
-    YY_IGNORE_MAYBE_UNINITIALIZED_END
 }
 
 /* The lookahead symbol.  */
 int yychar;
 
+#ifndef YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
+#define YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
+#define YY_IGNORE_MAYBE_UNINITIALIZED_END
+#endif
+#ifndef YY_INITIAL_VALUE
+#define YY_INITIAL_VALUE(Value) /* Nothing. */
+#endif
+
 /* The semantic value of the lookahead symbol.  */
-YYSTYPE yylval;
+YYSTYPE yylval YY_INITIAL_VALUE(yyval_default);
+
 /* Location data for the lookahead symbol.  */
 YYLTYPE yylloc
 #if defined YYLTYPE_IS_TRIVIAL && YYLTYPE_IS_TRIVIAL
     = {1, 1, 1, 1}
 #endif
 ;
+
 /* Number of syntax errors so far.  */
 int yynerrs;
 
@@ -1771,16 +1859,29 @@ int yynerrs;
 | yyparse.  |
 `----------*/
 
+#ifdef YYPARSE_PARAM
+#if (defined __STDC__ || defined __C99__FUNC__ || defined __cplusplus || defined _MSC_VER)
+int yyparse(void *YYPARSE_PARAM)
+#else
+int yyparse(YYPARSE_PARAM) void *YYPARSE_PARAM;
+#endif
+#else /* ! YYPARSE_PARAM */
+#if (defined __STDC__ || defined __C99__FUNC__ || defined __cplusplus || defined _MSC_VER)
 int yyparse(void)
+#else
+int yyparse()
+
+#endif
+#endif
 {
     int yystate;
     /* Number of tokens to shift before error messages enabled.  */
     int yyerrstatus;
 
     /* The stacks and their tools:
-       'yyss': related to states.
-       'yyvs': related to semantic values.
-       'yyls': related to locations.
+       `yyss': related to states.
+       `yyvs': related to semantic values.
+       `yyls': related to locations.
 
        Refer to the stacks through separate pointers, to allow yyoverflow
        to reallocate them elsewhere.  */
@@ -1939,7 +2040,7 @@ yybackup:
     if (yychar == YYEMPTY)
     {
         YYDPRINTF((stderr, "Reading a token: "));
-        yychar = yylex();
+        yychar = YYLEX;
     }
 
     if (yychar <= YYEOF)
@@ -2002,7 +2103,7 @@ yyreduce:
     yylen = yyr2[yyn];
 
     /* If YYLEN is nonzero, implement the default value of the action:
-       '$$ = $1'.
+       `$$ = $1'.
 
        Otherwise, the following line sets YYVAL to garbage.
        This behavior is undocumented and Bison
@@ -2017,760 +2118,680 @@ yyreduce:
     switch (yyn)
     {
     case 2:
-#line 214 "gramRd.y" /* yacc.c:1646  */
+
     {
-        xxsavevalue((yyvsp[-1]), &(yyloc));
-        UNPROTECT_PTR((yyvsp[-2]));
-        return 0;
+        xxsavevalue((yyvsp[(2) - (3)]), &(yyloc));
+        UNPROTECT_PTR((yyvsp[(1) - (3)]));
+        YYACCEPT;
     }
-#line 2117 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 3:
-#line 215 "gramRd.y" /* yacc.c:1646  */
+
     {
-        xxsavevalue((yyvsp[-1]), &(yyloc));
-        UNPROTECT_PTR((yyvsp[-2]));
-        return 0;
+        xxsavevalue((yyvsp[(2) - (3)]), &(yyloc));
+        UNPROTECT_PTR((yyvsp[(1) - (3)]));
+        YYACCEPT;
     }
-#line 2123 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 4:
-#line 216 "gramRd.y" /* yacc.c:1646  */
+
     {
         PROTECT(parseState.Value = R_NilValue);
         YYABORT;
     }
-#line 2129 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 5:
-#line 219 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = (yyvsp[0]);
-        UNPROTECT_PTR((yyvsp[-1]));
+        (yyval) = (yyvsp[(2) - (2)]);
+        UNPROTECT_PTR((yyvsp[(1) - (2)]));
     }
-#line 2135 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 6:
-#line 222 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = (yyvsp[0]);
+        (yyval) = (yyvsp[(1) - (1)]);
     }
-#line 2141 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 7:
-#line 225 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxnewlist((yyvsp[0]));
+        (yyval) = xxnewlist((yyvsp[(1) - (1)]));
     }
-#line 2147 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 8:
-#line 226 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxlist((yyvsp[-1]), (yyvsp[0]));
+        (yyval) = xxlist((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]));
     }
-#line 2153 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 9:
-#line 228 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup((yyvsp[-1]), (yyvsp[0]), STATIC, &(yyloc));
+        (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), STATIC, &(yyloc));
     }
-#line 2159 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 10:
-#line 229 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup((yyvsp[-1]), (yyvsp[0]), HAS_SEXPR, &(yyloc));
+        (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), HAS_SEXPR, &(yyloc));
     }
-#line 2165 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 11:
-#line 230 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup((yyvsp[-1]), (yyvsp[0]), STATIC, &(yyloc));
+        (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), STATIC, &(yyloc));
     }
-#line 2171 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 12:
-#line 231 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup((yyvsp[-1]), (yyvsp[0]), STATIC, &(yyloc));
+        (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), STATIC, &(yyloc));
     }
-#line 2177 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 13:
-#line 232 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup((yyvsp[-1]), (yyvsp[0]), STATIC, &(yyloc));
+        (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), STATIC, &(yyloc));
     }
-#line 2183 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 14:
-#line 233 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup2((yyvsp[-2]), (yyvsp[-1]), (yyvsp[0]), 2, STATIC, &(yyloc));
+        (yyval) = xxmarkup2((yyvsp[(1) - (3)]), (yyvsp[(2) - (3)]), (yyvsp[(3) - (3)]), 2, STATIC, &(yyloc));
     }
-#line 2189 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 15:
-#line 234 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup2((yyvsp[-3]), (yyvsp[-2]), (yyvsp[-1]), 2, HAS_IFDEF, &(yyloc));
-        UNPROTECT_PTR((yyvsp[0]));
+        (yyval) = xxmarkup2((yyvsp[(1) - (4)]), (yyvsp[(2) - (4)]), (yyvsp[(3) - (4)]), 2, HAS_IFDEF, &(yyloc));
+        UNPROTECT_PTR((yyvsp[(4) - (4)]));
     }
-#line 2195 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 16:
-#line 235 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup2((yyvsp[-3]), (yyvsp[-2]), (yyvsp[-1]), 2, HAS_IFDEF, &(yyloc));
+        (yyval) = xxmarkup2((yyvsp[(1) - (4)]), (yyvsp[(2) - (4)]), (yyvsp[(3) - (4)]), 2, HAS_IFDEF, &(yyloc));
     }
-#line 2201 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 17:
-#line 236 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup((yyvsp[-2]), (yyvsp[0]), HAS_SEXPR, &(yyloc));
-        xxpopMode((yyvsp[-1]));
+        (yyval) = xxmarkup((yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]), HAS_SEXPR, &(yyloc));
+        xxpopMode((yyvsp[(2) - (3)]));
     }
-#line 2207 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 18:
-#line 237 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxOptionmarkup((yyvsp[-3]), (yyvsp[-1]), (yyvsp[0]), HAS_SEXPR, &(yyloc));
-        xxpopMode((yyvsp[-2]));
+        (yyval) = xxOptionmarkup((yyvsp[(1) - (4)]), (yyvsp[(3) - (4)]), (yyvsp[(4) - (4)]), HAS_SEXPR, &(yyloc));
+        xxpopMode((yyvsp[(2) - (4)]));
     }
-#line 2213 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 19:
-#line 238 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxtag((yyvsp[0]), COMMENT, &(yyloc));
+        (yyval) = xxtag((yyvsp[(1) - (1)]), COMMENT, &(yyloc));
     }
-#line 2219 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 20:
-#line 239 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxtag((yyvsp[0]), TEXT, &(yyloc));
+        (yyval) = xxtag((yyvsp[(1) - (1)]), TEXT, &(yyloc));
     }
-#line 2225 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 21:
-#line 240 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = (yyvsp[0]);
+        (yyval) = (yyvsp[(1) - (1)]);
     }
-#line 2231 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 22:
-#line 241 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = (yyvsp[0]);
+        (yyval) = (yyvsp[(2) - (2)]);
     }
-#line 2237 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 23:
-#line 243 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxnewlist((yyvsp[0]));
+        (yyval) = xxnewlist((yyvsp[(1) - (1)]));
     }
-#line 2243 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 24:
-#line 244 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxlist((yyvsp[-1]), (yyvsp[0]));
+        (yyval) = xxlist((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]));
     }
-#line 2249 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 25:
-#line 246 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxtag((yyvsp[0]), TEXT, &(yyloc));
+        (yyval) = xxtag((yyvsp[(1) - (1)]), TEXT, &(yyloc));
     }
-#line 2255 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 26:
-#line 247 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxtag((yyvsp[0]), RCODE, &(yyloc));
+        (yyval) = xxtag((yyvsp[(1) - (1)]), RCODE, &(yyloc));
     }
-#line 2261 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 27:
-#line 248 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxtag((yyvsp[0]), VERB, &(yyloc));
+        (yyval) = xxtag((yyvsp[(1) - (1)]), VERB, &(yyloc));
     }
-#line 2267 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 28:
-#line 249 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxtag((yyvsp[0]), COMMENT, &(yyloc));
+        (yyval) = xxtag((yyvsp[(1) - (1)]), COMMENT, &(yyloc));
     }
-#line 2273 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 29:
-#line 250 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxtag((yyvsp[0]), UNKNOWN, &(yyloc));
+        (yyval) = xxtag((yyvsp[(1) - (1)]), UNKNOWN, &(yyloc));
         yyerror(yyunknown);
     }
-#line 2279 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 30:
-#line 251 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup(R_NilValue, (yyvsp[0]), STATIC, &(yyloc));
+        (yyval) = xxmarkup(R_NilValue, (yyvsp[(1) - (1)]), STATIC, &(yyloc));
     }
-#line 2285 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 31:
-#line 252 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = (yyvsp[0]);
+        (yyval) = (yyvsp[(1) - (1)]);
     }
-#line 2291 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 32:
-#line 253 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = (yyvsp[0]);
+        (yyval) = (yyvsp[(1) - (1)]);
     }
-#line 2297 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 33:
-#line 254 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = (yyvsp[0]);
+        (yyval) = (yyvsp[(2) - (2)]);
     }
-#line 2303 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 34:
-#line 256 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup((yyvsp[-1]), (yyvsp[0]), STATIC, &(yyloc));
+        (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), STATIC, &(yyloc));
     }
-#line 2309 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 35:
-#line 257 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup2((yyvsp[-2]), (yyvsp[-1]), (yyvsp[0]), 2, STATIC, &(yyloc));
+        (yyval) = xxmarkup2((yyvsp[(1) - (3)]), (yyvsp[(2) - (3)]), (yyvsp[(3) - (3)]), 2, STATIC, &(yyloc));
     }
-#line 2315 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 36:
-#line 258 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup3((yyvsp[-3]), (yyvsp[-2]), (yyvsp[-1]), (yyvsp[0]), STATIC, &(yyloc));
+        (yyval) =
+            xxmarkup3((yyvsp[(1) - (4)]), (yyvsp[(2) - (4)]), (yyvsp[(3) - (4)]), (yyvsp[(4) - (4)]), STATIC, &(yyloc));
     }
-#line 2321 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 37:
-#line 259 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup((yyvsp[-1]), (yyvsp[0]), STATIC, &(yyloc));
+        (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), STATIC, &(yyloc));
     }
-#line 2327 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 38:
-#line 260 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup((yyvsp[-1]), (yyvsp[0]), STATIC, &(yyloc));
+        (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), STATIC, &(yyloc));
     }
-#line 2333 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 39:
-#line 261 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup((yyvsp[-2]), (yyvsp[0]), STATIC, &(yyloc));
-        xxpopMode((yyvsp[-1]));
+        (yyval) = xxmarkup((yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]), STATIC, &(yyloc));
+        xxpopMode((yyvsp[(2) - (3)]));
     }
-#line 2339 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 40:
-#line 262 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxOptionmarkup((yyvsp[-3]), (yyvsp[-1]), (yyvsp[0]), STATIC, &(yyloc));
-        xxpopMode((yyvsp[-2]));
+        (yyval) = xxOptionmarkup((yyvsp[(1) - (4)]), (yyvsp[(3) - (4)]), (yyvsp[(4) - (4)]), STATIC, &(yyloc));
+        xxpopMode((yyvsp[(2) - (4)]));
     }
-#line 2345 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 41:
-#line 263 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup((yyvsp[-1]), (yyvsp[0]), STATIC, &(yyloc));
+        (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), STATIC, &(yyloc));
     }
-#line 2351 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 42:
-#line 264 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup((yyvsp[-2]), (yyvsp[0]), HAS_SEXPR, &(yyloc));
-        xxpopMode((yyvsp[-1]));
+        (yyval) = xxmarkup((yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]), HAS_SEXPR, &(yyloc));
+        xxpopMode((yyvsp[(2) - (3)]));
     }
-#line 2357 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 43:
-#line 265 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxOptionmarkup((yyvsp[-3]), (yyvsp[-1]), (yyvsp[0]), HAS_SEXPR, &(yyloc));
-        xxpopMode((yyvsp[-2]));
+        (yyval) = xxOptionmarkup((yyvsp[(1) - (4)]), (yyvsp[(3) - (4)]), (yyvsp[(4) - (4)]), HAS_SEXPR, &(yyloc));
+        xxpopMode((yyvsp[(2) - (4)]));
     }
-#line 2363 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 44:
-#line 266 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup((yyvsp[-1]), (yyvsp[0]), STATIC, &(yyloc));
+        (yyval) = xxmarkup((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), STATIC, &(yyloc));
     }
-#line 2369 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 45:
-#line 267 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup2((yyvsp[-1]), (yyvsp[0]), R_NilValue, 1, STATIC, &(yyloc));
+        (yyval) = xxmarkup2((yyvsp[(1) - (2)]), (yyvsp[(2) - (2)]), R_NilValue, 1, STATIC, &(yyloc));
     }
-#line 2375 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 46:
-#line 268 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup2((yyvsp[-2]), (yyvsp[-1]), (yyvsp[0]), 2, STATIC, &(yyloc));
+        (yyval) = xxmarkup2((yyvsp[(1) - (3)]), (yyvsp[(2) - (3)]), (yyvsp[(3) - (3)]), 2, STATIC, &(yyloc));
     }
-#line 2381 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 47:
-#line 269 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup((yyvsp[0]), R_NilValue, STATIC, &(yyloc));
+        (yyval) = xxmarkup((yyvsp[(1) - (1)]), R_NilValue, STATIC, &(yyloc));
     }
-#line 2387 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 48:
-#line 270 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup2((yyvsp[-3]), (yyvsp[-2]), (yyvsp[-1]), 2, HAS_IFDEF, &(yyloc));
-        UNPROTECT_PTR((yyvsp[0]));
+        (yyval) = xxmarkup2((yyvsp[(1) - (4)]), (yyvsp[(2) - (4)]), (yyvsp[(3) - (4)]), 2, HAS_IFDEF, &(yyloc));
+        UNPROTECT_PTR((yyvsp[(4) - (4)]));
     }
-#line 2393 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 49:
-#line 271 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup2((yyvsp[-3]), (yyvsp[-2]), (yyvsp[-1]), 2, HAS_IFDEF, &(yyloc));
+        (yyval) = xxmarkup2((yyvsp[(1) - (4)]), (yyvsp[(2) - (4)]), (yyvsp[(3) - (4)]), 2, HAS_IFDEF, &(yyloc));
     }
-#line 2399 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 50:
-#line 272 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxmarkup2((yyvsp[-2]), (yyvsp[-1]), (yyvsp[0]), 2, STATIC, &(yyloc));
+        (yyval) = xxmarkup2((yyvsp[(1) - (3)]), (yyvsp[(2) - (3)]), (yyvsp[(3) - (3)]), 2, STATIC, &(yyloc));
     }
-#line 2405 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 51:
-#line 274 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxnewcommand((yyvsp[-2]), (yyvsp[-1]), (yyvsp[0]), &(yyloc));
+        (yyval) = xxnewcommand((yyvsp[(1) - (3)]), (yyvsp[(2) - (3)]), (yyvsp[(3) - (3)]), &(yyloc));
     }
-#line 2411 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 52:
-#line 275 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxusermacro((yyvsp[0]), xxnewlist(NULL), &(yyloc));
+        (yyval) = xxusermacro((yyvsp[(1) - (1)]), xxnewlist(NULL), &(yyloc));
     }
-#line 2417 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 53:
-#line 276 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxusermacro((yyvsp[-1]), xxnewlist((yyvsp[0])), &(yyloc));
+        (yyval) = xxusermacro((yyvsp[(1) - (2)]), xxnewlist((yyvsp[(2) - (2)])), &(yyloc));
     }
-#line 2423 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 54:
-#line 278 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxusermacro((yyvsp[-2]), xxnewlist2((yyvsp[-1]), (yyvsp[0])), &(yyloc));
+        (yyval) = xxusermacro((yyvsp[(1) - (3)]), xxnewlist2((yyvsp[(2) - (3)]), (yyvsp[(3) - (3)])), &(yyloc));
     }
-#line 2429 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 55:
-#line 280 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxusermacro((yyvsp[-3]), xxnewlist3((yyvsp[-2]), (yyvsp[-1]), (yyvsp[0])), &(yyloc));
+        (yyval) = xxusermacro((yyvsp[(1) - (4)]),
+                              xxnewlist3((yyvsp[(2) - (4)]), (yyvsp[(3) - (4)]), (yyvsp[(4) - (4)])), &(yyloc));
     }
-#line 2435 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 56:
-#line 282 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxusermacro((yyvsp[-4]), xxnewlist4((yyvsp[-3]), (yyvsp[-2]), (yyvsp[-1]), (yyvsp[0])), &(yyloc));
+        (yyval) = xxusermacro(
+            (yyvsp[(1) - (5)]),
+            xxnewlist4((yyvsp[(2) - (5)]), (yyvsp[(3) - (5)]), (yyvsp[(4) - (5)]), (yyvsp[(5) - (5)])), &(yyloc));
     }
-#line 2441 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 57:
-#line 284 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxusermacro((yyvsp[-5]), xxnewlist5((yyvsp[-4]), (yyvsp[-3]), (yyvsp[-2]), (yyvsp[-1]), (yyvsp[0])),
+        (yyval) = xxusermacro((yyvsp[(1) - (6)]),
+                              xxnewlist5((yyvsp[(2) - (6)]), (yyvsp[(3) - (6)]), (yyvsp[(4) - (6)]), (yyvsp[(5) - (6)]),
+                                         (yyvsp[(6) - (6)])),
                               &(yyloc));
     }
-#line 2447 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 58:
-#line 286 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxusermacro((yyvsp[-6]),
-                              xxnewlist6((yyvsp[-5]), (yyvsp[-4]), (yyvsp[-3]), (yyvsp[-2]), (yyvsp[-1]), (yyvsp[0])),
+        (yyval) = xxusermacro((yyvsp[(1) - (7)]),
+                              xxnewlist6((yyvsp[(2) - (7)]), (yyvsp[(3) - (7)]), (yyvsp[(4) - (7)]), (yyvsp[(5) - (7)]),
+                                         (yyvsp[(6) - (7)]), (yyvsp[(7) - (7)])),
                               &(yyloc));
     }
-#line 2453 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 59:
-#line 289 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxusermacro(
-            (yyvsp[-8]),
-            xxnewlist7((yyvsp[-7]), (yyvsp[-6]), (yyvsp[-5]), (yyvsp[-4]), (yyvsp[-3]), (yyvsp[-2]), (yyvsp[-1])),
-            &(yyloc));
+        (yyval) = xxusermacro((yyvsp[(1) - (9)]),
+                              xxnewlist7((yyvsp[(2) - (9)]), (yyvsp[(3) - (9)]), (yyvsp[(4) - (9)]), (yyvsp[(5) - (9)]),
+                                         (yyvsp[(6) - (9)]), (yyvsp[(7) - (9)]), (yyvsp[(8) - (9)])),
+                              &(yyloc));
     }
-#line 2459 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 60:
-#line 292 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxusermacro((yyvsp[-9]),
-                              xxnewlist8((yyvsp[-8]), (yyvsp[-7]), (yyvsp[-6]), (yyvsp[-5]), (yyvsp[-4]), (yyvsp[-3]),
-                                         (yyvsp[-2]), (yyvsp[-1])),
-                              &(yyloc));
+        (yyval) =
+            xxusermacro((yyvsp[(1) - (10)]),
+                        xxnewlist8((yyvsp[(2) - (10)]), (yyvsp[(3) - (10)]), (yyvsp[(4) - (10)]), (yyvsp[(5) - (10)]),
+                                   (yyvsp[(6) - (10)]), (yyvsp[(7) - (10)]), (yyvsp[(8) - (10)]), (yyvsp[(9) - (10)])),
+                        &(yyloc));
     }
-#line 2465 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 61:
-#line 295 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = xxusermacro((yyvsp[-10]),
-                              xxnewlist9((yyvsp[-9]), (yyvsp[-8]), (yyvsp[-7]), (yyvsp[-6]), (yyvsp[-5]), (yyvsp[-4]),
-                                         (yyvsp[-3]), (yyvsp[-2]), (yyvsp[-1])),
+        (yyval) = xxusermacro((yyvsp[(1) - (11)]),
+                              xxnewlist9((yyvsp[(2) - (11)]), (yyvsp[(3) - (11)]), (yyvsp[(4) - (11)]),
+                                         (yyvsp[(5) - (11)]), (yyvsp[(6) - (11)]), (yyvsp[(7) - (11)]),
+                                         (yyvsp[(8) - (11)]), (yyvsp[(9) - (11)]), (yyvsp[(10) - (11)])),
                               &(yyloc));
     }
-#line 2471 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 62:
-#line 298 "gramRd.y" /* yacc.c:1646  */
+
     {
-        xxpopMode((yyvsp[-1]));
-        (yyval) = (yyvsp[0]);
+        xxpopMode((yyvsp[(1) - (2)]));
+        (yyval) = (yyvsp[(2) - (2)]);
     }
-#line 2477 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 63:
-#line 300 "gramRd.y" /* yacc.c:1646  */
+
     {
-        xxpopMode((yyvsp[-1]));
-        (yyval) = (yyvsp[0]);
+        xxpopMode((yyvsp[(1) - (2)]));
+        (yyval) = (yyvsp[(2) - (2)]);
     }
-#line 2483 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 64:
-#line 301 "gramRd.y" /* yacc.c:1646  */
+
     {
-        xxpopMode((yyvsp[-1]));
-        (yyval) = xxnewlist((yyvsp[0]));
+        xxpopMode((yyvsp[(1) - (2)]));
+        (yyval) = xxnewlist((yyvsp[(2) - (2)]));
         if (wCalls)
-            warning(_("bad markup (extra space?) at %s:%d:%d"), parseState.xxBasename, (yylsp[0]).first_line,
-                    (yylsp[0]).first_column);
+            warning(_("bad markup (extra space?) at %s:%d:%d"), parseState.xxBasename, (yylsp[(2) - (2)]).first_line,
+                    (yylsp[(2) - (2)]).first_column);
         else
             warningcall(R_NilValue, _("bad markup (extra space?) at %s:%d:%d"), parseState.xxBasename,
-                        (yylsp[0]).first_line, (yylsp[0]).first_column);
+                        (yylsp[(2) - (2)]).first_line, (yylsp[(2) - (2)]).first_column);
     }
-#line 2496 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 65:
-#line 310 "gramRd.y" /* yacc.c:1646  */
+
     {
-        xxpopMode((yyvsp[-1]));
-        (yyval) = (yyvsp[0]);
+        xxpopMode((yyvsp[(1) - (2)]));
+        (yyval) = (yyvsp[(2) - (2)]);
     }
-#line 2502 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 66:
-#line 312 "gramRd.y" /* yacc.c:1646  */
+
     {
-        xxpopMode((yyvsp[-1]));
-        (yyval) = (yyvsp[0]);
+        xxpopMode((yyvsp[(1) - (2)]));
+        (yyval) = (yyvsp[(2) - (2)]);
     }
-#line 2508 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 67:
-#line 314 "gramRd.y" /* yacc.c:1646  */
+
     {
-        xxpopMode((yyvsp[-1]));
-        (yyval) = (yyvsp[0]);
+        xxpopMode((yyvsp[(1) - (2)]));
+        (yyval) = (yyvsp[(2) - (2)]);
     }
-#line 2514 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 68:
-#line 318 "gramRd.y" /* yacc.c:1646  */
+
     {
-        xxpopMode((yyvsp[-2]));
-        (yyval) = (yyvsp[-1]);
+        xxpopMode((yyvsp[(2) - (4)]));
+        (yyval) = (yyvsp[(3) - (4)]);
     }
-#line 2520 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 69:
-#line 319 "gramRd.y" /* yacc.c:1646  */
+
     {
-        xxpopMode((yyvsp[-1]));
+        xxpopMode((yyvsp[(2) - (3)]));
         (yyval) = xxnewlist(NULL);
     }
-#line 2526 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 70:
-#line 321 "gramRd.y" /* yacc.c:1646  */
+
     {
-        xxpopMode((yyvsp[-1]));
-        (yyval) = (yyvsp[0]);
+        xxpopMode((yyvsp[(1) - (2)]));
+        (yyval) = (yyvsp[(2) - (2)]);
     }
-#line 2532 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 71:
-#line 323 "gramRd.y" /* yacc.c:1646  */
+
     {
-        xxpopMode((yyvsp[-1]));
-        (yyval) = (yyvsp[0]);
+        xxpopMode((yyvsp[(1) - (2)]));
+        (yyval) = (yyvsp[(2) - (2)]);
     }
-#line 2538 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 72:
-#line 327 "gramRd.y" /* yacc.c:1646  */
+
     {
-        xxpopMode((yyvsp[-2]));
-        (yyval) = (yyvsp[-1]);
+        xxpopMode((yyvsp[(2) - (4)]));
+        (yyval) = (yyvsp[(3) - (4)]);
     }
-#line 2544 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 73:
-#line 328 "gramRd.y" /* yacc.c:1646  */
+
     {
-        xxpopMode((yyvsp[-1]));
+        xxpopMode((yyvsp[(2) - (3)]));
         (yyval) = xxnewlist(NULL);
     }
-#line 2550 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 74:
-#line 330 "gramRd.y" /* yacc.c:1646  */
+
     {
-        xxpopMode((yyvsp[-1]));
-        (yyval) = xxnewlist(xxtag((yyvsp[0]), TEXT, &(yyloc)));
+        xxpopMode((yyvsp[(1) - (2)]));
+        (yyval) = xxnewlist(xxtag((yyvsp[(2) - (2)]), TEXT, &(yyloc)));
     }
-#line 2556 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 75:
-#line 333 "gramRd.y" /* yacc.c:1646  */
+
     {
         (yyval) = xxpushMode(LATEXLIKE, UNKNOWN, FALSE);
     }
-#line 2562 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 76:
-#line 335 "gramRd.y" /* yacc.c:1646  */
+
     {
         (yyval) = xxpushMode(RLIKE, UNKNOWN, FALSE);
     }
-#line 2568 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 77:
-#line 337 "gramRd.y" /* yacc.c:1646  */
+
     {
         parseState.xxbraceDepth--;
         (yyval) = xxpushMode(RLIKE, UNKNOWN, FALSE);
         parseState.xxbraceDepth++;
     }
-#line 2574 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 78:
-#line 339 "gramRd.y" /* yacc.c:1646  */
+
     {
         (yyval) = xxpushMode(INOPTION, UNKNOWN, FALSE);
     }
-#line 2580 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 79:
-#line 341 "gramRd.y" /* yacc.c:1646  */
+
     {
         (yyval) = xxpushMode(VERBATIM, UNKNOWN, FALSE);
     }
-#line 2586 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 80:
-#line 343 "gramRd.y" /* yacc.c:1646  */
+
     {
         (yyval) = xxpushMode(VERBATIM, UNKNOWN, TRUE);
     }
-#line 2592 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 81:
-#line 345 "gramRd.y" /* yacc.c:1646  */
+
     {
         parseState.xxbraceDepth--;
         (yyval) = xxpushMode(VERBATIM, UNKNOWN, FALSE);
         parseState.xxbraceDepth++;
     }
-#line 2598 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 82:
-#line 347 "gramRd.y" /* yacc.c:1646  */
+
     {
         (yyval) = xxpushMode(LATEXLIKE, ESCAPE, FALSE);
     }
-#line 2604 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 83:
-#line 349 "gramRd.y" /* yacc.c:1646  */
+
     {
         (yyval) = xxpushMode(LATEXLIKE, LATEXMACRO2, FALSE);
     }
-#line 2610 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 84:
-#line 351 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = (yyvsp[-1]);
+        (yyval) = (yyvsp[(2) - (3)]);
     }
-#line 2616 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 85:
-#line 352 "gramRd.y" /* yacc.c:1646  */
+
     {
         (yyval) = xxnewlist(NULL);
     }
-#line 2622 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 86:
-#line 353 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = (yyvsp[-2]);
+        (yyval) = (yyvsp[(2) - (4)]);
     }
-#line 2628 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 87:
-#line 354 "gramRd.y" /* yacc.c:1646  */
+
     {
         (yyval) = xxnewlist(NULL);
     }
-#line 2634 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 88:
-#line 355 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = (yyvsp[-2]);
+        (yyval) = (yyvsp[(2) - (4)]);
     }
-#line 2640 "gramRd.c" /* yacc.c:1646  */
     break;
 
     case 89:
-#line 357 "gramRd.y" /* yacc.c:1646  */
+
     {
-        (yyval) = (yyvsp[-1]);
+        (yyval) = (yyvsp[(2) - (3)]);
     }
-#line 2646 "gramRd.c" /* yacc.c:1646  */
     break;
 
-#line 2650 "gramRd.c" /* yacc.c:1646  */
     default:
         break;
     }
@@ -2794,7 +2815,7 @@ yyreduce:
     *++yyvsp = yyval;
     *++yylsp = yyloc;
 
-    /* Now 'shift' the result of the reduction.  Determine what state
+    /* Now `shift' the result of the reduction.  Determine what state
        that goes to, based on the state we popped back to and the rule
        number reduced by.  */
 
@@ -2808,9 +2829,9 @@ yyreduce:
 
     goto yynewstate;
 
-/*--------------------------------------.
-| yyerrlab -- here on detecting error.  |
-`--------------------------------------*/
+/*------------------------------------.
+| yyerrlab -- here on detecting error |
+`------------------------------------*/
 yyerrlab:
     /* Make sure we have latest lookahead translation.  See comments at
        user semantic actions for why this is necessary.  */
@@ -2860,7 +2881,7 @@ yyerrlab:
     if (yyerrstatus == 3)
     {
         /* If just tried and failed to reuse lookahead token after an
-           error, discard it.  */
+       error, discard it.  */
 
         if (yychar <= YYEOF)
         {
@@ -2891,7 +2912,7 @@ yyerrorlab:
         goto yyerrorlab;
 
     yyerror_range[1] = yylsp[1 - yylen];
-    /* Do not reclaim the symbols of the rule whose action triggered
+    /* Do not reclaim the symbols of the rule which action triggered
        this YYERROR.  */
     YYPOPSTACK(yylen);
     yylen = 0;
@@ -2978,7 +2999,7 @@ yyreturn:
         yytoken = YYTRANSLATE(yychar);
         yydestruct("Cleanup: discarding lookahead", yytoken, &yylval, &yylloc);
     }
-    /* Do not reclaim the symbols of the rule whose action triggered
+    /* Do not reclaim the symbols of the rule which action triggered
        this YYABORT or YYACCEPT.  */
     YYPOPSTACK(yylen);
     YY_STACK_PRINT(yyss, yyssp);
@@ -2995,9 +3016,9 @@ yyreturn:
     if (yymsg != yymsgbuf)
         YYSTACK_FREE(yymsg);
 #endif
-    return yyresult;
+    /* Make sure YYID is used.  */
+    return YYID(yyresult);
 }
-#line 359 "gramRd.y" /* yacc.c:1906  */
 
 static SEXP xxpushMode(int newmode, int newitem, int neweqn)
 {
