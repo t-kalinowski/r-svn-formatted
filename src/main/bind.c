@@ -1347,11 +1347,12 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode, SEXP rho, int deparse_lev
                 warned = TRUE;
                 warning("number of rows of result is not a multiple of vector length (arg %d)", na + 1);
             }
-            dn = getAttrib(u, R_NamesSymbol);
+            PROTECT(dn = getAttrib(u, R_NamesSymbol));
             if (k >= lenmin && (TAG(t) != R_NilValue || (deparse_level == 2) ||
                                 ((deparse_level == 1) && isSymbol(substitute(CAR(t), R_NilValue)))))
                 have_cnames = TRUE;
             nnames = imax2(nnames, length(dn));
+            UNPROTECT(1); /* dn */
         }
     }
     if (mnames || nnames == rows)
@@ -1536,7 +1537,11 @@ static SEXP cbind(SEXP call, SEXP args, SEXPTYPE mode, SEXP rho, int deparse_lev
                     if (deparse_level == 1 && isSymbol(expr))
                         SET_STRING_ELT(nam, j++, PRINTNAME(expr));
                     else if (deparse_level == 2)
+                    {
+                        PROTECT(expr);
                         SET_STRING_ELT(nam, j++, STRING_ELT(deparse1line(expr, TRUE), 0));
+                        UNPROTECT(1); /* expr */
+                    }
                     else if (have_cnames)
                         SET_STRING_ELT(nam, j++, R_BlankString);
                 }
@@ -1624,11 +1629,12 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode, SEXP rho, int deparse_lev
                 warned = TRUE;
                 warning("number of columns of result is not a multiple of vector length (arg %d)", na + 1);
             }
-            dn = getAttrib(u, R_NamesSymbol);
+            PROTECT(dn = getAttrib(u, R_NamesSymbol));
             if (k >= lenmin && (TAG(t) != R_NilValue || (deparse_level == 2) ||
                                 ((deparse_level == 1) && isSymbol(substitute(CAR(t), R_NilValue)))))
                 have_rnames = TRUE;
             nnames = imax2(nnames, length(dn));
+            UNPROTECT(1); /* dn */
         }
     }
     if (mnames || nnames == cols)
@@ -1814,7 +1820,11 @@ static SEXP rbind(SEXP call, SEXP args, SEXPTYPE mode, SEXP rho, int deparse_lev
                     if (deparse_level == 1 && isSymbol(expr))
                         SET_STRING_ELT(nam, j++, PRINTNAME(expr));
                     else if (deparse_level == 2)
+                    {
+                        PROTECT(expr);
                         SET_STRING_ELT(nam, j++, STRING_ELT(deparse1line(expr, TRUE), 0));
+                        UNPROTECT(1); /* expr */
+                    }
                     else if (have_rnames)
                         SET_STRING_ELT(nam, j++, R_BlankString);
                 }
