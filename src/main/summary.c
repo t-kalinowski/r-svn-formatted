@@ -503,7 +503,7 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                 if (INTEGER(x)[i] == NA_INTEGER)
                 {
                     REAL(ans)[0] = R_NaReal;
-                    UNPROTECT(1);
+                    UNPROTECT(1); /* ans */
                     return ans;
                 }
                 s += INTEGER(x)[i];
@@ -549,7 +549,7 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
             error(R_MSG_type, type2char(TYPEOF(x)));
             ans = R_NilValue; // -Wall on clang 4.2
         }
-        UNPROTECT(1);
+        UNPROTECT(1); /* ans */
         return ans;
     }
 
@@ -560,10 +560,10 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (DispatchGroup("Summary", call2, op, args, env, &ans))
     {
-        UNPROTECT(2);
+        UNPROTECT(2); /* call2, args */
         return (ans);
     }
-    UNPROTECT(1);
+    UNPROTECT(1); /* call2 */
 
 #ifdef DEBUG_Summary
     REprintf("C do_summary(op%s, *): did NOT dispatch\n", PRIMNAME(op));
@@ -625,6 +625,7 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 
     /*-- now loop over all arguments.  Do the 'op' switch INSIDE : */
+    PROTECT(scum);
     while (args != R_NilValue)
     {
         a = CAR(args);
@@ -665,9 +666,17 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                     break;
                 case STRSXP:
                     if (!empty && ans_type == INTSXP)
+                    {
                         scum = StringFromInteger(icum, &warn);
+                        UNPROTECT(1); /* scum */
+                        PROTECT(scum);
+                    }
                     else if (!empty && ans_type == REALSXP)
+                    {
                         scum = StringFromReal(zcum.r, &warn);
+                        UNPROTECT(1); /* scum */
+                        PROTECT(scum);
+                    }
                     ans_type = STRSXP;
                     if (iop == 2)
                         updated = smin(a, &stmp, narm);
@@ -717,10 +726,14 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                                 stmp = StringFromInteger(itmp, &warn);
                             if (real_a)
                                 stmp = StringFromReal(tmp, &warn);
+                            PROTECT(stmp);
                             if (stmp == NA_STRING || (iop == 2 && stmp != scum && Scollate(stmp, scum) < 0) ||
                                 (iop == 3 && stmp != scum && Scollate(stmp, scum) > 0))
                                 scum = stmp;
+                            UNPROTECT(1); /* stmp */
                         }
+                        UNPROTECT(1); /* scum */
+                        PROTECT(scum);
                     }
                 } /*updated*/
                 else
@@ -906,7 +919,7 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
         SET_STRING_ELT(ans, 0, scum);
         break;
     }
-    UNPROTECT(1); /* args */
+    UNPROTECT(2); /* scum, args */
     return ans;
 
 na_answer: /* only sum(INTSXP, ...) case currently used */
@@ -926,7 +939,7 @@ na_answer: /* only sum(INTSXP, ...) case currently used */
         SET_STRING_ELT(ans, 0, NA_STRING);
         break;
     }
-    UNPROTECT(1); /* args */
+    UNPROTECT(2); /* scum, args */
     return ans;
 
 invalid_type:

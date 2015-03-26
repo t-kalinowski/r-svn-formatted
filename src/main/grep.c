@@ -940,20 +940,20 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         if (value_opt)
         {
-            SEXP nmold = getAttrib(text, R_NamesSymbol);
+            SEXP nmold = PROTECT(getAttrib(text, R_NamesSymbol));
             PROTECT(ans = allocVector(STRSXP, n));
             for (i = 0; i < n; i++)
                 SET_STRING_ELT(ans, i, NA_STRING);
             if (!isNull(nmold))
                 setAttrib(ans, R_NamesSymbol, duplicate(nmold));
+            UNPROTECT(2); /* ans, nmold */
         }
         else
         {
-            PROTECT(ans = allocVector(INTSXP, n));
+            ans = allocVector(INTSXP, n);
             for (i = 0; i < n; i++)
                 INTEGER(ans)[i] = NA_INTEGER;
         }
-        UNPROTECT(1);
         return ans;
     }
 
@@ -1137,14 +1137,14 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
         tre_regfree(&reg);
 
     if (PRIMVAL(op))
-    { /* grepl case */
-        UNPROTECT(1);
+    {                 /* grepl case */
+        UNPROTECT(1); /* ind */
         return ind;
     }
 
     if (value_opt)
     {
-        SEXP nmold = getAttrib(text, R_NamesSymbol), nm;
+        SEXP nmold = PROTECT(getAttrib(text, R_NamesSymbol)), nm;
         PROTECT(ans = allocVector(STRSXP, nmatches));
         for (i = 0, j = 0; i < n; i++)
             if (invert ^ LOGICAL(ind)[i])
@@ -1158,7 +1158,7 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
                     SET_STRING_ELT(nm, j++, STRING_ELT(nmold, i));
             setAttrib(ans, R_NamesSymbol, nm);
         }
-        UNPROTECT(1);
+        UNPROTECT(2); /* ans, nmold */
     }
     else
     {
@@ -1181,7 +1181,7 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
                     INTEGER(ans)[j++] = (int)(i + 1);
         }
     }
-    UNPROTECT(1);
+    UNPROTECT(1); /* ind */
     return ans;
 }
 

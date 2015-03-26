@@ -177,6 +177,7 @@ attribute_hidden Rboolean Rf_GetOptionDeviceAsk(void)
 static SEXP SetOption(SEXP tag, SEXP value)
 {
     SEXP opt, old, t;
+    PROTECT(value);
     t = opt = SYMVALUE(Options());
     if (!isList(opt))
         error(_("corrupted options list"));
@@ -190,8 +191,10 @@ static SEXP SetOption(SEXP tag, SEXP value)
             {
                 old = CAR(CDR(t));
                 SETCDR(t, CDDR(t));
+                UNPROTECT(1); /* value */
                 return old;
             }
+        UNPROTECT(1); /* value */
         return R_NilValue;
     }
     /* If the option is new, a new slot */
@@ -200,14 +203,13 @@ static SEXP SetOption(SEXP tag, SEXP value)
     {
         while (CDR(t) != R_NilValue)
             t = CDR(t);
-        PROTECT(value);
         SETCDR(t, allocList(1));
-        UNPROTECT(1);
         opt = CDR(t);
         SET_TAG(opt, tag);
     }
     old = CAR(opt);
     SETCAR(opt, value);
+    UNPROTECT(1); /* value */
     return old;
 }
 

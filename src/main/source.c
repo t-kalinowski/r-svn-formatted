@@ -310,8 +310,10 @@ SEXP attribute_hidden do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
         s = R_ParseConn(con, num, &status, source);
         if (!wasopen)
         {
+            PROTECT(s);
             endcontext(&cntxt);
             con->close(con);
+            UNPROTECT(1);
         }
         if (status != PARSE_OK)
             parseError(call, R_ParseError);
