@@ -5589,6 +5589,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             case STRSXP:
             case RAWSXP:
                 value = allocVector(TYPEOF(seq), 1);
+                SET_NAMED(value, 1);
                 BCNPUSH(value);
                 break;
             default:
