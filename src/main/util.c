@@ -137,49 +137,46 @@ const static char *const falsenames[] = {
 
 SEXP asChar(SEXP x)
 {
-    if (XLENGTH(x) >= 1)
+    if (isVectorAtomic(x) && XLENGTH(x) >= 1)
     {
-        if (isVectorAtomic(x))
-        {
-            int w, d, e, wi, di, ei;
-            char buf[MAXELTSIZE]; /* Probably 100 would suffice */
+        int w, d, e, wi, di, ei;
+        char buf[MAXELTSIZE]; /* Probably 100 would suffice */
 
-            switch (TYPEOF(x))
-            {
-            case LGLSXP:
-                if (LOGICAL(x)[0] == NA_LOGICAL)
-                    return NA_STRING;
-                if (LOGICAL(x)[0])
-                    sprintf(buf, "T");
-                else
-                    sprintf(buf, "F");
-                return mkChar(buf);
-            case INTSXP:
-                if (INTEGER(x)[0] == NA_INTEGER)
-                    return NA_STRING;
-                snprintf(buf, MAXELTSIZE, "%d", INTEGER(x)[0]);
-                return mkChar(buf);
-            case REALSXP:
-                PrintDefaults();
-                formatReal(REAL(x), 1, &w, &d, &e, 0);
-                return mkChar(EncodeReal0(REAL(x)[0], w, d, e, OutDec));
-            case CPLXSXP:
-                PrintDefaults();
-                formatComplex(COMPLEX(x), 1, &w, &d, &e, &wi, &di, &ei, 0);
-                return mkChar(EncodeComplex(COMPLEX(x)[0], w, d, e, wi, di, ei, OutDec));
-            case STRSXP:
-                return STRING_ELT(x, 0);
-            default:
-                return NA_STRING;
-            }
-        }
-        else if (TYPEOF(x) == CHARSXP)
+        switch (TYPEOF(x))
         {
-            return x;
+        case LGLSXP:
+            if (LOGICAL(x)[0] == NA_LOGICAL)
+                return NA_STRING;
+            if (LOGICAL(x)[0])
+                sprintf(buf, "TRUE");
+            else
+                sprintf(buf, "FALSE");
+            return mkChar(buf);
+        case INTSXP:
+            if (INTEGER(x)[0] == NA_INTEGER)
+                return NA_STRING;
+            snprintf(buf, MAXELTSIZE, "%d", INTEGER(x)[0]);
+            return mkChar(buf);
+        case REALSXP:
+            PrintDefaults();
+            formatReal(REAL(x), 1, &w, &d, &e, 0);
+            return mkChar(EncodeReal0(REAL(x)[0], w, d, e, OutDec));
+        case CPLXSXP:
+            PrintDefaults();
+            formatComplex(COMPLEX(x), 1, &w, &d, &e, &wi, &di, &ei, 0);
+            return mkChar(EncodeComplex(COMPLEX(x)[0], w, d, e, wi, di, ei, OutDec));
+        case STRSXP:
+            return STRING_ELT(x, 0);
+        default:
+            return NA_STRING;
         }
-        else if (TYPEOF(x) == SYMSXP)
-            return PRINTNAME(x);
     }
+    else if (TYPEOF(x) == CHARSXP)
+    {
+        return x;
+    }
+    else if (TYPEOF(x) == SYMSXP)
+        return PRINTNAME(x);
     return NA_STRING;
 }
 
