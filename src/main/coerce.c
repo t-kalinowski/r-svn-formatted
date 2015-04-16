@@ -2481,9 +2481,9 @@ SEXP attribute_hidden do_isfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         dims = getAttrib(x, R_DimSymbol);
         if (isArray(x))
-            names = getAttrib(x, R_DimNamesSymbol);
+            PROTECT(names = getAttrib(x, R_DimNamesSymbol));
         else
-            names = getAttrib(x, R_NamesSymbol);
+            PROTECT(names = getAttrib(x, R_NamesSymbol));
     }
     else
         dims = names = R_NilValue;
@@ -2520,7 +2520,9 @@ SEXP attribute_hidden do_isfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
         else
             setAttrib(ans, R_NamesSymbol, names);
     }
-    UNPROTECT(1); /* ans */
+    if (isVector(x))
+        UNPROTECT(1); /* names */
+    UNPROTECT(1);     /* ans */
     return ans;
 }
 
@@ -2546,9 +2548,9 @@ SEXP attribute_hidden do_isinfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         dims = getAttrib(x, R_DimSymbol);
         if (isArray(x))
-            names = getAttrib(x, R_DimNamesSymbol);
+            PROTECT(names = getAttrib(x, R_DimNamesSymbol));
         else
-            names = getAttrib(x, R_NamesSymbol);
+            PROTECT(names = getAttrib(x, R_NamesSymbol));
     }
     else
         dims = names = R_NilValue;
@@ -2595,7 +2597,9 @@ SEXP attribute_hidden do_isinfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
         else
             setAttrib(ans, R_NamesSymbol, names);
     }
-    UNPROTECT(1); /* ans */
+    if (isVector(x))
+        UNPROTECT(1); /* names */
+    UNPROTECT(1);     /* ans */
     return ans;
 }
 

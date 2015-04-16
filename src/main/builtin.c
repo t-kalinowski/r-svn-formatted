@@ -1033,7 +1033,7 @@ static SEXP expandDots(SEXP el, SEXP rho)
     {
         if (CAR(el) == R_DotsSymbol)
         {
-            SEXP h = findVar(CAR(el), rho);
+            SEXP h = PROTECT(findVar(CAR(el), rho));
             if (TYPEOF(h) == DOTSXP || h == R_NilValue)
             {
                 while (h != R_NilValue)
@@ -1047,6 +1047,7 @@ static SEXP expandDots(SEXP el, SEXP rho)
             }
             else if (h != R_MissingArg)
                 error(_("'...' used in an incorrect context"));
+            UNPROTECT(1); /* h */
         }
         else
         {

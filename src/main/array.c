@@ -542,12 +542,13 @@ SEXP attribute_hidden do_lengths(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (x_elt_len > INT_MAX)
         {
             ans = do_lengths_long(x, call, rho);
+            UNPROTECT(1);
+            PROTECT(ans);
             break;
         }
 #endif
         *ans_elt = (int)x_elt_len;
     }
-    UNPROTECT(1);
 
     if (useNames)
     {
@@ -555,6 +556,7 @@ SEXP attribute_hidden do_lengths(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (!isNull(names))
             setAttrib(ans, R_NamesSymbol, names);
     }
+    UNPROTECT(1);
     return ans;
 }
 

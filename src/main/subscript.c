@@ -619,7 +619,7 @@ static SEXP logicalSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch
                     count++;
             count *= nmax / ns;
         }
-        indx = allocVector(REALSXP, count);
+        PROTECT(indx = allocVector(REALSXP, count));
         count = 0;
         if (ns == nmax)
         { /* no recycling - use fast single-index code */
@@ -640,6 +640,7 @@ static SEXP logicalSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch
                         REAL(indx)[count++] = (int)(i + 1);
                 });
 
+        UNPROTECT(1);
         return indx;
     }
 #endif
@@ -668,7 +669,7 @@ static SEXP logicalSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch
                 count++;
         count *= nmax / ns;
     }
-    indx = allocVector(INTSXP, count);
+    PROTECT(indx = allocVector(INTSXP, count));
     count = 0;
     if (ns == nmax)
     { /* no recycling - use fast single-index code */
@@ -691,6 +692,7 @@ static SEXP logicalSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch
             }
         });
 
+    UNPROTECT(1);
     return indx;
 }
 

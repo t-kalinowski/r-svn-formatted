@@ -2278,7 +2278,9 @@ int attribute_hidden R_isMissing(SEXP symbol, SEXP rho)
             {
                 int val;
                 SET_PRSEEN(CAR(vl), 1);
+                PROTECT(vl);
                 val = R_isMissing(PREXPR(CAR(vl)), PRENV(CAR(vl)));
+                UNPROTECT(1); /* vl */
                 SET_PRSEEN(CAR(vl), 0);
                 return val;
             }
@@ -2309,8 +2311,9 @@ SEXP attribute_hidden do_missing(SEXP call, SEXP op, SEXP args, SEXP rho)
         sym = R_DotsSymbol;
     }
 
-    t = findVarLocInFrame(rho, sym, NULL);
+    PROTECT(t = findVarLocInFrame(rho, sym, NULL));
     rval = allocVector(LGLSXP, 1);
+    UNPROTECT(1);
     if (t != R_NilValue)
     {
         if (DDVAL(s))
@@ -2490,7 +2493,7 @@ SEXP attribute_hidden do_attach(SEXP call, SEXP op, SEXP args, SEXP env)
         R_ObjectTable *tb = (R_ObjectTable *)R_ExternalPtrAddr(CAR(args));
         if (tb->onAttach)
             tb->onAttach(tb);
-        s = allocSExp(ENVSXP);
+        PROTECT(s = allocSExp(ENVSXP));
         SET_HASHTAB(s, CAR(args));
         setAttrib(s, R_ClassSymbol, getAttrib(HASHTAB(s), R_ClassSymbol));
     }
@@ -2517,7 +2520,6 @@ SEXP attribute_hidden do_attach(SEXP call, SEXP op, SEXP args, SEXP env)
         R_FlushGlobalCacheFromTable(HASHTAB(s));
         MARK_AS_GLOBAL_FRAME(s);
 #endif
-        UNPROTECT(1);
     }
     else
     {
@@ -2527,6 +2529,7 @@ SEXP attribute_hidden do_attach(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
     }
 
+    UNPROTECT(1); /* s */
     return s;
 }
 
@@ -3002,7 +3005,7 @@ SEXP attribute_hidden do_eapply(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
 
-    env = eval(CAR(args), rho);
+    PROTECT(env = eval(CAR(args), rho));
     if (ISNULL(env))
         error(_("use of NULL environment is defunct"));
     if (!isEnvironment(env))
@@ -3077,7 +3080,7 @@ SEXP attribute_hidden do_eapply(SEXP call, SEXP op, SEXP args, SEXP rho)
         setAttrib(ans, R_NamesSymbol, names);
         UNPROTECT(1);
     }
-    UNPROTECT(5);
+    UNPROTECT(6);
     return (ans);
 }
 

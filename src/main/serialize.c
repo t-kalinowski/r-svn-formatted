@@ -1104,7 +1104,8 @@ tailcall:
             warning(_("namespaces may not be available when loading"));
 #endif
             OutInteger(stream, NAMESPACESXP);
-            OutStringVec(stream, R_NamespaceEnvSpec(s), ref_table);
+            OutStringVec(stream, PROTECT(R_NamespaceEnvSpec(s)), ref_table);
+            UNPROTECT(1);
         }
         else
         {

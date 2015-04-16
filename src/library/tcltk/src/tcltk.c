@@ -102,6 +102,8 @@ static int R_call(ClientData clientData, Tcl_Interp *interp, int argc, const cha
     SEXP expr, alist, ans;
     void *fun;
 
+    SEXP s_try = install("try");
+
     alist = R_NilValue;
     for (i = argc - 1; i > 1; i--)
     {
@@ -113,7 +115,6 @@ static int R_call(ClientData clientData, Tcl_Interp *interp, int argc, const cha
     sscanf(argv[1], "%p", &fun);
 
     expr = LCONS((SEXP)fun, alist);
-    SEXP s_try = install("try");
     expr = LCONS(s_try, LCONS(expr, R_NilValue));
 
     R_Busy(1);
