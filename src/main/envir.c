@@ -2724,8 +2724,16 @@ static void FrameValues(SEXP frame, int all, SEXP values, int *indx)
 #undef DO_FrameValues
 #undef NONEMPTY_
 
+#define CHECK_HASH_TABLE(table)                                                                                        \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (TYPEOF(table) != VECSXP)                                                                                   \
+            error("bad hash table contents");                                                                          \
+    } while (0)
+
 static int HashTableSize(SEXP table, int all)
 {
+    CHECK_HASH_TABLE(table);
     int count = 0;
     int n = length(table);
     int i;
@@ -2736,6 +2744,7 @@ static int HashTableSize(SEXP table, int all)
 
 static void HashTableNames(SEXP table, int all, SEXP names, int *indx)
 {
+    CHECK_HASH_TABLE(table);
     int n = length(table);
     int i;
     for (i = 0; i < n; i++)
@@ -2744,6 +2753,7 @@ static void HashTableNames(SEXP table, int all, SEXP names, int *indx)
 
 static void HashTableValues(SEXP table, int all, SEXP values, int *indx)
 {
+    CHECK_HASH_TABLE(table);
     int n = length(table);
     int i;
     for (i = 0; i < n; i++)
