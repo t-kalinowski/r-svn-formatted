@@ -66,8 +66,8 @@ double bessel_j(double x, double alpha)
         MATHLIB_WARNING("besselJ(x, nu): nu=%g too large for bessel_j() algorithm", alpha);
         return ML_NAN;
     }
-    nb = 1 + (int)na; /* nb-1 <= alpha < nb */
-    alpha -= (double)(nb - 1);
+    nb = 1 + (int)na;          /* nb-1 <= alpha < nb */
+    alpha -= (double)(nb - 1); // ==> alpha' in [0, 1)
 #ifdef MATHLIB_STANDALONE
     bj = (double *)calloc(nb, sizeof(double));
     if (!bj)
