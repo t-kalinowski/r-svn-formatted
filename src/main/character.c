@@ -96,9 +96,14 @@ static R_StringBuffer cbuff = {NULL, 0, MAXELTSIZE};
 SEXP attribute_hidden do_nzchar(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, ans;
-    R_xlen_t i, len;
+    int nargs = length(args);
 
-    checkArity(op, args);
+    // checkArity(op, args);  .Primitive()  &  may have 1 or 2 args now
+    if (nargs < 1 || nargs > 2)
+        errorcall(call,
+                  ngettext("%d argument passed to '%s' which requires %d to %d",
+                           "%d arguments passed to '%s' which requires %d to %d", (unsigned long)nargs),
+                  nargs, PRIMNAME(op), 1, 2);
     check1arg(args, call, "x");
 
     if (isFactor(CAR(args)))
@@ -106,10 +111,25 @@ SEXP attribute_hidden do_nzchar(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(x = coerceVector(CAR(args), STRSXP));
     if (!isString(x))
         error(_("'%s' requires a character vector"), "nzchar()");
-    len = XLENGTH(x);
+
+    int keepNA = TRUE;
+    if (nargs > 1)
+    {
+        keepNA = asLogical(CADR(args));
+        if (keepNA == NA_LOGICAL)
+            keepNA = TRUE;
+    }
+    R_xlen_t i, len = XLENGTH(x);
     PROTECT(ans = allocVector(LGLSXP, len));
-    for (i = 0; i < len; i++)
-        LOGICAL(ans)[i] = LENGTH(STRING_ELT(x, i)) > 0;
+    if (keepNA)
+        for (i = 0; i < len; i++)
+        {
+            SEXP sxi = STRING_ELT(x, i);
+            LOGICAL(ans)[i] = (sxi == NA_STRING) ? NA_LOGICAL : LENGTH(sxi) > 0;
+        }
+    else
+        for (i = 0; i < len; i++)
+            LOGICAL(ans)[i] = LENGTH(STRING_ELT(x, i)) > 0;
     UNPROTECT(2);
     return ans;
 }
@@ -117,49 +137,73 @@ SEXP attribute_hidden do_nzchar(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP attribute_hidden do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP d, s, x, stype;
-    R_xlen_t i, len;
-    int allowNA;
-    size_t ntype;
-    int nc;
-    const char *type;
-    const char *xi;
-    wchar_t *wc;
-    const void *vmax;
+    int nc, nargs = length(args);
 
+#ifdef R_version_3_4_or_so
     checkArity(op, args);
+#else
+    // will work also for code byte-compiled *before* 'keepNA' was introduced
+    if (nargs < 3 || nargs > 4)
+        errorcall(call,
+                  ngettext("%d argument passed to '%s' which requires %d to %d",
+                           "%d arguments passed to '%s' which requires %d to %d", (unsigned long)nargs),
+                  nargs, PRIMNAME(op), 3, 4);
+#endif
     if (isFactor(CAR(args)))
         error(_("'%s' requires a character vector"), "nchar()");
     PROTECT(x = coerceVector(CAR(args), STRSXP));
     if (!isString(x))
         error(_("'%s' requires a character vector"), "nchar()");
-    len = XLENGTH(x);
+    R_xlen_t len = XLENGTH(x);
     stype = CADR(args);
     if (!isString(stype) || LENGTH(stype) != 1)
         error(_("invalid '%s' argument"), "type");
-    type = CHAR(STRING_ELT(stype, 0)); /* always ASCII */
-    ntype = strlen(type);
+    const char *type = CHAR(STRING_ELT(stype, 0)); /* always ASCII */
+    size_t ntype = strlen(type);
     if (ntype == 0)
         error(_("invalid '%s' argument"), "type");
-    allowNA = asLogical(CADDR(args));
+    enum
+    {
+        Bytes,
+        Chars,
+        Width
+    } type_;
+    if (strncmp(type, "bytes", ntype) == 0)
+        type_ = Bytes;
+    else if (strncmp(type, "chars", ntype) == 0)
+        type_ = Chars;
+    else if (strncmp(type, "width", ntype) == 0)
+        type_ = Width;
+    else
+        error(_("invalid '%s' argument"), "type");
+    int allowNA = asLogical(CADDR(args));
     if (allowNA == NA_LOGICAL)
         allowNA = 0;
-
+    int keepNA;
+    if (nargs >= 4)
+    {
+        keepNA = asLogical(CADDDR(args));
+        if (keepNA == NA_LOGICAL) // default
+            keepNA = (type_ == Width) ? FALSE : TRUE;
+    }
+    else
+        keepNA = (type_ == Width) ? FALSE : TRUE;
     PROTECT(s = allocVector(INTSXP, len));
-    vmax = vmaxget();
-    for (i = 0; i < len; i++)
+    const void *vmax = vmaxget();
+    for (R_xlen_t i = 0; i < len; i++)
     {
         SEXP sxi = STRING_ELT(x, i);
         if (sxi == NA_STRING)
         {
-            INTEGER(s)[i] = 2;
+            INTEGER(s)[i] = keepNA ? NA_INTEGER : 2;
             continue;
         }
-        if (strncmp(type, "bytes", ntype) == 0)
+        switch (type_)
         {
+        case Bytes:
             INTEGER(s)[i] = LENGTH(sxi);
-        }
-        else if (strncmp(type, "chars", ntype) == 0)
-        {
+            break;
+        case Chars:
             if (IS_UTF8(sxi))
             {
                 const char *p = CHAR(sxi);
@@ -192,9 +236,8 @@ SEXP attribute_hidden do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             else
                 INTEGER(s)[i] = (int)strlen(translateChar(sxi));
-        }
-        else if (strncmp(type, "width", ntype) == 0)
-        {
+            break;
+        case Width:
             if (IS_UTF8(sxi))
             {
                 const char *p = CHAR(sxi);
@@ -224,12 +267,11 @@ SEXP attribute_hidden do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             else if (mbcslocale)
             {
-                xi = translateChar(sxi);
+                const char *xi = translateChar(sxi);
                 nc = (int)mbstowcs(NULL, xi, 0);
                 if (nc >= 0)
                 {
-                    wc = (wchar_t *)R_AllocStringBuffer((nc + 1) * sizeof(wchar_t), &cbuff);
-
+                    wchar_t *wc = (wchar_t *)R_AllocStringBuffer((nc + 1) * sizeof(wchar_t), &cbuff);
                     mbstowcs(wc, xi, nc + 1);
                     INTEGER(s)[i] = Ri18n_wcswidth(wc, 2147483647);
                     if (INTEGER(s)[i] < 1)
@@ -242,11 +284,10 @@ SEXP attribute_hidden do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             else
                 INTEGER(s)[i] = (int)strlen(translateChar(sxi));
-        }
-        else
-            error(_("invalid '%s' argument"), "type");
+
+        } // switch(type_)
         vmaxset(vmax);
-    }
+    } // for(..)
     R_FreeStringBufferL(&cbuff);
     if ((d = getAttrib(x, R_NamesSymbol)) != R_NilValue)
         setAttrib(s, R_NamesSymbol, d);
