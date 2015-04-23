@@ -87,7 +87,7 @@ static R_size_t objectsize(SEXP s)
         break;
     case STRSXP:
         vcnt = PTR2VEC(xlength(s));
-        dup = Rf_csduplicated(s);
+        PROTECT(dup = Rf_csduplicated(s));
         for (R_xlen_t i = 0; i < xlength(s); i++)
         {
             tmp = STRING_ELT(s, i);
@@ -95,6 +95,7 @@ static R_size_t objectsize(SEXP s)
                 cnt += objectsize(tmp);
         }
         isVec = TRUE;
+        UNPROTECT(1);
         break;
     case ANYSXP:
         /* we don't know about these */

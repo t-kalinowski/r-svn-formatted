@@ -405,7 +405,7 @@ SEXP port_nlminb(SEXP fn, SEXP gr, SEXP hs, SEXP rho, SEXP lowerb, SEXP upperb, 
         error(_("environment 'rho' must contain a numeric vector '.par' of length %d"), n);
     /* We are going to alter .par, so must duplicate it */
     defineVar(dot_par_symbol, duplicate(xpt), rho);
-    xpt = findVarInFrame(rho, dot_par_symbol);
+    PROTECT(xpt = findVarInFrame(rho, dot_par_symbol));
 
     if ((LENGTH(lowerb) == n) && (LENGTH(upperb) == n))
     {
@@ -448,6 +448,8 @@ SEXP port_nlminb(SEXP fn, SEXP gr, SEXP hs, SEXP rho, SEXP lowerb, SEXP upperb, 
            value (package varComp does this) */
         defineVar(dot_par_symbol, duplicate(xpt), rho);
         xpt = findVarInFrame(rho, dot_par_symbol);
+        UNPROTECT(1);
+        PROTECT(xpt);
     } while (INTEGER(iv)[0] < 3);
 
     if (b)
@@ -456,6 +458,7 @@ SEXP port_nlminb(SEXP fn, SEXP gr, SEXP hs, SEXP rho, SEXP lowerb, SEXP upperb, 
         Free(g);
     if (h)
         Free(h);
+    UNPROTECT(1); /* xpt */
     return R_NilValue;
 }
 

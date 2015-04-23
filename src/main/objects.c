@@ -374,6 +374,7 @@ attribute_hidden int usemethod(const char *generic, SEXP obj, SEXP call, SEXP ar
         {
             if (method == R_SortListSymbol && CLOENV(sxp) == R_BaseNamespace)
                 continue; /* kludge because sort.list is not a method */
+            PROTECT(sxp);
             if (i > 0)
             {
                 SEXP dotClass = PROTECT(stringSuffix(klass, i));
@@ -385,19 +386,19 @@ attribute_hidden int usemethod(const char *generic, SEXP obj, SEXP call, SEXP ar
             {
                 *ans = dispatchMethod(op, sxp, klass, cptr, method, generic, rho, callrho, defrho);
             }
-            UNPROTECT(1); /* klass */
+            UNPROTECT(2); /* klass, sxp */
             return 1;
         }
     }
     method = installS3Signature(generic, "default");
-    sxp = R_LookupMethod(method, rho, callrho, defrho);
+    PROTECT(sxp = R_LookupMethod(method, rho, callrho, defrho));
     if (isFunction(sxp))
     {
         *ans = dispatchMethod(op, sxp, R_NilValue, cptr, method, generic, rho, callrho, defrho);
-        UNPROTECT(1); /* klass */
+        UNPROTECT(2); /* klass, sxp */
         return 1;
     }
-    UNPROTECT(1); /* klass */
+    UNPROTECT(2); /* klass, sxp */
     cptr->callflag = CTXT_RETURN;
     return 0;
 }
@@ -780,6 +781,7 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
             }
         }
     }
+    PROTECT(nextfun);
     PROTECT(s = stringSuffix(klass, i));
     setAttrib(s, R_PreviousSymbol, klass);
     /* It is possible that if a method was called directly that
@@ -808,7 +810,7 @@ SEXP attribute_hidden do_nextmethod(SEXP call, SEXP op, SEXP args, SEXP env)
 
     ans = applyMethod(newcall, nextfun, matchedarg, env, newvars);
     vmaxset(vmax);
-    UNPROTECT(7);
+    UNPROTECT(8);
     return (ans);
 }
 
@@ -1408,12 +1410,15 @@ static SEXP get_this_generic(SEXP args)
         SEXP rval = R_sysfunction(i, cptr);
         if (isObject(rval))
         {
+            PROTECT(rval);
             SEXP generic = getAttrib(rval, gen_name);
             if (TYPEOF(generic) == STRSXP && !strcmp(translateChar(asChar(generic)), fname))
             {
                 value = rval;
+                UNPROTECT(1); /* rval */
                 break;
             }
+            UNPROTECT(1); /* rval */
         }
     }
     UNPROTECT(1);
