@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2014  The R Core Team
+ *  Copyright (C) 1997--2015  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Pulic License as published by
@@ -161,11 +161,20 @@ SEXP attribute_hidden do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
         else if (strncmp(type, "chars", ntype) == 0)
         {
             if (IS_UTF8(sxi))
-            { /* assume this is valid */
+            {
                 const char *p = CHAR(sxi);
-                nc = 0;
-                for (; *p; p += utf8clen(*p))
-                    nc++;
+                if (!utf8Valid(p))
+                {
+                    if (!allowNA)
+                        error(_("invalid multibyte string %d"), i + 1);
+                    nc = NA_INTEGER;
+                }
+                else
+                {
+                    nc = 0;
+                    for (; *p; p += utf8clen(*p))
+                        nc++;
+                }
                 INTEGER(s)[i] = nc;
             }
             else if (IS_BYTES(sxi))
@@ -187,14 +196,23 @@ SEXP attribute_hidden do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
         else if (strncmp(type, "width", ntype) == 0)
         {
             if (IS_UTF8(sxi))
-            { /* assume this is valid */
+            {
                 const char *p = CHAR(sxi);
-                wchar_t wc1;
-                nc = 0;
-                for (; *p; p += utf8clen(*p))
+                if (!utf8Valid(p))
                 {
-                    utf8toucs(&wc1, p);
-                    nc += Ri18n_wcwidth(wc1);
+                    if (!allowNA)
+                        error(_("invalid multibyte string %d"), i + 1);
+                    nc = NA_INTEGER;
+                }
+                else
+                {
+                    wchar_t wc1;
+                    nc = 0;
+                    for (; *p; p += utf8clen(*p))
+                    {
+                        utf8toucs(&wc1, p);
+                        nc += Ri18n_wcwidth(wc1);
+                    }
                 }
                 INTEGER(s)[i] = nc;
             }
