@@ -3162,10 +3162,10 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP pat, vec, ans, matchpos, matchlen;
+    SEXP pat, text, ans, matchpos, matchlen;
     int opt_icase, opt_fixed, useBytes;
 
-    Rboolean haveBytes, useWC = FALSE;
+    Rboolean use_WC = FALSE;
     const char *s, *t;
     const void *vmax = NULL;
 
@@ -3180,7 +3180,7 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
 
     pat = CAR(args);
     args = CDR(args);
-    vec = CAR(args);
+    text = CAR(args);
     args = CDR(args);
     opt_icase = asLogical(CAR(args));
     args = CDR(args);
@@ -3209,39 +3209,57 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
     if (length(pat) > 1)
         warning(_("argument '%s' has length > 1 and only the first element will be used"), "pattern");
 
-    if (!isString(vec))
+    if (!isString(text))
         error(_("invalid '%s' argument"), "text");
 
-    n = XLENGTH(vec);
+    n = XLENGTH(text);
 
     if (!useBytes)
     {
-        haveBytes = IS_BYTES(STRING_ELT(pat, 0));
+        Rboolean onlyASCII = IS_ASCII(STRING_ELT(pat, 0));
+        if (onlyASCII)
+            for (i = 0; i < n; i++)
+            {
+                if (STRING_ELT(text, i) == NA_STRING)
+                    continue;
+                if (!IS_ASCII(STRING_ELT(text, i)))
+                {
+                    onlyASCII = FALSE;
+                    break;
+                }
+            }
+        useBytes = onlyASCII;
+    }
+    if (!useBytes)
+    {
+        Rboolean haveBytes = IS_BYTES(STRING_ELT(pat, 0));
         if (!haveBytes)
             for (i = 0; i < n; i++)
             {
-                if (IS_BYTES(STRING_ELT(vec, i)))
+                if (IS_BYTES(STRING_ELT(text, i)))
                 {
                     haveBytes = TRUE;
                     break;
                 }
             }
         if (haveBytes)
+        {
             useBytes = TRUE;
+        }
     }
 
     if (!useBytes)
     {
-        useWC = !IS_ASCII(STRING_ELT(pat, 0));
-        if (!useWC)
+        use_WC = !IS_ASCII(STRING_ELT(pat, 0));
+        if (!use_WC)
         {
             for (i = 0; i < n; i++)
             {
-                if (STRING_ELT(vec, i) == NA_STRING)
+                if (STRING_ELT(text, i) == NA_STRING)
                     continue;
-                if (!IS_ASCII(STRING_ELT(vec, i)))
+                if (!IS_ASCII(STRING_ELT(text, i)))
                 {
-                    useWC = TRUE;
+                    use_WC = TRUE;
                     break;
                 }
             }
@@ -3250,7 +3268,7 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (useBytes)
         rc = tre_regcompb(&reg, CHAR(STRING_ELT(pat, 0)), cflags);
-    else if (useWC)
+    else if (use_WC)
         rc = tre_regwcomp(&reg, wtransChar(STRING_ELT(pat, 0)), cflags);
     else
     {
@@ -3275,7 +3293,7 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
     for (i = 0; i < n; i++)
     {
         //	if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
-        if (STRING_ELT(vec, i) == NA_STRING)
+        if (STRING_ELT(text, i) == NA_STRING)
         {
             PROTECT(matchpos = ScalarInteger(NA_INTEGER));
             SEXP s_match_length = install("match.length");
@@ -3287,15 +3305,15 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             vmax = vmaxget();
             if (useBytes)
-                rc = tre_regexecb(&reg, CHAR(STRING_ELT(vec, i)), nmatch, pmatch, 0);
-            else if (useWC)
+                rc = tre_regexecb(&reg, CHAR(STRING_ELT(text, i)), nmatch, pmatch, 0);
+            else if (use_WC)
             {
-                rc = tre_regwexec(&reg, wtransChar(STRING_ELT(vec, i)), nmatch, pmatch, 0);
+                rc = tre_regwexec(&reg, wtransChar(STRING_ELT(text, i)), nmatch, pmatch, 0);
                 vmaxset(vmax);
             }
             else
             {
-                t = translateChar(STRING_ELT(vec, i));
+                t = translateChar(STRING_ELT(text, i));
                 if (mbcslocale && !mbcsValid(t))
                     error(_("input string %d is invalid in this locale"), i + 1);
                 rc = tre_regexec(&reg, t, nmatch, pmatch, 0);
@@ -3325,6 +3343,8 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
                 PROTECT(matchpos = ScalarInteger(-1));
                 PROTECT(matchlen = ScalarInteger(-1));
                 setAttrib(matchpos, install("match.length"), matchlen);
+                if (useBytes)
+                    setAttrib(matchpos, install("useBytes"), R_TrueValue);
                 SET_VECTOR_ELT(ans, i, matchpos);
                 UNPROTECT(2);
             }
