@@ -80,7 +80,6 @@
 
 #define BUFSIZE 8192 /* used by Rprintf etc */
 
-/* Only if ierr < 0 or not is currently used */
 attribute_hidden R_size_t R_Decode2Long(char *p, int *ierr)
 {
     R_size_t v = strtol(p, &p, 10);
@@ -90,6 +89,7 @@ attribute_hidden R_size_t R_Decode2Long(char *p, int *ierr)
     /* else look for letter-code ending : */
     if (R_Verbose)
         REprintf("R_Decode2Long(): v=%ld\n", v);
+    // NB: currently, positive *ierr are not differentiated in the callers:
     if (p[0] == 'G')
     {
         if ((Giga * (double)v) > R_SIZE_T_MAX)

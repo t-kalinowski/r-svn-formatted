@@ -1018,6 +1018,8 @@ void setup_Rmainloop(void)
         REprintf(_("During startup - "));
         PrintWarnings();
     }
+    if (R_Verbose)
+        REprintf(" ending setup_Rmainloop(): R_Interactive = %d {main.c}\n", R_Interactive);
 
     /* trying to do this earlier seems to run into bootstrapping issues. */
     R_init_jit_enabled();
