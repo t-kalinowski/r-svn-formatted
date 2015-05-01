@@ -319,7 +319,11 @@ static void R_ReplConsole(SEXP rho, int savestack, int browselevel)
     {
         status = Rf_ReplIteration(rho, savestack, browselevel, &state);
         if (status < 0)
+        {
+            if (state.status == PARSE_INCOMPLETE)
+                error(_("unexpected end of input"));
             return;
+        }
     }
 }
 
