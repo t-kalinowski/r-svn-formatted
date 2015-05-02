@@ -1877,8 +1877,11 @@ double R_strtod5(const char *str, char **endptr, char dec, Rboolean NA, int exac
                 p++;
             default:;
             }
+            /* The test for n is in response to PR#16358; it's not right if the exponent is
+               very large, but the overflow or underflow below will handle it. */
+#define MAX_EXPONENT_PREFIX 9999
             for (n = 0; *p >= '0' && *p <= '9'; p++)
-                n = n * 10 + (*p - '0');
+                n = (n < MAX_EXPONENT_PREFIX) ? n * 10 + (*p - '0') : n;
             if (ans != 0.0)
             { /* PR#15976:  allow big exponents on 0 */
                 expn += expsign * n;
@@ -1928,7 +1931,7 @@ double R_strtod5(const char *str, char **endptr, char dec, Rboolean NA, int exac
         default:;
         }
         for (n = 0; *p >= '0' && *p <= '9'; p++)
-            n = n * 10 + (*p - '0');
+            n = (n < MAX_EXPONENT_PREFIX) ? n * 10 + (*p - '0') : n;
         expn += expsign * n;
     }
 
