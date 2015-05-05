@@ -1563,6 +1563,8 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
         error(_("invalid '%s' argument"), "p");
     if (NaRm == NA_LOGICAL)
         error(_("invalid '%s' argument"), "na.rm");
+    if (n * p > xlength(x))
+        error(_("'X' is too short")); /* PR#16367 */
     keepNA = !NaRm;
 
     int OP = PRIMVAL(op);
@@ -1575,7 +1577,7 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
     case REALSXP:
         break;
     default:
-        error(_("'x' must be numeric"));
+        error(_("'X' must be numeric"));
     }
 
     if (OP == 0 || OP == 1)
