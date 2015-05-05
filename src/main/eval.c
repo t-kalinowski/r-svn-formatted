@@ -4495,7 +4495,11 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
     else if (value == R_MissingArg)
         MAYBE_MISSING_ARGUMENT_ERROR(symbol, keepmiss);
     else if (TYPEOF(value) == PROMSXP)
+    {
+        PROTECT(value);
         value = FORCE_PROMISE(value, symbol, rho, keepmiss);
+        UNPROTECT(1);
+    }
     else if (NAMED(value) == 0 && value != R_NilValue)
         SET_NAMED(value, 1);
     return value;
