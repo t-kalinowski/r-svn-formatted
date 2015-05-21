@@ -318,7 +318,7 @@ int F77_NAME(stopx)(void)
 
 static double *check_gv(SEXP gr, SEXP hs, SEXP rho, int n, double *gv, double *hv)
 {
-    SEXP gval = PROTECT(coerceVector(eval(gr, rho), REALSXP));
+    SEXP gval = PROTECT(coerceVector(PROTECT(eval(gr, rho)), REALSXP));
     if (LENGTH(gval) != n)
         error(_("gradient function must return a numeric vector of length %d"), n);
     Memcpy(gv, REAL(gval), n);
@@ -344,7 +344,7 @@ static double *check_gv(SEXP gr, SEXP hs, SEXP rho, int n, double *gv, double *h
             }
         UNPROTECT(1);
     }
-    UNPROTECT(1);
+    UNPROTECT(2);
     return gv;
 }
 

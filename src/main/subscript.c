@@ -104,7 +104,7 @@ R_xlen_t attribute_hidden OneIndex(SEXP x, SEXP s, R_xlen_t len, int partial, SE
     case STRSXP:
         vmax = vmaxget();
         nx = xlength(x);
-        names = getAttrib(x, R_NamesSymbol);
+        names = PROTECT(getAttrib(x, R_NamesSymbol));
         if (names != R_NilValue)
         {
             /* Try for exact match */
@@ -138,6 +138,7 @@ R_xlen_t attribute_hidden OneIndex(SEXP x, SEXP s, R_xlen_t len, int partial, SE
                 }
             }
         }
+        UNPROTECT(1); /* names */
         if (indx == -1)
             indx = nx;
         *newname = STRING_ELT(s, pos);
@@ -149,12 +150,14 @@ R_xlen_t attribute_hidden OneIndex(SEXP x, SEXP s, R_xlen_t len, int partial, SE
         names = getAttrib(x, R_NamesSymbol);
         if (names != R_NilValue)
         {
+            PROTECT(names);
             for (i = 0; i < nx; i++)
                 if (streql(translateChar(STRING_ELT(names, i)), translateChar(PRINTNAME(s))))
                 {
                     indx = i;
                     break;
                 }
+            UNPROTECT(1); /* names */
         }
         if (indx == -1)
             indx = nx;

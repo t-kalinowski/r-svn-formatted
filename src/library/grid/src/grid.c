@@ -406,8 +406,10 @@ static SEXP findInChildren(SEXP name, SEXP strict, SEXP children, int depth)
     PROTECT(result);
     while (count < n && !found)
     {
-        result = findViewport(name, strict, findVar(installChar(STRING_ELT(childnames, count)), children), depth);
+        result =
+            findViewport(name, strict, PROTECT(findVar(installChar(STRING_ELT(childnames, count)), children)), depth);
         found = INTEGER(VECTOR_ELT(result, 0))[0] > 0;
+        UNPROTECT(1);
         count = count + 1;
     }
     if (!found)

@@ -1371,7 +1371,7 @@ SEXP attribute_hidden do_fileexists(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (!isString(file = CAR(args)))
         error(_("invalid '%s' argument"), "file");
     nfile = length(file);
-    ans = allocVector(LGLSXP, nfile);
+    ans = PROTECT(allocVector(LGLSXP, nfile));
     for (i = 0; i < nfile; i++)
     {
         LOGICAL(ans)[i] = 0;
@@ -1391,6 +1391,7 @@ SEXP attribute_hidden do_fileexists(SEXP call, SEXP op, SEXP args, SEXP rho)
         else
             LOGICAL(ans)[i] = FALSE;
     }
+    UNPROTECT(1); /* ans */
     return ans;
 }
 
