@@ -670,7 +670,8 @@ SEXP attribute_hidden do_format(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
             }
         }
-            UNPROTECT(1);
+            UNPROTECT(2); /* xx , y */
+            PROTECT(y);
             break;
         default:
             error(_("Impossible mode ( x )"));
@@ -689,7 +690,7 @@ SEXP attribute_hidden do_format(SEXP call, SEXP op, SEXP args, SEXP env)
     /* In case something else forgets to set PrintDefaults(), PR#14477 */
     R_print.scipen = scikeep;
 
-    UNPROTECT(1);
+    UNPROTECT(1); /* y */
     return y;
 }
 

@@ -2352,7 +2352,11 @@ SEXP attribute_hidden evalListKeepMissing(SEXP el, SEXP rho)
                     else
                         ev = CONS_NR(eval(CAR(h), rho), R_NilValue);
                     if (head == R_NilValue)
+                    {
+                        UNPROTECT(1); /* h */
                         PROTECT(head = ev);
+                        PROTECT(h);
+                    }
                     else
                         SETCDR(tail, ev);
                     COPY_TAG(ev, h);
