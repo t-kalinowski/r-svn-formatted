@@ -312,11 +312,17 @@ static SEXP do_one(SEXP X, SEXP FUN, SEXP classes, SEXP deflt, Rboolean replace,
     if (isNewList(X))
     {
         n = length(X);
-        PROTECT(ans = allocVector(VECSXP, n));
-        names = getAttrib(X, R_NamesSymbol);
-        /* or copy attributes if replace = TRUE? */
-        if (!isNull(names))
-            setAttrib(ans, R_NamesSymbol, names);
+        if (replace)
+        {
+            PROTECT(ans = shallow_duplicate(X));
+        }
+        else
+        {
+            PROTECT(ans = allocVector(VECSXP, n));
+            names = getAttrib(X, R_NamesSymbol);
+            if (!isNull(names))
+                setAttrib(ans, R_NamesSymbol, names);
+        }
         for (i = 0; i < n; i++)
             SET_VECTOR_ELT(ans, i, do_one(VECTOR_ELT(X, i), FUN, classes, deflt, replace, rho));
         UNPROTECT(1);
@@ -380,11 +386,17 @@ SEXP attribute_hidden do_rapply(SEXP call, SEXP op, SEXP args, SEXP rho)
         error(_("invalid '%s' argument"), "how");
     replace = strcmp(CHAR(STRING_ELT(how, 0)), "replace") == 0; /* ASCII */
     n = length(X);
-    PROTECT(ans = allocVector(VECSXP, n));
-    names = getAttrib(X, R_NamesSymbol);
-    /* or copy attributes if replace = TRUE? */
-    if (!isNull(names))
-        setAttrib(ans, R_NamesSymbol, names);
+    if (replace)
+    {
+        PROTECT(ans = shallow_duplicate(X));
+    }
+    else
+    {
+        PROTECT(ans = allocVector(VECSXP, n));
+        names = getAttrib(X, R_NamesSymbol);
+        if (!isNull(names))
+            setAttrib(ans, R_NamesSymbol, names);
+    }
     for (i = 0; i < n; i++)
         SET_VECTOR_ELT(ans, i, do_one(VECTOR_ELT(X, i), FUN, classes, deflt, replace, rho));
     UNPROTECT(1);
