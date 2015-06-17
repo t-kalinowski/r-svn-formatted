@@ -3109,7 +3109,8 @@ SEXP attribute_hidden do_eapply(SEXP call, SEXP op, SEXP args, SEXP rho)
     return (ans);
 }
 
-attribute_hidden int Rf_envlength(SEXP rho)
+/* Leaks out via inlining in src/library/tools/src/ */
+int Rf_envlength(SEXP rho)
 {
     if (IS_USER_DATABASE(rho))
     {
@@ -3123,7 +3124,7 @@ attribute_hidden int Rf_envlength(SEXP rho)
         return FrameSize(FRAME(rho), 1);
 }
 
-attribute_hidden R_xlen_t Rf_envxlength(SEXP rho)
+R_xlen_t Rf_envxlength(SEXP rho)
 {
     if (IS_USER_DATABASE(rho))
     {
