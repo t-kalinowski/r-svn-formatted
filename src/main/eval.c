@@ -4325,7 +4325,7 @@ static R_INLINE SEXP BINDING_VALUE(SEXP loc)
    table is used as the cache index.  Two options can be used to chose
    among implementation strategies:
 
-       If CACHE_ON_STACK is defined the the cache is allocated on the
+       If CACHE_ON_STACK is defined the cache is allocated on the
        byte code stack. Otherwise it is allocated on the heap as a
        VECSXP.  The stack-based approach is more efficient, but runs
        the risk of running out of stack space.
