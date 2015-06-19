@@ -432,7 +432,7 @@ SEXP attribute_hidden do_filepath(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 /* format.default(x, trim, digits, nsmall, width, justify, na.encode,
-          scientific) */
+          scientific, decimal.mark) */
 SEXP attribute_hidden do_format(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP l, x, y, swd;
@@ -508,6 +508,24 @@ SEXP attribute_hidden do_format(SEXP call, SEXP op, SEXP args, SEXP env)
         error(_("invalid '%s' argument"), "scientific");
     if (sci != NA_INTEGER)
         R_print.scipen = sci;
+    args = CDR(args);
+    // copy/paste from "OutDec" part of ./options.c
+    if (TYPEOF(CAR(args)) != STRSXP || LENGTH(CAR(args)) != 1)
+        error(_("invalid '%s' argument"), "decimal.mark");
+    char *my_OutDec;
+    if (STRING_ELT(CAR(args), 0) == NA_STRING)
+        my_OutDec = OutDec; // default
+    else
+    {
+        static char sdec[11];
+        if (R_nchar(STRING_ELT(CAR(args), 0), Chars,
+                    /* allowNA = */ FALSE, /* keepNA = */ FALSE,
+                    "decimal.mark") != 1) // will become an error
+            warning(_("'decimal.mark' must be a string of one character"));
+        strncpy(sdec, CHAR(STRING_ELT(CAR(args), 0)), 10);
+        sdec[10] = '\0';
+        my_OutDec = sdec;
+    }
 
     if ((n = XLENGTH(x)) <= 0)
     {
@@ -554,7 +572,7 @@ SEXP attribute_hidden do_format(SEXP call, SEXP op, SEXP args, SEXP env)
             PROTECT(y = allocVector(STRSXP, n));
             for (i = 0; i < n; i++)
             {
-                strp = EncodeReal0(REAL(x)[i], w, d, e, OutDec);
+                strp = EncodeReal0(REAL(x)[i], w, d, e, my_OutDec);
                 SET_STRING_ELT(y, i, mkChar(strp));
             }
             break;
@@ -568,7 +586,7 @@ SEXP attribute_hidden do_format(SEXP call, SEXP op, SEXP args, SEXP env)
             PROTECT(y = allocVector(STRSXP, n));
             for (i = 0; i < n; i++)
             {
-                strp = EncodeComplex(COMPLEX(x)[i], w, d, e, wi, di, ei, OutDec);
+                strp = EncodeComplex(COMPLEX(x)[i], w, d, e, wi, di, ei, my_OutDec);
                 SET_STRING_ELT(y, i, mkChar(strp));
             }
             break;
