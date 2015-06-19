@@ -1144,7 +1144,7 @@ static SEXP createRSymbolObject(SEXP sname, DL_FUNC f, R_RegisteredNativeSymbol 
 
     PROTECT(klass = allocVector(STRSXP, (symbol->type != R_ANY_SYM ? 2 : 1)));
     numProtects++;
-    SET_STRING_ELT(klass, length(klass) - 1, mkChar("NativeSymbolInfo"));
+    SET_STRING_ELT(klass, LENGTH(klass) - 1, mkChar("NativeSymbolInfo"));
 
     if (n > 3)
     {
