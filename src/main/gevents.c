@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 2004-2007  The R Foundation
- *  Copyright (C) 2013-2014  The R Core Team
+ *  Copyright (C) 2013-2015  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -111,9 +111,7 @@ Rboolean haveListeningDev()
     {
         for (int i = 1; i < NumDevices(); i++)
         {
-            gd = GEgetDevice(i);
-            dd = gd->dev;
-            if (dd->gettingEvent)
+            if ((gd = GEgetDevice(i)) && (dd = gd->dev) && dd->gettingEvent)
             {
                 ret = TRUE;
                 break;
@@ -145,17 +143,18 @@ SEXP do_getGraphicsEvent(SEXP call, SEXP op, SEXP args, SEXP env)
         devNum = curDevice();
         while (i++ < NumDevices())
         {
-            gd = GEgetDevice(devNum);
-            dd = gd->dev;
-            if (dd->gettingEvent)
-                error(_("recursive use of 'getGraphicsEvent' not supported"));
-            if (dd->eventEnv != R_NilValue)
+            if ((gd = GEgetDevice(devNum)) && (dd = gd->dev))
             {
-                if (dd->eventHelper)
-                    dd->eventHelper(dd, 1);
-                dd->gettingEvent = TRUE;
-                defineVar(install("result"), R_NilValue, dd->eventEnv);
-                count++;
+                if (dd->gettingEvent)
+                    error(_("recursive use of 'getGraphicsEvent' not supported"));
+                if (dd->eventEnv != R_NilValue)
+                {
+                    if (dd->eventHelper)
+                        dd->eventHelper(dd, 1);
+                    dd->gettingEvent = TRUE;
+                    defineVar(install("result"), R_NilValue, dd->eventEnv);
+                    count++;
+                }
             }
             devNum = nextDevice(devNum);
         }
@@ -180,16 +179,17 @@ SEXP do_getGraphicsEvent(SEXP call, SEXP op, SEXP args, SEXP env)
             devNum = curDevice();
             while (i++ < NumDevices())
             {
-                gd = GEgetDevice(devNum);
-                dd = gd->dev;
-                if (dd->eventEnv != R_NilValue)
+                if ((gd = GEgetDevice(devNum)) && (dd = gd->dev))
                 {
-                    if (dd->eventHelper)
-                        dd->eventHelper(dd, 2);
-                    result = findVar(install("result"), dd->eventEnv);
-                    if (result != R_NilValue && result != R_UnboundValue)
+                    if (dd->eventEnv != R_NilValue)
                     {
-                        break;
+                        if (dd->eventHelper)
+                            dd->eventHelper(dd, 2);
+                        result = findVar(install("result"), dd->eventEnv);
+                        if (result != R_NilValue && result != R_UnboundValue)
+                        {
+                            break;
+                        }
                     }
                 }
                 devNum = nextDevice(devNum);
@@ -200,13 +200,14 @@ SEXP do_getGraphicsEvent(SEXP call, SEXP op, SEXP args, SEXP env)
         devNum = curDevice();
         while (i++ < NumDevices())
         {
-            gd = GEgetDevice(devNum);
-            dd = gd->dev;
-            if (dd->eventEnv != R_NilValue)
+            if ((gd = GEgetDevice(devNum)) && (dd = gd->dev))
             {
-                if (dd->eventHelper)
-                    dd->eventHelper(dd, 0);
-                dd->gettingEvent = FALSE;
+                if (dd->eventEnv != R_NilValue)
+                {
+                    if (dd->eventHelper)
+                        dd->eventHelper(dd, 0);
+                    dd->gettingEvent = FALSE;
+                }
             }
             devNum = nextDevice(devNum);
         }

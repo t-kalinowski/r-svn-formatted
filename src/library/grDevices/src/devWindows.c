@@ -3,7 +3,7 @@
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 1998--2003  Guido Masarotto and Brian Ripley
  *  Copyright (C) 2004        The R Foundation
- *  Copyright (C) 2004-2014   The R Core Team
+ *  Copyright (C) 2004-2015   The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -4152,10 +4152,15 @@ static void GA_eventHelper(pDevDesc dd, int code)
         if (isEnvironment(dd->eventEnv))
         {
             SEXP prompt = findVar(install("prompt"), dd->eventEnv);
-            if (length(prompt) == 1)
+            if (isString(prompt) && length(prompt) == 1)
             {
                 setstatus(CHAR(asChar(prompt)));
                 settext(xd->gawin, CHAR(asChar(prompt)));
+            }
+            else
+            {
+                setstatus("");
+                settext(xd->gawin, "");
             }
         }
         dd->onExit = GA_onExit; /* install callback for cleanup */

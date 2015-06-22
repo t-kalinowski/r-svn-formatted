@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2013  The R Core Team
+ *  Copyright (C) 1997--2015  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -2720,12 +2720,14 @@ static void X11_eventHelper(pDevDesc dd, int code)
         if (isEnvironment(dd->eventEnv))
         {
             SEXP prompt = findVar(install("prompt"), dd->eventEnv);
-            if (length(prompt) == 1)
+            if (isString(prompt) && length(prompt) == 1)
             {
                 PROTECT(prompt);
                 XStoreName(display, xd->window, CHAR(asChar(prompt)));
                 UNPROTECT(1);
             }
+            else
+                XStoreName(display, xd->window, "");
         }
         XSync(display, 1);
     }
