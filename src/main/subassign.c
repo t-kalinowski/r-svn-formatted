@@ -2125,7 +2125,11 @@ SEXP attribute_hidden do_subassign3(SEXP call, SEXP op, SEXP args, SEXP env)
         return (ans);
 
     if (!iS)
+    {
+        PROTECT(ans);
         nlist = installTrChar(STRING_ELT(input, 0));
+        UNPROTECT(1);
+    }
 
     return R_subassign3_dflt(call, CAR(ans), nlist, CADDR(ans));
 }
