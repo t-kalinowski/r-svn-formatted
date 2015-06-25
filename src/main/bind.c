@@ -118,7 +118,7 @@ static void AnswerType(SEXP x, int recurse, int usenames, struct BindData *data,
     case EXPRSXP:
         if (recurse)
         {
-            R_xlen_t i, n = xlength(x);
+            R_xlen_t i, n = XLENGTH(x);
             if (usenames && !data->ans_nnames && !isNull(getAttrib(x, R_NamesSymbol)))
                 data->ans_nnames = 1;
             for (i = 0; i < n; i++)
@@ -134,7 +134,7 @@ static void AnswerType(SEXP x, int recurse, int usenames, struct BindData *data,
                 data->ans_flags |= 512;
             else
                 data->ans_flags |= 256;
-            data->ans_length += xlength(x);
+            data->ans_length += XLENGTH(x);
         }
         break;
     case LISTSXP:

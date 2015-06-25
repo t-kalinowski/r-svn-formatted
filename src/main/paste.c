@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2014  The R Core Team
+ *  Copyright (C) 1997--2015  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -122,8 +122,8 @@ SEXP attribute_hidden do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
             if (!isString(VECTOR_ELT(x, j)))
                 error(_("non-string argument to internal 'paste'"));
         }
-        if (xlength(VECTOR_ELT(x, j)) > maxlen)
-            maxlen = xlength(VECTOR_ELT(x, j));
+        if (XLENGTH(VECTOR_ELT(x, j)) > maxlen)
+            maxlen = XLENGTH(VECTOR_ELT(x, j));
     }
     if (maxlen == 0)
         return (!isNull(collapse)) ? mkString("") : allocVector(STRSXP, 0);
@@ -153,7 +153,7 @@ SEXP attribute_hidden do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
         pwidth = 0;
         for (j = 0; j < nx; j++)
         {
-            k = xlength(VECTOR_ELT(x, j));
+            k = XLENGTH(VECTOR_ELT(x, j));
             if (k > 0)
             {
                 SEXP cs = STRING_ELT(VECTOR_ELT(x, j), i % k);
@@ -168,7 +168,7 @@ SEXP attribute_hidden do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
         vmax = vmaxget();
         for (j = 0; j < nx; j++)
         {
-            k = xlength(VECTOR_ELT(x, j));
+            k = XLENGTH(VECTOR_ELT(x, j));
             if (k > 0)
             {
                 if (use_Bytes)
@@ -195,7 +195,7 @@ SEXP attribute_hidden do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
         vmax = vmaxget();
         for (j = 0; j < nx; j++)
         {
-            k = xlength(VECTOR_ELT(x, j));
+            k = XLENGTH(VECTOR_ELT(x, j));
             if (k > 0)
             {
                 SEXP cs = STRING_ELT(VECTOR_ELT(x, j), i % k);
@@ -373,7 +373,7 @@ SEXP attribute_hidden do_filepath(SEXP call, SEXP op, SEXP args, SEXP env)
             if (!isString(VECTOR_ELT(x, j)))
                 error(_("non-string argument to Internal paste"));
         }
-        ln = length(VECTOR_ELT(x, j));
+        ln = LENGTH(VECTOR_ELT(x, j));
         if (ln > maxlen)
             maxlen = ln;
         if (ln == 0)
@@ -392,14 +392,14 @@ SEXP attribute_hidden do_filepath(SEXP call, SEXP op, SEXP args, SEXP env)
         pwidth = 0;
         for (j = 0; j < nx; j++)
         {
-            k = length(VECTOR_ELT(x, j));
+            k = LENGTH(VECTOR_ELT(x, j));
             pwidth += (int)strlen(translateChar(STRING_ELT(VECTOR_ELT(x, j), i % k)));
         }
         pwidth += (nx - 1) * sepw;
         cbuf = buf = R_AllocStringBuffer(pwidth, &cbuff);
         for (j = 0; j < nx; j++)
         {
-            k = length(VECTOR_ELT(x, j));
+            k = LENGTH(VECTOR_ELT(x, j));
             if (k > 0)
             {
                 s = translateChar(STRING_ELT(VECTOR_ELT(x, j), i % k));
