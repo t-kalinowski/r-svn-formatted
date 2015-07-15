@@ -24,8 +24,11 @@
 
 #include <Defn.h>
 #include <Internal.h>
+#include <R_ext/Itermacros.h>
 
 #include <float.h> // for DBL_MAX
+
+#include "duplicate.h"
 
 #define R_MSG_type _("invalid 'type' (%s) of argument")
 #define imax2(x, y) ((x < y) ? y : x)
@@ -1079,7 +1082,7 @@ SEXP attribute_hidden do_pmin(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP a, x, ans;
     int narm;
-    R_xlen_t i, n, len;
+    R_xlen_t i, n, len, i1;
     SEXPTYPE type, anstype;
 
     narm = asLogical(CAR(args));
@@ -1156,8 +1159,7 @@ SEXP attribute_hidden do_pmin(SEXP call, SEXP op, SEXP args, SEXP rho)
         PROTECT(x = coerceVector(CAR(args), anstype));
         r = INTEGER(x);
         n = XLENGTH(x);
-        for (i = 0; i < len; i++)
-            ra[i] = r[i % n];
+        xcopyIntegerWithRecycle(ra, r, 0, len, n);
         UNPROTECT(1);
         for (a = CDR(args); a != R_NilValue; a = CDR(a))
         {
@@ -1165,9 +1167,8 @@ SEXP attribute_hidden do_pmin(SEXP call, SEXP op, SEXP args, SEXP rho)
             PROTECT(x = coerceVector(CAR(a), anstype));
             n = XLENGTH(x);
             r = INTEGER(x);
-            for (i = 0; i < len; i++)
-            {
-                tmp = r[i % n];
+            MOD_ITERATE1(len, n, i, i1, {
+                tmp = r[i1];
                 if (PRIMVAL(op) == 1)
                 {
                     if ((narm && ra[i] == NA_INTEGER) || (ra[i] != NA_INTEGER && tmp != NA_INTEGER && tmp > ra[i]) ||
@@ -1180,7 +1181,7 @@ SEXP attribute_hidden do_pmin(SEXP call, SEXP op, SEXP args, SEXP rho)
                         (!narm && tmp == NA_INTEGER))
                         ra[i] = tmp;
                 }
-            }
+            });
             UNPROTECT(1);
         }
     }
@@ -1190,17 +1191,15 @@ SEXP attribute_hidden do_pmin(SEXP call, SEXP op, SEXP args, SEXP rho)
         PROTECT(x = coerceVector(CAR(args), anstype));
         r = REAL(x);
         n = XLENGTH(x);
-        for (i = 0; i < len; i++)
-            ra[i] = r[i % n];
+        xcopyRealWithRecycle(ra, r, 0, len, n);
         UNPROTECT(1);
         for (a = CDR(args); a != R_NilValue; a = CDR(a))
         {
             PROTECT(x = coerceVector(CAR(a), anstype));
             n = XLENGTH(x);
             r = REAL(x);
-            for (i = 0; i < len; i++)
-            {
-                tmp = r[i % n];
+            MOD_ITERATE1(len, n, i, i1, {
+                tmp = r[i1];
                 if (PRIMVAL(op) == 1)
                 {
                     if ((narm && ISNAN(ra[i])) || (!ISNAN(ra[i]) && !ISNAN(tmp) && tmp > ra[i]) ||
@@ -1213,7 +1212,7 @@ SEXP attribute_hidden do_pmin(SEXP call, SEXP op, SEXP args, SEXP rho)
                         (!narm && ISNAN(tmp)))
                         ra[i] = tmp;
                 }
-            }
+            });
             UNPROTECT(1);
         }
     }
@@ -1221,17 +1220,15 @@ SEXP attribute_hidden do_pmin(SEXP call, SEXP op, SEXP args, SEXP rho)
     case STRSXP: {
         PROTECT(x = coerceVector(CAR(args), anstype));
         n = XLENGTH(x);
-        for (i = 0; i < len; i++)
-            SET_STRING_ELT(ans, i, STRING_ELT(x, i % n));
+        xcopyStringWithRecycle(ans, x, 0, len, n);
         UNPROTECT(1);
         for (a = CDR(args); a != R_NilValue; a = CDR(a))
         {
             SEXP tmp, t2;
             PROTECT(x = coerceVector(CAR(a), anstype));
             n = XLENGTH(x);
-            for (i = 0; i < len; i++)
-            {
-                tmp = STRING_ELT(x, i % n);
+            MOD_ITERATE1(len, n, i, i1, {
+                tmp = STRING_ELT(x, i1);
                 t2 = STRING_ELT(ans, i);
                 if (PRIMVAL(op) == 1)
                 {
@@ -1247,7 +1244,7 @@ SEXP attribute_hidden do_pmin(SEXP call, SEXP op, SEXP args, SEXP rho)
                         (!narm && tmp == NA_STRING))
                         SET_STRING_ELT(ans, i, tmp);
                 }
-            }
+            });
             UNPROTECT(1);
         }
     }

@@ -26,6 +26,7 @@
 #include <Internal.h>
 #include <Rmath.h>
 #include <errno.h>
+#include <R_ext/Itermacros.h>
 
 /* interval at which to check interrupts, a guess */
 #define NINTERRUPT 10000000
@@ -357,13 +358,6 @@ SEXP attribute_hidden do_relop_dflt(SEXP call, SEXP op, SEXP x, SEXP y)
     return x;
 }
 
-/* i1 = i % n1; i2 = i % n2;
- * this macro is quite a bit faster than having real modulo calls
- * in the loop (tested on Intel and Sparc)
- */
-#define mod_iterate(n1, n2, i1, i2)                                                                                    \
-    for (i = i1 = i2 = 0; i < n; i1 = (++i1 == n1) ? 0 : i1, i2 = (++i2 == n2) ? 0 : i2, ++i)
-
 static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
 {
     R_xlen_t i, i1, i2, n, n1, n2;
@@ -380,8 +374,7 @@ static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     switch (code)
     {
     case EQOP:
-        mod_iterate(n1, n2, i1, i2)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = INTEGER(s1)[i1];
             x2 = INTEGER(s2)[i2];
@@ -389,11 +382,10 @@ static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = (x1 == x2);
-        }
+        });
         break;
     case NEOP:
-        mod_iterate(n1, n2, i1, i2)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = INTEGER(s1)[i1];
             x2 = INTEGER(s2)[i2];
@@ -401,11 +393,10 @@ static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = (x1 != x2);
-        }
+        });
         break;
     case LTOP:
-        mod_iterate(n1, n2, i1, i2)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = INTEGER(s1)[i1];
             x2 = INTEGER(s2)[i2];
@@ -413,11 +404,10 @@ static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = (x1 < x2);
-        }
+        });
         break;
     case GTOP:
-        mod_iterate(n1, n2, i1, i2)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = INTEGER(s1)[i1];
             x2 = INTEGER(s2)[i2];
@@ -425,11 +415,10 @@ static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = (x1 > x2);
-        }
+        });
         break;
     case LEOP:
-        mod_iterate(n1, n2, i1, i2)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = INTEGER(s1)[i1];
             x2 = INTEGER(s2)[i2];
@@ -437,11 +426,10 @@ static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = (x1 <= x2);
-        }
+        });
         break;
     case GEOP:
-        mod_iterate(n1, n2, i1, i2)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = INTEGER(s1)[i1];
             x2 = INTEGER(s2)[i2];
@@ -449,7 +437,7 @@ static SEXP integer_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = (x1 >= x2);
-        }
+        });
         break;
     }
     UNPROTECT(2);
@@ -472,8 +460,7 @@ static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     switch (code)
     {
     case EQOP:
-        mod_iterate(n1, n2, i1, i2)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
@@ -481,11 +468,10 @@ static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = (x1 == x2);
-        }
+        });
         break;
     case NEOP:
-        mod_iterate(n1, n2, i1, i2)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
@@ -493,11 +479,10 @@ static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = (x1 != x2);
-        }
+        });
         break;
     case LTOP:
-        mod_iterate(n1, n2, i1, i2)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
@@ -505,11 +490,10 @@ static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = (x1 < x2);
-        }
+        });
         break;
     case GTOP:
-        mod_iterate(n1, n2, i1, i2)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
@@ -517,11 +501,10 @@ static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = (x1 > x2);
-        }
+        });
         break;
     case LEOP:
-        mod_iterate(n1, n2, i1, i2)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
@@ -529,11 +512,10 @@ static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = (x1 <= x2);
-        }
+        });
         break;
     case GEOP:
-        mod_iterate(n1, n2, i1, i2)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = REAL(s1)[i1];
             x2 = REAL(s2)[i2];
@@ -541,7 +523,7 @@ static SEXP real_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = (x1 >= x2);
-        }
+        });
         break;
     }
     UNPROTECT(2);
@@ -569,8 +551,7 @@ static SEXP complex_relop(RELOP_TYPE code, SEXP s1, SEXP s2, SEXP call)
     switch (code)
     {
     case EQOP:
-        mod_iterate(n1, n2, i1, i2)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = COMPLEX(s1)[i1];
             x2 = COMPLEX(s2)[i2];
@@ -578,11 +559,10 @@ static SEXP complex_relop(RELOP_TYPE code, SEXP s1, SEXP s2, SEXP call)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = (x1.r == x2.r && x1.i == x2.i);
-        }
+        });
         break;
     case NEOP:
-        mod_iterate(n1, n2, i1, i2)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = COMPLEX(s1)[i1];
             x2 = COMPLEX(s2)[i2];
@@ -590,7 +570,7 @@ static SEXP complex_relop(RELOP_TYPE code, SEXP s1, SEXP s2, SEXP call)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = (x1.r != x2.r || x1.i != x2.i);
-        }
+        });
         break;
     default:
         /* never happens (-Wall) */
@@ -604,7 +584,7 @@ static SEXP complex_relop(RELOP_TYPE code, SEXP s1, SEXP s2, SEXP call)
    outside the collation domain. */
 static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
 {
-    R_xlen_t i, n, n1, n2, res;
+    R_xlen_t i, n, n1, n2, res, i1, i2;
     SEXP ans, c1, c2;
     const void *vmax = vmaxget(); // for Scollate
 
@@ -618,35 +598,32 @@ static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     switch (code)
     {
     case EQOP:
-        for (i = 0; i < n; i++)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
-            c1 = STRING_ELT(s1, i % n1);
-            c2 = STRING_ELT(s2, i % n2);
+            c1 = STRING_ELT(s1, i1);
+            c2 = STRING_ELT(s2, i2);
             if (c1 == NA_STRING || c2 == NA_STRING)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = Seql(c1, c2) ? 1 : 0;
-        }
+        });
         break;
     case NEOP:
-        for (i = 0; i < n; i++)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
-            c1 = STRING_ELT(s1, i % n1);
-            c2 = STRING_ELT(s2, i % n2);
+            c1 = STRING_ELT(s1, i1);
+            c2 = STRING_ELT(s2, i2);
             if (c1 == NA_STRING || c2 == NA_STRING)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else
                 LOGICAL(ans)[i] = Seql(c1, c2) ? 0 : 1;
-        }
+        });
         break;
     case LTOP:
-        for (i = 0; i < n; i++)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
-            c1 = STRING_ELT(s1, i % n1);
-            c2 = STRING_ELT(s2, i % n2);
+            c1 = STRING_ELT(s1, i1);
+            c2 = STRING_ELT(s2, i2);
             if (c1 == NA_STRING || c2 == NA_STRING)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else if (c1 == c2)
@@ -660,14 +637,13 @@ static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
                 else
                     LOGICAL(ans)[i] = (res < 0) ? 1 : 0;
             }
-        }
+        });
         break;
     case GTOP:
-        for (i = 0; i < n; i++)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
-            c1 = STRING_ELT(s1, i % n1);
-            c2 = STRING_ELT(s2, i % n2);
+            c1 = STRING_ELT(s1, i1);
+            c2 = STRING_ELT(s2, i2);
             if (c1 == NA_STRING || c2 == NA_STRING)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else if (c1 == c2)
@@ -681,14 +657,13 @@ static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
                 else
                     LOGICAL(ans)[i] = (res > 0) ? 1 : 0;
             }
-        }
+        });
         break;
     case LEOP:
-        for (i = 0; i < n; i++)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
-            c1 = STRING_ELT(s1, i % n1);
-            c2 = STRING_ELT(s2, i % n2);
+            c1 = STRING_ELT(s1, i1);
+            c2 = STRING_ELT(s2, i2);
             if (c1 == NA_STRING || c2 == NA_STRING)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else if (c1 == c2)
@@ -702,14 +677,13 @@ static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
                 else
                     LOGICAL(ans)[i] = (res <= 0) ? 1 : 0;
             }
-        }
+        });
         break;
     case GEOP:
-        for (i = 0; i < n; i++)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
-            c1 = STRING_ELT(s1, i % n1);
-            c2 = STRING_ELT(s2, i % n2);
+            c1 = STRING_ELT(s1, i1);
+            c2 = STRING_ELT(s2, i2);
             if (c1 == NA_STRING || c2 == NA_STRING)
                 LOGICAL(ans)[i] = NA_LOGICAL;
             else if (c1 == c2)
@@ -723,7 +697,7 @@ static SEXP string_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
                 else
                     LOGICAL(ans)[i] = (res >= 0) ? 1 : 0;
             }
-        }
+        });
         break;
     }
     UNPROTECT(3);
@@ -747,58 +721,52 @@ static SEXP raw_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     switch (code)
     {
     case EQOP:
-        mod_iterate(n1, n2, i1, i2)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = RAW(s1)[i1];
             x2 = RAW(s2)[i2];
             LOGICAL(ans)[i] = (x1 == x2);
-        }
+        });
         break;
     case NEOP:
-        mod_iterate(n1, n2, i1, i2)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = RAW(s1)[i1];
             x2 = RAW(s2)[i2];
             LOGICAL(ans)[i] = (x1 != x2);
-        }
+        });
         break;
     case LTOP:
-        mod_iterate(n1, n2, i1, i2)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = RAW(s1)[i1];
             x2 = RAW(s2)[i2];
             LOGICAL(ans)[i] = (x1 < x2);
-        }
+        });
         break;
     case GTOP:
-        mod_iterate(n1, n2, i1, i2)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = RAW(s1)[i1];
             x2 = RAW(s2)[i2];
             LOGICAL(ans)[i] = (x1 > x2);
-        }
+        });
         break;
     case LEOP:
-        mod_iterate(n1, n2, i1, i2)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = RAW(s1)[i1];
             x2 = RAW(s2)[i2];
             LOGICAL(ans)[i] = (x1 <= x2);
-        }
+        });
         break;
     case GEOP:
-        mod_iterate(n1, n2, i1, i2)
-        {
+        MOD_ITERATE2(n, n1, n2, i, i1, i2, {
             //	    if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
             x1 = RAW(s1)[i1];
             x2 = RAW(s2)[i2];
             LOGICAL(ans)[i] = (x1 >= x2);
-        }
+        });
         break;
     }
     UNPROTECT(2);
@@ -849,15 +817,16 @@ static SEXP bitwiseNot(SEXP a)
     if (TYPEOF(a) != TYPEOF(b))                                                                                        \
         error(_("'a' and 'b' must have the same type"));                                                               \
     R_xlen_t i, m = XLENGTH(a), n = XLENGTH(b), mn = (m && n) ? mymax(m, n) : 0;                                       \
+    R_xlen_t ia, ib;                                                                                                   \
     SEXP ans = allocVector(TYPEOF(a), mn);                                                                             \
     switch (TYPEOF(a))                                                                                                 \
     {                                                                                                                  \
     case INTSXP:                                                                                                       \
-        for (i = 0; i < mn; i++)                                                                                       \
-        {                                                                                                              \
-            int aa = INTEGER(a)[i % m], bb = INTEGER(b)[i % n];                                                        \
+        MOD_ITERATE2(mn, m, n, i, ia, ib, {                                                                            \
+            int aa = INTEGER(a)[ia];                                                                                   \
+            int bb = INTEGER(b)[ib];                                                                                   \
             INTEGER(ans)[i] = (aa == NA_INTEGER || bb == NA_INTEGER) ? NA_INTEGER : aa op bb;                          \
-        }                                                                                                              \
+        });                                                                                                            \
         break;                                                                                                         \
     default:                                                                                                           \
         UNIMPLEMENTED_TYPE(name, a);                                                                                   \
@@ -895,16 +864,17 @@ static SEXP bitwiseShiftL(SEXP a, SEXP b)
         np++;
     }
     R_xlen_t i, m = XLENGTH(a), n = XLENGTH(b), mn = (m && n) ? mymax(m, n) : 0;
+    R_xlen_t ia, ib;
     SEXP ans = allocVector(TYPEOF(a), mn);
     switch (TYPEOF(a))
     {
     case INTSXP:
-        for (i = 0; i < mn; i++)
-        {
-            int aa = INTEGER(a)[i % m], bb = INTEGER(b)[i % n];
+        MOD_ITERATE2(mn, m, n, i, ia, ib, {
+            int aa = INTEGER(a)[ia];
+            int bb = INTEGER(b)[ib];
             INTEGER(ans)
             [i] = (aa == NA_INTEGER || bb == NA_INTEGER || bb < 0 || bb > 31) ? NA_INTEGER : ((unsigned int)aa << bb);
-        }
+        });
         break;
     default:
         UNIMPLEMENTED_TYPE("bitShiftL", a);
@@ -928,16 +898,17 @@ static SEXP bitwiseShiftR(SEXP a, SEXP b)
         np++;
     }
     R_xlen_t i, m = XLENGTH(a), n = XLENGTH(b), mn = (m && n) ? mymax(m, n) : 0;
+    R_xlen_t ia, ib;
     SEXP ans = allocVector(TYPEOF(a), mn);
     switch (TYPEOF(a))
     {
     case INTSXP:
-        for (i = 0; i < mn; i++)
-        {
-            int aa = INTEGER(a)[i % m], bb = INTEGER(b)[i % n];
+        MOD_ITERATE2(mn, m, n, i, ia, ib, {
+            int aa = INTEGER(a)[ia];
+            int bb = INTEGER(b)[ib];
             INTEGER(ans)
             [i] = (aa == NA_INTEGER || bb == NA_INTEGER || bb < 0 || bb > 31) ? NA_INTEGER : ((unsigned int)aa >> bb);
-        }
+        });
         break;
     default:
         UNIMPLEMENTED_TYPE("bitShiftR", a);

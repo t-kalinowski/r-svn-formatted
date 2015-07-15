@@ -24,6 +24,7 @@
 
 #include "Defn.h"
 #include <Internal.h>
+#include <R_ext/Itermacros.h>
 
 SEXP attribute_hidden do_split(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -50,9 +51,9 @@ SEXP attribute_hidden do_split(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(counts = allocVector(INTSXP, nlevs));
     for (int i = 0; i < nlevs; i++)
         INTEGER(counts)[i] = 0;
-    for (R_xlen_t i = 0; i < nobs; i++)
-    {
-        int j = INTEGER(f)[i % nfac];
+    R_xlen_t i, i1;
+    MOD_ITERATE1(nobs, nfac, i, i1, {
+        int j = INTEGER(f)[i1];
         if (j != NA_INTEGER)
         {
             /* protect against malformed factors */
@@ -60,7 +61,7 @@ SEXP attribute_hidden do_split(SEXP call, SEXP op, SEXP args, SEXP env)
                 error(_("factor has bad level"));
             INTEGER(counts)[j - 1]++;
         }
-    }
+    });
     /* Allocate a generic vector to hold the results. */
     /* The i-th element will hold the split-out data */
     /* for the ith group. */
@@ -74,9 +75,8 @@ SEXP attribute_hidden do_split(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     for (int i = 0; i < nlevs; i++)
         INTEGER(counts)[i] = 0;
-    for (R_xlen_t i = 0; i < nobs; i++)
-    {
-        int j = INTEGER(f)[i % nfac];
+    MOD_ITERATE1(nobs, nfac, i, i1, {
+        int j = INTEGER(f)[i1];
         if (j != NA_INTEGER)
         {
             int k = INTEGER(counts)[j - 1];
@@ -111,7 +111,7 @@ SEXP attribute_hidden do_split(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             INTEGER(counts)[j - 1] += 1;
         }
-    }
+    });
     setAttrib(vec, R_NamesSymbol, getAttrib(f, R_LevelsSymbol));
     UNPROTECT(2);
     return vec;

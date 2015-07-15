@@ -24,6 +24,8 @@
 #endif
 
 #include <Defn.h>
+
+#include <R_ext/Itermacros.h>
 #include <R_ext/Random.h>
 #include <R_ext/RS.h> /* for Calloc() */
 #include <Rmath.h>    /* for rxxx functions */
@@ -41,15 +43,14 @@ static Rboolean random1(double (*f)(double), double *a, R_xlen_t na, double *x, 
 {
     Rboolean naflag = FALSE;
     double ai;
-    R_xlen_t i;
+    R_xlen_t i, ia;
     errno = 0;
-    for (i = 0; i < n; i++)
-    {
-        ai = a[i % na];
+    MOD_ITERATE1(n, na, i, ia, {
+        ai = a[ia];
         x[i] = f(ai);
         if (ISNAN(x[i]))
             naflag = TRUE;
-    }
+    });
     return (naflag);
 }
 
@@ -126,17 +127,16 @@ static Rboolean random2(double (*f)(double, double), double *a, R_xlen_t na, dou
                         R_xlen_t n)
 {
     double ai, bi;
-    R_xlen_t i;
+    R_xlen_t i, ia, ib;
     Rboolean naflag = FALSE;
     errno = 0;
-    for (i = 0; i < n; i++)
-    {
-        ai = a[i % na];
-        bi = b[i % nb];
+    MOD_ITERATE2(n, na, nb, i, ia, ib, {
+        ai = a[ia];
+        bi = b[ib];
         x[i] = f(ai, bi);
         if (ISNAN(x[i]))
             naflag = TRUE;
-    }
+    });
     return (naflag);
 }
 
@@ -223,18 +223,17 @@ static Rboolean random3(double (*f)(double, double, double), double *a, R_xlen_t
                         R_xlen_t nc, double *x, R_xlen_t n)
 {
     double ai, bi, ci;
-    R_xlen_t i;
+    R_xlen_t i, ia, ib, ic;
     Rboolean naflag = FALSE;
     errno = 0;
-    for (i = 0; i < n; i++)
-    {
-        ai = a[i % na];
-        bi = b[i % nb];
-        ci = c[i % nc];
+    MOD_ITERATE3(n, na, nb, nc, i, ia, ib, ic, {
+        ai = a[ia];
+        bi = b[ib];
+        ci = c[ic];
         x[i] = f(ai, bi, ci);
         if (ISNAN(x[i]))
             naflag = TRUE;
-    }
+    });
     return (naflag);
 }
 
