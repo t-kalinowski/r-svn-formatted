@@ -196,9 +196,17 @@ static Rcomplex strtoc(const char *nptr, char **endptr, Rboolean NA, LocalData *
     }
     else if (*endp == 'i')
     {
-        z.r = 0;
-        z.i = x;
-        endp++;
+        if (endp == nptr)
+        {
+            z.r = NA_REAL;
+            z.i = NA_REAL;
+        }
+        else
+        {
+            z.r = 0;
+            z.i = x;
+            endp++;
+        }
     }
     else
     {
@@ -212,8 +220,8 @@ static Rcomplex strtoc(const char *nptr, char **endptr, Rboolean NA, LocalData *
         }
         else
         {
-            z.r = 0;
-            z.i = 0;
+            z.r = NA_REAL;
+            z.i = NA_REAL;
             endp = (char *)nptr; /* -Wall */
         }
     }
