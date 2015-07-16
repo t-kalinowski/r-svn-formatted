@@ -586,8 +586,8 @@ COPY_WITH_RECYCLE(double, Real)      /* xcopyRealWithRecycle */
         }                                                                                                              \
     }
 
-COPY_ELT_WITH_RECYCLE(String, STRING_ELT, SET_STRING_ELT); /* xcopyStringWithRecycle */
-COPY_ELT_WITH_RECYCLE(Vector, VECTOR_ELT, SET_VECTOR_ELT); /* xcopyVectorWithRecycle */
+COPY_ELT_WITH_RECYCLE(String, STRING_ELT, SET_STRING_ELT) /* xcopyStringWithRecycle */
+COPY_ELT_WITH_RECYCLE(Vector, VECTOR_ELT, SET_VECTOR_ELT) /* xcopyVectorWithRecycle */
 
 #define FILL_WITH_RECYCLE(VALTYPE, TNAME)                                                                              \
     void attribute_hidden xfill##TNAME##MatrixWithRecycle(VALTYPE *dst, VALTYPE *src, R_xlen_t dstart, R_xlen_t drows, \
@@ -598,11 +598,11 @@ COPY_ELT_WITH_RECYCLE(Vector, VECTOR_ELT, SET_VECTOR_ELT); /* xcopyVectorWithRec
         dst[didx] = src[sidx];                                                                                         \
     }
 
-FILL_WITH_RECYCLE(Rcomplex, Complex); /* xfillComplexMatrixWithRecycle */
-FILL_WITH_RECYCLE(int, Integer);      /* xfillIntegerMatrixWithRecycle */
-FILL_WITH_RECYCLE(int, Logical);      /* xfillLogicalMatrixWithRecycle */
-FILL_WITH_RECYCLE(Rbyte, Raw);        /* xfillRawMatrixWithRecycle */
-FILL_WITH_RECYCLE(double, Real);      /* xfillRealMatrixWithRecycle */
+FILL_WITH_RECYCLE(Rcomplex, Complex) /* xfillComplexMatrixWithRecycle */
+FILL_WITH_RECYCLE(int, Integer)      /* xfillIntegerMatrixWithRecycle */
+FILL_WITH_RECYCLE(int, Logical)      /* xfillLogicalMatrixWithRecycle */
+FILL_WITH_RECYCLE(Rbyte, Raw)        /* xfillRawMatrixWithRecycle */
+FILL_WITH_RECYCLE(double, Real)      /* xfillRealMatrixWithRecycle */
 
 #define FILL_ELT_WITH_RECYCLE(TNAME, GETELT, SETELT)                                                                   \
     void attribute_hidden xfill##TNAME##MatrixWithRecycle(SEXP dst, SEXP src, R_xlen_t dstart, R_xlen_t drows,         \
@@ -613,5 +613,5 @@ FILL_WITH_RECYCLE(double, Real);      /* xfillRealMatrixWithRecycle */
         SETELT(dst, didx, GETELT(src, sidx));                                                                          \
     }
 
-FILL_ELT_WITH_RECYCLE(String, STRING_ELT, SET_STRING_ELT); /* xfillStringMatrixWithRecycle */
-FILL_ELT_WITH_RECYCLE(Vector, VECTOR_ELT, SET_VECTOR_ELT); /* xfillVectorMatrixWithRecycle */
+FILL_ELT_WITH_RECYCLE(String, STRING_ELT, SET_STRING_ELT) /* xfillStringMatrixWithRecycle */
+FILL_ELT_WITH_RECYCLE(Vector, VECTOR_ELT, SET_VECTOR_ELT) /* xfillVectorMatrixWithRecycle */
