@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2014  The R Core Team
+ *  Copyright (C) 1997--2015  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
     cairo_pdf_surface_create (1.2)
     cairo_ps_surface_create  (1.2)
     cairo_ps_surface_set_eps  (1.6)
+    cairo_surface_set_fallback_resolution (1.2)
     cairo_surface_write_to_png
     cairo_svg_surface_create (1.2)
     cairo_svg_surface_restrict_to_version (1.2)
@@ -252,6 +253,7 @@ static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
             {
                 error("cairo error '%s'", cairo_status_to_string(res));
             }
+            cairo_surface_set_fallback_resolution(xd->cs, xd->fallback_dpi, xd->fallback_dpi);
             xd->cc = cairo_create(xd->cs);
             res = cairo_status(xd->cc);
             if (res != CAIRO_STATUS_SUCCESS)
@@ -285,6 +287,7 @@ static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
             if (!xd->onefile)
                 cairo_ps_surface_set_eps(xd->cs, TRUE);
 #endif
+            cairo_surface_set_fallback_resolution(xd->cs, xd->fallback_dpi, xd->fallback_dpi);
             xd->cc = cairo_create(xd->cs);
             res = cairo_status(xd->cc);
             if (res != CAIRO_STATUS_SUCCESS)
@@ -333,7 +336,7 @@ static void BM_Close(pDevDesc dd)
 }
 
 static Rboolean BMDeviceDriver(pDevDesc dd, int kind, const char *filename, int quality, int width, int height, int ps,
-                               int bg, int res, int antialias, const char *family)
+                               int bg, int res, int antialias, const char *family, double dpi)
 {
     pX11Desc xd;
     int res0 = (res > 0) ? res : 72;
@@ -356,6 +359,7 @@ static Rboolean BMDeviceDriver(pDevDesc dd, int kind, const char *filename, int 
     xd->pointsize = dps;
     xd->bg = bg;
     xd->res_dpi = res;
+    xd->fallback_dpi = dpi;
     switch (antialias)
     {
     case 1:
@@ -483,6 +487,7 @@ SEXP in_Cairo(SEXP args)
     SEXP sc;
     const char *filename, *family;
     int type, quality, width, height, pointsize, bgcolor, res, antialias;
+    double dpi;
     const void *vmax = vmaxget();
 
     args = CDR(args); /* skip entry point name */
@@ -524,6 +529,10 @@ SEXP in_Cairo(SEXP args)
     if (!isString(CAR(args)) || LENGTH(CAR(args)) < 1)
         error(_("invalid '%s' argument"), "family");
     family = translateChar(STRING_ELT(CAR(args), 0));
+    args = CDR(args);
+    dpi = asReal(CAR(args));
+    if (ISNAN(dpi) || dpi <= 0)
+        error(_("invalid '%s' argument"), "dpi");
 
     R_GE_checkVersionOrDie(R_GE_version);
     R_CheckDeviceAvailable();
@@ -534,7 +543,7 @@ SEXP in_Cairo(SEXP args)
         if (!(dev = (pDevDesc)calloc(1, sizeof(DevDesc))))
             return 0;
         if (!BMDeviceDriver(dev, devtable[type].gtype, filename, quality, width, height, pointsize, bgcolor, res,
-                            antialias, family))
+                            antialias, family, dpi))
         {
             free(dev);
             error(_("unable to start device '%s'"), devtable[type].name);
