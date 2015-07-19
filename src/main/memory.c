@@ -77,12 +77,6 @@
 // internal version of headers
 #include "vg/memcheck.h"
 #endif
-#ifndef VALGRIND_MAKE_MEM_NOACCESS
-// old headers (<= 3.3.0?)
-#define VALGRIND_MAKE_MEM_NOACCESS VALGRIND_MAKE_NOACCESS
-#define VALGRIND_MAKE_MEM_DEFINED VALGRIND_MAKE_READABLE
-#define VALGRIND_MAKE_MEM_UNDEFINED VALGRIND_MAKE_WRITABLE
-#endif
 #endif
 
 #define R_USE_SIGNALS 1
