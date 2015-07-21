@@ -5625,14 +5625,16 @@ SEXP attribute_hidden do_sumconnection(SEXP call, SEXP op, SEXP args, SEXP env)
 extern Rconnection R_newCurlUrl(const char *description, const char *const mode, int type);
 
 /* op = 0: .Internal( url(description, open, blocking, encoding, method))
-   op = 1: .Internal(file(description, open, blocking, encoding))
+   op = 1: .Internal(file(description, open, blocking, encoding, raw   ))
 */
 SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP scmd, sopen, ans, class, enc;
     char *class2 = "url";
     const char *url, *open;
-    int ncon, block, raw = 0, meth = 0, urlmeth;
+    int ncon, block, raw = 0,
+                     meth = 0, // 0: "internal",          1: "libcurl"
+        urlmeth;               // 0: (Unix || "default"), 1: UseInternet2 || "wininet"
     cetype_t ienc = CE_NATIVE;
     Rconnection con = NULL;
 
