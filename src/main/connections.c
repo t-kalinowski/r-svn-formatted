@@ -5621,27 +5621,20 @@ SEXP attribute_hidden do_sumconnection(SEXP call, SEXP op, SEXP args, SEXP env)
 #define USE_WININET 2
 #endif
 
-/* op = 0: url(description, open, blocking, encoding)
-   op = 1: file(description, open, blocking, encoding)
-*/
-
 // in internet module: 'type' is unused
 extern Rconnection R_newCurlUrl(const char *description, const char *const mode, int type);
 
+/* op = 0: .Internal( url(description, open, blocking, encoding, method))
+   op = 1: .Internal(file(description, open, blocking, encoding))
+*/
 SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP scmd, sopen, ans, class, enc;
     char *class2 = "url";
     const char *url, *open;
-    int ncon, block, raw = 0, meth = 0;
-#ifdef Win32
-    int urlmeth = UseInternet2;
-#endif
+    int ncon, block, raw = 0, meth = 0, urlmeth;
     cetype_t ienc = CE_NATIVE;
     Rconnection con = NULL;
-#ifdef HAVE_INTERNET
-    UrlScheme type = HTTPsh; /* -Wall */
-#endif
 
     checkArity(op, args);
     scmd = CAR(args);
@@ -5649,10 +5642,10 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
         error(_("invalid '%s' argument"), "description");
     if (LENGTH(scmd) > 1)
         warning(_("only first element of 'description' argument used"));
-    url = CHAR(STRING_ELT(scmd, 0)); /* ASCII */
 #ifdef Win32
+    urlmeth = UseInternet2;
     if (PRIMVAL(op) == 1 && !IS_ASCII(STRING_ELT(scmd, 0)))
-    {
+    { // file(<non-ASCII>, *)
         ienc = CE_UTF8;
         url = translateCharUTF8(STRING_ELT(scmd, 0));
     }
@@ -5665,10 +5658,12 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
             url = translateChar(STRING_ELT(scmd, 0));
     }
 #else
+    urlmeth = 0;
     url = translateChar(STRING_ELT(scmd, 0));
 #endif
 
 #ifdef HAVE_INTERNET
+    UrlScheme type = HTTPsh; /* -Wall */
     if (strncmp(url, "http://", 7) == 0)
         type = HTTPsh;
     else if (strncmp(url, "ftp://", 6) == 0)
@@ -5795,11 +5790,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         else
         {
-#ifdef Win32
             con = R_newurl(url, strlen(open) ? open : "r", urlmeth);
-#else
-            con = R_newurl(url, strlen(open) ? open : "r", 0);
-#endif
             ((Rurlconn)con->private)->type = type;
         }
 #endif
@@ -5882,7 +5873,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
             class2 = "file";
         }
         else
-        {
+        { // url()
             error(_("URL scheme unsupported by this method"));
         }
     }
