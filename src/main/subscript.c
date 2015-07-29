@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2014  The R Core Team
+ *  Copyright (C) 1997--2015  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -598,13 +598,31 @@ static SEXP logicalSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch
 #ifdef LONG_VECTOR_SUPPORT
     if (nmax > R_SHORT_LEN_MAX)
     {
+        if (ns == nmax)
+        { /* no recycling - use fast single-index code */
+            const void *vmax = vmaxget();
+            double *buf = (double *)R_alloc(nmax, sizeof(double));
+            count = 0;
+            R_ITERATE_CHECK(
+                NINTERRUPT, nmax, i, if (LOGICAL(s)[i]) {
+                    if (LOGICAL(s)[i] == NA_LOGICAL)
+                        buf[count++] = NA_REAL;
+                    else
+                        buf[count++] = (double)(i + 1);
+                });
+            PROTECT(indx = allocVector(REALSXP, count));
+            memcpy(REAL(indx), buf, sizeof(double) * count);
+            vmaxset(vmax);
+            UNPROTECT(1);
+            return indx;
+        }
         count = 0;
         /* we only need to scan s once even if we recycle,
            just remember the total count as well as
            the count for the last incomplete chunk (if any) */
         i1 = (ns < nmax) ? (nmax % ns) : 0;
         if (i1 > 0)
-        { /* last recycling chunk is incomple -
+        { /* last recycling chunk is incomplete -
      we have to get the truncated count as well */
             R_xlen_t rem = 0;
             for (i = 0; i < ns; i++)
@@ -625,36 +643,45 @@ static SEXP logicalSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch
         }
         PROTECT(indx = allocVector(REALSXP, count));
         count = 0;
-        if (ns == nmax)
-        { /* no recycling - use fast single-index code */
-            R_ITERATE_CHECK(
-                NINTERRUPT, nmax, i, if (LOGICAL(s)[i]) {
-                    if (LOGICAL(s)[i] == NA_LOGICAL)
-                        REAL(indx)[count++] = NA_REAL;
-                    else
-                        REAL(indx)[count++] = (double)(i + 1);
-                });
-        }
-        else /* otherwise iter-macro */
-            MOD_ITERATE_CHECK(
-                NINTERRUPT, nmax, ns, nmax, i, i1, i2, if (LOGICAL(s)[i1]) {
-                    if (LOGICAL(s)[i1] == NA_LOGICAL)
-                        REAL(indx)[count++] = NA_REAL;
-                    else
-                        REAL(indx)[count++] = (int)(i + 1);
-                });
+        MOD_ITERATE_CHECK(
+            NINTERRUPT, nmax, ns, nmax, i, i1, i2, if (LOGICAL(s)[i1]) {
+                if (LOGICAL(s)[i1] == NA_LOGICAL)
+                    REAL(indx)[count++] = NA_REAL;
+                else
+                    REAL(indx)[count++] = (double)(i + 1);
+            });
 
         UNPROTECT(1);
         return indx;
     }
 #endif
+    // else --- the same code for  non-long vectors --------------------------
+    if (ns == nmax)
+    { /* no recycling - use fast single-index code */
+        const void *vmax = vmaxget();
+        int *buf = (int *)R_alloc(nmax, sizeof(int));
+        count = 0;
+        R_ITERATE_CHECK(
+            NINTERRUPT, nmax, i, if (LOGICAL(s)[i]) {
+                if (LOGICAL(s)[i] == NA_LOGICAL)
+                    buf[count++] = NA_INTEGER;
+                else
+                    buf[count++] = (int)(i + 1);
+            });
+        PROTECT(indx = allocVector(INTSXP, count));
+        memcpy(INTEGER(indx), buf, sizeof(int) * count);
+        vmaxset(vmax);
+        UNPROTECT(1);
+        return indx;
+    }
+
     count = 0;
     /* we only need to scan s once even if we recycle,
        just remember the total count as well as
        the count for the last incomplete chunk (if any) */
     i1 = (ns < nmax) ? (nmax % ns) : 0;
     if (i1 > 0)
-    { /* last recycling chunk is incomple -
+    { /* last recycling chunk is incomplete -
  we have to get the truncated count as well */
         R_xlen_t rem = 0;
         for (i = 0; i < ns; i++)
@@ -667,7 +694,7 @@ static SEXP logicalSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch
         count = count * (nmax / ns) + rem;
     }
     else
-    {
+    { /* nested recycling, total is sufficient */
         for (i = 0; i < ns; i++)
             if (LOGICAL(s)[i])
                 count++;
@@ -675,25 +702,12 @@ static SEXP logicalSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch
     }
     PROTECT(indx = allocVector(INTSXP, count));
     count = 0;
-    if (ns == nmax)
-    { /* no recycling - use fast single-index code */
-        R_ITERATE_CHECK(
-            NINTERRUPT, nmax, i, if (LOGICAL(s)[i]) {
-                if (LOGICAL(s)[i] == NA_LOGICAL)
-                    INTEGER(indx)[count++] = NA_INTEGER;
-                else
-                    INTEGER(indx)[count++] = (int)(i + 1);
-            });
-    }
-    else /* otherwise iter-macro */
-        MOD_ITERATE_CHECK(NINTERRUPT, nmax, ns, nmax, i, i1, i2, {
-            if (LOGICAL(s)[i1])
-            {
-                if (LOGICAL(s)[i1] == NA_LOGICAL)
-                    INTEGER(indx)[count++] = NA_INTEGER;
-                else
-                    INTEGER(indx)[count++] = (int)(i + 1);
-            }
+    MOD_ITERATE_CHECK(
+        NINTERRUPT, nmax, ns, nmax, i, i1, i2, if (LOGICAL(s)[i1]) {
+            if (LOGICAL(s)[i1] == NA_LOGICAL)
+                INTEGER(indx)[count++] = NA_INTEGER;
+            else
+                INTEGER(indx)[count++] = (int)(i + 1);
         });
 
     UNPROTECT(1);
@@ -1118,10 +1132,6 @@ SEXP attribute_hidden makeSubscript(SEXP x, SEXP s, R_xlen_t *stretch, SEXP call
         }
     }
 
-    PROTECT(s = duplicate(s));
-    SET_ATTRIB(s, R_NilValue);
-    SET_OBJECT(s, 0);
-
     SEXP ans = R_NilValue;
     switch (TYPEOF(s))
     {
@@ -1133,15 +1143,23 @@ SEXP attribute_hidden makeSubscript(SEXP x, SEXP s, R_xlen_t *stretch, SEXP call
         ans = logicalSubscript(s, ns, nx, stretch, call);
         break;
     case INTSXP:
+        PROTECT(s = duplicate(s));
+        SET_ATTRIB(s, R_NilValue);
+        SET_OBJECT(s, 0);
         ans = integerSubscript(s, ns, nx, stretch, call);
+        UNPROTECT(1);
         break;
     case REALSXP:
         ans = realSubscript(s, ns, nx, stretch, call);
         break;
     case STRSXP: {
+        PROTECT(s = duplicate(s));
+        SET_ATTRIB(s, R_NilValue);
+        SET_OBJECT(s, 0);
         SEXP names = getAttrib(x, R_NamesSymbol);
         /* *stretch = 0; */
         ans = stringSubscript(s, ns, nx, names, stretch, call);
+        UNPROTECT(1);
         break;
     }
     case SYMSXP:
@@ -1157,6 +1175,5 @@ SEXP attribute_hidden makeSubscript(SEXP x, SEXP s, R_xlen_t *stretch, SEXP call
         else
             errorcall(call, _("invalid subscript type '%s'"), type2char(TYPEOF(s)));
     }
-    UNPROTECT(1);
     return ans;
 }
