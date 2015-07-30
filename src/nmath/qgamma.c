@@ -1,8 +1,8 @@
 /*
  *  Mathlib : A C Library of Special Functions
  *  Copyright (C) 1998 Ross Ihaka
- *  Copyright (C) 2000--2011 The R Core Team
- *  Copyright (C) 2004--2009 The R Foundation
+ *  Copyright (C) 2000--2015 The R Core Team
+ *  Copyright (C) 2004--2015 The R Foundation
  *  based on AS 91 (C) 1979 Royal Statistical Society
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -154,7 +154,7 @@ double qgamma(double p, double alpha, double scale, int lower_tail, int log_p)
     {
         /* Warning seems unnecessary now: */
 #ifdef _DO_WARN_qgamma_
-        MATHLIB_WARNING("value of shape (%g) is extremely small: results may be unreliable", alpha);
+        MATHLIB_WARNING(_("value of shape (%g) is extremely small: results may be unreliable"), alpha);
 #endif
         max_it_Newton = 7; /* may still be increased below */
     }
