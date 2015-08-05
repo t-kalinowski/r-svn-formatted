@@ -1178,7 +1178,10 @@ SEXP getQ0(SEXP sPhi, SEXP sTheta)
 
     if (r == 1)
     {
-        P[0] = 1.0 / (1.0 - phi[0] * phi[0]);
+        if (p == 0)
+            P[0] = 1.0; // PR#16419
+        else
+            P[0] = 1.0 / (1.0 - phi[0] * phi[0]);
         UNPROTECT(1);
         return res;
     }
