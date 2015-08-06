@@ -5632,7 +5632,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP scmd, sopen, ans, class, enc;
     char *class2 = "url";
     const char *url, *open;
-    int ncon, block, raw = 0,
+    int ncon, block, raw = 0, defmeth,
                      meth = 0, // 0: "internal",          1: "libcurl"
         urlmeth;               // 0: (Unix || "default"), 1: UseInternet2 || "wininet"
     cetype_t ienc = CE_NATIVE;
@@ -5697,7 +5697,8 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
 
     // --------- method
     const char *cmeth = CHAR(asChar(CAD4R(args)));
-    meth = streql(cmeth, "libcurl"); // 1 if "libcurL", else 0
+    meth = streql(cmeth, "libcurl"); // 1 if "libcurl", else 0
+    defmeth = streql(cmeth, "default");
     if (streql(cmeth, "wininet"))
     {
 #ifdef Win32
@@ -5724,8 +5725,11 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef HAVE_CURL_CURL_H
         {
             // this is slightly optimistic: we did not check the libcurl build
-            REprintf("ftps:// URLs are not supported by the default method: trying \"libcurl\"\n");
-            R_FlushConsole();
+            if (!defmeth)
+            {
+                REprintf("ftps:// URLs are not supported by method \"internal\": trying \"libcurl\"\n");
+                R_FlushConsole();
+            }
             meth = 1;
         }
 //	error("ftps:// URLs are not supported by the default method:\n   consider url(method = \"libcurl\")");
@@ -5735,18 +5739,29 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef Win32
         if (!urlmeth && strncmp(url, "https://", 8) == 0)
         {
-            REprintf("https:// URLs are not supported by the default method: using \"wininet\"\n");
-            R_FlushConsole();
-            urlmeth = 1;
+#ifdef HAVE_CURL_CURL_H
+            // this is slightly optimistic: we did not check the libcurl build
+            if (!defmeth)
+            {
+                REprintf("https:// URLs are not supported by method \"internal\": trying \"libcurl\"\n");
+                R_FlushConsole();
+            }
+            meth = 1;
         }
-        //   error("for https:// URLs use setInternet2(TRUE)");
+#else
+            //   error("for https:// URLs use setInternet2(TRUE)");
+            error("https:// URLs are not supported");
+#endif
 #else
         if (strncmp(url, "https://", 8) == 0)
 #ifdef HAVE_CURL_CURL_H
         {
             // this is slightly optimistic: we did not check the libcurl build
-            REprintf("https:// URLs are not supported by the default method: trying \"libcurl\"\n");
-            R_FlushConsole();
+            if (!defmeth)
+            {
+                REprintf("https:// URLs are not supported by method \"internal\": trying \"libcurl\"\n");
+                R_FlushConsole();
+            }
             meth = 1;
         }
 //	    error("https:// URLs are not supported by the default method:\n  consider url(method = \"libcurl\")");
@@ -5778,7 +5793,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef HAVE_CURL_CURL_H
             con = R_newCurlUrl(url, strlen(open) ? open : "r", 0);
 #else
-            error("url(method = \"libcurl\") is not supported on this platform");
+                error("url(method = \"libcurl\") is not supported on this platform");
 #endif
         }
         else
