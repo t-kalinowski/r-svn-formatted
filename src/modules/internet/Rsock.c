@@ -2,7 +2,7 @@
  *  R : A Computer Language for Statistical Data Analysis
 
  *  Copyright (C) 1996, 1997  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998-2012   The R Core Team
+ *  Copyright (C) 1998-2015   The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -160,7 +160,6 @@ void in_Rsockwrite(int *sockp, char **buf, int *start, int *end, int *len)
 
 /* --------- for use in socket connections ---------- */
 
-#ifdef HAVE_SOCKETS
 #include <R_ext/R-ftp-http.h>
 
 #ifdef Win32
@@ -168,9 +167,7 @@ void in_Rsockwrite(int *sockp, char **buf, int *start, int *end, int *len)
 #include <io.h>
 #define EWOULDBLOCK WSAEWOULDBLOCK
 #define EINPROGRESS WSAEINPROGRESS
-#endif
-
-#ifdef HAVE_BSD_NETWORKING
+#else
 #include <netdb.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -627,5 +624,3 @@ ssize_t R_SockWrite(int sockp, const void *buf, size_t len, int timeout)
     } while (/* ! blocking && */ len > 0);
     return out;
 }
-
-#endif

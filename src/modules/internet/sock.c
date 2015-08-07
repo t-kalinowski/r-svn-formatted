@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
 
- *  Copyright (C) 1998-2001   The R Core Team
+ *  Copyright (C) 1998-2015   The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -43,11 +43,9 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifdef HAVE_BSD_NETWORKING
 #include <netdb.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#endif
 #endif
 
 #include <R_ext/Error.h>
@@ -58,10 +56,6 @@ extern int h_errno; /* HP-UX 9.05 forgets to declare this in netdb.h */
 #endif
 
 #define MAXBACKLOG 5
-
-#ifndef HAVE_SOCKETS
-static char socket_msg[] = "sockets are not available on this system";
-#endif
 
 static int Sock_error(Sock_error_t perr, int e, int he)
 {
@@ -112,7 +106,6 @@ int Sock_init()
 /* open a socket for listening */
 int Sock_open(Sock_port_t port, Sock_error_t perr)
 {
-#ifdef HAVE_SOCKETS
     int sock;
     struct sockaddr_in server;
 
@@ -161,16 +154,11 @@ int Sock_open(Sock_port_t port, Sock_error_t perr)
     if ((bind(sock, (struct sockaddr *)&server, sizeof(server)) < 0) || (listen(sock, MAXBACKLOG) < 0))
         return Sock_error(perr, errno, 0);
     return sock;
-#else
-    error(socket_msg);
-    return (-1);
-#endif
 }
 
 /* listen on a socket, return name of connecting host in cname */
 int Sock_listen(int fd, char *cname, int buflen, Sock_error_t perr)
 {
-#ifdef HAVE_SOCKETS
     struct sockaddr_in net_client;
     R_SOCKLEN_T len = sizeof(struct sockaddr);
     int retval;
@@ -196,16 +184,11 @@ int Sock_listen(int fd, char *cname, int buflen, Sock_error_t perr)
         cname[nlen] = 0;
     }
     return retval;
-#else
-    error(socket_msg);
-    return (-1);
-#endif
 }
 
 /* open and connect to a socket */
 int Sock_connect(Sock_port_t port, char *sname, Sock_error_t perr)
 {
-#ifdef HAVE_SOCKETS
     struct sockaddr_in server;
     struct hostent *hp;
     int sock;
@@ -232,10 +215,6 @@ int Sock_connect(Sock_port_t port, char *sname, Sock_error_t perr)
         return -1;
     }
     return sock;
-#else
-    error(socket_msg);
-    return (-1);
-#endif
 }
 
 /* close a socket */
@@ -255,7 +234,6 @@ int Sock_close(int fd, Sock_error_t perr)
 /* read from a socket */
 ssize_t Sock_read(int fd, void *buf, size_t size, Sock_error_t perr)
 {
-#ifdef HAVE_SOCKETS
     ssize_t retval;
     do
         retval = recv(fd, buf, size, 0);
@@ -264,16 +242,11 @@ ssize_t Sock_read(int fd, void *buf, size_t size, Sock_error_t perr)
         return Sock_error(perr, errno, 0);
     else
         return retval;
-#else
-    error(socket_msg);
-    return (-1);
-#endif
 }
 
 /* write to a socket */
 ssize_t Sock_write(int fd, const void *buf, size_t size, Sock_error_t perr)
 {
-#ifdef HAVE_SOCKETS
     ssize_t retval;
     do
         retval = send(fd, buf, size, 0);
@@ -282,8 +255,4 @@ ssize_t Sock_write(int fd, const void *buf, size_t size, Sock_error_t perr)
         return Sock_error(perr, errno, 0);
     else
         return retval;
-#else
-    error(socket_msg);
-    return (-1);
-#endif
 }

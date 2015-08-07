@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1998-2001  Daniel Veillard.
- *  Copyright (C) 2001-2014   The R Core Team.
+ *  Copyright (C) 2001-2015   The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -54,7 +54,6 @@
 #endif
 
 extern void R_ProcessEvents(void);
-#if !defined(Unix) || defined(HAVE_BSD_NETWORKING)
 
 #ifdef Win32
 #include <io.h>
@@ -91,7 +90,7 @@ extern void R_FlushConsole(void);
 #include <unistd.h>
 #endif
 
-#ifdef HAVE_BSD_NETWORKING
+#ifdef Unix
 #include <netdb.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -1675,4 +1674,3 @@ char *RxmlNanoHTTPContentType(void *ctx)
     RxmlNanoHTTPCtxtPtr ctxt = (RxmlNanoHTTPCtxtPtr)ctx;
     return (ctxt->contentType);
 }
-#endif /* !Unix or BSD_NETWORKING */
