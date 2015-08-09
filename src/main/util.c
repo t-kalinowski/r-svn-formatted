@@ -2606,7 +2606,7 @@ SEXP attribute_hidden do_pretty(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 /*
     r <- .Internal(formatC(x, as.character(mode), width, digits,
-                   as.character(format), as.character(flag), i.strlen))
+           as.character(format), as.character(flag), i.strlen))
 */
 
 static void str_signif(void *x, R_xlen_t n, const char *type, int width, int digits, const char *format,

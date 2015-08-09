@@ -822,7 +822,7 @@ attribute_hidden void InitS3DefaultTypes()
             break;
         case LANGSXP:
             /* part2 remains R_NilValue: default type cannot be
-           pre-allocated, as it depends on the object value */
+               pre-allocated, as it depends on the object value */
             break;
         case SYMSXP:
             part2 = PROTECT(mkChar("name"));

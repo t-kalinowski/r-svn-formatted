@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996, 1997  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 2000-2014	    The R Core Team
+ *  Copyright (C) 2000-2015	    The R Core Team
  *  Copyright (C) 2005		    The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -514,7 +514,7 @@ static double complex casin(double complex z)
     ri = log(alpha + sqrt(alpha * alpha - 1));
     /* This comes from
        'z_asin() is continuous from below if x >= 1
-        and continuous from above if x <= -1.'
+    and continuous from above if x <= -1.'
     */
     if (y < 0 || (y == 0 && x > 1))
         ri *= -1;

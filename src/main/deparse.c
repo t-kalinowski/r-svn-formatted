@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2014  The R Core Team
+ *  Copyright (C) 1997--2015  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1360,13 +1360,13 @@ static void deparse2buff(SEXP s, LocalParseData *d)
         print2buff(">", d);
 #else
         /* somewhat like the  VECSXP [ "list()" ] case : */
-        /* 	if (localOpts & SHOWATTRIBUTES) attr1(s, d); */
+        /*	if (localOpts & SHOWATTRIBUTES) attr1(s, d); */
         print2buff("new(\"", d);
         print2buff(translateChar(STRING_ELT(class, 0)), d);
         print2buff("\",\n", d);
         //>>>> call vec2buf on the  Attributes >>>>>>>>>  vec2buff(s, d);
         print2buff(")", d);
-        /* 	if (localOpts & SHOWATTRIBUTES) attr2(s, d); */
+        /*	if (localOpts & SHOWATTRIBUTES) attr2(s, d); */
 
 #endif
         break;

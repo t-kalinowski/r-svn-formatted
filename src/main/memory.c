@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998--2014  The R Core Team.
+ *  Copyright (C) 1998--2015  The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -48,9 +48,9 @@
 
    level 0 is no additional instrumentation
    level 1 marks uninitialized numeric, logical, integer, raw,
-           complex vectors and R_alloc memory
+       complex vectors and R_alloc memory
    level 2 marks the data section of vector nodes as inaccessible
-           when they are freed.
+       when they are freed.
 
    level 3 was withdrawn in R 3.2.0.
 

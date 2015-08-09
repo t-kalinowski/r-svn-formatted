@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996	Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998--2014	The R Core Team.
+ *  Copyright (C) 1998--2015	The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -984,7 +984,7 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedvars)
         SET_NO_SPECIAL_SYMBOLS(newrho);
 
     /*  Terminate the previous context and start a new one with the
-        correct environment. */
+    correct environment. */
 
     endcontext(&cntxt);
 

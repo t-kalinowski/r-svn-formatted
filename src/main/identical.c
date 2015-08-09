@@ -280,7 +280,7 @@ Rboolean R_compute_identical(SEXP x, SEXP y, int flags)
     /*#define PREXPR(x)	((x)->u.promsxp.expr)
       #define PRENV(x)	((x)->u.promsxp.env)
       return(R_compute_identical(subsititute(PREXPR(x), PRENV(x),
-                                 flags),
+                     flags),
       subsititute(PREXPR(y), PRENV(y))));*/
     case S4SXP:
         /* attributes already tested, so all slots identical */

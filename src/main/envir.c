@@ -96,7 +96,7 @@
 #include <R_ext/Callbacks.h>
 
 #define FAST_BASE_CACHE_LOOKUP /* Define to enable fast lookups of symbols */
-                               /*    in global cache from base environment */
+/*    in global cache from base environment */
 
 #define IS_USER_DATABASE(rho) (OBJECT((rho)) && inherits((rho), "UserDefinedDatabase"))
 

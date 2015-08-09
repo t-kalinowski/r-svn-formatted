@@ -383,11 +383,11 @@ SEXP DropDims(SEXP x)
            subset.c & others have a contrary version that leaves the
            S4 class in, incorrectly, in the case of vectors.  JMC
            3/3/09 */
-        /* 	if(IS_S4_OBJECT(x)) {/\* no longer valid subclass of array or
+        /*	if(IS_S4_OBJECT(x)) {/\* no longer valid subclass of array or
             matrix *\/ */
-        /* 	    setAttrib(x, R_ClassSymbol, R_NilValue); */
-        /* 	    UNSET_S4_OBJECT(x); */
-        /* 	} */
+        /*	    setAttrib(x, R_ClassSymbol, R_NilValue); */
+        /*	    UNSET_S4_OBJECT(x); */
+        /*	} */
         UNPROTECT(1); /* newnames */
     }
     else
@@ -1762,14 +1762,14 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
     dim <- as.integer(dim)
     vl <- prod(dim)
     if (length(data) != vl) {
-        if (vl > .Machine$integer.max)
-            stop("'dim' specifies too large an array")
-        data <- rep(data, length.out = vl)
+    if (vl > .Machine$integer.max)
+        stop("'dim' specifies too large an array")
+    data <- rep(data, length.out = vl)
     }
     if (length(dim))
-        dim(data) <- dim
+    dim(data) <- dim
     if (is.list(dimnames) && length(dimnames))
-        dimnames(data) <- dimnames
+    dimnames(data) <- dimnames
     data
 }
 */

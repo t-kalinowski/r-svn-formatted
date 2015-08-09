@@ -677,12 +677,12 @@ typedef struct
 
     ZPOS64_T size_central_dir;   /* size of the central directory  */
     ZPOS64_T offset_central_dir; /* offset of start of central directory with
-                                 respect to the starting disk number */
+                 respect to the starting disk number */
 
     unz_file_info64 cur_file_info;                   /* public info about the current file in zip*/
     unz_file_info64_internal cur_file_info_internal; /* private info about it*/
     file_in_zip64_read_info_s *pfile_in_zip_read;    /* structure about the current
-                                           file if we are decompressing it */
+                       file if we are decompressing it */
     int encrypted;
 
     int isZip64;
@@ -843,9 +843,9 @@ local int strcmpcasenosensitive_internal(const char *fileName1, const char *file
    Compare two filename (fileName1,fileName2).
    If iCaseSenisivity = 1, comparision is case sensitivity (like strcmp)
    If iCaseSenisivity = 2, comparision is not case sensitivity (like strcmpi
-                                                                or strcasecmp)
+                                or strcasecmp)
    If iCaseSenisivity = 0, case sensitivity is defaut of your operating system
-        (like 1 on Unix, 2 on Windows)
+    (like 1 on Unix, 2 on Windows)
 
 */
 extern int ZEXPORT unzStringFileNameCompare(const char *fileName1, const char *fileName2, int iCaseSensitivity)
@@ -1039,12 +1039,12 @@ local unzFile unzOpenInternal(const void *path, int is64bitOpenFunction)
     uLong uL;
 
     uLong number_disk;         /* number of the current dist, used for
-                                  spaning ZIP, unsupported, always 0*/
+                  spaning ZIP, unsupported, always 0*/
     uLong number_disk_with_CD; /* number the disk with central dir, used
-                                  for spaning ZIP, unsupported, always 0*/
+                  for spaning ZIP, unsupported, always 0*/
     ZPOS64_T number_entry_CD;  /* total number of entries in
-                               the central dir
-                               (same than number_entry on nospan) */
+               the central dir
+               (same than number_entry on nospan) */
 
     int err = UNZ_OK;
 
@@ -1619,9 +1619,9 @@ extern int ZEXPORT unzLocateFile(unzFile file, const char *szFileName, int iCase
 /*
   Read the local header of the current zipfile
   Check the coherency of the local header and info in the end of central
-        directory about this file
+    directory about this file
   store in *piSizeVar the size of extra info in local header
-        (filename and size of extra field data)
+    (filename and size of extra field data)
 */
 local int unz64local_CheckCurrentFileCoherencyHeader(unz64_s *s, uInt *piSizeVar, ZPOS64_T *poffset_local_extrafield,
                                                      uInt *psize_local_extrafield)
@@ -1651,7 +1651,7 @@ local int unz64local_CheckCurrentFileCoherencyHeader(unz64_s *s, uInt *piSizeVar
         err = UNZ_ERRNO;
     /*
         else if ((err == UNZ_OK) && (uData!=s->cur_file_info.wVersion))
-            err=UNZ_BADZIPFILE;
+        err=UNZ_BADZIPFILE;
     */
     if (unz64local_getShort(s->filestream, &uFlags) != UNZ_OK)
         err = UNZ_ERRNO;
@@ -2004,9 +2004,9 @@ static int unzReadCurrentFile(unzFile file, voidp buf, unsigned len)
 
             /*
             if ((pfile_in_zip_read_info->rest_read_uncompressed ==
-                     pfile_in_zip_read_info->stream.avail_out) &&
-                (pfile_in_zip_read_info->rest_read_compressed == 0))
-                flush = Z_FINISH;
+                 pfile_in_zip_read_info->stream.avail_out) &&
+            (pfile_in_zip_read_info->rest_read_compressed == 0))
+            flush = Z_FINISH;
             */
             err = inflate(&pfile_in_zip_read_info->stream, flush);
 
