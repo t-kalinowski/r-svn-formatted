@@ -5629,8 +5629,8 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     char *class2 = "url";
     const char *url, *open;
     int ncon, block, raw = 0, defmeth,
-                     meth = 0, // 0: "internal",          1: "libcurl"
-        urlmeth;               // 0: (Unix || "default"), 1: UseInternet2 || "wininet"
+                     meth = 0, // 0: "default" | "internal" | "wininet", 1: "libcurl"
+        winmeth;               // 0: "internal", 1: "wininet" (Windows only)
     cetype_t ienc = CE_NATIVE;
     Rconnection con = NULL;
 
@@ -5642,7 +5642,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     if (LENGTH(scmd) > 1)
         warning(_("only first element of 'description' argument used"));
 #ifdef Win32
-    urlmeth = UseInternet2;
+    winmeth = UseInternet2;
     if (PRIMVAL(op) == 1 && !IS_ASCII(STRING_ELT(scmd, 0)))
     { // file(<non-ASCII>, *)
         ienc = CE_UTF8;
@@ -5657,7 +5657,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
             url = translateChar(STRING_ELT(scmd, 0));
     }
 #else
-    urlmeth = 0;
+    winmeth = 0;
     url = translateChar(STRING_ELT(scmd, 0));
 #endif
 
@@ -5669,11 +5669,13 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
         type = FTPsh;
     else if (strncmp(url, "https://", 8) == 0)
         type = HTTPSsh;
-    // ftps:// is available via most libcurl.
+    // ftps:// is available via most libcurl, only
+    // The internal and wininet methods will create a connection
+    // but refuse to open it so as from R 3.2.0 we switch to libcurl
     else if (strncmp(url, "ftps://", 7) == 0)
         type = FTPSsh;
     else
-        inet = FALSE;
+        inet = FALSE; // file:// URL or a file path
 
     // --------- open
     sopen = CADR(args);
@@ -5696,18 +5698,19 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     if (streql(cmeth, "wininet"))
     {
 #ifdef Win32
-        urlmeth = 1;
+        winmeth = 1;
 #else
         error(_("method = \"wininet\" is only supported on Windows"));
 #endif
     }
 #ifdef Win32
     else if (streql(cmeth, "internal"))
-        urlmeth = 0;
+        winmeth = 0;
 #endif
 
+    // --------- raw, for file() only
     if (PRIMVAL(op) == 1)
-    { // file() -- has extra  'raw'  argument
+    {
         raw = asLogical(CAD4R(CDR(args)));
         if (raw == NA_LOGICAL)
             error(_("invalid '%s' argument"), "raw");
@@ -5718,47 +5721,44 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
         if (strncmp(url, "ftps://", 7) == 0)
 #ifdef HAVE_LIBCURL
         {
-            // this is slightly optimistic: we did not check the libcurl build
             if (!defmeth)
             {
+                // We did not check ftps protocol support
                 REprintf("ftps:// URLs are not supported by method \"internal\": trying \"libcurl\"\n");
                 R_FlushConsole();
             }
             meth = 1;
         }
-//	error("ftps:// URLs are not supported by the default method:\n   consider url(method = \"libcurl\")");
 #else
             error("ftps:// URLs are not supported");
 #endif
 #ifdef Win32
-        if (!urlmeth && strncmp(url, "https://", 8) == 0)
+        if (!winmeth && strncmp(url, "https://", 8) == 0)
         {
 #ifdef HAVE_LIBCURL
-            // this is slightly optimistic: we did not check the libcurl build
             if (!defmeth)
             {
+                // We did not check protocol support on Windows.
                 REprintf("https:// URLs are not supported by method \"internal\": trying \"libcurl\"\n");
                 R_FlushConsole();
             }
             meth = 1;
         }
 #else
-            //   error("for https:// URLs use setInternet2(TRUE)");
             error("https:// URLs are not supported");
 #endif
 #else
         if (strncmp(url, "https://", 8) == 0)
 #ifdef HAVE_LIBCURL
         {
-            // this is slightly optimistic: we did not check the libcurl build
+            // We did check the libcurl build as from R 3.3.0
             if (!defmeth)
             {
-                REprintf("https:// URLs are not supported by method \"internal\": trying \"libcurl\"\n");
+                REprintf("https:// URLs are not supported by method \"internal\": using \"libcurl\"\n");
                 R_FlushConsole();
             }
             meth = 1;
         }
-//	    error("https:// URLs are not supported by the default method:\n  consider url(method = \"libcurl\")");
 #else
             error("https:// URLs are not supported");
 #endif
@@ -5790,7 +5790,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         else
         {
-            con = R_newurl(url, strlen(open) ? open : "r", urlmeth);
+            con = R_newurl(url, strlen(open) ? open : "r", winmeth);
             ((Rurlconn)con->private)->type = type;
         }
     }
