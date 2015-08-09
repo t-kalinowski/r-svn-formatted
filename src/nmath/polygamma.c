@@ -1,7 +1,7 @@
 /*
  *  Mathlib : A C Library of Special Functions
  *  Copyright (C) 1998 Ross Ihaka
- *  Copyright (C) 2000-2014 The R Core Team
+ *  Copyright (C) 2000-2015 The R Core Team
  *  Copyright (C) 2004-2009 The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -120,8 +120,8 @@
  *
  *  AUTHOR
  *
- *    Amos, D. E.  	(Fortran)
- *    Ross Ihaka   	(C Translation)
+ *    Amos, D. E.	(Fortran)
+ *    Ross Ihaka	(C Translation)
  *    Martin Maechler   (x < 0, and psigamma())
  *
  *  REFERENCES

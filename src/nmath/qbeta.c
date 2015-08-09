@@ -479,8 +479,8 @@ L_Newton:
              *   =  (L(.) - la)*F(.) / {F'(e^u) * e^u } =
              *   =  (L(.) - la) * e^L(.) * e^{-log F'(e^u) - u}
              *   =  ( y   - la) * e^{ y - u -log F'(e^u)}
-                and  -log F'(x)= -log f(x) =  + logbeta + (1-p) log(x) + (1-q) log(1-x)
-                           = logbeta + (1-p) u + (1-q) log(1-e^u)
+            and  -log F'(x)= -log f(x) =  + logbeta + (1-p) log(x) + (1-q) log(1-x)
+                       = logbeta + (1-p) u + (1-q) log(1-e^u)
              */
             w = (y == ML_NEGINF) // y = -Inf  well possible: we are on log scale!
                     ? 0.
@@ -504,7 +504,7 @@ L_Newton:
                         if (prev <= acu || fabs(w) <= acu)
                         {
                             /* R_ifDEBUG_printf(" -adj=%g, %s <= acu  ==> convergence\n", */
-                            /* 	 -adj, (prev <= acu) ? "prev" : "|w|"); */
+                            /*	 -adj, (prev <= acu) ? "prev" : "|w|"); */
                             R_ifDEBUG_printf(" it{in}=%d, -adj=%g, %s <= acu  ==> convergence\n", i_inn, -adj,
                                              (prev <= acu) ? "prev" : "|w|");
                             goto L_converged;
