@@ -503,13 +503,14 @@ static SEXP in_do_download(SEXP args)
     cacheOK = asLogical(CAR(args));
     if (cacheOK == NA_LOGICAL)
         error(_("invalid '%s' argument"), "cacheOK");
+    Rboolean file_URL = (strncmp(url, "file://", 7) == 0);
 #ifdef Win32
     int meth = asLogical(CADR(args));
     if (meth == NA_LOGICAL)
         error(_("invalid '%s' argument"), "method");
     if (meth == 0)
         meth = UseInternet2;
-    if (R_Interactive && !quiet && !pbar.wprog)
+    if (!file_URL && R_Interactive && !quiet && !pbar.wprog)
     {
         pbar.wprog = newwindow(_("Download progress"), rect(0, 0, 540, 100), Titlebar | Centered);
         setbackground(pbar.wprog, dialog_bg());
@@ -518,7 +519,7 @@ static SEXP in_do_download(SEXP args)
         pbar.pc = 0;
     }
 #endif
-    if (strncmp(url, "file://", 7) == 0)
+    if (file_URL)
     {
         FILE *in, *out;
         static char buf[CPBUFSIZE];
@@ -531,7 +532,7 @@ static SEXP in_do_download(SEXP args)
             nh = 8;
 #endif
 
-        /* Use binary transfers */
+        /* Use binary transfers? */
         in = R_fopen(R_ExpandFileName(url + nh), (mode[2] == 'b') ? "rb" : "r");
         if (!in)
         {
