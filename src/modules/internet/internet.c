@@ -113,7 +113,7 @@ static Rboolean url_open(Rconnection con)
     {
 #ifdef Win32
     case HTTPSsh:
-        warning(_("for https:// URLs use setInternet2(TRUE)"));
+        warning(_("for https:// URLs use method = \"wininet\""));
         return FALSE;
 #endif
     case HTTPsh: {
@@ -508,8 +508,7 @@ static SEXP in_do_download(SEXP args)
     int meth = asLogical(CADR(args));
     if (meth == NA_LOGICAL)
         error(_("invalid '%s' argument"), "method");
-    if (meth == 0)
-        meth = UseInternet2;
+    //    if(meth == 0) meth = UseInternet2;
     if (!file_URL && R_Interactive && !quiet && !pbar.wprog)
     {
         pbar.wprog = newwindow(_("Download progress"), rect(0, 0, 540, 100), Titlebar | Centered);
