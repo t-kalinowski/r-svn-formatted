@@ -242,7 +242,7 @@ double logspace_sub(double logx, double logy)
 #define EXP exp
 #define LOG log
 #endif
-double logspace_sum(double *logx, int n)
+double logspace_sum(const double *logx, int n)
 {
     if (n == 0)
         return ML_NEGINF; // = log( sum(<empty>) )
