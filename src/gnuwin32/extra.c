@@ -171,6 +171,7 @@ SEXP in_loadRconsole(SEXP sfile)
 typedef void(WINAPI *PGNSI)(LPSYSTEM_INFO);
 
 /* base::Sys.info */
+// keep in step with src/library/utils/src/windows/util.c
 SEXP do_sysinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, ansnames;
@@ -198,13 +199,28 @@ SEXP do_sysinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             if (osvi.wProductType == VER_NT_WORKSTATION)
             {
+                char *desc = "";
                 if (osvi.dwMinorVersion == 0)
-                    strcpy(ver, "Vista");
+                    desc = "Vista";
+                else if (osvi.dwMinorVersion == 1)
+                    desc = "7";
+                else if (osvi.dwMinorVersion == 2)
+                    desc = ">= 8";
                 else
-                    strcpy(ver, "7");
+                    desc = "> 8";
             }
             else
-                strcpy(ver, "Server 2008");
+            {
+                if (osvi.dwMinorVersion == 0)
+                    desc = "Server 2008";
+                else if (osvi.dwMinorVersion == 1)
+                    desc = "Server 2008 R2";
+                else if (osvi.dwMinorVersion == 2)
+                    desc = "Server >= 2012";
+                else
+                    desc = "Server > 2012";
+            }
+            strcpy(ver, desc);
         }
         if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 0)
             strcpy(ver, "2000");
