@@ -53,7 +53,8 @@ SEXP winver(void)
         char *desc = "", *type = "";
         SYSTEM_INFO si;
         // future-proof
-        snprintf(ver, 256, "%d.%d", (int)osvi.dwMajorVersion, (int)osvi.dwMinorVersion) if (osvi.dwMajorVersion == 10)
+        snprintf(ver, 256, "%d.%d", (int)osvi.dwMajorVersion, (int)osvi.dwMinorVersion);
+        if (osvi.dwMajorVersion == 10)
         {
             if (osvi.wProductType == VER_NT_WORKSTATION)
                 desc = "10";
@@ -91,8 +92,10 @@ SEXP winver(void)
                     desc = "Server > 2012";
             }
         }
-        else if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 0) desc = "2000";
-        else if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 1) desc = "XP";
+        else if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 0)
+            desc = "2000";
+        else if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 1)
+            desc = "XP";
         else if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 2)
         {
             if (osvi.wProductType == VER_NT_WORKSTATION)
