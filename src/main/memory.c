@@ -3584,7 +3584,7 @@ int(SETLEVELS)(SEXP x, int v)
 }
 void DUPLICATE_ATTRIB(SEXP to, SEXP from)
 {
-    SET_ATTRIB(CHK(to), duplicate(CHK(ATTRIB(CHK(from)))));
+    SET_ATTRIB(CHK(to), shallow_duplicate(CHK(ATTRIB(CHK(from)))));
     SET_OBJECT(CHK(to), OBJECT(from));
     IS_S4_OBJECT(from) ? SET_S4_OBJECT(to) : UNSET_S4_OBJECT(to);
 }
