@@ -51,7 +51,7 @@
     {                                                                                                                  \
         PROTECT(sy = allocVector(REALSXP, 0));                                                                         \
         if (na == 0)                                                                                                   \
-            DUPLICATE_ATTRIB(sy, sa);                                                                                  \
+            SHALLOW_DUPLICATE_ATTRIB(sy, sa);                                                                          \
         UNPROTECT(1);                                                                                                  \
         return (sy);                                                                                                   \
     }                                                                                                                  \
@@ -68,9 +68,9 @@
     if (naflag)                                                                                                        \
         warning(R_MSG_NA);                                                                                             \
     if (n == na)                                                                                                       \
-        DUPLICATE_ATTRIB(sy, sa);                                                                                      \
+        SHALLOW_DUPLICATE_ATTRIB(sy, sa);                                                                              \
     else if (n == nb)                                                                                                  \
-        DUPLICATE_ATTRIB(sy, sb);                                                                                      \
+        SHALLOW_DUPLICATE_ATTRIB(sy, sb);                                                                              \
     UNPROTECT(3)
 
 #define if_NA_Math2_set(y, a, b)                                                                                       \
@@ -212,11 +212,11 @@ DEFMATH2_2(qsignrank)
         warning(R_MSG_NA);                                                                                             \
                                                                                                                        \
     if (n == na)                                                                                                       \
-        DUPLICATE_ATTRIB(sy, sa);                                                                                      \
+        SHALLOW_DUPLICATE_ATTRIB(sy, sa);                                                                              \
     else if (n == nb)                                                                                                  \
-        DUPLICATE_ATTRIB(sy, sb);                                                                                      \
+        SHALLOW_DUPLICATE_ATTRIB(sy, sb);                                                                              \
     else if (n == nc)                                                                                                  \
-        DUPLICATE_ATTRIB(sy, sc);                                                                                      \
+        SHALLOW_DUPLICATE_ATTRIB(sy, sc);                                                                              \
     UNPROTECT(4)
 
 static SEXP math3_1(SEXP sa, SEXP sb, SEXP sc, SEXP sI, double (*f)(double, double, double, int))
@@ -383,13 +383,13 @@ DEFMATH3_2(qwilcox)
         warning(R_MSG_NA);                                                                                             \
                                                                                                                        \
     if (n == na)                                                                                                       \
-        DUPLICATE_ATTRIB(sy, sa);                                                                                      \
+        SHALLOW_DUPLICATE_ATTRIB(sy, sa);                                                                              \
     else if (n == nb)                                                                                                  \
-        DUPLICATE_ATTRIB(sy, sb);                                                                                      \
+        SHALLOW_DUPLICATE_ATTRIB(sy, sb);                                                                              \
     else if (n == nc)                                                                                                  \
-        DUPLICATE_ATTRIB(sy, sc);                                                                                      \
+        SHALLOW_DUPLICATE_ATTRIB(sy, sc);                                                                              \
     else if (n == nd)                                                                                                  \
-        DUPLICATE_ATTRIB(sy, sd);                                                                                      \
+        SHALLOW_DUPLICATE_ATTRIB(sy, sd);                                                                              \
     UNPROTECT(5)
 
 static SEXP math4_1(SEXP sa, SEXP sb, SEXP sc, SEXP sd, SEXP sI, double (*f)(double, double, double, double, int))

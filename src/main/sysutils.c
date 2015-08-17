@@ -685,7 +685,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
             else
             {
                 PROTECT(ans = allocVector(STRSXP, LENGTH(x)));
-                DUPLICATE_ATTRIB(ans, x);
+                SHALLOW_DUPLICATE_ATTRIB(ans, x);
             }
         }
         else
@@ -695,7 +695,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
             if (toRaw)
             {
                 PROTECT(ans = allocVector(VECSXP, LENGTH(x)));
-                DUPLICATE_ATTRIB(ans, x);
+                SHALLOW_DUPLICATE_ATTRIB(ans, x);
             }
             else
                 PROTECT(ans = duplicate(x));

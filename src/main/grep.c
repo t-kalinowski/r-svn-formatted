@@ -2376,7 +2376,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     else
         tre_regfree(&reg);
-    DUPLICATE_ATTRIB(ans, text);
+    SHALLOW_DUPLICATE_ATTRIB(ans, text);
     /* This copied the class, if any */
     UNPROTECT(1);
     return ans;
