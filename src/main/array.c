@@ -215,7 +215,8 @@ SEXP attribute_hidden do_matrix(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         break;
         case RAWSXP:
-            memset(RAW(ans), 0, N);
+            if (N)
+                memset(RAW(ans), 0, N);
             break;
         default:
             /* don't fill with anything */
