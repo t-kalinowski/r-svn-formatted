@@ -111,7 +111,7 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta /* = ncp */
 
     if (theta < 80)
     { /* use 110 for Inf, as ppois(110, 80/2, lower.tail=FALSE) is 2e-20 */
-        LDOUBLE sum, sum2, lambda = 0.5 * theta, pr, ans;
+        LDOUBLE lambda = 0.5 * theta, ans;
         int i;
         // Have  pgamma(x,s) < x^s / Gamma(s+1) (< and ~= for small x)
         // ==> pchisq(x, f) = pgamma(x, f/2, 2) = pgamma(x/2, f/2)
@@ -123,8 +123,8 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta /* = ncp */
         {
             // all  pchisq(x, f+2*i, lower_tail, FALSE), i=0,...,110 would underflow to 0.
             // ==> work in log scale
+            double sum, sum2, pr = -lambda;
             sum = sum2 = ML_NEGINF;
-            pr = -lambda;
             /* we need to renormalize here: the result could be very close to 1 */
             for (i = 0; i < 110; pr += LOG(lambda) - LOG(++i))
             {
@@ -142,8 +142,7 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta /* = ncp */
         }
         else
         {
-            sum = sum2 = 0;
-            pr = EXP(-lambda); // does this need a feature test?
+            LDOUBLE sum = 0, sum2 = 0, pr = EXP(-lambda); // does this need a feature test?
             /* we need to renormalize here: the result could be very close to 1 */
             for (i = 0; i < 110; pr *= lambda / ++i)
             {
