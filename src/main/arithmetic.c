@@ -229,7 +229,7 @@ double R_pow(double x, double y) /* = x ^ y */
         else
         {                                     /* (-Inf) ^ y */
             if (R_FINITE(y) && y == floor(y)) /* (-Inf) ^ n */
-                return (y < 0.) ? 0. : (myfmod(y, 2.) ? x : -x);
+                return (y < 0.) ? 0. : (myfmod(y, 2.) != 0 ? x : -x);
         }
     }
     if (!R_FINITE(y))

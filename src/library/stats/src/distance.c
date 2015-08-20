@@ -176,10 +176,10 @@ static double R_dist_binary(double *x, int nr, int nc, int i1, int i2)
             }
             else
             {
-                if (x[i1] || x[i2])
+                if (x[i1] != 0. || x[i2] != 0.)
                 {
                     count++;
-                    if (!(x[i1] && x[i2]))
+                    if (!(x[i1] != 0. && x[i2] != 0.))
                         dist++;
                 }
                 total++;

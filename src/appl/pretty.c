@@ -159,11 +159,11 @@ attribute_hidden double R_pretty(double *lo, double *up, int *ndiv, int min_n, d
 #endif
     if (eps_correction && (eps_correction > 1 || !i_small))
     {
-        if (*lo)
+        if (*lo != 0.)
             *lo *= (1 - DBL_EPSILON);
         else
             *lo = -DBL_MIN;
-        if (*up)
+        if (*up != 0.)
             *up *= (1 + DBL_EPSILON);
         else
             *up = +DBL_MIN;

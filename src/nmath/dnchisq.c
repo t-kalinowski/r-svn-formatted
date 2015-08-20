@@ -103,7 +103,7 @@ double dnchisq(double x, double df, double ncp, int give_log)
     term = mid;
     df = dfmid;
     i = imax;
-    while (i)
+    while (i != 0)
     {
         df -= 2;
         q = i * df / x2;
