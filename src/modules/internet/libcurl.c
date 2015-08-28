@@ -245,9 +245,6 @@ static int curlMultiCheckerrs(CURLM *mhnd)
                 strerr = curl_easy_strerror(msg->data.result);
                 status = -1;
             }
-
-            /* FIXME: clean up multi-handle */
-
             warning(_("URL '%s': HTTP status was '%d %s'"), url, status, strerr);
             retval += 1;
         }
@@ -272,7 +269,6 @@ static void curlCommon(CURL *hnd, int redirect, int verify)
         curl_easy_setopt(hnd, CURLOPT_SSL_VERIFYHOST, 0L);
         curl_easy_setopt(hnd, CURLOPT_SSL_VERIFYPEER, 0L);
     }
-    curl_easy_setopt(hnd, CURLOPT_FAILONERROR, 1L);
     // for consistency, but all that does is look up an option.
     SEXP sMakeUserAgent = install("makeUserAgent");
     SEXP agentFun = PROTECT(lang2(sMakeUserAgent, ScalarLogical(0)));
@@ -591,6 +587,7 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
         else
             curl_easy_setopt(hnd[i], CURLOPT_NOPROGRESS, 1L);
 
+        curl_easy_setopt(hnd[i], CURLOPT_FAILONERROR, 1L);
         /* Users will normally expect to follow redirections, although
            that is not the default in either curl or libcurl. */
         curlCommon(hnd[i], 1, 1);
@@ -840,6 +837,7 @@ static Rboolean Curl_open(Rconnection con)
 
     ctxt->hnd = curl_easy_init();
     curl_easy_setopt(ctxt->hnd, CURLOPT_URL, url);
+    curl_easy_setopt(ctxt->hnd, CURLOPT_FAILONERROR, 1L);
     curlCommon(ctxt->hnd, 1, 1);
     curl_easy_setopt(ctxt->hnd, CURLOPT_NOPROGRESS, 1L);
     curl_easy_setopt(ctxt->hnd, CURLOPT_TCP_KEEPALIVE, 1L);
