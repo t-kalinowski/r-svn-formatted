@@ -11,8 +11,10 @@
  * be used for encoding validation purpose.
  */
 
-/* Primary source is apparently
+/* Primary source was
    http://code.google.com/p/win-iconv/source/checkout
+   but now (Aug 2015)
+   https://raw.githubusercontent.com/win-iconv/win-iconv/master/win_iconv.c
 
    Original R version from http://www.gtk.org/download-windows.html
 
@@ -471,7 +473,7 @@ static struct
     {10002, "x-mac-chinesetrad"}, /* MAC Traditional Chinese (Big5); Chinese Traditional (Mac) */
     {10003, "x-mac-korean"},      /* Korean (Mac) */
     {10004, "x-mac-arabic"},      /* Arabic (Mac) */
-    {10004, "macarabic"},         /* Arabic (Mac) */
+    {10004, "macarabic"},         /* Arabic (Mac), no longer in the master */
     {10005, "x-mac-hebrew"},      /* Hebrew (Mac) */
     {10005, "machebrew"},
     {10006, "x-mac-greek"}, /* Greek (Mac) */
@@ -545,7 +547,7 @@ static struct
     /* latin2 etc are R additions */
     {28592, "latin2"},
     {28593, "iso-8859-3"}, /* ISO 8859-3 Latin 3 */
-    {28593, "iso8859-3"},
+    {28593, "iso8859-3"},  /* ISO 8859-3 Latin 3 */
     {28593, "iso_8859-3"},
     {28593, "iso_8859_3"},
     {28593, "latin3"},
@@ -608,6 +610,7 @@ static struct
     {51932, "euc-jp"}, /* EUC Japanese */
     {51936, "EUC-CN"}, /* EUC Simplified Chinese; Chinese Simplified (EUC) */
     {51949, "euc-kr"}, /* EUC Korean */
+    // R additions
     {51932, "eucjp"},
     {51936, "EUCCN"},
     {51949, "euckr"},
@@ -714,6 +717,7 @@ iconv_t iconv_open(const char *tocode, const char *fromcode)
     cd = (rec_iconv_t *)calloc(1, sizeof(rec_iconv_t));
     if (cd == NULL)
     {
+        // Setting errno is R addition
         errno = ENOMEM;
         return (iconv_t)(-1);
     }
@@ -725,6 +729,7 @@ iconv_t iconv_open(const char *tocode, const char *fromcode)
         return (iconv_t)cd;
 
     free(cd);
+    // setting errno is R addition
     errno = EINVAL;
     return (iconv_t)(-1);
 }
@@ -892,6 +897,8 @@ static int make_csconv(const char *_name, csconv_t *cv)
     char *name;
     char *p;
 
+    // original uses local strndup here, but copies all the string.
+    // encoding names are never very long, so could use a stack buffer
     name = strdup(_name);
     if (name == NULL)
         return FALSE;
@@ -1063,7 +1070,7 @@ static int mbtowc_flags(int codepage)
 /*
  * Check if codepage is one those for which the lpUsedDefaultChar
  * parameter to WideCharToMultiByte() must be NULL.  The docs in
- * Platform SDK for for Windows Server 2003 R2 claims that this is the
+ * Platform SDK for Windows Server 2003 R2 claims that this is the
  * list below, while the MSDN docs for MSVS2008 claim that it is only
  * for 65000 (UTF-7) and 65001 (UTF-8). This time the earlier Platform
  * SDK seems to be correct, at least for XP.
@@ -1727,6 +1734,7 @@ static int iso2022jp_flush(csconv_t *cv, uchar *buf, int bufsize)
     return 0;
 }
 
+// R addition
 void iconvlist(int (*do_one)(unsigned int namescount, const char *const *names, void *data), void *data)
 {
     size_t j = 0;
