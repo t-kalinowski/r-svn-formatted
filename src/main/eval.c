@@ -1586,8 +1586,6 @@ SEXP attribute_hidden do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(args);
     PROTECT(rho);
     PROTECT(val = eval(val, rho));
-    defineVar(sym, R_NilValue, rho);
-    PROTECT(cell = GET_BINDING_CELL(sym, rho));
 
     /* deal with the case where we are iterating over a factor
        we need to coerce to character - then iterate */
@@ -1606,6 +1604,8 @@ SEXP attribute_hidden do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     val_type = TYPEOF(val);
 
+    defineVar(sym, R_NilValue, rho);
+    PROTECT(cell = GET_BINDING_CELL(sym, rho));
     dbg = RDEBUG(rho);
     bgn = BodyHasBraces(body);
 
@@ -5921,6 +5921,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 SEXP h = findVar(R_DotsSymbol, rho);
                 if (TYPEOF(h) == DOTSXP || h == R_NilValue)
                 {
+                    PROTECT(h);
                     for (; h != R_NilValue; h = CDR(h))
                     {
                         SEXP val;
@@ -5931,6 +5932,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                         PUSHCALLARG(val);
                         SETCALLARG_TAG(TAG(h));
                     }
+                    UNPROTECT(1); /* h */
                 }
                 else if (h != R_MissingArg)
                     error(_("'...' used in an incorrect context"));

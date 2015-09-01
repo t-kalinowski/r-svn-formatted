@@ -1627,6 +1627,7 @@ Rboolean R_taskCallbackRoutine(SEXP expr, SEXP value, Rboolean succeeded, Rboole
     }
 
     val = R_tryEval(e, NULL, &errorOccurred);
+    UNPROTECT(1); /* e */
     if (!errorOccurred)
     {
         PROTECT(val);
