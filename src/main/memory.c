@@ -4376,13 +4376,9 @@ void *R_AllocStringBuffer(size_t blen, R_StringBuffer *buf)
 {
     size_t blen1, bsize = buf->defaultSize;
 
-    /* for backwards compatibility, probably no longer needed */
+    /* for backwards compatibility, this used to free the buffer */
     if (blen == (size_t)-1)
-    {
-        warning("R_AllocStringBuffer(-1) used: please report");
-        R_FreeStringBufferL(buf);
-        return NULL;
-    }
+        error("R_AllocStringBuffer( (size_t)-1 ) is no longer allowed");
 
     if (blen * sizeof(char) < buf->bufsize)
         return buf->data;

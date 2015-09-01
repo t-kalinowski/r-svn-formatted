@@ -109,6 +109,9 @@ typedef struct
 #include <rpc/types.h>
 #include <rpc/xdr.h>
 
+#define SMBUF_SIZE 512
+#define SMBUF_SIZED_STRING "%511s"
+
     typedef struct
 {
     /* These variables are accessed in the
@@ -122,7 +125,7 @@ typedef struct
     */
 
     R_StringBuffer buffer;
-    char smbuf[512]; /* Small buffer for temp use */
+    char smbuf[SMBUF_SIZE]; /* Small buffer for temp use */
     /* smbuf is only used by Ascii. */
     XDR xdrs;
 } SaveLoadData;
@@ -194,7 +197,7 @@ static void DummyTerm(FILE *fp, SaveLoadData *d)
 static int AsciiInInteger(FILE *fp, SaveLoadData *d)
 {
     int x, res;
-    res = fscanf(fp, "%s", d->smbuf);
+    res = fscanf(fp, SMBUF_SIZED_STRING, d->smbuf);
     if (res != 1)
         error(_("read error"));
     if (strcmp(d->smbuf, "NA") == 0)
@@ -211,7 +214,7 @@ static int AsciiInInteger(FILE *fp, SaveLoadData *d)
 static double AsciiInReal(FILE *fp, SaveLoadData *d)
 {
     double x;
-    int res = fscanf(fp, "%s", d->smbuf);
+    int res = fscanf(fp, SMBUF_SIZED_STRING, d->smbuf);
     if (res != 1)
         error(_("read error"));
     if (strcmp(d->smbuf, "NA") == 0)
@@ -231,7 +234,7 @@ static Rcomplex AsciiInComplex(FILE *fp, SaveLoadData *d)
 {
     Rcomplex x;
     int res;
-    res = fscanf(fp, "%s", d->smbuf);
+    res = fscanf(fp, SMBUF_SIZED_STRING, d->smbuf);
     if (res != 1)
         error(_("read error"));
     if (strcmp(d->smbuf, "NA") == 0)
@@ -247,7 +250,7 @@ static Rcomplex AsciiInComplex(FILE *fp, SaveLoadData *d)
             error(_("read error"));
     }
 
-    res = fscanf(fp, "%s", d->smbuf);
+    res = fscanf(fp, SMBUF_SIZED_STRING, d->smbuf);
     if (res != 1)
         error(_("read error"));
     if (strcmp(d->smbuf, "NA") == 0)
@@ -1455,7 +1458,7 @@ static int InIntegerAscii(FILE *fp, SaveLoadData *unused)
 {
     char buf[128];
     int x, res;
-    res = fscanf(fp, "%s", buf);
+    res = fscanf(fp, SMBUF_SIZED_STRING, buf);
     if (res != 1)
         error(_("read error"));
     if (strcmp(buf, "NA") == 0)
@@ -1643,7 +1646,7 @@ static double InDoubleAscii(FILE *fp, SaveLoadData *unused)
     char buf[128];
     double x;
     int res;
-    res = fscanf(fp, "%s", buf);
+    res = fscanf(fp, "%127s", buf);
     if (res != 1)
         error(_("read error"));
     if (strcmp(buf, "NA") == 0)
