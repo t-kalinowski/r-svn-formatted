@@ -321,7 +321,7 @@ SEXP gridCallback(GEevent task, pGEDevDesc dd, SEXP data)
         /*
          * Save the current 'grid' DL.
          */
-        PROTECT(result = allocVector(VECSXP, 3));
+        PROTECT(result = allocVector(VECSXP, 2));
         SET_VECTOR_ELT(result, 0, gridStateElement(dd, GSS_DL));
         SET_VECTOR_ELT(result, 1, gridStateElement(dd, GSS_DLINDEX));
         PROTECT(pkgName = mkString("grid"));
@@ -355,7 +355,7 @@ SEXP gridCallback(GEevent task, pGEDevDesc dd, SEXP data)
                 }
             }
         }
-        if (!isNull(gridState))
+        if (!isNull(VECTOR_ELT(gridState, 0)))
         {
             int dlIndex = INTEGER(VECTOR_ELT(gridState, 1))[0];
             if (dlIndex > 0)
