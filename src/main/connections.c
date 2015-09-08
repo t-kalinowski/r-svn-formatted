@@ -5359,6 +5359,7 @@ SEXP attribute_hidden do_pushbacklength(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     Rconnection con = NULL;
 
+    checkArity(op, args);
     con = getConnection(asInteger(CAR(args)));
     return ScalarInteger(con->nPushBack);
 }
@@ -5368,6 +5369,7 @@ SEXP attribute_hidden do_clearpushback(SEXP call, SEXP op, SEXP args, SEXP env)
     int j;
     Rconnection con = NULL;
 
+    checkArity(op, args);
     con = getConnection(asInteger(CAR(args)));
 
     if (con->nPushBack > 0)

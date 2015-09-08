@@ -381,6 +381,7 @@ static void inspect_tree(int pre, SEXP v, int deep, int pvec)
    matching only */
 SEXP attribute_hidden do_inspect(SEXP call, SEXP op, SEXP args, SEXP env)
 {
+    checkArity(op, args);
     SEXP obj = CAR(args);
     int deep = -1;
     int pvec = 5;

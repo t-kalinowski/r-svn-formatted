@@ -86,6 +86,8 @@ SEXP attribute_hidden do_rawToChar(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP attribute_hidden do_rawShift(SEXP call, SEXP op, SEXP args, SEXP env)
 {
+    checkArity(op, args);
+
     SEXP ans, x = CAR(args);
     int shift = asInteger(CADR(args));
 
@@ -106,6 +108,8 @@ SEXP attribute_hidden do_rawShift(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP attribute_hidden do_rawToBits(SEXP call, SEXP op, SEXP args, SEXP env)
 {
+    checkArity(op, args);
+
     SEXP ans, x = CAR(args);
     R_xlen_t i, j = 0;
     unsigned int tmp;
@@ -129,6 +133,7 @@ SEXP attribute_hidden do_intToBits(SEXP call, SEXP op, SEXP args, SEXP env)
     R_xlen_t i, j = 0;
     unsigned int tmp;
 
+    checkArity(op, args);
     PROTECT(x = coerceVector(CAR(args), INTSXP));
     if (!isInteger(x))
         error(_("argument 'x' must be an integer vector"));
@@ -145,6 +150,7 @@ SEXP attribute_hidden do_intToBits(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP attribute_hidden do_packBits(SEXP call, SEXP op, SEXP args, SEXP env)
 {
+    checkArity(op, args);
     SEXP ans, x = CAR(args), stype = CADR(args);
     Rboolean useRaw;
     R_xlen_t i, len = XLENGTH(x), slen;

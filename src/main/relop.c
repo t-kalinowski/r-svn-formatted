@@ -74,6 +74,8 @@ SEXP attribute_hidden do_relop(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         if (DispatchGroup("Ops", call, op, args, env, &ans))
             return ans;
+        if (argc != 2)
+            error("operator needs two arguments");
     }
     else if (argc == 2)
     {
