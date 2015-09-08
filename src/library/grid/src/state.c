@@ -296,18 +296,21 @@ SEXP gridCallback(GEevent task, pGEDevDesc dd, SEXP data)
         }
         break;
     case GE_CopyState: {
-        int dlIndex = INTEGER(gridStateElement(dd, GSS_DLINDEX))[0];
-        if (dlIndex > 0)
+        if (!isNull(gridStateElement(dd, GSS_DL)))
         {
-            /* called from GEcopyDisplayList */
-            pGEDevDesc curdd = GEcurrentDevice();
-            /* See GE_RestoreSnapshotState for explanation of this
-             * dirtying
-             */
-            GEdirtyDevice(curdd);
-            dirtyGridDevice(curdd);
-            setGridStateElement(curdd, GSS_DL, gridStateElement(dd, GSS_DL));
-            setGridStateElement(curdd, GSS_DLINDEX, gridStateElement(dd, GSS_DLINDEX));
+            int dlIndex = INTEGER(gridStateElement(dd, GSS_DLINDEX))[0];
+            if (dlIndex > 0)
+            {
+                /* called from GEcopyDisplayList */
+                pGEDevDesc curdd = GEcurrentDevice();
+                /* See GE_RestoreSnapshotState for explanation of this
+                 * dirtying
+                 */
+                GEdirtyDevice(curdd);
+                dirtyGridDevice(curdd);
+                setGridStateElement(curdd, GSS_DL, gridStateElement(dd, GSS_DL));
+                setGridStateElement(curdd, GSS_DLINDEX, gridStateElement(dd, GSS_DLINDEX));
+            }
         }
     }
     break;
