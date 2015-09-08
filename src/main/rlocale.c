@@ -18,7 +18,7 @@
  */
 
 /*  This file was contributed by Ei-ji Nakama.
- *  See also the comments in rlocale.h.
+ *  See also the comments in ../include/rlocale.h.
  *
  *  It provides replacements for the wctype functions on
  *  Windows (where they are not correct in e.g. Japanese)
