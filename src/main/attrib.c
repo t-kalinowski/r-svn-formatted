@@ -731,12 +731,14 @@ static SEXP cache_class(const char *class, SEXP klass)
     return klass;
 }
 
-static SEXP S4_extends(SEXP klass)
+static SEXP S4_extends(SEXP klass, Rboolean use_tab)
 {
     static SEXP s_extends = 0, s_extendsForS3;
     SEXP e, val;
     const char *class;
-    const void *vmax = vmaxget();
+    const void *vmax;
+    if (use_tab)
+        vmax = vmaxget();
     if (!s_extends)
     {
         s_extends = install("extends");
@@ -748,10 +750,14 @@ static SEXP S4_extends(SEXP klass)
     if (findVar(s_extends, R_GlobalEnv) == R_UnboundValue)
         return klass;
     class = translateChar(STRING_ELT(klass, 0)); /* TODO: include package attr. */
-    val = findVarInFrame(R_S4_extends_table, install(class));
-    vmaxset(vmax);
-    if (val != R_UnboundValue)
-        return val;
+    if (use_tab)
+    {
+        val = findVarInFrame(R_S4_extends_table, install(class));
+        vmaxset(vmax);
+        if (val != R_UnboundValue)
+            return val;
+    }
+    // else:  val <- .extendsForS3(klass) -- and cache it
     PROTECT(e = allocVector(LANGSXP, 2));
     SETCAR(e, s_extendsForS3);
     val = CDR(e);
@@ -760,6 +766,11 @@ static SEXP S4_extends(SEXP klass)
     cache_class(class, val);
     UNPROTECT(2); /* val, e */
     return (val);
+}
+
+SEXP R_S4_extends(SEXP klass, SEXP useTable)
+{
+    return S4_extends(klass, asLogical(useTable));
 }
 
 /* pre-allocated default class attributes */
@@ -855,7 +866,7 @@ SEXP attribute_hidden R_data_class2(SEXP obj)
     if (length(klass) > 0)
     {
         if (IS_S4_OBJECT(obj))
-            return S4_extends(klass);
+            return S4_extends(klass, TRUE);
         else
             return klass;
     }
@@ -909,19 +920,17 @@ SEXP attribute_hidden R_data_class2(SEXP obj)
     }
 }
 
-// class() & .cache_class() :
+// class(x)  &  .cache_class(classname, extendsForS3(.)) {called from methods} :
 SEXP attribute_hidden R_do_data_class(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     if (PRIMVAL(op) == 1)
-    { // .cache_class() :
-        const char *class;
-        SEXP klass;
+    { // .cache_class() - typically re-defining existing cache
         check1arg(args, call, "class");
-        klass = CAR(args);
+        SEXP klass = CAR(args);
         if (TYPEOF(klass) != STRSXP || LENGTH(klass) < 1)
             error("invalid class argument to internal .class_cache");
-        class = translateChar(STRING_ELT(klass, 0));
+        const char *class = translateChar(STRING_ELT(klass, 0));
         return cache_class(class, CADR(args));
     }
     // class():
