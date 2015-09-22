@@ -792,9 +792,6 @@ static int fgrep_one(const char *pat, const char *target, Rboolean useBytes, Rbo
             ib += used;
         }
     }
-    else if (!useBytes && use_UTF8)
-    {
-    }
     else if (!useBytes && mbcslocale)
     { /* skip along by chars */
         mbstate_t mb_st;
