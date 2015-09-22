@@ -203,6 +203,10 @@ double attribute_hidden RealFromComplex(Rcomplex x, int *warn)
 {
     if (ISNAN(x.r) || ISNAN(x.i))
         return NA_REAL;
+    if (ISNAN(x.r))
+        return x.r;
+    if (ISNAN(x.i))
+        return NA_REAL;
     if (x.i != 0)
         *warn |= WARN_IMAG;
     return x.r;
@@ -258,6 +262,7 @@ Rcomplex attribute_hidden ComplexFromInteger(int x, int *warn)
 Rcomplex attribute_hidden ComplexFromReal(double x, int *warn)
 {
     Rcomplex z;
+#ifdef PRE_R_3_3_0
     if (ISNAN(x))
     {
         z.r = NA_REAL;
@@ -265,9 +270,12 @@ Rcomplex attribute_hidden ComplexFromReal(double x, int *warn)
     }
     else
     {
+#endif
         z.r = x;
         z.i = 0;
+#ifdef PRE_R_3_3_0
     }
+#endif
     return z;
 }
 
@@ -330,7 +338,7 @@ SEXP attribute_hidden StringFromComplex(Rcomplex x, int *warn)
 {
     int wr, dr, er, wi, di, ei;
     formatComplex(&x, 1, &wr, &dr, &er, &wi, &di, &ei, 0);
-    if (ISNA(x.r) || ISNA(x.i))
+    if (ISNA(x.r) || ISNA(x.i)) // "NA" if Re or Im is (but not if they're just NaN)
         return NA_STRING;
     else /* EncodeComplex has its own anti-trailing-0 care :*/
         return mkChar(EncodeComplex(x, wr, dr, er, wi, di, ei, OutDec));
