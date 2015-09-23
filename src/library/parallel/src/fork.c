@@ -134,7 +134,6 @@ static void terminated_child(int pid)
                 close(ci->sifd);
                 ci->sifd = -1;
             }
-            ci->pid = 0;
             break;
         }
         ci = ci->next;
@@ -263,7 +262,6 @@ static void parent_sig_handler(int sig, siginfo_t *info, void *context)
                             close(ci->sifd);
                             ci->sifd = -1;
                         }
-                        ci->pid = 0;
                     }
                     break;
                 }

@@ -1121,7 +1121,11 @@ static void worker_input_handler(void *data)
                             if (!strcmp(bol, "content-type"))
                             {
                                 char *l = k;
-                                while (*l)
+                                /* convert content-type to lowercase to facilitate comparison
+                                   since MIME types are case-insensitive.
+                                   However, we have to stop at ; since parameters
+                                   may be case-sensitive (see PR 16541) */
+                                while (*l && *l != ';')
                                 {
                                     if (*l >= 'A' && *l <= 'Z')
                                         *l |= 0x20;
