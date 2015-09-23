@@ -2312,8 +2312,7 @@ SEXP attribute_hidden do_ICUget(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 /* Caller has to manage the R_alloc stack */
 /* NB: strings can have equal collation weight without being identical */
-// attribute_hidden
-int Scollate(SEXP a, SEXP b)
+attribute_hidden int Scollate(SEXP a, SEXP b)
 {
     if (!collationLocaleSet)
     {
