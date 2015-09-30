@@ -750,7 +750,8 @@ SEXP R_nextMethodCall(SEXP matched_call, SEXP ev)
     for (i = 0; i < nargs; i++)
     {
         this_sym = TAG(args);
-        if (CAR(args) != R_MissingArg) /* "missing" only possible in primitive */
+        /* "missing" only possible in primitive */
+        if (this_sym != R_NilValue && CAR(args) != R_MissingArg)
             SETCAR(args, this_sym);
         args = CDR(args);
     }
