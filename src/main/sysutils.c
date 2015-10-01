@@ -713,7 +713,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
                     continue;
                 }
                 else if (TYPEOF(si) != RAWSXP)
-                    error(_("'x' must be a list of NULL or raw vectors"));
+                    error(_("'x' must be a character vector or a list of NULL or raw vectors"));
             }
             else
             {
