@@ -1074,11 +1074,11 @@ void R_orderVector(int *indx, // must be pre-allocated to length >= n
 }
 
 // Fast version of 1-argument case of R_orderVector()
-void R_orderVector1(int *indx, int n, SEXP arg, Rboolean nalast, Rboolean decreasing)
+void R_orderVector1(int *indx, int n, SEXP x, Rboolean nalast, Rboolean decreasing)
 {
     for (int i = 0; i < n; i++)
         indx[i] = i;
-    orderVector1(indx, n, arg, nalast, decreasing, R_NilValue);
+    orderVector1(indx, n, x, nalast, decreasing, R_NilValue);
 }
 
 /* Needs indx set to  0:(n-1)  initially.
