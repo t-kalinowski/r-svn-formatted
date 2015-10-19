@@ -734,7 +734,6 @@ SEXP attribute_hidden do_formatinfo(SEXP call, SEXP op, SEXP args, SEXP env)
     R_xlen_t n = XLENGTH(x);
     PrintDefaults();
 
-    digits = asInteger(CADR(args));
     if (!isNull(CADR(args)))
     {
         digits = asInteger(CADR(args));
