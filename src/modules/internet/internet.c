@@ -154,7 +154,7 @@ static Rboolean url_open(Rconnection con)
         break;
 
     default:
-        warning(_("URL scheme unsupported by this method"));
+        warning(_("scheme not supported in URL '%s'"), url);
         return FALSE;
     }
 
@@ -282,7 +282,7 @@ static Rboolean url_open2(Rconnection con)
         break;
 
     default:
-        warning(_("URL scheme unsupported by this method"));
+        warning(_("scheme not supported in URL '%s'"), url);
         return FALSE;
     }
 
@@ -838,7 +838,7 @@ static SEXP in_do_download(SEXP args)
             error(_("cannot open URL '%s'"), url);
     }
     else
-        error(_("unsupported URL scheme"));
+        error(_("scheme not supported in URL '%s'"), url);
 
     return ScalarInteger(status);
 }
