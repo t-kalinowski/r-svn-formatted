@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1995-2013	The R Core Team
+ *  Copyright (C) 1995-2015	The R Core Team
  *  Copyright (C) 2003		The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -632,6 +632,10 @@ static void cov_na_2(int n, int ncx, int ncy, double *x, double *y, double *xm, 
 #undef MEAN_
 #undef COV_SDEV
 
+/* complete[12]() returns indicator vector ind[] of complete.cases(), or
+ * -------------- if(na_fail) signals error if any NA/NaN is encountered
+ */
+
 /* This might look slightly inefficient, but it is designed to
  * optimise paging in virtual memory systems ...
  * (or at least that's my story, and I'm sticking to it.)
@@ -673,20 +677,17 @@ static void complete2(int n, int ncx, int ncy, double *x, double *y, int *ind, R
     }
 }
 
-#define NA_CHECK(_HAS_NA_)                                                                                             \
-    for (i = 0; i < n; i++)                                                                                            \
-        if (ISNAN(z[i]))                                                                                               \
-        {                                                                                                              \
-            _HAS_NA_[j] = 1;                                                                                           \
-            break;                                                                                                     \
-        }
-
 #define HAS_NA_1(_X_, _HAS_NA_)                                                                                        \
     for (j = 0; j < nc##_X_; j++)                                                                                      \
     {                                                                                                                  \
         z = &_X_[j * n];                                                                                               \
         _HAS_NA_[j] = 0;                                                                                               \
-        NA_CHECK(_HAS_NA_)                                                                                             \
+        for (i = 0; i < n; i++)                                                                                        \
+            if (ISNAN(z[i]))                                                                                           \
+            {                                                                                                          \
+                _HAS_NA_[j] = 1;                                                                                       \
+                break;                                                                                                 \
+            }                                                                                                          \
     }
 
 static void find_na_1(int n, int ncx, double *x, int *has_na)
@@ -706,7 +707,6 @@ static void find_na_2(int n, int ncx, int ncy, double *x, double *y, int *has_na
 
 #undef NA_LOOP
 #undef COMPLETE_1
-#undef NA_CHECK
 #undef HAS_NA_1
 
 /* co[vr](x, y, use =
@@ -723,6 +723,8 @@ static SEXP corcov(SEXP x, SEXP y, SEXP na_method, SEXP skendall, Rboolean cor)
     /* Arg.1: x */
     if (isNull(x)) /* never allowed */
         error(_("'x' is NULL"));
+    if (isFactor(x))
+        error(_("'x' is a factor"));
     /* length check of x -- only if(empty_err) --> below */
     x = PROTECT(coerceVector(x, REALSXP));
     if ((ansmat = isMatrix(x)))
@@ -742,6 +744,8 @@ static SEXP corcov(SEXP x, SEXP y, SEXP na_method, SEXP skendall, Rboolean cor)
     }
     else
     {
+        if (isFactor(y))
+            error(_("'y' is a factor"));
         y = PROTECT(coerceVector(y, REALSXP));
         nprotect++;
         if (isMatrix(y))
