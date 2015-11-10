@@ -85,8 +85,12 @@ void loess_raw(double *y, double *x, double *weights, double *robust, int *d, in
 
     loess_workspace(d, n, span, degree, nonparametric, drop_square, sum_drop_sqr, setLf);
     v[1] = *cell; /* = v(2) in Fortran (!) */
+
+    /* NB:  surf_stat  =  (surface / statistics);
+     *                               statistics = "none" for all robustness iterations
+     */
     if (!strcmp(*surf_stat, "interpolate/none"))
-    {
+    { // default for loess.smooth() and robustness iter.
         F77_CALL(lowesb)(x, y, robust, &dzero, &zero, iv, &liv, &lv, v);
         F77_CALL(lowese)(iv, &liv, &lv, v, n, x, surface);
         loess_prune(parameter, a, xi, vert, vval);
@@ -96,7 +100,7 @@ void loess_raw(double *y, double *x, double *weights, double *robust, int *d, in
         F77_CALL(lowesf)(x, y, robust, iv, &liv, &lv, v, n, x, &dzero, &zero, surface);
     }
     else if (!strcmp(*surf_stat, "interpolate/1.approx"))
-    {
+    { // default (trace.hat is "exact")
         F77_CALL(lowesb)(x, y, weights, diagonal, &one, iv, &liv, &lv, v);
         F77_CALL(lowese)(iv, &liv, &lv, v, n, x, surface);
         nsing = iv[29];
@@ -106,8 +110,9 @@ void loess_raw(double *y, double *x, double *weights, double *robust, int *d, in
         loess_prune(parameter, a, xi, vert, vval);
     }
     else if (!strcmp(*surf_stat, "interpolate/2.approx"))
-    {
-        F77_CALL(lowesb)(x, y, robust, &dzero, &zero, iv, &liv, &lv, v);
+    { // default for trace.hat = "approximate"
+        //                     vvvvvvv (had 'robust' in R <= 3.2.x)
+        F77_CALL(lowesb)(x, y, weights, &dzero, &zero, iv, &liv, &lv, v);
         F77_CALL(lowese)(iv, &liv, &lv, v, n, x, surface);
         nsing = iv[29];
         F77_CALL(ehg196)(&tau, d, span, trL);
