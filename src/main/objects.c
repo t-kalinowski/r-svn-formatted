@@ -1259,6 +1259,15 @@ SEXP R_set_prim_method(SEXP fname, SEXP op, SEXP code_vec, SEXP fundef, SEXP mli
         }
         return value;
     }
+    if (!isPrimitive(op))
+    {
+        SEXP internal = R_do_slot(op, install("internal"));
+        op = INTERNAL(install(CHAR(asChar(internal))));
+        if (op == R_NilValue)
+        {
+            error("'internal' slot does not name an internal function: %s", CHAR(asChar(internal)));
+        }
+    }
     do_set_prim_method(op, code_string, fundef, mlist);
     vmaxset(vmax);
     return fname;
@@ -1552,6 +1561,10 @@ SEXP attribute_hidden R_possible_dispatch(SEXP call, SEXP op, SEXP args, SEXP rh
             return (NULL);
         if (isFunction(value))
         {
+            if (inherits(value, "internalDispatchMethod"))
+            {
+                return (NULL);
+            }
             /* found a method, call it with promised args */
             if (!promisedArgs)
             {
