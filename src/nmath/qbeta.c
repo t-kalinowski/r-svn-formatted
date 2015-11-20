@@ -27,9 +27,9 @@
  *	have been incorporated in this version.
  */
 
+#include <R_ext/Arith.h>
 #include "nmath.h"
 #include "dpq.h"
-#include <R_ext/Arith.h>
 
 #ifdef DEBUG_qbeta
 #include <R_ext/Print.h>
