@@ -425,7 +425,6 @@ SEXP port_nlminb(SEXP fn, SEXP gr, SEXP hs, SEXP rho, SEXP lowerb, SEXP upperb, 
     if (gr != R_NilValue)
     {
         g = (double *)R_alloc(n, sizeof(double));
-        g = Calloc(n, double);
         if (hs != R_NilValue)
             h = (double *)R_alloc((n * (n + 1)) / 2, sizeof(double));
     }
