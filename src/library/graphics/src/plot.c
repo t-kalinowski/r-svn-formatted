@@ -2406,8 +2406,8 @@ SEXP C_text(SEXP args)
     /* Done here so 'vfont' trumps inline 'family' */
     if (!isNull(vfont) && !isExpression(txt))
     {
-        strncpy(gpptr(dd)->family, "Her ", 201);
-        gpptr(dd)->family[3] = (char)INTEGER(vfont)[0];
+        strncpy(gpptr(dd)->family, "Hershey ", 201);
+        gpptr(dd)->family[7] = (char)INTEGER(vfont)[0];
         vectorFonts = TRUE;
     }
 
@@ -3710,8 +3710,8 @@ SEXP C_identify(SEXP call, SEXP op, SEXP args, SEXP rho)
         /* 'vfont' trumps inline 'family' */                                                                           \
         if (!isNull(vfont) && !isExpression(str))                                                                      \
         {                                                                                                              \
-            strncpy(gpptr(dd)->family, "Her ", 201);                                                                   \
-            gpptr(dd)->family[3] = (char)INTEGER(vfont)[0];                                                            \
+            strncpy(gpptr(dd)->family, "Hershey ", 201);                                                               \
+            gpptr(dd)->family[7] = (char)INTEGER(vfont)[0];                                                            \
             gpptr(dd)->font = INTEGER(vfont)[1];                                                                       \
         }                                                                                                              \
         else                                                                                                           \

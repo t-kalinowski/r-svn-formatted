@@ -155,7 +155,7 @@ attribute_hidden double R_GE_VStrWidth(const char *s, cetype_t enc, const pGEcon
     const void *vmax = vmaxget();
 
     /* convert string to a codestring, including annotations */
-    codestring = _controlify(dd, (const unsigned char *)s, gc->fontfamily[3] - 1, gc->fontface);
+    codestring = _controlify(dd, (const unsigned char *)s, gc->fontfamily[7] - 1, gc->fontface);
 
     label_width = _label_width_hershey(gc, dd, codestring);
 
@@ -182,7 +182,7 @@ attribute_hidden double R_GE_VStrHeight(const char *s, cetype_t enc, const pGEco
     const void *vmax = vmaxget();
 
     /* convert string to a codestring, including annotations */
-    codestring = _controlify(dd, (const unsigned char *)s, gc->fontfamily[3] - 1, gc->fontface);
+    codestring = _controlify(dd, (const unsigned char *)s, gc->fontfamily[7] - 1, gc->fontface);
 
     label_height = _label_height_hershey(gc, dd, codestring);
 
@@ -235,7 +235,7 @@ attribute_hidden void R_GE_VText(double x, double y, const char *s, cetype_t enc
     gc->ljoin = GE_ROUND_JOIN;
 
     /* convert string to a codestring, including annotations */
-    codestring = _controlify(dd, (const unsigned char *)s, gc->fontfamily[3] - 1, gc->fontface);
+    codestring = _controlify(dd, (const unsigned char *)s, gc->fontfamily[7] - 1, gc->fontface);
 
     /* PAUL MURRELL
        Justification changed from char (e.g., 'l', 'c', 'r') to
