@@ -1158,8 +1158,6 @@ SEXP R_dispatchGeneric(SEXP fname, SEXP ev, SEXP fdef)
     /* the rest of this is identical to R_standardGeneric;
        hence the f=method to remind us  */
     f = method;
-    if (isObject(f))
-        f = R_loadMethod(f, fname, ev);
     switch (TYPEOF(f))
     {
     case CLOSXP: {
@@ -1170,6 +1168,8 @@ SEXP R_dispatchGeneric(SEXP fname, SEXP ev, SEXP fdef)
         else
         {
             SEXP R_execMethod(SEXP, SEXP);
+            if (isObject(f))
+                f = R_loadMethod(f, fname, ev);
             PROTECT(f);
             nprotect++; /* is this needed?? */
             val = R_execMethod(f, ev);
