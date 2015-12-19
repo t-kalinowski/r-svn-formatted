@@ -1931,12 +1931,8 @@ SEXP attribute_hidden do_array(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
 
     ans = dimgets(ans, dims);
-    if (TYPEOF(dimnames) == VECSXP && LENGTH(dimnames))
-    {
-        PROTECT(ans);
+    if (!isNull(dimnames) && length(dimnames) > 0)
         ans = dimnamesgets(ans, dimnames);
-        UNPROTECT(1);
-    }
 
     UNPROTECT(2);
     return ans;
