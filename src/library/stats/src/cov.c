@@ -60,6 +60,7 @@ SEXP cov(SEXP x, SEXP y, SEXP na_method, SEXP kendall)
     }
 
 #define ANS(I, J) ans[I + J * ncx]
+#define CLAMP(X) (X >= 1. ? 1. : (X <= -1. ? -1. : X))
 
 /* Note that "if (kendall)" and	 "if (cor)" are used inside a double for() loop;
    which makes the code better readable -- and is hopefully dealt with
@@ -140,8 +141,7 @@ SEXP cov(SEXP x, SEXP y, SEXP na_method, SEXP kendall)
                     sum /= n1;                                                                                         \
                 }                                                                                                      \
                 sum /= (SQRTL(xsd) * SQRTL(ysd));                                                                      \
-                if (sum > 1.)                                                                                          \
-                    sum = 1.;                                                                                          \
+                sum = CLAMP(sum);                                                                                      \
             }                                                                                                          \
         }                                                                                                              \
         else if (!kendall)                                                                                             \
@@ -325,9 +325,7 @@ static void cov_complete1(int n, int ncx, double *x, double *xm, int *ind, doubl
                 else
                 {
                     sum = ANS(i, j) / (xm[i] * xm[j]);
-                    if (sum > 1.)
-                        sum = 1.;
-                    ANS(j, i) = ANS(i, j) = (double)sum;
+                    ANS(j, i) = ANS(i, j) = (double)CLAMP(sum);
                 }
             }
             ANS(i, i) = 1.0;
@@ -413,9 +411,7 @@ static void cov_na_1(int n, int ncx, double *x, double *xm, int *has_na, double 
                     else
                     {
                         sum = ANS(i, j) / (xm[i] * xm[j]);
-                        if (sum > 1.)
-                            sum = 1.;
-                        ANS(j, i) = ANS(i, j) = (double)sum;
+                        ANS(j, i) = ANS(i, j) = (double)CLAMP(sum);
                     }
                 }
             ANS(i, i) = 1.0;
@@ -507,8 +503,7 @@ static void cov_complete2(int n, int ncx, int ncy, double *x, double *y, double 
                 else
                 {
                     ANS(i, j) /= (xm[i] * ym[j]);
-                    if (ANS(i, j) > 1.)
-                        ANS(i, j) = 1.;
+                    ANS(i, j) = CLAMP(ANS(i, j));
                 }
     } /* cor */
 
@@ -617,8 +612,7 @@ static void cov_na_2(int n, int ncx, int ncy, double *x, double *y, double *xm, 
                         else
                         {
                             ANS(i, j) /= (xm[i] * ym[j]);
-                            if (ANS(i, j) > 1.)
-                                ANS(i, j) = 1.;
+                            ANS(i, j) = CLAMP(ANS(i, j));
                         }
                     }
             }
