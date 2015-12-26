@@ -2508,11 +2508,14 @@ SEXP attribute_hidden do_tabulate(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-/* x can be a long vector but xt cannot since the result is integer */
+/* .Internal(findInterval(vec, x, rightmost.closed, all.inside,  left.open))
+ *                         xt  x    right             inside       leftOp
+ * x can be a long vector but xt cannot since the result is integer
+ */
 SEXP attribute_hidden do_findinterval(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
-    SEXP xt, x, right, inside;
+    SEXP xt, x, right, inside, leftOp;
     xt = CAR(args);
     args = CDR(args);
     x = CAR(args);
@@ -2520,6 +2523,8 @@ SEXP attribute_hidden do_findinterval(SEXP call, SEXP op, SEXP args, SEXP rho)
     right = CAR(args);
     args = CDR(args);
     inside = CAR(args);
+    args = CDR(args);
+    leftOp = CAR(args);
     if (TYPEOF(xt) != REALSXP || TYPEOF(x) != REALSXP)
         error("invalid input");
 #ifdef LONG_VECTOR_SUPPORT
@@ -2530,7 +2535,7 @@ SEXP attribute_hidden do_findinterval(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (n == NA_INTEGER)
         error(_("invalid '%s' argument"), "vec");
     R_xlen_t nx = XLENGTH(x);
-    int sr = asLogical(right), si = asLogical(inside);
+    int sr = asLogical(right), si = asLogical(inside), lO = asLogical(leftOp);
     if (sr == NA_INTEGER)
         error(_("invalid '%s' argument"), "rightmost.closed");
     if (si == NA_INTEGER)
@@ -2540,12 +2545,12 @@ SEXP attribute_hidden do_findinterval(SEXP call, SEXP op, SEXP args, SEXP rho)
     int ii = 1;
     for (int i = 0; i < nx; i++)
     {
-        if (ISNAN(REAL(x)[i]))
+        if (ISNAN(rx[i]))
             ii = NA_INTEGER;
         else
         {
-            int mfl = si;
-            ii = findInterval(rxt, n, rx[i], sr, si, ii, &mfl);
+            int mfl;
+            ii = findInterval2(rxt, n, rx[i], sr, si, lO, ii, &mfl); // -> ../appl/interv.c
         }
         INTEGER(ans)[i] = ii;
     }

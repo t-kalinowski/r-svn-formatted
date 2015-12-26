@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2002	      The R Core Team
+ *  Copyright (C) 2002--2015 The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -34,7 +34,8 @@ int F77_SUB(interv)(double *xt, int *n, double *x, Rboolean *rightmost_closed, R
     return findInterval(xt, *n, *x, *rightmost_closed, *all_inside, *ilo, mflag);
 }
 
-int findInterval(double *xt, int n, double x, Rboolean rightmost_closed, Rboolean all_inside, int ilo, int *mflag)
+int findInterval2(double *xt, int n, double x, Rboolean rightmost_closed, Rboolean all_inside, Rboolean left_open,
+                  int ilo, int *mflag)
 {
     int istep, middle, ihi;
 
@@ -48,8 +49,10 @@ int findInterval(double *xt, int n, double x, Rboolean rightmost_closed, Rboolea
         to be determined.
       rightmost_closed {logical} indicating if the rightmost xt[] interval
         should be closed, i.e. result := n-1 if x == x[n]
-      mflag =: all_inside	    {logical} indicating if result should be coerced
+        (when left_open, the *leftmost* interval should be closed.)
+      all_inside {logical} indicating if result should be coerced
             to lie inside {1, n-1}
+      left_open  {logical} use intervals (s, t] instead of [s, t)
       ilo   typically the result of the last call to findInterval(.)
         `ilo' used to be a static variable (in Fortran) which is not
         desirable in R anymore (threads!).
@@ -95,7 +98,7 @@ int findInterval(double *xt, int n, double x, Rboolean rightmost_closed, Rboolea
 #define left_boundary                                                                                                  \
     {                                                                                                                  \
         *mflag = -1;                                                                                                   \
-        return (all_inside ? 1 : 0);                                                                                   \
+        return ((all_inside || (rightmost_closed && x == xt[1])) ? 1 : 0);                                             \
     }
 
 #define right_boundary                                                                                                 \
@@ -104,19 +107,22 @@ int findInterval(double *xt, int n, double x, Rboolean rightmost_closed, Rboolea
         return ((all_inside || (rightmost_closed && x == xt[n])) ? (n - 1) : n);                                       \
     }
 
+#define X_grtr(XT_v) x > XT_v || (!left_open && x >= XT_v)
+#define X_smlr(XT_v) x < XT_v || (left_open && x <= XT_v)
+
     /* 1-indexing : */
     --xt;
 
     if (ilo <= 0)
     {
-        if (x < xt[1])
+        if (X_smlr(xt[1]))
             left_boundary;
         ilo = 1;
     }
     ihi = ilo + 1;
     if (ihi >= n)
     {
-        if (x >= xt[n])
+        if (X_grtr(xt[n]))
             right_boundary;
         if (n <= 1) /* x < xt[1] */
             left_boundary;
@@ -124,45 +130,68 @@ int findInterval(double *xt, int n, double x, Rboolean rightmost_closed, Rboolea
         ihi = n;
     }
 
-    if (x < xt[ihi])
+    if (X_smlr(xt[ihi]))
     {
-        if (x >= xt[ilo])
-        { /* `lucky': same interval as last time */
+        if (X_grtr(xt[ilo]))
+        {
+            /* `lucky': same interval as last time */
             *mflag = 0;
             return ilo;
         }
         /* **** now x < xt[ilo] .	decrease  ilo  to capture  x */
-        for (istep = 1;; istep *= 2)
-        {
-            ihi = ilo;
-            ilo = ihi - istep;
-            if (ilo <= 1)
-                break;
-            if (x >= xt[ilo])
-                goto L50;
-        }
+        if (!left_open)
+            for (istep = 1;; istep *= 2)
+            {
+                ihi = ilo;
+                ilo = ihi - istep;
+                if (ilo <= 1)
+                    break;
+                if (x >= xt[ilo])
+                    goto L50;
+            }
+        else
+            for (istep = 1;; istep *= 2)
+            {
+                ihi = ilo;
+                ilo = ihi - istep;
+                if (ilo <= 1)
+                    break;
+                if (x > xt[ilo])
+                    goto L51;
+            }
         ilo = 1;
-        if (x < xt[1])
+        if (X_smlr(xt[1]))
             left_boundary;
     }
     else
     {
         /* **** now x >= xt[ihi] .	increase  ihi  to capture  x */
-        for (istep = 1;; istep *= 2)
-        {
-            ilo = ihi;
-            ihi = ilo + istep;
-            if (ihi >= n)
-                break;
-            if (x < xt[ihi])
-                goto L50;
-        }
-        if (x >= xt[n])
+        if (!left_open)
+            for (istep = 1;; istep *= 2)
+            {
+                ilo = ihi;
+                ihi = ilo + istep;
+                if (ihi >= n)
+                    break;
+                if (x < xt[ihi])
+                    goto L50;
+            }
+        else
+            for (istep = 1;; istep *= 2)
+            {
+                ilo = ihi;
+                ihi = ilo + istep;
+                if (ihi >= n)
+                    break;
+                if (x <= xt[ihi])
+                    goto L51;
+            }
+        if (X_grtr(xt[n]))
             right_boundary;
         ihi = n;
     }
 
-L50:
+L50: // ! left_open
     /* **** now xt[ilo] <= x < xt[ihi] . narrow the interval. */
     for (;;)
     {
@@ -178,4 +207,27 @@ L50:
         else
             ihi = middle;
     }
-} /* findInterval */
+
+L51: // left_open
+    /* **** now xt[ilo] < x <= xt[ihi] . narrow the interval. */
+    for (;;)
+    {
+        middle = (ilo + ihi) / 2;
+        if (middle == ilo)
+        {
+            *mflag = 0;
+            return ilo;
+        }
+        /* note. it is assumed that middle = ilo in case ihi = ilo+1 . */
+        if (x > xt[middle])
+            ilo = middle;
+        else
+            ihi = middle;
+    }
+} /* findInterval2 */
+
+// has been in API -- keep for compatibility:
+int findInterval(double *xt, int n, double x, Rboolean rightmost_closed, Rboolean all_inside, int ilo, int *mflag)
+{
+    return findInterval2(xt, n, x, rightmost_closed, all_inside, FALSE, ilo, mflag);
+}
