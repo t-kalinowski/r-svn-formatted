@@ -986,17 +986,19 @@ static void orderVectorl(R_xlen_t *indx, R_xlen_t n, SEXP key, Rboolean nalast, 
     for (t = 0; incs[t] > n; t++)
         ;
     for (h = incs[t]; t < NI; h = incs[++t])
-        R_CheckUserInterrupt();
-    for (i = h; i < n; i++)
     {
-        itmp = indx[i];
-        j = i;
-        while (j >= h && greater_sub(indx[j - h], itmp, key, nalast ^ decreasing, decreasing))
+        R_CheckUserInterrupt();
+        for (i = h; i < n; i++)
         {
-            indx[j] = indx[j - h];
-            j -= h;
+            itmp = indx[i];
+            j = i;
+            while (j >= h && greater_sub(indx[j - h], itmp, key, nalast ^ decreasing, decreasing))
+            {
+                indx[j] = indx[j - h];
+                j -= h;
+            }
+            indx[j] = itmp;
         }
-        indx[j] = itmp;
     }
 }
 #endif
