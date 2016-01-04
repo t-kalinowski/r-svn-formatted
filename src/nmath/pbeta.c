@@ -52,8 +52,8 @@ attribute_hidden double pbeta_raw(double x, double a, double b, int lower_tail, 
         // else, remaining case:  a = b = Inf : point mass 1 at 1/2
         if (x < 0.5)
             return R_DT_0;
-        // else,  x >= 0.5 :
-        return R_DT_1;
+        else
+            return R_DT_1;
     }
     // Now:  0 < a < Inf;  0 < b < Inf
 

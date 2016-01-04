@@ -60,7 +60,8 @@ double dnf(double x, double df1, double df2, double ncp, int give_log)
         /* PR: not sure about this (taken from  ncp==0)  -- FIXME ? */
         if (x == 1.)
             return ML_POSINF;
-        /* else */ return R_D__0;
+        else
+            return R_D__0;
     }
     if (!R_FINITE(df2)) /* i.e.  = +Inf */
         return df1 * dnchisq(x * df1, df1, ncp, give_log);

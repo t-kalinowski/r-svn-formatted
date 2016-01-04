@@ -793,11 +793,12 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
                         break;
                     case L'\'':
                     case L'"':
-                    case L'`':
+                    case L'`': {
                         if (quote == *p)
                             *q++ = '\\';
                         *q++ = *p++;
                         break;
+                    }
                     default:
                         for (j = 0; j < res; j++)
                             *q++ = *p++;
@@ -910,11 +911,12 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
                         break;
                     case '\'':
                     case '"':
-                    case '`':
+                    case '`': {
                         if (quote == *p)
                             *q++ = '\\';
                         *q++ = *p;
                         break;
+                    }
                     default:
                         *q++ = *p;
                         break;

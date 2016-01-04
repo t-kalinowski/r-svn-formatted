@@ -53,7 +53,8 @@ double df(double x, double m, double n, int give_log)
     { /* both +Inf */
         if (x == 1.)
             return ML_POSINF;
-        /* else */ return R_D__0;
+        else
+            return R_D__0;
     }
     if (!R_FINITE(n)) /* must be +Inf by now */
         return (dgamma(x, m / 2, 2. / m, give_log));
