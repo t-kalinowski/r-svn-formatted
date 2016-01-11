@@ -274,7 +274,7 @@ static int R_SocketWait(int sockfd, int write, int timeout)
 
         if (howmany < 0)
         {
-            return -1;
+            return -socket_errno();
         }
         if (howmany == 0)
         {
@@ -374,7 +374,7 @@ int R_SocketWaitMultiple(int nsock, int *insockfd, int *ready, int *write, doubl
 
         if (howmany < 0)
         {
-            return -1;
+            return -socket_errno();
         }
         if (howmany == 0)
         {
@@ -572,8 +572,8 @@ ssize_t R_SockRead(int sockp, void *buf, size_t len, int blocking, int timeout)
 {
     ssize_t res;
 
-    if (blocking && R_SocketWait(sockp, 0, timeout) != 0)
-        return 0;
+    if (blocking && (res = R_SocketWait(sockp, 0, timeout)) != 0)
+        return res < 0 ? res : 0; /* socket error or timeout */
     res = recv(sockp, buf, len, 0);
     return (res >= 0) ? res : -socket_errno();
 }
@@ -590,7 +590,8 @@ int R_SockListen(int sockp, char *buf, int len, int timeout)
     /* inserting a wait here will eliminate most blocking, but there
        are scenarios under which the Sock_listen call might block
        after the wait has completed. LT */
-    R_SocketWait(sockp, 0, timeout);
+    if (R_SocketWait(sockp, 0, timeout) != 0)
+        return -1; /* socket error or timeout */
     return Sock_listen(sockp, buf, len, NULL);
 }
 
@@ -606,8 +607,8 @@ ssize_t R_SockWrite(int sockp, const void *buf, size_t len, int timeout)
        has been written.  LT */
     do
     {
-        if (R_SocketWait(sockp, 1, timeout) != 0)
-            return out;
+        if ((res = R_SocketWait(sockp, 1, timeout)) != 0)
+            return res < 0 ? res : 0; /* socket error or timeout */
         res = send(sockp, buf, len, 0);
         if (res < 0 && socket_errno() != EWOULDBLOCK)
             return -socket_errno();
