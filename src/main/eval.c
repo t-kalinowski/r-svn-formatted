@@ -972,7 +972,7 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedvars)
 {
     SEXP formals, actuals, savedrho;
     volatile SEXP body, newrho;
-    SEXP f, a, tmp;
+    SEXP f, a, tmp, savesrc;
     RCNTXT cntxt;
 
     /* formals = list of formal parameters */
@@ -1061,6 +1061,7 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedvars)
     the generic as the sysparent of the method because the method
     is a straight substitution of the generic.  */
 
+    PROTECT(savesrc = R_Srcref);
     if (R_GlobalContext->callflag == CTXT_GENERIC)
         begincontext(&cntxt, CTXT_RETURN, call, newrho, R_GlobalContext->sysparent, arglist, op);
     else
@@ -1147,6 +1148,7 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedvars)
         PROTECT(tmp = eval(body, newrho));
     }
     cntxt.returnValue = tmp; /* make it available to on.exit */
+    R_Srcref = savesrc;
     endcontext(&cntxt);
 
     if (RDEBUG(op) && R_current_debug_state())
@@ -1154,7 +1156,7 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedvars)
         Rprintf("exiting from: ");
         PrintCall(call, rho);
     }
-    UNPROTECT(3);
+    UNPROTECT(4);
     return (tmp);
 }
 
