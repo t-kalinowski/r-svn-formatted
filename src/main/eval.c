@@ -6509,20 +6509,28 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             {
                 int i, n, which;
                 if (names == R_NilValue)
-                    errorcall(call, _("numeric EXPR required for 'switch' without named alternatives"));
-                if (TYPEOF(coffsets) != INTSXP)
-                    errorcall(call, "bad character 'switch' offsets");
-                if (TYPEOF(names) != STRSXP || LENGTH(names) != LENGTH(coffsets))
-                    errorcall(call, "bad 'switch' names");
-                n = LENGTH(names);
-                which = n - 1;
-                for (i = 0; i < n - 1; i++)
-                    if (pmatch(STRING_ELT(value, 0), STRING_ELT(names, i), 1 /* exact */))
-                    {
-                        which = i;
-                        break;
-                    }
-                pc = codebase + INTEGER(coffsets)[which];
+                {
+                    if (TYPEOF(ioffsets) != INTSXP)
+                        errorcall(call, _("bad numeric 'switch' offsets"));
+                    pc = codebase + INTEGER(ioffsets)[0]; /* returns NULL */
+                    warningcall(call, _("'switch' with no alternatives"));
+                }
+                else
+                {
+                    if (TYPEOF(coffsets) != INTSXP)
+                        errorcall(call, _("bad character 'switch' offsets"));
+                    if (TYPEOF(names) != STRSXP || LENGTH(names) != LENGTH(coffsets))
+                        errorcall(call, "bad 'switch' names");
+                    n = LENGTH(names);
+                    which = n - 1;
+                    for (i = 0; i < n - 1; i++)
+                        if (pmatch(STRING_ELT(value, 0), STRING_ELT(names, i), 1 /* exact */))
+                        {
+                            which = i;
+                            break;
+                        }
+                    pc = codebase + INTEGER(coffsets)[which];
+                }
             }
             else
             {
@@ -6533,6 +6541,8 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                     which--;
                 if (which < 0 || which >= LENGTH(ioffsets))
                     which = LENGTH(ioffsets) - 1;
+                if (LENGTH(ioffsets) == 1)
+                    warningcall(call, _("'switch' with no alternatives"));
                 pc = codebase + INTEGER(ioffsets)[which];
             }
             NEXT();
