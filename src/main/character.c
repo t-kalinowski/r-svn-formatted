@@ -403,7 +403,7 @@ SEXP attribute_hidden do_substr(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 // return TRUE iff CHARSXP x starts with CHARSXP pre
-int str_startsWith(SEXP x, SEXP pre)
+static int str_startsWith(SEXP x, SEXP pre)
 {
     cetype_t ienc = getCharCE(x);
     const char *cx = CHAR(x);
@@ -418,7 +418,7 @@ int str_startsWith(SEXP x, SEXP pre)
 }
 
 // return TRUE iff CHARSXP x ends with CHARSXP suffix
-int str_endsWith(SEXP x, SEXP suffix)
+static int str_endsWith(SEXP x, SEXP suffix)
 {
     cetype_t ienc = getCharCE(x);
     const char *cx = CHAR(x);
@@ -429,7 +429,7 @@ int str_endsWith(SEXP x, SEXP suffix)
         buf[0] = '\0';
     else
     {
-        size_t x_len = R_nchar(x, Chars, FALSE, FALSE, "endsWith(x, )");
+        int x_len = R_nchar(x, Chars, FALSE, FALSE, "endsWith(x, )");
         substr(buf, cx, ienc, x_len - p_len + 1, x_len);
     }
     return Seql(mkCharCE(buf, ienc), suffix);
