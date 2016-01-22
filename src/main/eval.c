@@ -3860,6 +3860,10 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
 #define Arith2(opval, opsym) NewBuiltin2(cmp_arith2, opval, opsym, rho)
 #define Relop2(opval, opsym) NewBuiltin2(cmp_relop, opval, opsym, rho)
 
+#define R_MSG_NA _("NaNs produced")
+#define CMP_ISNAN ISNAN
+// On Linux this is quite a bit faster; not on Mac OS X El Capitan:
+//#define CMP_ISNAN(x) ((x) != (x))
 #define FastMath1(fun, sym)                                                                                            \
     do                                                                                                                 \
     {                                                                                                                  \
@@ -3868,8 +3872,18 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
         int typex = bcStackScalarEx(R_BCNodeStackTop - 1, &vx, &sa);                                                   \
         if (typex == REALSXP)                                                                                          \
         {                                                                                                              \
-            SKIP_OP();                                                                                                 \
-            SETSTACK_REAL_EX(-1, fun(vx.dval), sa);                                                                    \
+            double dval = fun(vx.dval);                                                                                \
+            if (CMP_ISNAN(dval))                                                                                       \
+            {                                                                                                          \
+                SEXP call = VECTOR_ELT(constants, GETOP());                                                            \
+                if (ISNAN(vx.dval))                                                                                    \
+                    dval = vx.dval;                                                                                    \
+                else                                                                                                   \
+                    warningcall(call, R_MSG_NA);                                                                       \
+            }                                                                                                          \
+            else                                                                                                       \
+                SKIP_OP();                                                                                             \
+            SETSTACK_REAL_EX(-1, dval, sa);                                                                            \
             NEXT();                                                                                                    \
         }                                                                                                              \
         else if (typex == INTSXP && vx.ival != NA_INTEGER)                                                             \
@@ -4010,8 +4024,18 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
         int typex = bcStackScalarRealEx(R_BCNodeStackTop - 1, &vx, &sa);                                               \
         if (typex == REALSXP)                                                                                          \
         {                                                                                                              \
-            SKIP_OP();                                                                                                 \
-            SETSTACK_REAL_EX(-1, R_log(vx.dval), sa);                                                                  \
+            double dval = R_log(vx.dval);                                                                              \
+            if (CMP_ISNAN(dval))                                                                                       \
+            {                                                                                                          \
+                SEXP call = VECTOR_ELT(constants, GETOP());                                                            \
+                if (ISNAN(vx.dval))                                                                                    \
+                    dval = vx.dval;                                                                                    \
+                else                                                                                                   \
+                    warningcall(call, R_MSG_NA);                                                                       \
+            }                                                                                                          \
+            else                                                                                                       \
+                SKIP_OP();                                                                                             \
+            SETSTACK_REAL_EX(-1, dval, sa);                                                                            \
             NEXT();                                                                                                    \
         }                                                                                                              \
         SEXP call = VECTOR_ELT(constants, GETOP());                                                                    \
@@ -4032,9 +4056,21 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
         int typey = bcStackScalarRealEx(R_BCNodeStackTop - 1, &vy, &sb);                                               \
         if (typex == REALSXP && typey == REALSXP)                                                                      \
         {                                                                                                              \
-            SKIP_OP();                                                                                                 \
+            double dval = logbase(vx.dval, vy.dval);                                                                   \
+            if (ISNAN(dval))                                                                                           \
+            {                                                                                                          \
+                SEXP call = VECTOR_ELT(constants, GETOP());                                                            \
+                if (ISNAN(vx.dval))                                                                                    \
+                    dval = vx.dval;                                                                                    \
+                else if (ISNAN(vy.dval))                                                                               \
+                    dval = vy.dval;                                                                                    \
+                else                                                                                                   \
+                    warningcall(call, R_MSG_NA);                                                                       \
+            }                                                                                                          \
+            else                                                                                                       \
+                SKIP_OP();                                                                                             \
             R_BCNodeStackTop--;                                                                                        \
-            SETSTACK_REAL_EX(-1, logbase(vx.dval, vy.dval), sa);                                                       \
+            SETSTACK_REAL_EX(-1, dval, sa);                                                                            \
             NEXT();                                                                                                    \
         }                                                                                                              \
         SEXP call = VECTOR_ELT(constants, GETOP());                                                                    \
@@ -4094,7 +4130,15 @@ static R_INLINE double (*getMath1Fun(int i, SEXP call))(double)
         int typex = bcStackScalarRealEx(R_BCNodeStackTop - 1, &vx, &sa);                                               \
         if (typex == REALSXP)                                                                                          \
         {                                                                                                              \
-            SETSTACK_REAL_EX(-1, fun(vx.dval), sa);                                                                    \
+            double dval = fun(vx.dval);                                                                                \
+            if (ISNAN(dval))                                                                                           \
+            {                                                                                                          \
+                if (ISNAN(vx.dval))                                                                                    \
+                    dval = vx.dval;                                                                                    \
+                else                                                                                                   \
+                    warningcall(call, R_MSG_NA);                                                                       \
+            }                                                                                                          \
+            SETSTACK_REAL_EX(-1, dval, sa);                                                                            \
             NEXT();                                                                                                    \
         }                                                                                                              \
         SEXP args = CONS_NR(GETSTACK(-1), R_NilValue);                                                                 \
