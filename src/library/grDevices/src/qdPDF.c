@@ -27,9 +27,9 @@
 
 #include "qdPDF.h"
 
-#include <R.h>
+//#include <R.h>
 #include <Rinternals.h>
-#include <R_ext/QuartzDevice.h>
+//#include <R_ext/QuartzDevice.h>
 #define _(String) (String)
 
 typedef struct
