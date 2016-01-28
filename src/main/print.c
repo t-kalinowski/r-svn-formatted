@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995-1998	Robert Gentleman and Ross Ihaka.
- *  Copyright (C) 2000-2015	The R Core Team.
+ *  Copyright (C) 2000-2016	The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -66,7 +66,7 @@
 #include "Print.h"
 #include "Fileio.h"
 #include "Rconnections.h"
-#include <S.h>
+#include <R_ext/RS.h>
 
 /* Global print parameter struct: */
 R_print_par_t R_print;
