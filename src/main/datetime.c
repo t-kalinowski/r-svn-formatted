@@ -1045,7 +1045,11 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         N = 0;
     PROTECT(ans = allocVector(STRSXP, N));
     char tm_zone[20];
-    Rboolean have_zone = LENGTH(x) >= 10 && LENGTH(VECTOR_ELT(x, 9)) == n;
+#ifdef HAVE_TM_GMTOFF
+    Rboolean have_zone = LENGTH(x) >= 11 && XLENGTH(VECTOR_ELT(x, 9)) == n && XLENGTH(VECTOR_ELT(x, 10)) == n;
+#else
+    Rboolean have_zone = LENGTH(x) >= 10 && XLENGTH(VECTOR_ELT(x, 9)) == n;
+#endif
     for (R_xlen_t i = 0; i < N; i++)
     {
         double secs = REAL(VECTOR_ELT(x, 0))[i % nlen[0]], fsecs = floor(secs);
@@ -1061,7 +1065,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         tm.tm_isdst = INTEGER(VECTOR_ELT(x, 8))[i % nlen[8]];
         if (have_zone)
         {
-            strncpy(tm_zone, CHAR(STRING_ELT(VECTOR_ELT(x, 9), i)), 20);
+            strncpy(tm_zone, CHAR(STRING_ELT(VECTOR_ELT(x, 9), i % n)), 20);
             tm_zone[20 - 1] = '\0';
 #ifdef HAVE_TM_ZONE
             tm.tm_zone = tm_zone;
@@ -1153,9 +1157,9 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
                 // but they are currently 3 or 4 bytes.
                 if (UseTZ)
                 {
-                    if (LENGTH(x) >= 10)
+                    if (have_zone)
                     {
-                        const char *p = CHAR(STRING_ELT(VECTOR_ELT(x, 9), i));
+                        const char *p = CHAR(STRING_ELT(VECTOR_ELT(x, 9), i % n));
                         if (strlen(p))
                         {
                             strcat(buff, " ");
