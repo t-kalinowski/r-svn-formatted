@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Modifications copyright (C) 2007-2015  The R Core Team
+ *  Modifications copyright (C) 2007-2016  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -37,8 +37,9 @@ use of tm_zone and tm_gmtoff on all platforms.
 #include <string.h>
 #include <limits.h> /* for CHAR_BIT et al. */
 
-// to get tm_zone, tm_gmtoff defined in glibc.
-// some other header, e.g. math.h, might define the macro.
+// To get tm_zone, tm_gmtoff defined in glibc
+// (although this file is not usually used there).
+// Some other header, e.g. math.h, might define the macro.
 #if defined HAVE_FEATURES_H
 #include <features.h>
 #ifdef __GNUC_PREREQ
@@ -260,6 +261,8 @@ static struct state gmtmem;
 #define lclptr (&lclmem)
 #define gmtptr (&gmtmem)
 
+/* These are abbreviated names, so 255 should be ample.
+   But this was not checked in strcpy below. */
 #ifndef TZ_STRLEN_MAX
 #define TZ_STRLEN_MAX 255
 #endif /* !defined TZ_STRLEN_MAX */
@@ -1225,8 +1228,12 @@ void tzset(void)
     if (lcl_is_set > 0 && strcmp(lcl_TZname, name) == 0)
         return;
     lcl_is_set = strlen(name) < sizeof lcl_TZname;
+    /* R change: was strcpy before. */
     if (lcl_is_set)
-        (void)strcpy(lcl_TZname, name);
+    {
+        (void)strncpy(lcl_TZname, name, TZ_STRLEN_MAX);
+        lcl_TZname[TZ_STRLEN_MAX] = '\0';
+    }
 
     if (*name == '\0')
     {
