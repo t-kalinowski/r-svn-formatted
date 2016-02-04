@@ -46,8 +46,9 @@
 #define MLOGICAL_NA -1
 // an "NA_LOGICAL" substitute for Mathlib {only used here, for now}
 
-attribute_hidden void qbeta_raw(double alpha, double p, double q, int lower_tail, int log_p, int swap_01,
-                                double log_q_cut, int n_N, double *qb);
+// attribute_hidden
+static void qbeta_raw(double alpha, double p, double q, int lower_tail, int log_p, int swap_01, double log_q_cut,
+                      int n_N, double *qb);
 
 double qbeta(double alpha, double p, double q, int lower_tail, int log_p)
 {
