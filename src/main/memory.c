@@ -2925,7 +2925,7 @@ SEXP allocS4Object(void)
     return s;
 }
 
-SEXP allocFormalsList(int nargs, ...)
+static SEXP allocFormalsList(int nargs, ...)
 {
     SEXP res = R_NilValue;
     SEXP n;
