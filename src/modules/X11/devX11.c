@@ -1559,7 +1559,7 @@ Rboolean X11_Open(pDevDesc dd, pX11Desc xd, const char *dsp, double w, double h,
     attributes.background_pixel = whitepixel;
     attributes.border_pixel = blackpixel;
     attributes.backing_store = Always;
-    attributes.event_mask = ButtonPressMask | ButtonMotionMask | PointerMotionHintMask | ButtonReleaseMask |
+    attributes.event_mask = ButtonPressMask | PointerMotionMask | PointerMotionHintMask | ButtonReleaseMask |
                             ExposureMask | StructureNotifyMask | KeyPressMask;
 
     if (type == WINDOW)
@@ -1752,7 +1752,7 @@ Rboolean X11_Open(pDevDesc dd, pX11Desc xd, const char *dsp, double w, double h,
         if (alreadyCreated == 0)
         {
             XSelectInput(display, xd->window,
-                         ExposureMask | ButtonPressMask | StructureNotifyMask | ButtonReleaseMask | ButtonMotionMask |
+                         ExposureMask | ButtonPressMask | StructureNotifyMask | ButtonReleaseMask | PointerMotionMask |
                              PointerMotionHintMask | KeyPressMask);
             XMapWindow(display, xd->window);
             XSync(display, 0);
@@ -2738,6 +2738,7 @@ static void X11_eventHelper(pDevDesc dd, int code)
         XNextEvent(display, &event);
         if (event.type == ButtonRelease || event.type == ButtonPress || event.type == MotionNotify)
         {
+            int RButtons;
             XFindContext(display, event.xbutton.window, devPtrContext, &temp);
             ddEvent = (pDevDesc)temp;
             if (ddEvent == dd && dd->gettingEvent)
@@ -2757,13 +2758,16 @@ static void X11_eventHelper(pDevDesc dd, int code)
                         event.xbutton.x = winX;
                         event.xbutton.y = winY;
                     }
+                    RButtons = mask >> 8; /* See PR#16700 */
                 }
+                else
+                    RButtons = 1 << (event.xbutton.button - 1);
                 if (!done)
                 {
                     doMouseEvent(dd,
                                  event.type == ButtonRelease ? meMouseUp
                                                              : event.type == ButtonPress ? meMouseDown : meMouseMove,
-                                 event.xbutton.button, event.xbutton.x, event.xbutton.y);
+                                 RButtons, event.xbutton.x, event.xbutton.y);
                     XSync(display, 0);
                     done = 1;
                 }
