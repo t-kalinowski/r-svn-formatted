@@ -3,7 +3,7 @@
  *  file console.c
  *  Copyright (C) 1998--2003  Guido Masarotto and Brian Ripley
  *  Copyright (C) 2004-8      The R Foundation
- *  Copyright (C) 2004-2014   The R Core Team
+ *  Copyright (C) 2004-2016   The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -373,7 +373,7 @@ ConsoleData newconsoledata(font f, int rows, int cols, int bufbytes, int bufline
         p->lbuf = NULL;
         p->kbuf = NULL;
     }
-    p->bm = NULL;
+    BM = NULL;
     p->rows = rows;
     p->cols = cols;
     for (int i = 0; i < numGuiColors; i++)
@@ -384,10 +384,10 @@ ConsoleData newconsoledata(font f, int rows, int cols, int bufbytes, int bufline
     WIDTH = (COLS + 1) * FW;
     HEIGHT = (ROWS + 1) * FH + 1; /* +1 avoids size problems in MDI */
     FV = FC = 0;
-    p->newfv = p->newfc = 0;
+    NEWFV = NEWFC = 0;
     p->firstkey = p->numkeys = 0;
     p->clp = NULL;
-    p->r = -1;
+    CURROW = -1;
     p->overwrite = 0;
     p->needredraw = 0;
     p->wipe_completion = 0;
@@ -467,7 +467,7 @@ static void writelineHelper(ConsoleData p, int fch, int lch, rgb fgr, rgb bgr, i
 
     /* This is right, since columns are of fixed size */
     r = rect(BORDERX + fch * FW, BORDERY + j * FH, (lch - fch + 1) * FW, FH);
-    gfillrect(p->bm, bgr, r);
+    gfillrect(BM, bgr, r);
 
     if (len > FC + fch)
     {
@@ -512,7 +512,7 @@ static void writelineHelper(ConsoleData p, int fch, int lch, rgb fgr, rgb bgr, i
             else
                 *q++ = *P++;
             *q = L'\0';
-            gdrawwcs(p->bm, p->f, fgr, pt(r.x, r.y), buff);
+            gdrawwcs(BM, p->f, fgr, pt(r.x, r.y), buff);
         }
         else
         {
@@ -541,7 +541,7 @@ static void writelineHelper(ConsoleData p, int fch, int lch, rgb fgr, rgb bgr, i
             }
             else
                 ch = L'\0';
-            gdrawwcs(p->bm, p->f, fgr, pt(r.x, r.y), &s[FC + fch]);
+            gdrawwcs(BM, p->f, fgr, pt(r.x, r.y), &s[FC + fch]);
             /* restore the string */
             if (ch)
                 s[last] = ch;
@@ -636,7 +636,7 @@ static int writeline(control c, ConsoleData p, int i, int j)
     else
         WLHELPER(0, col1, fg, bg);
     /* This is the cursor, and it may need to be variable-width */
-    if ((p->r >= 0) && (CURCOL >= FC) && (CURCOL < FC + COLS) && (i == NUMLINES - 1) &&
+    if ((CURROW >= 0) && (CURCOL >= FC) && (CURCOL < FC + COLS) && (i == NUMLINES - 1) &&
         (p->sel == 0 || !intersect_input(p, 0)))
     {
         if (!p->overwrite)
@@ -652,7 +652,7 @@ static int writeline(control c, ConsoleData p, int i, int j)
             if (p->cursor_blink < 2)
             {
                 r = rect(BORDERX + (CURCOL - FC) * FW, BORDERY + j * FH, FW / 4, FH);
-                gfillrect(p->bm, highlight, r);
+                gfillrect(BM, highlight, r);
             }
         }
         else if (mbcslocale)
@@ -679,8 +679,8 @@ static int writeline(control c, ConsoleData p, int i, int j)
             if (p->cursor_blink < 2)
             {
                 r = rect(BORDERX + (CURCOL - FC) * FW, BORDERY + j * FH, w0 * FW, FH);
-                gfillrect(p->bm, highlight, r);
-                gdrawwcs(p->bm, p->f, bg, pt(r.x, r.y), nn);
+                gfillrect(BM, highlight, r);
+                gdrawwcs(BM, p->f, bg, pt(r.x, r.y), nn);
             }
         }
         else
@@ -1071,7 +1071,7 @@ void set_completion_available(int x)
 static void performCompletion(control c)
 {
     ConsoleData p = getdata(c);
-    int i, alen, alen2, max_show = 10, cursor_position = p->c - prompt_wid;
+    int i, alen, alen2, max_show = 10, cursor_position = CURCOL - prompt_wid;
     wchar_t *partial_line = LINE(NUMLINES - 1) + prompt_wid;
     const char *additional_text;
     SEXP cmdSexp, cmdexpr, ans = R_NilValue;
@@ -1242,10 +1242,10 @@ void consolecmd(control c, const char *cmd)
     storekey(c, '\n');
     /* if we are editing we save the actual line
        FIXME: not right if Unicode */
-    if (p->r > -1)
+    if (CURROW > -1)
     {
         char buf[2000], *cp; /* maximum 2 bytes/char */
-        wchar_t *wc = &(p->lbuf->s[p->lbuf->ns - 1][prompt_len]);
+        wchar_t *wc = &(LINE(NUMLINES - 1)[prompt_len]);
         memset(buf, 0, 2000);
         wcstombs(buf, wc, 1000);
         for (cp = buf; *cp; cp++)
@@ -1817,7 +1817,7 @@ int consolewrites(control c, const char *s)
             xbufaddxc(p->lbuf, L'\b');
         if (incomplete)
         {
-            p->lbuf->ns--;
+            NUMLINES--;
             p->lbuf->free--;
             p->lbuf->av++;
         }
@@ -1839,13 +1839,13 @@ int consolewrites(control c, const char *s)
         setfirstvisible(c, NUMLINES - ROWS);
         REDRAW;
     }
-    else if (p->r >= 0)
+    else if (CURROW >= 0)
         setfirstvisible(c, NUMLINES - ROWS);
     else
     {
-        p->newfv = NUMLINES - ROWS;
-        if (p->newfv < 0)
-            p->newfv = 0;
+        NEWFV = NUMLINES - ROWS;
+        if (NEWFV < 0)
+            NEWFV = 0;
     }
     if (p->input)
         REDRAW;
@@ -1856,8 +1856,8 @@ void freeConsoleData(ConsoleData p)
 {
     if (!p)
         return;
-    if (p->bm)
-        del(p->bm);
+    if (BM)
+        del(BM);
     if (p->kind == CONSOLE)
     {
         if (p->lbuf)
@@ -1989,8 +1989,8 @@ static void draweditline(control c)
     }
     else
     {
-        WRITELINE(NUMLINES - 1, p->r);
-        RSHOW(RLINE(p->r));
+        WRITELINE(NUMLINES - 1, CURROW);
+        RSHOW(RLINE(CURROW));
     }
 }
 
@@ -2048,16 +2048,16 @@ int consolereads(control c, const char *prompt, char *buf, int len, int addtohis
     prompt_wid = wcswidth(aLine);
     if (NUMLINES > ROWS)
     {
-        p->r = ROWS - 1;
-        p->newfv = NUMLINES - ROWS;
+        CURROW = ROWS - 1;
+        NEWFV = NUMLINES - ROWS;
     }
     else
     {
-        p->r = NUMLINES - 1;
-        p->newfv = 0;
+        CURROW = NUMLINES - 1;
+        NEWFV = 0;
     }
     CURCOL = prompt_wid;
-    p->fc = 0;
+    FC = 0;
     cur_pos = 0;
     max_pos = 0;
     cur_line = &aLine[prompt_len];
@@ -2078,13 +2078,13 @@ int consolereads(control c, const char *prompt, char *buf, int len, int addtohis
             ns0 = NUMLINES;
             if (NUMLINES > ROWS)
             {
-                p->r = ROWS - 1;
-                p->newfv = NUMLINES - ROWS;
+                CURROW = ROWS - 1;
+                NEWFV = NUMLINES - ROWS;
             }
             else
             {
-                p->r = NUMLINES - 1;
-                p->newfv = 0;
+                CURROW = NUMLINES - 1;
+                NEWFV = 0;
             }
             USER(NUMLINES - 1) = prompt_wid;
             p->needredraw = 1;
@@ -2199,7 +2199,7 @@ int consolereads(control c, const char *prompt, char *buf, int len, int addtohis
                     wcstobuf(buf, len, cur_line);
                     // sprintf(buf, "%ls", cur_line);
                     // if(strlen(buf) == 0) strcpy(buf, "invalid input\n");
-                    p->r = -1;
+                    CURROW = -1;
                     cur_line[max_pos] = L'\0';
                     if (max_pos && addtohistory)
                         wgl_histadd(cur_line);
@@ -2245,7 +2245,7 @@ int consolecols(console c)
 {
     ConsoleData p = getdata(c);
 
-    return p->cols;
+    return COLS;
 }
 
 void consoleresize(console c, rect r)
@@ -2275,6 +2275,9 @@ void consoleresize(console c, rect r)
     HEIGHT = r.height;
     BORDERX = (WIDTH - COLS * FW) / 2;
     BORDERY = (HEIGHT - ROWS * FH) / 2;
+    NEWFV = NUMLINES - ROWS;
+    if (NEWFV < 0)
+        NEWFV = 0;
     del(BM);
     BM = newbitmap(r.width, r.height, 2);
     if (!BM)
@@ -2286,14 +2289,14 @@ void consoleresize(console c, rect r)
         return;
     ; /* don't implement resize if no content
 yet in pager */
-    if (p->r >= 0)
+    if (CURROW >= 0)
     {
         if (NUMLINES > ROWS)
         {
-            p->r = ROWS - 1;
+            CURROW = ROWS - 1;
         }
         else
-            p->r = NUMLINES - 1;
+            CURROW = NUMLINES - 1;
     }
     clear(c);
     p->needredraw = 1;
@@ -2696,6 +2699,6 @@ void consoleclear(control c)
     xbufshift(l);
     l->shift = oldshift;
     NEWFV = 0;
-    p->r = 0;
+    CURROW = 0;
     REDRAW;
 }
