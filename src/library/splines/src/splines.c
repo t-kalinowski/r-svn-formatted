@@ -258,9 +258,13 @@ SEXP spline_basis(SEXP knots, SEXP order, SEXP xvals, SEXP derivs)
 const static R_CallMethodDef R_CallDef[] = {
     {"spline_basis", (DL_FUNC)&spline_basis, 4}, {"spline_value", (DL_FUNC)&spline_value, 5}, {NULL, NULL, 0}};
 
-void R_init_splines(DllInfo *dll)
+void
+#ifdef HAVE_VISIBILITY_ATTRIBUTE
+    __attribute__((visibility("default")))
+#endif
+    R_init_splines(DllInfo *dll)
 {
     R_registerRoutines(dll, NULL, R_CallDef, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
-    //    R_forceSymbols(dll, TRUE); // too few to worry about, used in cobs*
+    //    R_forceSymbols(dll, TRUE); // too few to worry about
 }
