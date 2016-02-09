@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1997-2008   The R Core Team.
+ *  Copyright (C) 1997-2016   The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,9 +25,8 @@
 
 #include <stdlib.h> /* for abs */
 #include <math.h>
-#include <R_ext/Boolean.h>
-#include <R_ext/Error.h>
-#include <R_ext/Memory.h>
+
+#include <Rinternals.h> /* Arith.h, Boolean.h, Error.h, Memory.h .. */
 
 typedef enum
 {
@@ -70,11 +69,12 @@ static int imed3(double u, double v, double w)
     /* else */ return -1;
 }
 
-static Rboolean sm_3(double *x, double *y, int n, int end_rule)
+static Rboolean sm_3(double *x, double *y, R_xlen_t n, int end_rule)
 {
     /* y[] := Running Median of three (x) = "3 (x[])" with "copy ends"
      * ---  return chg := ( y != x ) */
-    int i, j;
+    R_xlen_t i;
+    int j;
     Rboolean chg = FALSE;
 
     if (n <= 2)
@@ -97,12 +97,12 @@ static Rboolean sm_3(double *x, double *y, int n, int end_rule)
     case sm_NO_ENDRULE:                                                                                                \
         /* do nothing : don't even assign them */ break;                                                               \
                                                                                                                        \
-    case sm_COPY_ENDRULE:                                                                                              \
+    case sm_COPY_ENDRULE: /* 1 */                                                                                      \
         y[0] = x[0];                                                                                                   \
         y[n - 1] = x[n - 1];                                                                                           \
         break;                                                                                                         \
                                                                                                                        \
-    case sm_TUKEY_ENDRULE:                                                                                             \
+    case sm_TUKEY_ENDRULE: /* 2 */                                                                                     \
         y[0] = med3(3 * y[1] - 2 * y[2], x[0], y[1]);                                                                  \
         chg = chg || (y[0] != x[0]);                                                                                   \
         y[n - 1] = med3(y[n - 2], x[n - 1], 3 * y[n - 2] - 2 * y[n - 3]);                                              \
@@ -118,10 +118,10 @@ static Rboolean sm_3(double *x, double *y, int n, int end_rule)
     return chg;
 }
 
-static int sm_3R(double *x, double *y, double *z, int n, int end_rule)
+static int sm_3R(double *x, double *y, double *z, R_xlen_t n, int end_rule)
 {
     /* y[] := "3R"(x) ; 3R = Median of three, repeated until convergence */
-    int i, iter;
+    int iter;
     Rboolean chg;
 
     iter = chg = sm_3(x, y, n, sm_COPY_ENDRULE);
@@ -131,7 +131,7 @@ static int sm_3R(double *x, double *y, double *z, int n, int end_rule)
         if ((chg = sm_3(y, z, n, sm_NO_ENDRULE)))
         {
             iter++;
-            for (i = 1; i < n - 1; i++)
+            for (R_xlen_t i = 1; i < n - 1; i++)
                 y[i] = z[i];
         }
     }
@@ -146,7 +146,7 @@ static int sm_3R(double *x, double *y, double *z, int n, int end_rule)
     */
 }
 
-static Rboolean sptest(double *x, int i)
+static Rboolean sptest(double *x, R_xlen_t i)
 {
     /* Split test:
        Are we at a /-\ or \_/ location => split should be made ?
@@ -158,10 +158,10 @@ static Rboolean sptest(double *x, int i)
     /* else */ return TRUE;
 }
 
-static Rboolean sm_split3(double *x, double *y, int n, Rboolean do_ends)
+static Rboolean sm_split3(double *x, double *y, R_xlen_t n, Rboolean do_ends)
 {
     /* y[] := S(x[])  where S() = "sm_split3"  */
-    int i, j;
+    R_xlen_t i;
     Rboolean chg = FALSE;
 
     for (i = 0; i < n; i++)
@@ -182,6 +182,7 @@ static Rboolean sm_split3(double *x, double *y, int n, Rboolean do_ends)
     for (i = 2; i < n - 3; i++)
         if (sptest(x, i))
         { /* plateau at x[i] == x[i+1] */
+            int j;
             /* at left : */
             if (-1 < (j = imed3(x[i], x[i - 1], 3 * x[i - 1] - 2 * x[i - 2])))
             {
@@ -204,7 +205,7 @@ static Rboolean sm_split3(double *x, double *y, int n, Rboolean do_ends)
     return (chg);
 }
 
-static int sm_3RS3R(double *x, double *y, double *z, double *w, int n, int end_rule, Rboolean split_ends)
+static int sm_3RS3R(double *x, double *y, double *z, double *w, R_xlen_t n, int end_rule, Rboolean split_ends)
 {
     /* y[1:n] := "3R S 3R"(x[1:n]);  z = "work"; */
     int iter;
@@ -218,7 +219,7 @@ static int sm_3RS3R(double *x, double *y, double *z, double *w, int n, int end_r
     return (iter + (int)chg);
 }
 
-static int sm_3RSS(double *x, double *y, double *z, int n, int end_rule, Rboolean split_ends)
+static int sm_3RSS(double *x, double *y, double *z, R_xlen_t n, int end_rule, Rboolean split_ends)
 {
     /* y[1:n] := "3RSS"(x[1:n]);  z = "work"; */
     int iter;
@@ -232,13 +233,14 @@ static int sm_3RSS(double *x, double *y, double *z, int n, int end_rule, Rboolea
     return (iter + (int)chg);
 }
 
-static int sm_3RSR(double *x, double *y, double *z, double *w, int n, int end_rule, Rboolean split_ends)
+static int sm_3RSR(double *x, double *y, double *z, double *w, R_xlen_t n, int end_rule, Rboolean split_ends)
 {
     /* y[1:n] := "3RSR"(x[1:n]);  z := residuals; w = "work"; */
 
     /*== "SR" (as follows) is stupid ! (MM) ==*/
 
-    int i, iter;
+    R_xlen_t i;
+    int iter;
     Rboolean chg, ch2;
 
     iter = sm_3R(x, y, z, n, end_rule);
@@ -268,7 +270,7 @@ static int sm_3RSR(double *x, double *y, double *z, double *w, int n, int end_ru
 SEXP Rsm(SEXP x, SEXP stype, SEXP send)
 {
     int iend = asInteger(send), type = asInteger(stype);
-    int n = LENGTH(x);
+    R_xlen_t n = XLENGTH(x);
     SEXP ans = PROTECT(allocVector(VECSXP, 2));
     SEXP y = allocVector(REALSXP, n);
     SET_VECTOR_ELT(ans, 0, y);
@@ -297,19 +299,20 @@ SEXP Rsm(SEXP x, SEXP stype, SEXP send)
             iter = sm_3RSR(REAL(x), REAL(y), z, w, n, abs(iend), iend ? TRUE : FALSE);
             break;
         }
-        case 4: {
+        case 4: // "3R"
+        {
             double *z = (double *)R_alloc(n, sizeof(double));
             iter = sm_3R(REAL(x), REAL(y), z, n, iend);
         }
         break;
-        case 5:
+        case 5: // "3"
             iter = sm_3(REAL(x), REAL(y), n, iend);
         }
         SET_VECTOR_ELT(ans, 1, ScalarInteger(iter));
         SET_STRING_ELT(nm, 1, mkChar("iter"));
     }
     else
-    {
+    { // type > 5  ==> =~ "S"
         int changed = sm_split3(REAL(x), REAL(y), n, (Rboolean)iend);
         SET_VECTOR_ELT(ans, 1, ScalarLogical(changed));
         SET_STRING_ELT(nm, 1, mkChar("changed"));
