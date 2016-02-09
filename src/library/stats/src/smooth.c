@@ -285,18 +285,21 @@ SEXP Rsm(SEXP x, SEXP stype, SEXP send)
         case 1: {
             double *z = (double *)R_alloc(n, sizeof(double));
             double *w = (double *)R_alloc(n, sizeof(double));
-            iter = sm_3RS3R(REAL(x), REAL(y), z, w, n, abs(iend), iend ? TRUE : FALSE);
+            iter = sm_3RS3R(REAL(x), REAL(y), z, w, n, abs(iend),
+                            /* split_ends: */ (iend < 0) ? TRUE : FALSE);
             break;
         }
         case 2: {
             double *z = (double *)R_alloc(n, sizeof(double));
-            iter = sm_3RSS(REAL(x), REAL(y), z, n, abs(iend), iend ? TRUE : FALSE);
+            iter = sm_3RSS(REAL(x), REAL(y), z, n, abs(iend),
+                           /* split_ends: */ (iend < 0) ? TRUE : FALSE);
             break;
         }
         case 3: {
             double *z = (double *)R_alloc(n, sizeof(double));
             double *w = (double *)R_alloc(n, sizeof(double));
-            iter = sm_3RSR(REAL(x), REAL(y), z, w, n, abs(iend), iend ? TRUE : FALSE);
+            iter = sm_3RSR(REAL(x), REAL(y), z, w, n, abs(iend),
+                           /* split_ends: */ (iend < 0) ? TRUE : FALSE);
             break;
         }
         case 4: // "3R"
