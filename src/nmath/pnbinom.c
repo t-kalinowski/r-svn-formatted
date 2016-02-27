@@ -1,7 +1,7 @@
 /*
  *  Mathlib : A C Library of Special Functions
  *  Copyright (C) 1998 Ross Ihaka
- *  Copyright (C) 2000-2013 The R Core Team
+ *  Copyright (C) 2000-2016 The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -57,7 +57,7 @@ double pnbinom_mu(double x, double size, double mu, int lower_tail, int log_p)
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(size) || ISNAN(mu))
         return x + size + mu;
-    if (!R_FINITE(size) || !R_FINITE(mu))
+    if (!R_FINITE(mu))
         ML_ERR_return_NAN;
 #endif
     if (size < 0 || mu < 0)
@@ -71,6 +71,9 @@ double pnbinom_mu(double x, double size, double mu, int lower_tail, int log_p)
         return R_DT_0;
     if (!R_FINITE(x))
         return R_DT_1;
+    if (!R_FINITE(size)) // limit case: Poisson
+        return (ppois(x, mu, lower_tail, log_p));
+
     x = floor(x + 1e-7);
     /* return
      * pbeta(pr, size, x + 1, lower_tail, log_p);  pr = size/(size + mu), 1-pr = mu/(size+mu)
