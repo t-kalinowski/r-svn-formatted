@@ -114,7 +114,7 @@ static void R_approxtest(double *x, double *y, int nxy, int method, double f)
     }
     /* check interpolation method */
     for (i = 0; i < nxy; i++)
-        if (ISNA(x[i]) || ISNA(y[i]))
+        if (ISNAN(x[i]) || ISNAN(y[i]))
             error(_("approx(): attempted to interpolate NA values"));
 }
 
@@ -132,10 +132,7 @@ static void R_approxfun(double *x, double *y, int nxy, double *xout, double *you
     M.ylow = yleft;
     M.yhigh = yright;
     for (i = 0; i < nout; i++)
-        if (!ISNA(xout[i]))
-            yout[i] = approx1(xout[i], x, y, nxy, &M);
-        else
-            yout[i] = xout[i];
+        yout[i] = ISNAN(xout[i]) ? xout[i] : approx1(xout[i], x, y, nxy, &M);
 }
 
 #include <Rinternals.h>
