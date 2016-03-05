@@ -1445,8 +1445,8 @@ static SEXP EncodeVars(SEXP); /* defined below */
 static SEXP PlusTerms(SEXP left, SEXP right)
 {
     PROTECT(left = EncodeVars(left));
-    right = EncodeVars(right);
-    UNPROTECT(1);
+    PROTECT(right = EncodeVars(right));
+    UNPROTECT(2);
     return TrimRepeats(listAppend(left, right));
 }
 
