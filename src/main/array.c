@@ -501,7 +501,20 @@ SEXP attribute_hidden do_length(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ScalarInteger(length(x));
 }
 
-R_xlen_t attribute_hidden dispatch_length(SEXP x, SEXP call, SEXP rho)
+R_len_t attribute_hidden dispatch_length(SEXP x, SEXP call, SEXP rho)
+{
+    R_xlen_t len = dispatch_xlength(x, call, rho);
+    if (len > INT_MAX)
+    {
+        return R_BadLongVector(x, __FILE__, __LINE__);
+    }
+    else
+    {
+        return (R_len_t)len;
+    }
+}
+
+R_xlen_t attribute_hidden dispatch_xlength(SEXP x, SEXP call, SEXP rho)
 {
     static SEXP length_op = NULL;
     if (isObject(x))
@@ -524,7 +537,7 @@ R_xlen_t attribute_hidden dispatch_length(SEXP x, SEXP call, SEXP rho)
 static R_xlen_t getElementLength(SEXP x, R_xlen_t i, SEXP call, SEXP rho)
 {
     SEXP x_elt = dispatch_subset2(x, i, call, rho);
-    return (dispatch_length(x_elt, call, rho));
+    return (dispatch_xlength(x_elt, call, rho));
 }
 
 #ifdef LONG_VECTOR_SUPPORT
@@ -534,7 +547,7 @@ static SEXP do_lengths_long(SEXP x, SEXP call, SEXP rho)
     R_xlen_t x_len, i;
     double *ans_elt;
 
-    x_len = dispatch_length(x, call, rho);
+    x_len = dispatch_xlength(x, call, rho);
     PROTECT(ans = allocVector(REALSXP, x_len));
     for (i = 0, ans_elt = REAL(ans); i < x_len; i++, ans_elt++)
         *ans_elt = getElementLength(x, i, call, rho);
@@ -572,7 +585,7 @@ SEXP attribute_hidden do_lengths(SEXP call, SEXP op, SEXP args, SEXP rho)
         default:
             error(_("'%s' must be a list or atomic vector"), "x");
         }
-    x_len = dispatch_length(x, call, rho);
+    x_len = dispatch_xlength(x, call, rho);
     PROTECT(ans = allocVector(INTSXP, x_len));
     if (isList)
     {
