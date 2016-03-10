@@ -5751,6 +5751,8 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 SETSTACK(-1, seq);
             }
 
+            BCNPUSH(VECTOR_ELT(constants, callidx));
+
             defineVar(symbol, R_NilValue, rho);
             BCNPUSH(GET_BINDING_CELL(symbol, rho));
 
@@ -5766,7 +5768,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             else
 #endif
                 if (isObject(seq))
-                INTEGER(value)[1] = (int)dispatch_length(seq, body, rho);
+                INTEGER(value)[1] = (int)dispatch_length(seq, VECTOR_ELT(constants, callidx), rho);
             else if (isVector(seq))
                 INTEGER(value)[1] = LENGTH(seq);
             else if (isList(seq) || isNull(seq))
@@ -5809,11 +5811,12 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             if (i < n)
             {
                 Rboolean iscompact = FALSE;
-                SEXP seq = getForLoopSeq(-4, &iscompact);
+                SEXP seq = getForLoopSeq(-5, &iscompact);
                 SEXP cell = GETSTACK(-3);
                 if (isObject(seq))
                 {
-                    value = dispatch_subset2(seq, i, body, rho);
+                    SEXP call = GETSTACK(-4);
+                    value = dispatch_subset2(seq, i, call, rho);
                     INCREMENT_NAMED(value);
                 }
                 else
@@ -5862,7 +5865,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                         break;
                     case LISTSXP:
                         value = CAR(seq);
-                        SETSTACK(-4, CDR(seq));
+                        SETSTACK(-5, CDR(seq));
                         SET_NAMED(value, 2);
                         break;
                     default:
@@ -5880,10 +5883,10 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         {
 #ifdef COMPUTE_REFCNT_VALUES
             Rboolean iscompact = FALSE;
-            SEXP seq = getForLoopSeq(-4, &iscompact);
+            SEXP seq = getForLoopSeq(-5, &iscompact);
             DECREMENT_REFCNT(seq);
 #endif
-            R_BCNodeStackTop -= 3;
+            R_BCNodeStackTop -= 4;
             SETSTACK(-1, R_NilValue);
             NEXT();
         }
