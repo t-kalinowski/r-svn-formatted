@@ -1690,18 +1690,10 @@ SEXP attribute_hidden do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
         PROTECT(val = tmp);
     }
 
-    if (isObject(val))
-    {
-        n = (int)dispatch_length(val, call, rho);
-    }
-    else if (isList(val) || isNull(val))
-    {
+    if (isList(val) || isNull(val))
         n = length(val);
-    }
     else
-    {
         n = LENGTH(val);
-    }
 
     val_type = TYPEOF(val);
 
@@ -1747,42 +1739,35 @@ SEXP attribute_hidden do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
             break;
 
         default:
-            if (isObject(val))
+
+            switch (val_type)
             {
-                REPROTECT(v = dispatch_subset2(val, i, call, rho), vpi);
-                INCREMENT_NAMED(v);
-            }
-            else
-            {
-                switch (val_type)
-                {
-                case LGLSXP:
-                    ALLOC_LOOP_VAR(v, val_type, vpi);
-                    LOGICAL(v)[0] = LOGICAL(val)[i];
-                    break;
-                case INTSXP:
-                    ALLOC_LOOP_VAR(v, val_type, vpi);
-                    INTEGER(v)[0] = INTEGER(val)[i];
-                    break;
-                case REALSXP:
-                    ALLOC_LOOP_VAR(v, val_type, vpi);
-                    REAL(v)[0] = REAL(val)[i];
-                    break;
-                case CPLXSXP:
-                    ALLOC_LOOP_VAR(v, val_type, vpi);
-                    COMPLEX(v)[0] = COMPLEX(val)[i];
-                    break;
-                case STRSXP:
-                    ALLOC_LOOP_VAR(v, val_type, vpi);
-                    SET_STRING_ELT(v, 0, STRING_ELT(val, i));
-                    break;
-                case RAWSXP:
-                    ALLOC_LOOP_VAR(v, val_type, vpi);
-                    RAW(v)[0] = RAW(val)[i];
-                    break;
-                default:
-                    errorcall(call, _("invalid for() loop sequence"));
-                }
+            case LGLSXP:
+                ALLOC_LOOP_VAR(v, val_type, vpi);
+                LOGICAL(v)[0] = LOGICAL(val)[i];
+                break;
+            case INTSXP:
+                ALLOC_LOOP_VAR(v, val_type, vpi);
+                INTEGER(v)[0] = INTEGER(val)[i];
+                break;
+            case REALSXP:
+                ALLOC_LOOP_VAR(v, val_type, vpi);
+                REAL(v)[0] = REAL(val)[i];
+                break;
+            case CPLXSXP:
+                ALLOC_LOOP_VAR(v, val_type, vpi);
+                COMPLEX(v)[0] = COMPLEX(val)[i];
+                break;
+            case STRSXP:
+                ALLOC_LOOP_VAR(v, val_type, vpi);
+                SET_STRING_ELT(v, 0, STRING_ELT(val, i));
+                break;
+            case RAWSXP:
+                ALLOC_LOOP_VAR(v, val_type, vpi);
+                RAW(v)[0] = RAW(val)[i];
+                break;
+            default:
+                errorcall(call, _("invalid for() loop sequence"));
             }
             if (CAR(cell) == R_UnboundValue || !SET_BINDING_VALUE(cell, v))
                 defineVar(sym, v, rho);
@@ -5751,8 +5736,6 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 SETSTACK(-1, seq);
             }
 
-            BCNPUSH(VECTOR_ELT(constants, callidx));
-
             defineVar(symbol, R_NilValue, rho);
             BCNPUSH(GET_BINDING_CELL(symbol, rho));
 
@@ -5767,9 +5750,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             }
             else
 #endif
-                if (isObject(seq))
-                INTEGER(value)[1] = (int)dispatch_length(seq, VECTOR_ELT(constants, callidx), rho);
-            else if (isVector(seq))
+                if (isVector(seq))
                 INTEGER(value)[1] = LENGTH(seq);
             else if (isList(seq) || isNull(seq))
                 INTEGER(value)[1] = length(seq);
@@ -5811,66 +5792,57 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             if (i < n)
             {
                 Rboolean iscompact = FALSE;
-                SEXP seq = getForLoopSeq(-5, &iscompact);
+                SEXP seq = getForLoopSeq(-4, &iscompact);
                 SEXP cell = GETSTACK(-3);
-                if (isObject(seq))
+                switch (TYPEOF(seq))
                 {
-                    SEXP call = GETSTACK(-4);
-                    value = dispatch_subset2(seq, i, call, rho);
-                    INCREMENT_NAMED(value);
-                }
-                else
-                {
-                    switch (TYPEOF(seq))
-                    {
-                    case LGLSXP:
-                        GET_VEC_LOOP_VALUE(value, -1);
-                        LOGICAL(value)[0] = LOGICAL(seq)[i];
-                        break;
-                    case INTSXP:
-                        GET_VEC_LOOP_VALUE(value, -1);
+                case LGLSXP:
+                    GET_VEC_LOOP_VALUE(value, -1);
+                    LOGICAL(value)[0] = LOGICAL(seq)[i];
+                    break;
+                case INTSXP:
+                    GET_VEC_LOOP_VALUE(value, -1);
 #ifdef COMPACT_INTSEQ
-                        if (iscompact)
-                        {
-                            int *info = INTEGER(seq);
-                            int n1 = info[0];
-                            int n2 = info[1];
-                            int val = n1 <= n2 ? n1 + i : n1 - i;
-                            INTEGER(value)[0] = val;
-                        }
-                        else
-#endif
-                            INTEGER(value)[0] = INTEGER(seq)[i];
-                        break;
-                    case REALSXP:
-                        GET_VEC_LOOP_VALUE(value, -1);
-                        REAL(value)[0] = REAL(seq)[i];
-                        break;
-                    case CPLXSXP:
-                        GET_VEC_LOOP_VALUE(value, -1);
-                        COMPLEX(value)[0] = COMPLEX(seq)[i];
-                        break;
-                    case STRSXP:
-                        GET_VEC_LOOP_VALUE(value, -1);
-                        SET_STRING_ELT(value, 0, STRING_ELT(seq, i));
-                        break;
-                    case RAWSXP:
-                        GET_VEC_LOOP_VALUE(value, -1);
-                        RAW(value)[0] = RAW(seq)[i];
-                        break;
-                    case EXPRSXP:
-                    case VECSXP:
-                        value = VECTOR_ELT(seq, i);
-                        SET_NAMED(value, 2);
-                        break;
-                    case LISTSXP:
-                        value = CAR(seq);
-                        SETSTACK(-5, CDR(seq));
-                        SET_NAMED(value, 2);
-                        break;
-                    default:
-                        error(_("invalid sequence argument in for loop"));
+                    if (iscompact)
+                    {
+                        int *info = INTEGER(seq);
+                        int n1 = info[0];
+                        int n2 = info[1];
+                        int val = n1 <= n2 ? n1 + i : n1 - i;
+                        INTEGER(value)[0] = val;
                     }
+                    else
+#endif
+                        INTEGER(value)[0] = INTEGER(seq)[i];
+                    break;
+                case REALSXP:
+                    GET_VEC_LOOP_VALUE(value, -1);
+                    REAL(value)[0] = REAL(seq)[i];
+                    break;
+                case CPLXSXP:
+                    GET_VEC_LOOP_VALUE(value, -1);
+                    COMPLEX(value)[0] = COMPLEX(seq)[i];
+                    break;
+                case STRSXP:
+                    GET_VEC_LOOP_VALUE(value, -1);
+                    SET_STRING_ELT(value, 0, STRING_ELT(seq, i));
+                    break;
+                case RAWSXP:
+                    GET_VEC_LOOP_VALUE(value, -1);
+                    RAW(value)[0] = RAW(seq)[i];
+                    break;
+                case EXPRSXP:
+                case VECSXP:
+                    value = VECTOR_ELT(seq, i);
+                    SET_NAMED(value, 2);
+                    break;
+                case LISTSXP:
+                    value = CAR(seq);
+                    SETSTACK(-4, CDR(seq));
+                    SET_NAMED(value, 2);
+                    break;
+                default:
+                    error(_("invalid sequence argument in for loop"));
                 }
                 if (CAR(cell) == R_UnboundValue || !SET_BINDING_VALUE(cell, value))
                     defineVar(BINDING_SYMBOL(cell), value, rho);
@@ -5883,10 +5855,10 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         {
 #ifdef COMPUTE_REFCNT_VALUES
             Rboolean iscompact = FALSE;
-            SEXP seq = getForLoopSeq(-5, &iscompact);
+            SEXP seq = getForLoopSeq(-4, &iscompact);
             DECREMENT_REFCNT(seq);
 #endif
-            R_BCNodeStackTop -= 4;
+            R_BCNodeStackTop -= 3;
             SETSTACK(-1, R_NilValue);
             NEXT();
         }
