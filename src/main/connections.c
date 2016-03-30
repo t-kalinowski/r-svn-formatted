@@ -6236,6 +6236,7 @@ SEXP attribute_hidden do_gzcon(SEXP call, SEXP op, SEXP args, SEXP rho)
     int icon, level, allow;
     Rconnection incon = NULL, new = NULL;
     char *m, *mode = NULL /* -Wall */, description[1000];
+    Rboolean text;
 
     checkArity(op, args);
     if (!inherits(CAR(args), "connection"))
@@ -6247,6 +6248,9 @@ SEXP attribute_hidden do_gzcon(SEXP call, SEXP op, SEXP args, SEXP rho)
     allow = asLogical(CADDR(args));
     if (allow == NA_INTEGER)
         error(_("'allowNonCompression' must be TRUE or FALSE"));
+    text = asLogical(CADDDR(args));
+    if (text == NA_INTEGER)
+        error(_("'text' must be TRUE or FALSE"));
 
     if (incon->isGzcon)
     {
@@ -6285,7 +6289,7 @@ SEXP attribute_hidden do_gzcon(SEXP call, SEXP op, SEXP args, SEXP rho)
         error(_("allocation of 'gzcon' connection failed"));
     }
     init_con(new, description, CE_NATIVE, mode);
-    new->text = FALSE;
+    new->text = text;
     new->isGzcon = TRUE;
     new->open = &gzcon_open;
     new->close = &gzcon_close;
