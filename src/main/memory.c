@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998--2015  The R Core Team.
+ *  Copyright (C) 1998--2016  The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -3161,39 +3161,6 @@ again:
         LOGICAL(R_LogicalNAValue)[0] = NA_LOGICAL;
         error("internal logical NA value has been modified");
     }
-}
-
-SEXP attribute_hidden do_memlimits(SEXP call, SEXP op, SEXP args, SEXP env)
-{
-    SEXP ans;
-    double nsize, vsize;
-    R_size_t tmp;
-
-    checkArity(op, args);
-    nsize = asReal(CAR(args));
-    vsize = asReal(CADR(args));
-
-    if (ISNAN(nsize) || nsize <= 0)
-        ;
-    else if (nsize >= R_SIZE_T_MAX)
-        R_MaxNSize = R_SIZE_T_MAX;
-    else if (R_FINITE(nsize))
-        R_SetMaxNSize((R_size_t)nsize);
-
-    if (ISNAN(vsize) || vsize <= 0)
-        ;
-    else if (vsize >= R_SIZE_T_MAX)
-        R_MaxVSize = R_SIZE_T_MAX;
-    else if (R_FINITE(vsize))
-        R_SetMaxVSize((R_size_t)vsize);
-
-    PROTECT(ans = allocVector(REALSXP, 2));
-    tmp = R_GetMaxNSize();
-    REAL(ans)[0] = (tmp < R_SIZE_T_MAX) ? tmp : NA_REAL;
-    tmp = R_GetMaxVSize();
-    REAL(ans)[1] = (tmp < R_SIZE_T_MAX) ? tmp : NA_REAL;
-    UNPROTECT(1);
-    return ans;
 }
 
 SEXP attribute_hidden do_memoryprofile(SEXP call, SEXP op, SEXP args, SEXP env)
