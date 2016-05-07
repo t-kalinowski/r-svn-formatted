@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2015  The R Core Team
+ *  Copyright (C) 1997--2016  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -126,23 +126,30 @@ static hlen rhash(SEXP x, R_xlen_t indx, HashData *d)
 #endif
 }
 
+static Rcomplex unify_complex_na(Rcomplex z)
+{
+    Rcomplex ans;
+    ans.r = (z.r == 0.0) ? 0.0 : z.r;
+    ans.i = (z.i == 0.0) ? 0.0 : z.i;
+    /* we want all NaNs except NA equal, and all NAs equal */
+    if (R_IsNA(ans.r))
+        ans.r = NA_REAL;
+    else if (R_IsNaN(ans.r))
+        ans.r = R_NaN;
+    if (R_IsNA(ans.i))
+        ans.i = NA_REAL;
+    else if (R_IsNaN(ans.i))
+        ans.i = R_NaN;
+    return ans;
+}
+
 static hlen chash(SEXP x, R_xlen_t indx, HashData *d)
 {
-    Rcomplex tmp;
-    unsigned int u;
-    tmp.r = (COMPLEX(x)[indx].r == 0.0) ? 0.0 : COMPLEX(x)[indx].r;
-    tmp.i = (COMPLEX(x)[indx].i == 0.0) ? 0.0 : COMPLEX(x)[indx].i;
-    /* we want all NaNs except NA equal, and all NAs equal */
-    if (R_IsNA(tmp.r))
-        tmp.r = NA_REAL;
-    else if (R_IsNaN(tmp.r))
-        tmp.r = R_NaN;
-    if (R_IsNA(tmp.i))
-        tmp.i = NA_REAL;
-    else if (R_IsNaN(tmp.i))
-        tmp.i = R_NaN;
+    Rcomplex tmp = unify_complex_na(COMPLEX(x)[indx]);
+
 #if 2 * SIZEOF_INT == SIZEOF_DOUBLE
     {
+        unsigned int u;
         union foo tmpu;
         tmpu.d = tmp.r;
         u = tmpu.u[0] ^ tmpu.u[1];
@@ -212,20 +219,25 @@ static int requal(SEXP x, R_xlen_t i, SEXP y, R_xlen_t j)
         return 0;
 }
 
+/* This is differentiating {NA,1}, {NA,0}, {NA, NaN}, {NA, NA},
+ * but R's print() and format()  render all as "NA" */
+static int cplx_eq(Rcomplex x, Rcomplex y)
+{
+    if (!ISNAN(x.r) && !ISNAN(x.i) && !ISNAN(y.r) && !ISNAN(y.i))
+        return x.r == y.r && x.i == y.i;
+    else if ((R_IsNA(x.r) || R_IsNA(x.i)) && (R_IsNA(y.r) || R_IsNA(y.i)))
+        return 1;
+    else if ((R_IsNaN(x.r) || R_IsNaN(x.i)) && (R_IsNaN(y.r) || R_IsNaN(y.i)))
+        return 1;
+    else
+        return 0;
+}
+
 static int cequal(SEXP x, R_xlen_t i, SEXP y, R_xlen_t j)
 {
     if (i < 0 || j < 0)
         return 0;
-    if (!ISNAN(COMPLEX(x)[i].r) && !ISNAN(COMPLEX(x)[i].i) && !ISNAN(COMPLEX(y)[j].r) && !ISNAN(COMPLEX(y)[j].i))
-        return COMPLEX(x)[i].r == COMPLEX(y)[j].r && COMPLEX(x)[i].i == COMPLEX(y)[j].i;
-    else if ((R_IsNA(COMPLEX(x)[i].r) || R_IsNA(COMPLEX(x)[i].i)) &&
-             (R_IsNA(COMPLEX(y)[j].r) || R_IsNA(COMPLEX(y)[j].i)))
-        return 1;
-    else if ((R_IsNaN(COMPLEX(x)[i].r) || R_IsNaN(COMPLEX(x)[i].i)) &&
-             (R_IsNaN(COMPLEX(y)[j].r) || R_IsNaN(COMPLEX(y)[j].i)))
-        return 1;
-    else
-        return 0;
+    return cplx_eq(COMPLEX(x)[i], COMPLEX(y)[j]);
 }
 
 static int sequal(SEXP x, R_xlen_t i, SEXP y, R_xlen_t j)
@@ -980,7 +992,7 @@ SEXP match5(SEXP itable, SEXP ix, int nmatch, SEXP incomp, SEXP env)
         case STRSXP: {
             SEXP x_val = STRING_ELT(x, 0);
             for (int i = 0; i < LENGTH(itable); i++)
-                if (STRING_ELT(table, i) == x_val)
+                if (Seql(STRING_ELT(table, i), x_val))
                 {
                     INTEGER(ans)[0] = i + 1;
                     break;
@@ -1034,7 +1046,7 @@ SEXP match5(SEXP itable, SEXP ix, int nmatch, SEXP incomp, SEXP env)
         case CPLXSXP: {
             Rcomplex x_val = COMPLEX(x)[0], *table_p = COMPLEX(table);
             for (int i = 0; i < LENGTH(itable); i++)
-                if (table_p[i].r == x_val.r && table_p[i].i == x_val.i)
+                if (cplx_eq(table_p[i], x_val))
                 {
                     INTEGER(ans)[0] = i + 1;
                     break;
