@@ -131,15 +131,10 @@ static Rcomplex unify_complex_na(Rcomplex z)
     Rcomplex ans;
     ans.r = (z.r == 0.0) ? 0.0 : z.r;
     ans.i = (z.i == 0.0) ? 0.0 : z.i;
-    /* we want all NaNs except NA equal, and all NAs equal */
-    if (R_IsNA(ans.r))
-        ans.r = NA_REAL;
-    else if (R_IsNaN(ans.r))
-        ans.r = R_NaN;
-    if (R_IsNA(ans.i))
-        ans.i = NA_REAL;
-    else if (R_IsNaN(ans.i))
-        ans.i = R_NaN;
+    if (R_IsNA(ans.r) || R_IsNA(ans.i))
+        ans.r = ans.i = NA_REAL;
+    else if (R_IsNaN(ans.r) || R_IsNaN(ans.i))
+        ans.r = ans.i = R_NaN;
     return ans;
 }
 
@@ -983,7 +978,7 @@ SEXP match5(SEXP itable, SEXP ix, int nmatch, SEXP incomp, SEXP env)
     nprot++;
 
     // special case scalar x -- for speed only :
-    if (LENGTH(x) == 1 && !incomp && TYPEOF(table) != CPLXSXP)
+    if (LENGTH(x) == 1 && !incomp)
     {
         PROTECT(ans = ScalarInteger(nmatch));
         nprot++;
