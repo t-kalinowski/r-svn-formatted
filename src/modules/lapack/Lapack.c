@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2001--2013  The R Core Team.
+ *  Copyright (C) 2001--2016  The R Core Team.
  *  Copyright (C) 2003--2010  The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -73,19 +73,16 @@ static char La_rcond_type(const char *typstr)
 /* La.svd, called from svd */
 static SEXP La_svd(SEXP jobu, SEXP x, SEXP s, SEXP u, SEXP vt)
 {
-    int n, p, info = 0;
-
     if (!isString(jobu))
         error("'jobu' must be a character string");
-    int *xdims = INTEGER(coerceVector(getAttrib(x, R_DimSymbol), INTSXP));
-    n = xdims[0];
-    p = xdims[1];
+    int *xdims = INTEGER(coerceVector(getAttrib(x, R_DimSymbol), INTSXP)), n = xdims[0], p = xdims[1], nprot = 2;
 
     /* work on a copy of x  */
     double *xvals;
     if (!isReal(x))
     {
-        x = coerceVector(x, REALSXP);
+        x = PROTECT(coerceVector(x, REALSXP));
+        nprot++;
         xvals = REAL(x);
     }
     else
@@ -93,15 +90,14 @@ static SEXP La_svd(SEXP jobu, SEXP x, SEXP s, SEXP u, SEXP vt)
         xvals = (double *)R_alloc(n * (size_t)p, sizeof(double));
         Memcpy(xvals, REAL(x), n * (size_t)p);
     }
-    PROTECT(x);
 
     SEXP dims = getAttrib(u, R_DimSymbol);
     if (TYPEOF(dims) != INTSXP)
-        error("non-integer dims");
+        error("non-integer dim(u)");
     int ldu = INTEGER(dims)[0];
     dims = getAttrib(vt, R_DimSymbol);
     if (TYPEOF(dims) != INTSXP)
-        error("non-integer dims");
+        error("non-integer dim(vt)");
     int ldvt = INTEGER(dims)[0];
     double tmp;
     /* min(n,p) large is implausible, but cast to be sure */
@@ -109,7 +105,7 @@ static SEXP La_svd(SEXP jobu, SEXP x, SEXP s, SEXP u, SEXP vt)
 
     /* ask for optimal size of work array */
     const char *ju = CHAR(STRING_ELT(jobu, 0));
-    int lwork = -1;
+    int info = 0, lwork = -1;
     F77_CALL(dgesdd)(ju, &n, &p, xvals, &n, REAL(s), REAL(u), &ldu, REAL(vt), &ldvt, &tmp, &lwork, iwork, &info);
     if (info != 0)
         error(_("error code %d from Lapack routine '%s'"), info, "dgesdd");
@@ -128,7 +124,7 @@ static SEXP La_svd(SEXP jobu, SEXP x, SEXP s, SEXP u, SEXP vt)
     SET_VECTOR_ELT(val, 0, s);
     SET_VECTOR_ELT(val, 1, u);
     SET_VECTOR_ELT(val, 2, vt);
-    UNPROTECT(3);
+    UNPROTECT(nprot);
     return val;
 }
 

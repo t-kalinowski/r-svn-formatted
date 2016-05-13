@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1999--2015  The R Core Team
+ *  Copyright (C) 1999--2016  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -89,7 +89,7 @@ attribute_hidden R_size_t R_Decode2Long(char *p, int *ierr)
     /* else look for letter-code ending : */
     if (R_Verbose)
         REprintf("R_Decode2Long(): v=%ld\n", v);
-    // NB: currently, positive *ierr are not differentiated in the callers:
+    // NOTE: currently, positive *ierr are not differentiated in the callers:
     if (p[0] == 'G')
     {
         if ((Giga * (double)v) > R_SIZE_T_MAX)
@@ -382,10 +382,6 @@ void z_prec_r(Rcomplex *r, Rcomplex *x, double digits);
 const char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, int ei, const char *dec)
 {
     static char buff[NB];
-    char Re[NB];
-    const char *Im, *tmp;
-    int flagNegIm = 0;
-    Rcomplex y;
 
     /* IEEE allows signed zeros; strip these here */
     if (x.r == 0.0)
@@ -400,6 +396,10 @@ const char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, in
     }
     else
     {
+        char Re[NB];
+        const char *Im, *tmp;
+        int flagNegIm = 0;
+        Rcomplex y;
         /* formatComplex rounded, but this does not, and we need to
            keep it that way so we don't get strange trailing zeros.
            But we do want to avoid printing small exponentials that
@@ -407,17 +407,11 @@ const char *EncodeComplex(Rcomplex x, int wr, int dr, int er, int wi, int di, in
          */
         z_prec_r(&y, &x, R_print.digits);
         /* EncodeReal has static buffer, so copy */
-        if (y.r == 0.)
-            tmp = EncodeReal0(y.r, wr, dr, er, dec);
-        else
-            tmp = EncodeReal0(x.r, wr, dr, er, dec);
+        tmp = EncodeReal0(y.r == 0. ? y.r : x.r, wr, dr, er, dec);
         strcpy(Re, tmp);
         if ((flagNegIm = (x.i < 0)))
             x.i = -x.i;
-        if (y.i == 0.)
-            Im = EncodeReal0(y.i, wi, di, ei, dec);
-        else
-            Im = EncodeReal0(x.i, wi, di, ei, dec);
+        Im = EncodeReal0(y.i == 0. ? y.i : x.i, wi, di, ei, dec);
         snprintf(buff, NB, "%s%s%si", Re, flagNegIm ? "-" : "+", Im);
     }
     buff[NB - 1] = '\0';
