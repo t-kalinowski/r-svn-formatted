@@ -1673,7 +1673,8 @@ SEXP attribute_hidden do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (!isSymbol(sym))
         errorcall(call, _("non-symbol loop variable"));
 
-    if (R_jit_enabled > 2 && isUnmodifiedSpecSym(CAR(call), rho) && R_compileAndExecute(call, rho))
+    dbg = RDEBUG(rho);
+    if (R_jit_enabled > 2 && !dbg && isUnmodifiedSpecSym(CAR(call), rho) && R_compileAndExecute(call, rho))
         return R_NilValue;
 
     PROTECT(args);
@@ -1699,7 +1700,6 @@ SEXP attribute_hidden do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     defineVar(sym, R_NilValue, rho);
     PROTECT(cell = GET_BINDING_CELL(sym, rho));
-    dbg = RDEBUG(rho);
     bgn = BodyHasBraces(body);
 
     /* bump up NAMED count of sequence to avoid modification by loop code */
@@ -1799,10 +1799,10 @@ SEXP attribute_hidden do_while(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
 
-    if (R_jit_enabled > 2 && isUnmodifiedSpecSym(CAR(call), rho) && R_compileAndExecute(call, rho))
+    dbg = RDEBUG(rho);
+    if (R_jit_enabled > 2 && !dbg && isUnmodifiedSpecSym(CAR(call), rho) && R_compileAndExecute(call, rho))
         return R_NilValue;
 
-    dbg = RDEBUG(rho);
     body = CADR(args);
     bgn = BodyHasBraces(body);
 
@@ -1840,10 +1840,10 @@ SEXP attribute_hidden do_repeat(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
 
-    if (R_jit_enabled > 2 && isUnmodifiedSpecSym(CAR(call), rho) && R_compileAndExecute(call, rho))
+    dbg = RDEBUG(rho);
+    if (R_jit_enabled > 2 && !dbg && isUnmodifiedSpecSym(CAR(call), rho) && R_compileAndExecute(call, rho))
         return R_NilValue;
 
-    dbg = RDEBUG(rho);
     body = CAR(args);
 
     begincontext(&cntxt, CTXT_LOOP, R_NilValue, rho, R_BaseEnv, R_NilValue, R_NilValue);
