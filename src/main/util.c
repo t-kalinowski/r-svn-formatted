@@ -639,6 +639,19 @@ static void isort_with_index(int *x, int *indx, int n)
         }
 }
 
+// body(x) without attributes "srcref", "srcfile", "wholeSrcref" :
+SEXP R_body_no_src(SEXP x)
+{
+    SEXP b = PROTECT(duplicate(BODY_EXPR(x)));
+    /* R's removeSource() works *recursively* on the body()
+       in  ../library/utils/R/sourceutils.R  but that seems unneeded (?) */
+    setAttrib(b, R_SrcrefSymbol, R_NilValue);
+    setAttrib(b, R_SrcfileSymbol, R_NilValue);
+    setAttrib(b, R_WholeSrcrefSymbol, R_NilValue);
+    UNPROTECT(1);
+    return b;
+}
+
 /* merge(xinds, yinds, all.x, all.y) */
 /* xinds, yinds are along x and y rows matching into the (numeric)
    common indices, with 0 for non-matches.
