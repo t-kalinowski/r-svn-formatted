@@ -19,6 +19,10 @@
 
  is itself called from	 qsbart() [./qsbart.f]	 which has only one work array
 */
+
+/***** TODO : allow to pass 'lambda' (not just 'spar') e.g. via uspar[0] *
+ **    ----  and signalling that via *isetup = 2
+ */
 void F77_SUB(sbart)(double *penalt, double *dofoff, double *xs, double *ys, double *ws, double *ssw, int *n,
                     double *knot, int *nk, double *coef, double *sz, double *lev, double *crit, int *icrit,
                     double *spar, int *ispar, int *iter, double *lspar, double *uspar, double *tol, double *eps,
@@ -27,64 +31,65 @@ void F77_SUB(sbart)(double *penalt, double *dofoff, double *xs, double *ys, doub
                     int *ier)
 {
 
-    /* A Cubic B-spline Smoothing routine.
+/* A Cubic B-spline Smoothing routine.
 
-       The algorithm minimises:
+   The algorithm minimises:
 
-        (1/n) * sum ws(i)^2 * (ys(i)-sz(i))^2 + lambda* int ( s"(x) )^2 dx
+    (1/n) * sum ws(i)^2 * (ys(i)-sz(i))^2 + lambda* int ( s"(x) )^2 dx
 
-       lambda is a function of the spar which is assumed to be between 0 and 1
+   lambda is a function of the spar which is assumed to be between 0 and 1
 
-     INPUT
-     -----
-       penalt	A penalty > 1 to be used in the gcv criterion
-       dofoff	either `df.offset' for GCV or `df' (to be matched).
-       n		number of data points
-       ys(n)	vector of length n containing the observations
-       ws(n)	vector containing the weights given to each data point
-            NB: the code alters the values here.
-       xs(n)	vector containing the ordinates of the observations
-       ssw          `centered weighted sum of y^2'
-       nk		number of b-spline coefficients to be estimated
-            nk <= n+2
-       knot(nk+4)	vector of knot points defining the cubic b-spline basis.
-            To obtain full cubic smoothing splines one might
-            have (provided the xs-values are strictly increasing)
-       spar		penalised likelihood smoothing parameter
-       ispar	indicating if spar is supplied (ispar=1) or to be estimated
-       lspar, uspar lower and upper values for spar search;  0.,1. are good values
-       tol, eps	used in Golden Search routine
-       isetup	setup indicator [initially 0
-       NB: this alters that, and it is a constant in the caller!
-       icrit	indicator saying which cross validation score is to be computed
-            0: none ;  1: GCV ;  2: CV ;  3: 'df matching'
-       ld4		the leading dimension of abd (ie ld4=4)
-       ldnk		the leading dimension of p2ip (not referenced)
+ INPUT
+ -----
+   penalt	A penalty > 1 to be used in the gcv criterion
+   dofoff	either `df.offset' for GCV or `df' (to be matched).
+   n		number of data points
+   ys(n)	vector of length n containing the observations
+   ws(n)	vector containing the weights given to each data point
+        NB: the code alters the values here.
+   xs(n)	vector containing the ordinates of the observations
+   ssw          `centered weighted sum of y^2'
+   nk		number of b-spline coefficients to be estimated
+        nk <= n+2
+   knot(nk+4)	vector of knot points defining the cubic b-spline basis.
+        To obtain full cubic smoothing splines one might
+        have (provided the xs-values are strictly increasing)
+   spar		penalised likelihood smoothing parameter
+   ispar	indicating if spar is supplied (ispar=1) or to be estimated
+   lspar, uspar lower and upper values for spar search;  0.,1. are good values
+   tol, eps	used in Golden Search routine
+   isetup	setup indicator initially 0 or 2 (if 'spar' is lambda)
+    NB: this alters that, and it is a constant in the caller!
+   icrit	indicator saying which cross validation score is to be computed
+        0: none ;  1: GCV ;  2: CV ;  3: 'df matching'
+   ld4		the leading dimension of abd (ie ld4=4)
+   ldnk		the leading dimension of p2ip (not referenced)
 
-     OUTPUT
-     ------
-       coef(nk)	vector of spline coefficients
-       sz(n)	vector of smoothed z-values
-       lev(n)	vector of leverages
-       crit		either ordinary or generalized CV score
-       spar         if ispar != 1
-       lspar         == lambda (a function of spar and the design)
-       iter		number of iterations needed for spar search (if ispar != 1)
-       ier		error indicator
-            ier = 0 ___  everything fine
-            ier = 1 ___  spar too small or too big
-                problem in cholesky decomposition
+ OUTPUT
+ ------
+   coef(nk)	vector of spline coefficients
+   sz(n)	vector of smoothed z-values
+   lev(n)	vector of leverages
+   crit		either ordinary or generalized CV score
+   spar         if ispar != 1
+   lspar         == lambda (a function of spar and the design if(setup != 1)
+   iter		number of iterations needed for spar search (if ispar != 1)
+   ier		error indicator
+        ier = 0 ___  everything fine
+        ier = 1 ___  spar too small or too big
+            problem in cholesky decomposition
 
-     Working arrays/matrix
-       xwy			X'Wy
-       hs0,hs1,hs2,hs3	the diagonals of the X'WX matrix
-       sg0,sg1,sg2,sg3	the diagonals of the Gram matrix SIGMA
-       abd (ld4,nk)		[ X'WX + lambda*SIGMA ] in diagonal form
-       p1ip(ld4,nk)		inner products between columns of L inverse
-       p2ip(ldnk,nk)	all inner products between columns of L inverse
-                where  L'L = [X'WX + lambda*SIGMA]  NOT REFERENCED
-    */
+ Working arrays/matrix
+   xwy			X'Wy
+   hs0,hs1,hs2,hs3	the non-zero diagonals of the X'WX matrix
+   sg0,sg1,sg2,sg3	the non-zero diagonals of the Gram matrix SIGMA
+   abd (ld4,nk)		[ X'WX + lambda*SIGMA ] in diagonal form
+   p1ip(ld4,nk)		inner products between columns of L inverse
+   p2ip(ldnk,nk)	all inner products between columns of L inverse
+            where  L'L = [X'WX + lambda*SIGMA]  NOT REFERENCED
+*/
 
+// "Correct" ./sslvrg.f (line 129):   crit = 3 + (dofoff-df)**2
 #define CRIT(FX) (*icrit == 3 ? FX - 3. : FX)
     /* cancellation in (3 + eps) - 3, but still...informative */
 
@@ -99,10 +104,10 @@ void F77_SUB(sbart)(double *penalt, double *dofoff, double *xs, double *ys, doub
 
     double a, b, d, e, p, q, r, u, v, w, x;
     double ax, fu, fv, fw, fx, bx, xm;
-    double t1, t2, tol1, tol2;
+    double tol1, tol2;
 
     int i, maxit;
-    Rboolean Fparabol = FALSE, tracing = (*ispar < 0);
+    Rboolean Fparabol = FALSE, tracing = (*ispar < 0), spar_is_lambda = FALSE;
 
     /* unnecessary initializations to keep  -Wall happy */
     d = 0.;
@@ -124,45 +129,57 @@ void F77_SUB(sbart)(double *penalt, double *dofoff, double *xs, double *ys, doub
         if (ws[i] > 0.)
             ws[i] = sqrt(ws[i]);
 
-    if (*isetup == 0)
-    {
+    if (*isetup < 0)
+        spar_is_lambda = TRUE;
+    else if (*isetup != 1)
+    { // 0 or 2
         /* SIGMA[i,j] := Int  B''(i,t) B''(j,t) dt  {B(k,.) = k-th B-spline} */
         F77_CALL(sgram)(sg0, sg1, sg2, sg3, knot, nk);
         F77_CALL(stxwx)(xs, ys, ws, n, knot, nk, xwy, hs0, hs1, hs2, hs3);
-        /* Compute ratio :=  tr(X' W X) / tr(SIGMA) */
-        t1 = t2 = 0.;
-        for (i = 3 - 1; i < (*nk - 3); ++i)
+        spar_is_lambda = (*isetup == 2);
+        if (!spar_is_lambda)
         {
-            t1 += hs0[i];
-            t2 += sg0[i];
+            /* Compute ratio :=  tr(X' W X) / tr(SIGMA) */
+            double t1 = 0., t2 = 0.;
+            for (i = 3 - 1; i < (*nk - 3); ++i)
+            {
+                t1 += hs0[i];
+                t2 += sg0[i];
+            }
+            ratio = t1 / t2;
         }
-        ratio = t1 / t2;
         *isetup = 1;
     }
-    /*     Compute estimate */
+/*     Compute estimate */
+
+// Compute SSPLINE(SPAR), assign result to *crit (and the auxil.variables)
+#define SSPLINE_COMP(_SPAR_)                                                                                           \
+    *lspar = spar_is_lambda ? _SPAR_ : ratio * R_pow(16., (_SPAR_)*6. - 2.);                                           \
+    F77_CALL(sslvrg)                                                                                                   \
+    (penalt, dofoff, xs, ys, ws, ssw, n, knot, nk, coef, sz, lev, crit, icrit, lspar, xwy, hs0, hs1, hs2, hs3, sg0,    \
+     sg1, sg2, sg3, abd, p1ip, p2ip, ld4, ldnk, ier)
 
     if (*ispar == 1)
     { /* Value of spar supplied */
-        *lspar = ratio * R_pow(16., *spar * 6. - 2.);
-        F77_CALL(sslvrg)
-        (penalt, dofoff, xs, ys, ws, ssw, n, knot, nk, coef, sz, lev, crit, icrit, lspar, xwy, hs0, hs1, hs2, hs3, sg0,
-         sg1, sg2, sg3, abd, p1ip, p2ip, ld4, ldnk, ier);
+        SSPLINE_COMP(*spar);
         /* got through check 2 */
         return;
     }
 
     /* ELSE ---- spar not supplied --> compute it ! ---------------------------
+     */
+    ax = *lspar;
+    bx = *uspar;
 
+    /*
            Use Forsythe Malcom and Moler routine to MINIMIZE criterion
            f denotes the value of the criterion
 
            an approximation	x  to the point where	f  attains a minimum  on
            the interval  (ax,bx)  is determined.
-        */
-    ax = *lspar;
-    bx = *uspar;
 
-    /* INPUT
+
+       INPUT
 
        ax	 left endpoint of initial interval
        bx	 right endpoint of initial interval
@@ -223,11 +240,7 @@ void F77_SUB(sbart)(double *penalt, double *dofoff, double *xs, double *ys, doub
     w = v;
     x = v;
     e = 0.;
-    *spar = x;
-    *lspar = ratio * R_pow(16., *spar * 6. - 2.);
-    F77_CALL(sslvrg)
-    (penalt, dofoff, xs, ys, ws, ssw, n, knot, nk, coef, sz, lev, crit, icrit, lspar, xwy, hs0, hs1, hs2, hs3, sg0, sg1,
-     sg2, sg3, abd, p1ip, p2ip, ld4, ldnk, ier);
+    SSPLINE_COMP(x);
     fx = *crit;
     fv = fx;
     fw = fx;
@@ -333,11 +346,7 @@ void F77_SUB(sbart)(double *penalt, double *dofoff, double *xs, double *ys, doub
         u = x + ((fabs(d) >= tol1) ? d : fsign(tol1, d));
         /*  tol1 check : f must not be evaluated too close to x */
 
-        *spar = u;
-        *lspar = ratio * R_pow(16., *spar * 6. - 2.);
-        F77_CALL(sslvrg)
-        (penalt, dofoff, xs, ys, ws, ssw, n, knot, nk, coef, sz, lev, crit, icrit, lspar, xwy, hs0, hs1, hs2, hs3, sg0,
-         sg1, sg2, sg3, abd, p1ip, p2ip, ld4, ldnk, ier);
+        SSPLINE_COMP(u);
         fu = *crit;
         if (tracing)
             Rprintf("%11g %12g\n", *lspar, CRIT(fu));
