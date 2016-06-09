@@ -3176,11 +3176,8 @@ void u_getVersion(UVersionInfo versionArray);
 #endif
 
 #ifdef HAVE_LIBREADLINE
-#ifdef HAVE_READLINE_READLINE_H
+// that ensures we have this header
 #include <readline/readline.h>
-#else
-extern const char *rl_library_version;
-#endif
 #endif
 
 SEXP attribute_hidden do_eSoftVersion(SEXP call, SEXP op, SEXP args, SEXP rho)
