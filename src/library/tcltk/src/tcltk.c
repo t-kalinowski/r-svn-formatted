@@ -684,7 +684,7 @@ void tcltk_init(int *TkUp)
         error(Tcl_GetStringResult(RTcl_interp));
 
 /* HAVE_AQUA is not really right here.
-   On Mac OS X we might be using Aqua Tcl/Tk or X11 Tcl/Tk, and that
+   On macOS we might be using Aqua Tcl/Tk or X11 Tcl/Tk, and that
    is in principle independent of whether we want quartz() built.
 */
 #if !defined(Win32) && !defined(HAVE_AQUA)
