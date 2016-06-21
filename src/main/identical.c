@@ -277,9 +277,9 @@ Rboolean R_compute_identical(SEXP x, SEXP y, int flags)
         {
             if (IGNORE_SRCREF)
             {
-                SEXP x_ = PROTECT(R_body_no_src(PROTECT(x))), y_ = PROTECT(R_body_no_src(PROTECT(y)));
+                SEXP x_ = PROTECT(R_body_no_src(x)), y_ = PROTECT(R_body_no_src(y));
                 Rboolean id_body = R_compute_identical(x_, y_, flags);
-                UNPROTECT(4);
+                UNPROTECT(2);
                 if (!id_body)
                     return FALSE;
             }
