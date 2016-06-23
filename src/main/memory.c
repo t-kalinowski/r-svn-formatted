@@ -1308,6 +1308,7 @@ static SEXP NewWeakRef(SEXP key, SEXP val, SEXP fin, Rboolean onexit)
     case NILSXP:
     case ENVSXP:
     case EXTPTRSXP:
+    case BCODESXP:
         break;
     default:
         error(_("can only weakly reference/finalize reference objects"));
@@ -1519,6 +1520,8 @@ static Rboolean RunFinalizers(void)
 void R_RunExitFinalizers(void)
 {
     SEXP s;
+
+    R_checkConstants(TRUE);
 
     for (s = R_weak_refs; s != R_NilValue; s = WEAKREF_NEXT(s))
         if (FINALIZE_ON_EXIT(s))
@@ -1941,6 +1944,9 @@ again:
     if (gens_collected == NUM_OLD_GENERATIONS)
         SortNodes();
 #endif
+
+    if (R_check_constants > 2 || (R_check_constants > 1 && gens_collected == NUM_OLD_GENERATIONS))
+        R_checkConstants(TRUE);
 
     if (gc_reporting)
     {
@@ -3162,6 +3168,7 @@ again:
         LOGICAL(R_LogicalNAValue)[0] = NA_LOGICAL;
         error("internal logical NA value has been modified");
     }
+    /* compiler constants are checked in RunGenCollect */
 }
 
 SEXP attribute_hidden do_memoryprofile(SEXP call, SEXP op, SEXP args, SEXP env)
