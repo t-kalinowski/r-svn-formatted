@@ -2677,7 +2677,7 @@ SEXP attribute_hidden do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (TYPEOF(expr) == LANGSXP || TYPEOF(expr) == SYMSXP || isByteCode(expr))
     {
         PROTECT(expr);
-        begincontext(&cntxt, CTXT_RETURN, call, env, rho, args, op);
+        begincontext(&cntxt, CTXT_RETURN, R_GlobalContext->call, env, rho, args, op);
         if (!SETJMP(cntxt.cjmpbuf))
             expr = eval(expr, env);
         else
@@ -2701,7 +2701,7 @@ SEXP attribute_hidden do_eval(SEXP call, SEXP op, SEXP args, SEXP rho)
         PROTECT(expr);
         n = LENGTH(expr);
         tmp = R_NilValue;
-        begincontext(&cntxt, CTXT_RETURN, call, env, rho, args, op);
+        begincontext(&cntxt, CTXT_RETURN, R_GlobalContext->call, env, rho, args, op);
         if (!SETJMP(cntxt.cjmpbuf))
             for (i = 0; i < n; i++)
             {
@@ -7040,7 +7040,7 @@ SEXP attribute_hidden do_bcclose(SEXP call, SEXP op, SEXP args, SEXP rho)
     CheckFormals(forms);
 
     if (!isByteCode(body))
-        errorcall(call, _("invalid body"));
+        error(_("invalid body"));
 
     if (isNull(env))
     {
@@ -7048,7 +7048,7 @@ SEXP attribute_hidden do_bcclose(SEXP call, SEXP op, SEXP args, SEXP rho)
         env = R_BaseEnv;
     }
     else if (!isEnvironment(env))
-        errorcall(call, _("invalid environment"));
+        error(_("invalid environment"));
 
     return mkCLOSXP(forms, body, env);
 }
@@ -7061,7 +7061,7 @@ SEXP attribute_hidden do_is_builtin_internal(SEXP call, SEXP op, SEXP args, SEXP
     symbol = CAR(args);
 
     if (!isSymbol(symbol))
-        errorcall(call, _("invalid symbol"));
+        error(_("invalid symbol"));
 
     if ((i = INTERNAL(symbol)) != R_NilValue && TYPEOF(i) == BUILTINSXP)
         return R_TrueValue;
@@ -7106,7 +7106,7 @@ SEXP attribute_hidden do_disassemble(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     code = CAR(args);
     if (!isByteCode(code))
-        errorcall(call, _("argument is not a byte code object"));
+        error(_("argument is not a byte code object"));
     return disassemble(code);
 }
 
@@ -7128,11 +7128,11 @@ SEXP attribute_hidden do_loadfile(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(file = coerceVector(CAR(args), STRSXP));
 
     if (!isValidStringF(file))
-        errorcall(call, _("bad file name"));
+        error(_("bad file name"));
 
     fp = RC_fopen(STRING_ELT(file, 0), "rb", TRUE);
     if (!fp)
-        errorcall(call, _("unable to open 'file'"));
+        error(_("unable to open 'file'"));
     s = R_LoadFromFile(fp, 0);
     fclose(fp);
 
@@ -7147,13 +7147,13 @@ SEXP attribute_hidden do_savefile(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
 
     if (!isValidStringF(CADR(args)))
-        errorcall(call, _("'file' must be non-empty string"));
+        error(_("'file' must be non-empty string"));
     if (TYPEOF(CADDR(args)) != LGLSXP)
-        errorcall(call, _("'ascii' must be logical"));
+        error(_("'ascii' must be logical"));
 
     fp = RC_fopen(STRING_ELT(CADR(args), 0), "wb", TRUE);
     if (!fp)
-        errorcall(call, _("unable to open 'file'"));
+        error(_("unable to open 'file'"));
 
     R_SaveToFileV(CAR(args), fp, INTEGER(CADDR(args))[0], 0);
 

@@ -42,7 +42,7 @@ SEXP attribute_hidden do_debug(SEXP call, SEXP op, SEXP args, SEXP rho)
     find_char_fun
 
         if (TYPEOF(CAR(args)) != CLOSXP && TYPEOF(CAR(args)) != SPECIALSXP && TYPEOF(CAR(args)) != BUILTINSXP)
-            errorcall(call, _("argument must be a function"));
+            error(_("argument must be a function"));
     switch (PRIMVAL(op))
     {
     case 0: // debug()
@@ -50,7 +50,7 @@ SEXP attribute_hidden do_debug(SEXP call, SEXP op, SEXP args, SEXP rho)
         break;
     case 1: // undebug()
         if (RDEBUG(CAR(args)) != 1)
-            warningcall(call, "argument is not being debugged");
+            warning("argument is not being debugged");
         SET_RDEBUG(CAR(args), 0);
         break;
     case 2: // isdebugged()

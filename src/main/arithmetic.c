@@ -1673,7 +1673,7 @@ SEXP attribute_hidden do_math2(SEXP call, SEXP op, SEXP args, SEXP env)
         return Math2(args, psigamma);
 
     default:
-        errorcall(call, _("unimplemented real function of %d numeric arguments"), 2);
+        error(_("unimplemented real function of %d numeric arguments"), 2);
     }
     return op; /* never used; to keep -Wall happy */
 }
@@ -1878,7 +1878,7 @@ SEXP attribute_hidden do_log_builtin(SEXP call, SEXP op, SEXP args, SEXP env)
 
 #define SETUP_Math3                                                                                                    \
     if (!isNumeric(sa) || !isNumeric(sb) || !isNumeric(sc))                                                            \
-        errorcall(lcall, R_MSG_NONNUM_MATH);                                                                           \
+        error(R_MSG_NONNUM_MATH);                                                                                      \
                                                                                                                        \
     na = XLENGTH(sa);                                                                                                  \
     nb = XLENGTH(sb);                                                                                                  \
@@ -2137,7 +2137,7 @@ SEXP attribute_hidden do_math3(SEXP call, SEXP op, SEXP args, SEXP env)
         return Math3_2(args, qnbinom_mu);
 
     default:
-        errorcall(call, _("unimplemented real function of %d numeric arguments"), 3);
+        error(_("unimplemented real function of %d numeric arguments"), 3);
     }
     return op; /* never used; to keep -Wall happy */
 } /* do_math3() */
@@ -2162,7 +2162,7 @@ static SEXP math4(SEXP sa, SEXP sb, SEXP sc, SEXP sd, double (*f)(double, double
 
 #define SETUP_Math4                                                                                                    \
     if (!isNumeric(sa) || !isNumeric(sb) || !isNumeric(sc) || !isNumeric(sd))                                          \
-        errorcall(lcall, R_MSG_NONNUM_MATH);                                                                           \
+        error(R_MSG_NONNUM_MATH);                                                                                      \
                                                                                                                        \
     na = XLENGTH(sa);                                                                                                  \
     nb = XLENGTH(sb);                                                                                                  \
@@ -2330,7 +2330,7 @@ SEXP attribute_hidden do_math4(SEXP call, SEXP op, SEXP args, SEXP env)
     case 12:
         return Math4_2(args, qtukey);
     default:
-        errorcall(call, _("unimplemented real function of %d numeric arguments"), 4);
+        error(_("unimplemented real function of %d numeric arguments"), 4);
     }
     return op; /* never used; to keep -Wall happy */
 }
@@ -2353,7 +2353,7 @@ static SEXP math5(SEXP sa, SEXP sb, SEXP sc, SEXP sd, SEXP se, double (*f)())
 
 #define SETUP_Math5                                                                                                    \
     if (!isNumeric(sa) || !isNumeric(sb) || !isNumeric(sc) || !isNumeric(sd) || !isNumeric(se))                        \
-        errorcall(lcall, R_MSG_NONNUM_MATH);                                                                           \
+        error(R_MSG_NONNUM_MATH);                                                                                      \
                                                                                                                        \
     na = XLENGTH(sa);                                                                                                  \
     nb = XLENGTH(sb);                                                                                                  \
@@ -2443,7 +2443,7 @@ SEXP attribute_hidden do_math5(SEXP call, SEXP op, SEXP args, SEXP env)
         return Math5(args, q...);
 #endif
     default:
-        errorcall(call, _("unimplemented real function of %d numeric arguments"), 5);
+        error(_("unimplemented real function of %d numeric arguments"), 5);
     }
     return op; /* never used; to keep -Wall happy */
 } /* do_math5() */

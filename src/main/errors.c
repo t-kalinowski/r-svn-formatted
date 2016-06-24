@@ -1019,7 +1019,7 @@ SEXP attribute_hidden do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
         return string;
 
     if (!isString(string))
-        errorcall(call, _("invalid '%s' value"), "string");
+        error(_("invalid '%s' value"), "string");
 
     if (isNull(CAR(args)))
     {
@@ -1060,7 +1060,7 @@ SEXP attribute_hidden do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
     else if (isLogical(CAR(args)) && LENGTH(CAR(args)) == 1 && LOGICAL(CAR(args))[0] == NA_LOGICAL)
         ;
     else
-        errorcall(call, _("invalid '%s' value"), "domain");
+        error(_("invalid '%s' value"), "domain");
 
     if (strlen(domain))
     {
@@ -1184,7 +1184,7 @@ SEXP attribute_hidden do_ngettext(SEXP call, SEXP op, SEXP args, SEXP rho)
     else if (isLogical(sdom) && LENGTH(sdom) == 1 && LOGICAL(sdom)[0] == NA_LOGICAL)
         ;
     else
-        errorcall(call, _("invalid '%s' value"), "domain");
+        error(_("invalid '%s' value"), "domain");
 
     /* libintl seems to malfunction if given a message of "" */
     if (strlen(domain) && length(STRING_ELT(msg1, 0)))
@@ -1207,7 +1207,7 @@ SEXP attribute_hidden do_bindtextdomain(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     checkArity(op, args);
     if (!isString(CAR(args)) || LENGTH(CAR(args)) != 1)
-        errorcall(call, _("invalid '%s' value"), "domain");
+        error(_("invalid '%s' value"), "domain");
     if (isNull(CADR(args)))
     {
         res = bindtextdomain(translateChar(STRING_ELT(CAR(args), 0)), NULL);
@@ -1215,7 +1215,7 @@ SEXP attribute_hidden do_bindtextdomain(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
     {
         if (!isString(CADR(args)) || LENGTH(CADR(args)) != 1)
-            errorcall(call, _("invalid '%s' value"), "dirname");
+            error(_("invalid '%s' value"), "dirname");
         res = bindtextdomain(translateChar(STRING_ELT(CAR(args), 0)), translateChar(STRING_ELT(CADR(args), 0)));
     }
     if (res)
@@ -1986,7 +1986,7 @@ SEXP attribute_hidden do_addTryHandlers(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     if (R_GlobalContext == R_ToplevelContext || !(R_GlobalContext->callflag & CTXT_FUNCTION))
-        errorcall(call, _("not in a try context"));
+        error(_("not in a try context"));
     SET_RESTART_BIT_ON(R_GlobalContext->callflag);
     R_InsertRestartHandlers(R_GlobalContext, FALSE);
     return R_NilValue;

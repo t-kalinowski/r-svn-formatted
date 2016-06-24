@@ -209,7 +209,7 @@ SEXP attribute_hidden do_isunsorted(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     int strictly = asLogical(CADR(args));
     if (strictly == NA_LOGICAL)
-        errorcall(call, _("invalid '%s' argument"), "strictly");
+        error(_("invalid '%s' argument"), "strictly");
     if (isVectorAtomic(x))
     {
         UNPROTECT(1);

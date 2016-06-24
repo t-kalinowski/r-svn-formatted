@@ -1370,7 +1370,7 @@ SEXP attribute_hidden do_quit(SEXP call, SEXP op, SEXP args, SEXP rho)
         return R_NilValue;
     }
     if (!isString(CAR(args)))
-        errorcall(call, _("one of \"yes\", \"no\", \"ask\" or \"default\" expected."));
+        error(_("one of \"yes\", \"no\", \"ask\" or \"default\" expected."));
     tmp = CHAR(STRING_ELT(CAR(args), 0)); /* ASCII */
     if (!strcmp(tmp, "ask"))
     {
@@ -1385,7 +1385,7 @@ SEXP attribute_hidden do_quit(SEXP call, SEXP op, SEXP args, SEXP rho)
     else if (!strcmp(tmp, "default"))
         ask = SA_DEFAULT;
     else
-        errorcall(call, _("unrecognized value of 'save'"));
+        error(_("unrecognized value of 'save'"));
     status = asInteger(CADR(args));
     if (status == NA_INTEGER)
     {
