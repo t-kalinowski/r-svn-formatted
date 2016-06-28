@@ -1068,12 +1068,17 @@ SEXP attribute_hidden do_dotcall(SEXP call, SEXP op, SEXP args, SEXP env)
         int i;
         for (i = 0; i < nargs; i++)
             cargscp[i] = PROTECT(duplicate(cargs[i]));
-        retval = R_doDotCall(ofun, nargs, cargs, call);
+        retval = PROTECT(R_doDotCall(ofun, nargs, cargs, call));
         Rboolean constsOK = TRUE;
         for (i = 0; constsOK && i < nargs; i++)
-            /* 7: not numerical comparison, not single NA, not attributes as
-           set, do ignore byte-code, do ignore environments of closures */
-            if (!R_compute_identical(cargs[i], cargscp[i], 7) && !R_checkConstants(FALSE))
+            /* 39: not numerical comparison, not single NA, not attributes as
+                   set, do ignore byte-code, do ignore environments of closures,
+                   not ignore srcref
+
+                   srcref is not ignored because ignoring it is expensive
+                   (it triggers duplication)
+            */
+            if (!R_compute_identical(cargs[i], cargscp[i], 39) && !R_checkConstants(FALSE))
                 constsOK = FALSE;
         if (!constsOK)
         {
@@ -1081,13 +1086,13 @@ SEXP attribute_hidden do_dotcall(SEXP call, SEXP op, SEXP args, SEXP env)
                      " .Call invocation of function %s.\n",
                      buf);
             for (i = 0; i < nargs; i++)
-                if (!R_compute_identical(cargs[i], cargscp[i], 7))
+                if (!R_compute_identical(cargs[i], cargscp[i], 39))
                     REprintf("NOTE: .Call function %s modified its argument"
                              " (number %d, type %s, length %d)\n",
                              buf, i + 1, CHAR(type2str(TYPEOF(cargscp[i]))), length(cargscp[i]));
             R_Suicide("compiler constants were modified (in .Call?)!\n");
         }
-        UNPROTECT(nargs);
+        UNPROTECT(nargs + 1);
     }
     vmaxset(vmax);
     return retval;
