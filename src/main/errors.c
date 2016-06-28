@@ -159,12 +159,17 @@ void onintr()
     else
         signalInterrupt();
 
+    /* Interrupts do not inherif from error, so we should not run the
+       user erro handler. But we have been, so as a transition,
+       continue to use options('error') if options('interrupt') is not
+       set */
+    Rboolean tryUserError = GetOption1(install("interrupt")) == R_NilValue;
+
     REprintf("\n");
-    /* Attempt to run user error option, save a traceback, show
-       warnings, and reset console; also stop at restart (try/browser)
-       frames.  Not clear this is what we really want, but this
-       preserves current behavior */
-    jump_to_top_ex(TRUE, TRUE, TRUE, TRUE, FALSE);
+    /* Attempt to save a traceback, show warnings, and reset console;
+       also stop at restart (try/browser) frames.  Not clear this is
+       what we really want, but this preserves current behavior */
+    jump_to_top_ex(TRUE, tryUserError, TRUE, TRUE, FALSE);
 }
 
 /* SIGUSR1: save and quit
@@ -1839,6 +1844,13 @@ static void signalInterrupt(void)
     }
     R_HandlerStack = oldstack;
     UNPROTECT(1);
+
+    SEXP h = GetOption1(install("interrupt"));
+    if (h != R_NilValue)
+    {
+        SEXP call = PROTECT(LCONS(h, R_NilValue));
+        eval(call, R_GlobalEnv);
+    }
 }
 
 void attribute_hidden R_InsertRestartHandlers(RCNTXT *cptr, Rboolean browser)
