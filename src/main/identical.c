@@ -126,7 +126,11 @@ Rboolean R_compute_identical(SEXP x, SEXP y, int flags)
     }
     if (!ATTR_AS_SET)
     {
-        if (!R_compute_identical(ax, ay, flags))
+        PROTECT(ax);
+        PROTECT(ay);
+        Rboolean idattr = R_compute_identical(ax, ay, flags);
+        UNPROTECT(2);
+        if (!idattr)
             return FALSE;
     }
     /* Attributes are special: they should be tagged pairlists.  We
