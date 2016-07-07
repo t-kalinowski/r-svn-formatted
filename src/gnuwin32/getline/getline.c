@@ -147,10 +147,10 @@ static int gl_getc(void)
         vk = r.Event.KeyEvent.wVirtualKeyCode;
         if (r.Event.KeyEvent.bKeyDown)
         {
-            if (vk == VK_MENU && (st & LEFT_ALT_PRESSED))
+            AltIsDown = (st & LEFT_ALT_PRESSED);
+            if (vk == VK_MENU && AltIsDown)
             { /* VK_MENU is
-Alt or AltGr */
-                AltIsDown = 1;
+       Alt or AltGr */
                 nAlt = 0;
                 bbb = 0;
             }
