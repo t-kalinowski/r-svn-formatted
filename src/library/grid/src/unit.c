@@ -1730,7 +1730,7 @@ int convertUnit(SEXP unit, int index)
     return result;
 }
 
-SEXP validUnits(SEXP units)
+SEXP L_validUnits(SEXP units)
 {
     int i;
     int n = LENGTH(units);
