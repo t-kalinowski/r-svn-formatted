@@ -860,6 +860,7 @@ static Rconnection newfile(const char *description, int enc, const char *mode, i
     {
         free(new);
         error(_("allocation of file connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     strcpy(new->class, "file");
     new->description = (char *)malloc(strlen(description) + 1);
@@ -868,6 +869,7 @@ static Rconnection newfile(const char *description, int enc, const char *mode, i
         free(new->class);
         free(new);
         error(_("allocation of file connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     init_con(new, description, enc, mode);
     new->open = &file_open;
@@ -888,6 +890,7 @@ static Rconnection newfile(const char *description, int enc, const char *mode, i
         free(new->class);
         free(new);
         error(_("allocation of file connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     ((Rfileconn)(new->private))->raw = raw;
     return new;
@@ -1280,6 +1283,7 @@ static Rconnection newfifo(const char *description, const char *mode)
     {
         free(new);
         error(_("allocation of fifo connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     strcpy(new->class, "fifo");
     new->description = (char *)malloc(strlen(description) + 1);
@@ -1288,6 +1292,7 @@ static Rconnection newfifo(const char *description, const char *mode)
         free(new->class);
         free(new);
         error(_("allocation of fifo connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     init_con(new, description, CE_NATIVE, mode);
     new->open = &fifo_open;
@@ -1307,6 +1312,7 @@ static Rconnection newfifo(const char *description, const char *mode)
         free(new->class);
         free(new);
         error(_("allocation of fifo connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     return new;
 }
@@ -1451,6 +1457,7 @@ static Rconnection newpipe(const char *description, int ienc, const char *mode)
     {
         free(new);
         error(_("allocation of pipe connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     strcpy(new->class, "pipe");
     new->description = (char *)malloc(strlen(description) + 1);
@@ -1459,6 +1466,7 @@ static Rconnection newpipe(const char *description, int ienc, const char *mode)
         free(new->class);
         free(new);
         error(_("allocation of pipe connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     init_con(new, description, ienc, mode);
     new->open = &pipe_open;
@@ -1476,6 +1484,7 @@ static Rconnection newpipe(const char *description, int ienc, const char *mode)
         free(new->class);
         free(new);
         error(_("allocation of pipe connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     return new;
 }
@@ -1690,6 +1699,7 @@ static Rconnection newgzfile(const char *description, const char *mode, int comp
     {
         free(new);
         error(_("allocation of gzfile connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     strcpy(new->class, "gzfile");
     new->description = (char *)malloc(strlen(description) + 1);
@@ -1698,6 +1708,7 @@ static Rconnection newgzfile(const char *description, const char *mode, int comp
         free(new->class);
         free(new);
         error(_("allocation of gzfile connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     init_con(new, description, CE_NATIVE, mode);
 
@@ -1718,6 +1729,7 @@ static Rconnection newgzfile(const char *description, const char *mode, int comp
         free(new->class);
         free(new);
         error(_("allocation of gzfile connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     ((Rgzfileconn) new->private)->compress = compress;
     return new;
@@ -1890,6 +1902,7 @@ static Rconnection newbzfile(const char *description, const char *mode, int comp
     {
         free(new);
         error(_("allocation of bzfile connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     strcpy(new->class, "bzfile");
     new->description = (char *)malloc(strlen(description) + 1);
@@ -1898,6 +1911,7 @@ static Rconnection newbzfile(const char *description, const char *mode, int comp
         free(new->class);
         free(new);
         error(_("allocation of bzfile connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     init_con(new, description, CE_NATIVE, mode);
 
@@ -1918,6 +1932,7 @@ static Rconnection newbzfile(const char *description, const char *mode, int comp
         free(new->class);
         free(new);
         error(_("allocation of bzfile connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     ((Rbzfileconn) new->private)->compress = compress;
     return new;
@@ -2139,6 +2154,7 @@ static Rconnection newxzfile(const char *description, const char *mode, int type
     {
         free(new);
         error(_("allocation of xzfile connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     strcpy(new->class, "xzfile");
     new->description = (char *)malloc(strlen(description) + 1);
@@ -2147,6 +2163,7 @@ static Rconnection newxzfile(const char *description, const char *mode, int type
         free(new->class);
         free(new);
         error(_("allocation of xzfile connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     init_con(new, description, CE_NATIVE, mode);
 
@@ -2168,6 +2185,7 @@ static Rconnection newxzfile(const char *description, const char *mode, int type
         free(new->class);
         free(new);
         error(_("allocation of xzfile connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     ((Rxzfileconn) new->private)->type = type;
     ((Rxzfileconn) new->private)->compress = compress;
@@ -2558,6 +2576,7 @@ static Rconnection newclp(const char *url, const char *inmode)
     {
         free(new);
         error(_("allocation of clipboard connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     strcpy(new->class, description);
     new->description = (char *)malloc(strlen(description) + 1);
@@ -2566,6 +2585,7 @@ static Rconnection newclp(const char *url, const char *inmode)
         free(new->class);
         free(new);
         error(_("allocation of clipboard connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     init_con(new, description, CE_NATIVE, mode);
     new->open = &clp_open;
@@ -2586,6 +2606,7 @@ static Rconnection newclp(const char *url, const char *inmode)
         free(new->class);
         free(new);
         error(_("allocation of clipboard connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     ((Rclpconn) new->private)->buff = NULL;
     if (strncmp(url, "clipboard-", 10) == 0)
@@ -2669,6 +2690,7 @@ static Rconnection newterminal(const char *description, const char *mode)
     {
         free(new);
         error(_("allocation of terminal connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     strcpy(new->class, "terminal");
     new->description = (char *)malloc(strlen(description) + 1);
@@ -2677,6 +2699,7 @@ static Rconnection newterminal(const char *description, const char *mode)
         free(new->class);
         free(new);
         error(_("allocation of terminal connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     init_con(new, description, CE_NATIVE, mode);
     new->isopen = TRUE;
@@ -2890,6 +2913,7 @@ static Rconnection newraw(const char *description, SEXP raw, const char *mode)
     {
         free(new);
         error(_("allocation of raw connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     strcpy(new->class, "rawConnection");
     new->description = (char *)malloc(strlen(description) + 1);
@@ -2898,6 +2922,7 @@ static Rconnection newraw(const char *description, SEXP raw, const char *mode)
         free(new->class);
         free(new);
         error(_("allocation of raw connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     init_con(new, description, CE_NATIVE, mode);
     new->isopen = TRUE;
@@ -2930,6 +2955,7 @@ static Rconnection newraw(const char *description, SEXP raw, const char *mode)
         free(new->class);
         free(new);
         error(_("allocation of raw connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     raw_init(new, raw);
     if (mode[0] == 'a')
@@ -3104,6 +3130,7 @@ static Rconnection newtext(const char *description, SEXP text, int type)
     {
         free(new);
         error(_("allocation of text connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     strcpy(new->class, "textConnection");
     new->description = (char *)malloc(strlen(description) + 1);
@@ -3112,6 +3139,7 @@ static Rconnection newtext(const char *description, SEXP text, int type)
         free(new->class);
         free(new);
         error(_("allocation of text connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     init_con(new, description, CE_NATIVE, "r");
     new->isopen = TRUE;
@@ -3128,6 +3156,7 @@ static Rconnection newtext(const char *description, SEXP text, int type)
         free(new->class);
         free(new);
         error(_("allocation of text connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     text_init(new, text, type);
     return new;
@@ -3350,6 +3379,7 @@ static Rconnection newouttext(const char *description, SEXP stext, const char *m
     {
         free(new);
         error(_("allocation of text connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     strcpy(new->class, "textConnection");
     new->description = (char *)malloc(strlen(description) + 1);
@@ -3358,6 +3388,7 @@ static Rconnection newouttext(const char *description, SEXP stext, const char *m
         free(new->class);
         free(new);
         error(_("allocation of text connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     init_con(new, description, CE_NATIVE, mode);
     new->isopen = TRUE;
@@ -3374,6 +3405,7 @@ static Rconnection newouttext(const char *description, SEXP stext, const char *m
         free(new->class);
         free(new);
         error(_("allocation of text connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     ((Routtextconn) new->private)->lastline = tmp = malloc(LAST_LINE_LEN);
     if (!tmp)
@@ -3383,6 +3415,7 @@ static Rconnection newouttext(const char *description, SEXP stext, const char *m
         free(new->class);
         free(new);
         error(_("allocation of text connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     outtext_init(new, stext, mode, idx);
     return new;
@@ -6278,6 +6311,7 @@ SEXP attribute_hidden do_gzcon(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         free(new);
         error(_("allocation of 'gzcon' connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     strcpy(new->class, "gzcon");
     snprintf(description, 1000, "gzcon(%s)", incon->description);
@@ -6287,6 +6321,7 @@ SEXP attribute_hidden do_gzcon(SEXP call, SEXP op, SEXP args, SEXP rho)
         free(new->class);
         free(new);
         error(_("allocation of 'gzcon' connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     init_con(new, description, CE_NATIVE, mode);
     new->text = text;
@@ -6304,6 +6339,7 @@ SEXP attribute_hidden do_gzcon(SEXP call, SEXP op, SEXP args, SEXP rho)
         free(new->class);
         free(new);
         error(_("allocation of 'gzcon' connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     ((Rgzconn)(new->private))->con = incon;
     ((Rgzconn)(new->private))->cp = level;
@@ -6936,6 +6972,7 @@ SEXP R_new_custom_connection(const char *description, const char *mode, const ch
     {
         free(new);
         error(_("allocation of %s connection failed"), class_name);
+        /* for Solaris 12.5 */ new = NULL;
     }
     strcpy(new->class, class_name);
     new->description = (char *)malloc(strlen(description) + 1);
@@ -6944,6 +6981,7 @@ SEXP R_new_custom_connection(const char *description, const char *mode, const ch
         free(new->class);
         free(new);
         error(_("allocation of %s connection failed"), class_name);
+        /* for Solaris 12.5 */ new = NULL;
     }
     init_con(new, description, CE_NATIVE, mode);
     /* all ptrs are init'ed to null_* so no need to repeat that,

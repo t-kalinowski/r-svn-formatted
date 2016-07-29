@@ -366,6 +366,7 @@ static Rconnection in_R_newurl(const char *description, const char *const mode, 
     {
         free(new);
         error(_("allocation of url connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     new->description = (char *)malloc(strlen(description) + 1);
     if (!new->description)
@@ -373,6 +374,7 @@ static Rconnection in_R_newurl(const char *description, const char *const mode, 
         free(new->class);
         free(new);
         error(_("allocation of url connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     init_con(new, description, CE_NATIVE, mode);
     new->canwrite = FALSE;
@@ -402,6 +404,7 @@ static Rconnection in_R_newurl(const char *description, const char *const mode, 
         free(new->class);
         free(new);
         error(_("allocation of url connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
 
     IDquiet = TRUE;
