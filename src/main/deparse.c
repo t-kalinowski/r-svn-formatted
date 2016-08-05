@@ -187,7 +187,10 @@ SEXP attribute_hidden do_deparse(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP deparse1(SEXP call, Rboolean abbrev, int opts)
 {
     Rboolean backtick = TRUE;
-    return deparse1WithCutoff(call, abbrev, DEFAULT_Cutoff, backtick, opts, -1);
+    int lines = asInteger(GetOption1(install("deparse.max.lines")));
+    if (lines == NA_INTEGER || lines < 0)
+        lines = -1;
+    return deparse1WithCutoff(call, abbrev, DEFAULT_Cutoff, backtick, opts, lines);
 }
 
 /* used for language objects in print() */
