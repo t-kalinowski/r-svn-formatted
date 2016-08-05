@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2002--2015 The R Core Team
+ *  Copyright (C) 2002--2016 The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -34,7 +34,8 @@ int F77_SUB(interv)(double *xt, int *n, double *x, Rboolean *rightmost_closed, R
     return findInterval(xt, *n, *x, *rightmost_closed, *all_inside, *ilo, mflag);
 }
 
-int findInterval2(double *xt, int n, double x, Rboolean rightmost_closed, Rboolean all_inside, Rboolean left_open,
+int findInterval2(double *xt, int n, double x, Rboolean rightmost_closed, Rboolean all_inside,
+                  Rboolean left_open, // <- new in findInterval2()
                   int ilo, int *mflag)
 {
     int istep, middle, ihi;
@@ -110,6 +111,11 @@ int findInterval2(double *xt, int n, double x, Rboolean rightmost_closed, Rboole
 #define X_grtr(XT_v) x > XT_v || (!left_open && x >= XT_v)
 #define X_smlr(XT_v) x < XT_v || (left_open && x <= XT_v)
 
+    if (n == 0)
+    {
+        *mflag = 0;
+        return 0;
+    }
     /* 1-indexing : */
     --xt;
 
