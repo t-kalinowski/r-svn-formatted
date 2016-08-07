@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2015  The R Core Team
+ *  Copyright (C) 1997--2016  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -432,6 +432,7 @@ invalid:
     RNG_kind = RNG_DEFAULT;
     N01_kind = N01_DEFAULT;
     Randomize(RNG_kind);
+    PutRNGstate(); // write out to .Random.seed
     return;
 }
 
@@ -441,7 +442,6 @@ void GetRNGstate()
     int len_seed;
     SEXP seeds;
 
-    /* look only in the workspace */
     seeds = GetSeedsFromVar();
     if (seeds == R_UnboundValue)
     {
@@ -450,6 +450,8 @@ void GetRNGstate()
     else
     {
         GetRNGkind(seeds);
+        /* that might have re-set the generator */
+        seeds = GetSeedsFromVar();
         len_seed = RNG_Table[RNG_kind].n_seed;
         /* Not sure whether this test is needed: wrong for USER_UNIF */
         if (LENGTH(seeds) > 1 && LENGTH(seeds) < len_seed + 1)
