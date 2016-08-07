@@ -371,7 +371,7 @@ static void Randomize(RNGtype kind)
     RNG_Init(kind, TimeToSeed());
 }
 
-static void GetRNGkind(SEXP seeds)
+static Rboolean GetRNGkind(SEXP seeds)
 {
     /* Load RNG_kind, N01_kind from .Random.seed if present */
     int tmp, *is;
@@ -381,7 +381,7 @@ static void GetRNGkind(SEXP seeds)
     if (isNull(seeds))
         seeds = GetSeedsFromVar();
     if (seeds == R_UnboundValue)
-        return;
+        return TRUE;
     if (!isInteger(seeds))
     {
         if (seeds == R_MissingArg) /* How can this happen? */
@@ -427,13 +427,13 @@ static void GetRNGkind(SEXP seeds)
     }
     RNG_kind = newRNG;
     N01_kind = newN01;
-    return;
+    return FALSE;
 invalid:
     RNG_kind = RNG_DEFAULT;
     N01_kind = N01_DEFAULT;
     Randomize(RNG_kind);
     PutRNGstate(); // write out to .Random.seed
-    return;
+    return TRUE;
 }
 
 void GetRNGstate()
@@ -449,9 +449,9 @@ void GetRNGstate()
     }
     else
     {
-        GetRNGkind(seeds);
-        /* that might have re-set the generator */
-        seeds = GetSeedsFromVar();
+        /* this might re-set the generator */
+        if (GetRNGkind(seeds))
+            return;
         len_seed = RNG_Table[RNG_kind].n_seed;
         /* Not sure whether this test is needed: wrong for USER_UNIF */
         if (LENGTH(seeds) > 1 && LENGTH(seeds) < len_seed + 1)
