@@ -245,11 +245,13 @@ static SEXP deparse1WithCutoff(SEXP call, Rboolean abbrev, int cutoff, Rboolean 
     }
     else
     {
-        deparse2(call, svec, &localData); /* just to determine linenumber..*/
+        if (R_BrowseLines > 0) /* enough to determine linenumber */
+            localData.maxlines = R_BrowseLines + 1;
+        deparse2(call, svec, &localData);
         localData.active = TRUE;
         if (R_BrowseLines > 0 && localData.linenumber > R_BrowseLines)
         {
-            localData.linenumber = localData.maxlines = R_BrowseLines + 1;
+            localData.linenumber = R_BrowseLines + 1;
             need_ellipses = TRUE;
         }
     }
