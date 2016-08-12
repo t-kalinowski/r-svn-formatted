@@ -28,7 +28,7 @@
  *
  */
 
-#include <config.h> /* needed for HAVE_*, IEEE_754 */
+#include <config.h> /* needed for HAVE_* */
 #include "nmath.h"
 
 /*  nearbyint is C99, so all platforms should have it (and AFAIK, all do) */
