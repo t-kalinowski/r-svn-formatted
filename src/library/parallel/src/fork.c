@@ -792,7 +792,12 @@ SEXP mc_children()
            meantime, we may end up with fewer children than
            expected - highly unlikely but possible */
         if (pids - INTEGER(res) < LENGTH(res))
-            SETLENGTH(res, (int)(pids - INTEGER(res)));
+        {
+            R_len_t len = pids - INTEGER(res);
+            PROTECT(res);
+            res = lengthgets(res, len);
+            UNPROTECT(1);
+        }
     }
     return res;
 }
