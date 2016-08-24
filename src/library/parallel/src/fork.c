@@ -793,7 +793,7 @@ SEXP mc_children()
            expected - highly unlikely but possible */
         if (pids - INTEGER(res) < LENGTH(res))
         {
-            R_len_t len = pids - INTEGER(res);
+            R_len_t len = (R_len_t)(pids - INTEGER(res));
             PROTECT(res);
             res = lengthgets(res, len);
             UNPROTECT(1);
