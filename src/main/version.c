@@ -151,3 +151,8 @@ void attribute_hidden PrintVersion_part_1(char *s, size_t len)
     }
     SPRINTF_2(" (%d-bit)\n", 8 * (int)sizeof(void *));
 }
+
+SEXP attribute_hidden do_internalsID(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    return mkString(R_INTERNALS_UUID);
+}
