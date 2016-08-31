@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2002-2007   The R Core Team.
+ *  Copyright (C) 2002-2016   The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,11 +18,7 @@
  */
 
 #include <R.h>
-#include <Rinternals.h>
-#include <R_ext/Rdynload.h> /* for DL_FUNC */
-
-/* from Rdynpriv.h, but that pulls in too much */
-SEXP R_MakeExternalPtrFn(DL_FUNC p, SEXP tag, SEXP prot);
+#include <Rinternals.h> // defines R_MakeExternalPtrFn
 
 #include "methods.h"
 
