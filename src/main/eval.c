@@ -1038,7 +1038,7 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedvars)
     body = BODY(op);
     savedrho = CLOENV(op);
 
-    if (R_jit_enabled > 0 && TYPEOF(body) != BCODESXP)
+    if (R_jit_enabled > 0 && TYPEOF(body) != BCODESXP && !R_disable_bytecode)
     {
         int old_enabled = R_jit_enabled;
         SEXP newop;
@@ -1219,7 +1219,7 @@ static SEXP R_execClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP newrh
 
     body = BODY(op);
 
-    if (R_jit_enabled > 0 && TYPEOF(body) != BCODESXP)
+    if (R_jit_enabled > 0 && TYPEOF(body) != BCODESXP && !R_disable_bytecode)
     {
         int old_enabled = R_jit_enabled;
         SEXP newop;
@@ -1690,7 +1690,8 @@ SEXP attribute_hidden do_for(SEXP call, SEXP op, SEXP args, SEXP rho)
         errorcall(call, _("non-symbol loop variable"));
 
     dbg = RDEBUG(rho);
-    if (R_jit_enabled > 2 && !dbg && isUnmodifiedSpecSym(CAR(call), rho) && R_compileAndExecute(call, rho))
+    if (R_jit_enabled > 2 && !dbg && !R_disable_bytecode && isUnmodifiedSpecSym(CAR(call), rho) &&
+        R_compileAndExecute(call, rho))
         return R_NilValue;
 
     PROTECT(args);
@@ -1816,7 +1817,8 @@ SEXP attribute_hidden do_while(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
 
     dbg = RDEBUG(rho);
-    if (R_jit_enabled > 2 && !dbg && isUnmodifiedSpecSym(CAR(call), rho) && R_compileAndExecute(call, rho))
+    if (R_jit_enabled > 2 && !dbg && !R_disable_bytecode && isUnmodifiedSpecSym(CAR(call), rho) &&
+        R_compileAndExecute(call, rho))
         return R_NilValue;
 
     body = CADR(args);
@@ -1857,7 +1859,8 @@ SEXP attribute_hidden do_repeat(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
 
     dbg = RDEBUG(rho);
-    if (R_jit_enabled > 2 && !dbg && isUnmodifiedSpecSym(CAR(call), rho) && R_compileAndExecute(call, rho))
+    if (R_jit_enabled > 2 && !dbg && !R_disable_bytecode && isUnmodifiedSpecSym(CAR(call), rho) &&
+        R_compileAndExecute(call, rho))
         return R_NilValue;
 
     body = CAR(args);
