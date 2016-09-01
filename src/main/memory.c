@@ -3474,13 +3474,15 @@ void R_SetExternalPtrProtected(SEXP s, SEXP p)
     EXTPTR_PROT(s) = p;
 }
 
-/* Work around casting issues: works where it is needed */
+/*
+   Added to API in R 3.4.0.
+   Work around casting issues: works where it is needed.
+ */
 typedef union {
     void *p;
     DL_FUNC fn;
 } fn_ptr;
 
-/* used in package methods */
 SEXP R_MakeExternalPtrFn(DL_FUNC p, SEXP tag, SEXP prot)
 {
     fn_ptr tmp;
@@ -3492,7 +3494,7 @@ SEXP R_MakeExternalPtrFn(DL_FUNC p, SEXP tag, SEXP prot)
     return s;
 }
 
-attribute_hidden DL_FUNC R_ExternalPtrAddrFn(SEXP s)
+DL_FUNC R_ExternalPtrAddrFn(SEXP s)
 {
     fn_ptr tmp;
     tmp.p = EXTPTR_PTR(CHK(s));
