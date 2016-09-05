@@ -215,13 +215,6 @@ SEXP attribute_hidden do_relop_dflt(SEXP call, SEXP op, SEXP x, SEXP y)
 
     /* ELSE :  x and y are both atomic or list */
 
-    // FIXME: typically *not* ok if x or y is array
-    if (XLENGTH(x) <= 0 || XLENGTH(y) <= 0)
-    {
-        UNPROTECT(2);
-        return allocVector(LGLSXP, 0);
-    }
-
     Rboolean xarray = isArray(x), yarray = isArray(y), xts = isTs(x), yts = isTs(y);
     SEXP dims, xnames, ynames;
     if (xarray || yarray)
@@ -275,49 +268,54 @@ SEXP attribute_hidden do_relop_dflt(SEXP call, SEXP op, SEXP x, SEXP y)
         }
     }
 
-    if (nx > 0 && ny > 0 && ((nx > ny) ? nx % ny : ny % nx) != 0)
-    { // mismatch
-        warningcall(call, _("longer object length is not a multiple of shorter object length"));
-    }
-    if (isString(x) || isString(y))
+    if (nx > 0 && ny > 0)
     {
-        REPROTECT(x = coerceVector(x, STRSXP), xpi);
-        REPROTECT(y = coerceVector(y, STRSXP), ypi);
-        x = string_relop((RELOP_TYPE)PRIMVAL(op), x, y);
-    }
-    else if (isComplex(x) || isComplex(y))
-    {
-        REPROTECT(x = coerceVector(x, CPLXSXP), xpi);
-        REPROTECT(y = coerceVector(y, CPLXSXP), ypi);
-        x = complex_relop((RELOP_TYPE)PRIMVAL(op), x, y, call);
-    }
-    else if (isReal(x) || isReal(y))
-    {
-        REPROTECT(x = coerceVector(x, REALSXP), xpi);
-        REPROTECT(y = coerceVector(y, REALSXP), ypi);
-        x = real_relop((RELOP_TYPE)PRIMVAL(op), x, y);
-    }
-    else if (isInteger(x) || isInteger(y))
-    {
-        REPROTECT(x = coerceVector(x, INTSXP), xpi);
-        REPROTECT(y = coerceVector(y, INTSXP), ypi);
-        x = integer_relop((RELOP_TYPE)PRIMVAL(op), x, y);
-    }
-    else if (isLogical(x) || isLogical(y))
-    {
-        REPROTECT(x = coerceVector(x, LGLSXP), xpi);
-        REPROTECT(y = coerceVector(y, LGLSXP), ypi);
-        x = integer_relop((RELOP_TYPE)PRIMVAL(op), x, y);
-    }
-    else if (TYPEOF(x) == RAWSXP || TYPEOF(y) == RAWSXP)
-    {
-        REPROTECT(x = coerceVector(x, RAWSXP), xpi);
-        REPROTECT(y = coerceVector(y, RAWSXP), ypi);
-        x = raw_relop((RELOP_TYPE)PRIMVAL(op), x, y);
+        if (((nx > ny) ? nx % ny : ny % nx) != 0) // mismatch
+            warningcall(call, _("longer object length is not a multiple of shorter object length"));
+
+        if (isString(x) || isString(y))
+        {
+            REPROTECT(x = coerceVector(x, STRSXP), xpi);
+            REPROTECT(y = coerceVector(y, STRSXP), ypi);
+            x = string_relop((RELOP_TYPE)PRIMVAL(op), x, y);
+        }
+        else if (isComplex(x) || isComplex(y))
+        {
+            REPROTECT(x = coerceVector(x, CPLXSXP), xpi);
+            REPROTECT(y = coerceVector(y, CPLXSXP), ypi);
+            x = complex_relop((RELOP_TYPE)PRIMVAL(op), x, y, call);
+        }
+        else if (isReal(x) || isReal(y))
+        {
+            REPROTECT(x = coerceVector(x, REALSXP), xpi);
+            REPROTECT(y = coerceVector(y, REALSXP), ypi);
+            x = real_relop((RELOP_TYPE)PRIMVAL(op), x, y);
+        }
+        else if (isInteger(x) || isInteger(y))
+        {
+            REPROTECT(x = coerceVector(x, INTSXP), xpi);
+            REPROTECT(y = coerceVector(y, INTSXP), ypi);
+            x = integer_relop((RELOP_TYPE)PRIMVAL(op), x, y);
+        }
+        else if (isLogical(x) || isLogical(y))
+        {
+            REPROTECT(x = coerceVector(x, LGLSXP), xpi);
+            REPROTECT(y = coerceVector(y, LGLSXP), ypi);
+            x = integer_relop((RELOP_TYPE)PRIMVAL(op), x, y);
+        }
+        else if (TYPEOF(x) == RAWSXP || TYPEOF(y) == RAWSXP)
+        {
+            REPROTECT(x = coerceVector(x, RAWSXP), xpi);
+            REPROTECT(y = coerceVector(y, RAWSXP), ypi);
+            x = raw_relop((RELOP_TYPE)PRIMVAL(op), x, y);
+        }
+        else
+            errorcall(call, _("comparison of these types is not implemented"));
     }
     else
-        errorcall(call, _("comparison of these types is not implemented"));
-
+    { // nx == 0 || ny == 0
+        x = allocVector(LGLSXP, 0);
+    }
     PROTECT(x);
     if (dims != R_NilValue)
     {
