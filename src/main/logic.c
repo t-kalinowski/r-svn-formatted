@@ -76,8 +76,9 @@ static SEXP lbinary(SEXP call, SEXP op, SEXP args)
     else if (!(isNull(x) || isNumber(x)) || !(isNull(y) || isNumber(y)))
         errorcall(call, _("operations are possible only for numeric, logical or complex types"));
 
-    SEXP dims, xnames, ynames;
+    R_xlen_t nx = xlength(x), ny = xlength(y);
     Rboolean xarray = isArray(x), yarray = isArray(y), xts = isTs(x), yts = isTs(y);
+    SEXP dims, xnames, ynames;
     if (xarray || yarray)
     {
         if (xarray && yarray)
@@ -86,14 +87,17 @@ static SEXP lbinary(SEXP call, SEXP op, SEXP args)
                 errorcall(call, _("non-conformable arrays"));
             PROTECT(dims = getAttrib(x, R_DimSymbol));
         }
-        else if (xarray)
+        else if (xarray && (ny != 0 || nx == 0))
         {
             PROTECT(dims = getAttrib(x, R_DimSymbol));
         }
-        else /*(yarray)*/
+        else if (yarray && (nx != 0 || ny == 0))
         {
             PROTECT(dims = getAttrib(y, R_DimSymbol));
         }
+        else
+            PROTECT(dims = R_NilValue);
+
         PROTECT(xnames = getAttrib(x, R_DimNamesSymbol));
         PROTECT(ynames = getAttrib(y, R_DimNamesSymbol));
     }
@@ -103,7 +107,7 @@ static SEXP lbinary(SEXP call, SEXP op, SEXP args)
         PROTECT(xnames = getAttrib(x, R_NamesSymbol));
         PROTECT(ynames = getAttrib(y, R_NamesSymbol));
     }
-    R_xlen_t nx = XLENGTH(x), ny = XLENGTH(y);
+
     SEXP klass = NULL, tsp = NULL; // -Wall
     if (xts || yts)
     {
@@ -116,39 +120,47 @@ static SEXP lbinary(SEXP call, SEXP op, SEXP args)
         }
         else if (xts)
         {
-            if (XLENGTH(x) < XLENGTH(y))
+            if (nx < ny)
                 ErrorMessage(call, ERROR_TSVEC_MISMATCH);
             PROTECT(tsp = getAttrib(x, R_TspSymbol));
             PROTECT(klass = getAttrib(x, R_ClassSymbol));
         }
         else /*(yts)*/
         {
-            if (XLENGTH(y) < XLENGTH(x))
+            if (ny < nx)
                 ErrorMessage(call, ERROR_TSVEC_MISMATCH);
             PROTECT(tsp = getAttrib(y, R_TspSymbol));
             PROTECT(klass = getAttrib(y, R_ClassSymbol));
         }
     }
-    if (nx > 0 && ny > 0 && ((nx > ny) ? nx % ny : ny % nx) != 0) // mismatch
-        warningcall(call, _("longer object length is not a multiple of shorter object length"));
-
-    if (isRaw(x) && isRaw(y))
+    if (nx > 0 && ny > 0)
     {
-        PROTECT(x = binaryLogic2(PRIMVAL(op), x, y));
+        if (((nx > ny) ? nx % ny : ny % nx) != 0) // mismatch
+            warningcall(call, _("longer object length is not a multiple of shorter object length"));
+
+        if (isRaw(x) && isRaw(y))
+        {
+            x = binaryLogic2(PRIMVAL(op), x, y);
+        }
+        else
+        {
+            if (isNull(x))
+                x = SETCAR(args, allocVector(LGLSXP, 0));
+            else // isNumeric(x)
+                x = SETCAR(args, coerceVector(x, LGLSXP));
+            if (isNull(y))
+                y = SETCAR(args, allocVector(LGLSXP, 0));
+            else // isNumeric(y)
+                y = SETCADR(args, coerceVector(y, LGLSXP));
+            x = binaryLogic(PRIMVAL(op), x, y);
+        }
     }
     else
-    {
-        if (isNull(x))
-            x = SETCAR(args, allocVector(LGLSXP, 0));
-        else // isNumeric(x)
-            x = SETCAR(args, coerceVector(x, LGLSXP));
-        if (isNull(y))
-            y = SETCAR(args, allocVector(LGLSXP, 0));
-        else // isNumeric(y)
-            y = SETCADR(args, coerceVector(y, LGLSXP));
-        PROTECT(x = binaryLogic(PRIMVAL(op), x, y));
+    { // nx == 0 || ny == 0
+        x = allocVector(LGLSXP, 0);
     }
 
+    PROTECT(x);
     if (dims != R_NilValue)
     {
         setAttrib(x, R_DimSymbol, dims);
