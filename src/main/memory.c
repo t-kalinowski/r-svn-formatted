@@ -2197,7 +2197,7 @@ void attribute_hidden InitMemory()
     R_NilValue->sxpinfo = UnmarkedNodeTemplate.sxpinfo;
     INIT_REFCNT(R_NilValue);
     SET_REFCNT(R_NilValue, REFCNTMAX);
-    TYPEOF(R_NilValue) = NILSXP;
+    SET_TYPEOF(R_NilValue, NILSXP);
     CAR(R_NilValue) = R_NilValue;
     CDR(R_NilValue) = R_NilValue;
     TAG(R_NilValue) = R_NilValue;
@@ -2355,7 +2355,7 @@ SEXP allocSExp(SEXPTYPE t)
     GET_FREE_NODE(s);
     s->sxpinfo = UnmarkedNodeTemplate.sxpinfo;
     INIT_REFCNT(s);
-    TYPEOF(s) = t;
+    SET_TYPEOF(s, t);
     CAR(s) = R_NilValue;
     CDR(s) = R_NilValue;
     TAG(s) = R_NilValue;
@@ -2375,7 +2375,7 @@ static SEXP allocSExpNonCons(SEXPTYPE t)
     GET_FREE_NODE(s);
     s->sxpinfo = UnmarkedNodeTemplate.sxpinfo;
     INIT_REFCNT(s);
-    TYPEOF(s) = t;
+    SET_TYPEOF(s, t);
     TAG(s) = R_NilValue;
     ATTRIB(s) = R_NilValue;
     return s;
@@ -2398,7 +2398,7 @@ SEXP cons(SEXP car, SEXP cdr)
     GET_FREE_NODE(s);
     s->sxpinfo = UnmarkedNodeTemplate.sxpinfo;
     INIT_REFCNT(s);
-    TYPEOF(s) = LISTSXP;
+    SET_TYPEOF(s, LISTSXP);
     CAR(s) = CHK(car);
     if (car)
         INCREMENT_REFCNT(car);
@@ -2426,7 +2426,7 @@ SEXP CONS_NR(SEXP car, SEXP cdr)
     s->sxpinfo = UnmarkedNodeTemplate.sxpinfo;
     INIT_REFCNT(s);
     DISABLE_REFCNT(s);
-    TYPEOF(s) = LISTSXP;
+    SET_TYPEOF(s, LISTSXP);
     CAR(s) = CHK(car);
     CDR(s) = CHK(cdr);
     TAG(s) = R_NilValue;
@@ -2469,7 +2469,7 @@ SEXP NewEnvironment(SEXP namelist, SEXP valuelist, SEXP rho)
     GET_FREE_NODE(newrho);
     newrho->sxpinfo = UnmarkedNodeTemplate.sxpinfo;
     INIT_REFCNT(newrho);
-    TYPEOF(newrho) = ENVSXP;
+    SET_TYPEOF(newrho, ENVSXP);
     FRAME(newrho) = valuelist;
     ENCLOS(newrho) = CHK(rho);
     HASHTAB(newrho) = R_NilValue;
@@ -2508,7 +2508,7 @@ SEXP attribute_hidden mkPROMISE(SEXP expr, SEXP rho)
 
     s->sxpinfo = UnmarkedNodeTemplate.sxpinfo;
     INIT_REFCNT(s);
-    TYPEOF(s) = PROMSXP;
+    SET_TYPEOF(s, PROMSXP);
     PRCODE(s) = CHK(expr);
     PRENV(s) = CHK(rho);
     PRVALUE(s) = R_UnboundValue;
@@ -2619,7 +2619,7 @@ SEXP allocVector3(SEXPTYPE type, R_xlen_t length, R_allocator_t *allocator)
             SET_NODE_CLASS(s, node_class);
             R_SmallVallocSize += alloc_size;
             ATTRIB(s) = R_NilValue;
-            TYPEOF(s) = type;
+            SET_TYPEOF(s, type);
             SET_SHORT_VEC_LENGTH(s, (R_len_t)length); // is 1
             SET_SHORT_VEC_TRUELENGTH(s, 0);
             SET_NAMED(s, 0);
@@ -2646,6 +2646,7 @@ SEXP allocVector3(SEXPTYPE type, R_xlen_t length, R_allocator_t *allocator)
     case CHARSXP:
         error("use of allocVector(CHARSXP ...) is defunct\n");
     case intCHARSXP:
+        type = CHARSXP;
         size = BYTE2VEC(length + 1);
 #if VALGRIND_LEVEL > 0
         actual_size = length + 1;
@@ -2714,7 +2715,7 @@ SEXP allocVector3(SEXPTYPE type, R_xlen_t length, R_allocator_t *allocator)
             error("invalid length for pairlist");
 #endif
         s = allocList((int)length);
-        TYPEOF(s) = LANGSXP;
+        SET_TYPEOF(s, LANGSXP);
         return s;
     case LISTSXP:
 #ifdef LONG_VECTOR_SUPPORT
@@ -2854,7 +2855,7 @@ SEXP allocVector3(SEXPTYPE type, R_xlen_t length, R_allocator_t *allocator)
             SNAP_NODE(s, R_GenHeap[node_class].New);
         }
         ATTRIB(s) = R_NilValue;
-        TYPEOF(s) = type;
+        SET_TYPEOF(s, type);
     }
     else
     {
