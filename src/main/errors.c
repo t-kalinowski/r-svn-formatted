@@ -2148,7 +2148,7 @@ SEXP R_tryCatch(SEXP (*body)(void *), void *bdata, SEXP conds, SEXP (*handler)(S
     if (body == NULL)
         error("must supply a body function");
 
-    SEXP fsym = install("..C_tryCatchHlpr");
+    SEXP fsym = install("..C_tryCatchHelper");
 
     tryCatchData_t tcd = {.body = body,
                           .bdata = bdata,
@@ -2166,7 +2166,7 @@ SEXP R_tryCatch(SEXP (*body)(void *), void *bdata, SEXP conds, SEXP (*handler)(S
     return val;
 }
 
-SEXP do_tryCatchHlpr(SEXP call, SEXP op, SEXP args, SEXP env)
+SEXP do_tryCatchHelper(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP eptr = CAR(args);
     SEXP sw = CADR(args);
