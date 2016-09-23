@@ -1017,7 +1017,6 @@ int R_check_class_and_super(SEXP x, const char **valid, SEXP rho)
            .selectSuperClasses(getClass("....")@contains, dropVirtual=TRUE)  */
         SEXP classExts, superCl, _call;
         static SEXP s_contains = NULL, s_selectSuperCl = NULL;
-        int i;
         if (!s_contains)
         {
             s_contains = install("contains");
@@ -1030,7 +1029,7 @@ int R_check_class_and_super(SEXP x, const char **valid, SEXP rho)
         superCl = eval(_call, rho);
         UNPROTECT(3); /* _call, classExts, classDef */
         PROTECT(superCl);
-        for (i = 0; i < LENGTH(superCl); i++)
+        for (int i = 0; i < LENGTH(superCl); i++)
         {
             const char *s_class = CHAR(STRING_ELT(superCl, i));
             for (ans = 0;; ans++)
