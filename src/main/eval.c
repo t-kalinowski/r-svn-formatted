@@ -521,7 +521,11 @@ static SEXP forcePromise(SEXP e)
                     R_GlobalContext->call,
                     _("promise already under evaluation: recursive default argument reference or earlier problems?"));
             else
+            {
+                /* set PRSEEN to 1 to avoid infinite recursion */
+                SET_PRSEEN(e, 1);
                 warningcall(R_GlobalContext->call, _("restarting interrupted promise evaluation"));
+            }
         }
         /* Mark the promise as under evaluation and push it on a stack
            that can be used to unmark pending promises if a jump out
