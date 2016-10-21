@@ -198,6 +198,9 @@ int findInterval2(double *xt, int n, double x, Rboolean rightmost_closed, Rboole
         ihi = n;
     }
 
+    if (left_open)
+        goto L51; /* There _is_ a path to here, avoiding return and goto */
+
 L50: // ! left_open
     /* **** now xt[ilo] <= x < xt[ihi] . narrow the interval. */
     for (;;)
