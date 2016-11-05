@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2015  The R Core Team
+ *  Copyright (C) 1997--2016  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Pulic License as published by
@@ -1191,10 +1191,13 @@ static R_size_t fgrepraw1(SEXP pat, SEXP text, R_size_t offset)
 {
     Rbyte *haystack = RAW(text), *needle = RAW(pat);
     R_size_t n = LENGTH(text);
-    switch (LENGTH(pat))
+    R_size_t ncmp = LENGTH(pat);
+    if (n < ncmp)
+        return (R_size_t)-1;
+    switch (ncmp)
     { /* it may be silly but we optimize small needle
-searches, because they can be used to match
-single UTF8 chars (up to 3 bytes) */
+ searches, because they can be used to match
+ single UTF8 chars (up to 3 bytes) */
     case 1: {
         Rbyte c = needle[0];
         while (offset < n)
@@ -1226,9 +1229,8 @@ single UTF8 chars (up to 3 bytes) */
         return (R_size_t)-1;
     }
     default: {
-        R_size_t ncmp = LENGTH(pat);
-        n -= ncmp;
         ncmp--;
+        n -= ncmp;
         while (offset < n)
         {
             if (haystack[offset] == needle[0] && !memcmp(haystack + offset + 1, needle + 1, ncmp))
@@ -1237,7 +1239,7 @@ single UTF8 chars (up to 3 bytes) */
         }
     }
     }
-    return -1;
+    return (R_size_t)-1;
 }
 
 /* grepRaw(pattern, text, offset, ignore.case, fixed, value, all, invert) */
