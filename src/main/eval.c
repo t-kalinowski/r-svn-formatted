@@ -4487,7 +4487,10 @@ typedef union {
     int i;
 } BCODE;
 
-static struct
+/* Declare opinfo volatile to prevent gcc 6 from making a local copy
+   in bcEval stack frames and thus increasing stack usage
+   dramatically */
+volatile static struct
 {
     void *addr;
     int argc;
