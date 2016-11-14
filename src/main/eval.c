@@ -31,8 +31,6 @@
 #include <Fileio.h>
 #include <R_ext/Print.h>
 
-#define ARGUSED(x) LEVELS(x)
-
 static SEXP bcEval(SEXP, SEXP, Rboolean);
 
 /* BC_PROILFING needs to be enabled at build time. It is not enabled

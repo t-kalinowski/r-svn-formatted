@@ -1461,8 +1461,6 @@ SEXP attribute_hidden do_charmatch(SEXP call, SEXP op, SEXP args, SEXP env)
 /* formal arguments of functions.  The returned value */
 /* is a list with all components named. */
 
-#define ARGUSED(x) LEVELS(x)
-
 static SEXP StripUnmatched(SEXP s)
 {
     if (s == R_NilValue)
