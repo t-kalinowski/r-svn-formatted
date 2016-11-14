@@ -625,7 +625,7 @@ static Rboolean file_open(Rconnection con)
     else
     { /* use file("stdin") to refer to the file and not the console */
 #ifdef HAVE_FDOPEN
-        fp = fdopen(0, con->mode);
+        fp = fdopen(dup(0), con->mode);
 #else
         warning(_("cannot open file '%s': %s"), name, "fdopen is not supported on this platform");
 #endif
@@ -687,7 +687,7 @@ static Rboolean file_open(Rconnection con)
 static void file_close(Rconnection con)
 {
     Rfileconn this = con->private;
-    if (con->isopen && strcmp(con->description, "stdin"))
+    if (con->isopen) // && strcmp(con->description, "stdin"))
         con->status = fclose(this->fp);
     con->isopen = FALSE;
 #ifdef Win32
