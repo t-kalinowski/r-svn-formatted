@@ -538,7 +538,8 @@ static int LoadEncoding(const char *encpath, char *encname, char *encconvname, C
     }
     if (GetNextItem(fp, buf, -1, &state))
         return 0; /* encoding name */
-    strcpy(encname, buf + 1);
+    strncpy(encname, buf + 1, 99);
+    encname[99] = '\0';
     if (!isPDF)
         snprintf(enccode, 5000, "/%s [\n", encname);
     else
@@ -555,7 +556,8 @@ static int LoadEncoding(const char *encpath, char *encname, char *encconvname, C
             fclose(fp);
             return 0;
         }
-        strcpy(encnames[i].cname, buf + 1);
+        strncpy(encnames[i].cname, buf + 1, 39);
+        encnames[i].cname[39] = '\0';
         strcat(enccode, " /");
         strcat(enccode, encnames[i].cname);
         if (i % 8 == 7)
