@@ -7614,6 +7614,7 @@ SEXP R_bcEncode(SEXP bytes)
     else
     {
         code = allocVector(INTSXP, m * n);
+        memset(INTEGER(code), 0, m * n * sizeof(int));
         pc = (BCODE *)INTEGER(code);
 
         for (i = 0; i < n; i++)
