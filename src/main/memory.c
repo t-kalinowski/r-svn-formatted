@@ -2639,7 +2639,6 @@ SEXP allocVector3(SEXPTYPE type, R_xlen_t length, R_allocator_t *allocator)
     SEXP s; /* For the generational collector it would be safer to
        work in terms of a VECSEXP here, but that would
        require several casts below... */
-    R_len_t i;
     R_size_t size = 0, alloc_size, old_R_VSize;
     int node_class;
 #if VALGRIND_LEVEL > 0
@@ -2809,7 +2808,7 @@ SEXP allocVector3(SEXPTYPE type, R_xlen_t length, R_allocator_t *allocator)
         {
             node_class = LARGE_NODE_CLASS;
             alloc_size = size;
-            for (i = 2; i < NUM_SMALL_NODE_CLASSES; i++)
+            for (int i = 2; i < NUM_SMALL_NODE_CLASSES; i++)
             {
                 if (size <= NodeClassSize[i])
                 {
@@ -2942,7 +2941,7 @@ SEXP allocVector3(SEXPTYPE type, R_xlen_t length, R_allocator_t *allocator)
 #if VALGRIND_LEVEL > 1
         VALGRIND_MAKE_MEM_DEFINED(STRING_PTR(s), actual_size);
 #endif
-        for (i = 0; i < length; i++)
+        for (R_xlen_t i = 0; i < length; i++)
             data[i] = R_NilValue;
     }
     else if (type == STRSXP)
@@ -2951,7 +2950,7 @@ SEXP allocVector3(SEXPTYPE type, R_xlen_t length, R_allocator_t *allocator)
 #if VALGRIND_LEVEL > 1
         VALGRIND_MAKE_MEM_DEFINED(STRING_PTR(s), actual_size);
 #endif
-        for (i = 0; i < length; i++)
+        for (R_xlen_t i = 0; i < length; i++)
             data[i] = R_BlankString;
     }
     else if (type == CHARSXP || type == intCHARSXP)
