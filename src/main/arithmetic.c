@@ -1600,6 +1600,10 @@ static SEXP math2B(SEXP sa, SEXP sb, double (*f)(double, double, double *), SEXP
 
 SEXP attribute_hidden do_math2(SEXP call, SEXP op, SEXP args, SEXP env)
 {
+    /* For .Internals, fix up call so errorcall() behaves like error(). */
+    if (TYPEOF(CAR(call)) == SYMSXP && INTERNAL(CAR(call)) == op)
+        call = R_CurrentExpression;
+
     checkArity(op, args);
 
     if (isComplex(CAR(args)) || (PRIMVAL(op) == 0 && isComplex(CADR(args))))
