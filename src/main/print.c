@@ -195,7 +195,7 @@ static void PrintLanguageEtc(SEXP s, Rboolean useSource, Rboolean isClosure)
         t = deparse1w(s, 0, useSource | DEFAULTDEPARSE);
     else
     {
-        PROTECT(t = lang2(install("as.character"), t));
+        PROTECT(t = lang2(R_AsCharacterSymbol, t));
         t = eval(t, R_BaseEnv);
         UNPROTECT(1);
     }

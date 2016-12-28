@@ -110,7 +110,7 @@ SEXP attribute_hidden do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
             SEXP call, xj = VECTOR_ELT(x, j);
             if (OBJECT(xj))
             { /* method dispatch */
-                PROTECT(call = lang2(install("as.character"), xj));
+                PROTECT(call = lang2(R_AsCharacterSymbol, xj));
                 SET_VECTOR_ELT(x, j, eval(call, env));
                 UNPROTECT(1);
             }
@@ -361,7 +361,7 @@ SEXP attribute_hidden do_filepath(SEXP call, SEXP op, SEXP args, SEXP env)
             SEXP call, xj = VECTOR_ELT(x, j);
             if (OBJECT(xj))
             { /* method dispatch */
-                PROTECT(call = lang2(install("as.character"), xj));
+                PROTECT(call = lang2(R_AsCharacterSymbol, xj));
                 SET_VECTOR_ELT(x, j, eval(call, env));
                 UNPROTECT(1);
             }

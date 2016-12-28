@@ -974,7 +974,7 @@ SEXP attribute_hidden do_namesgets(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         PROTECT(call = allocList(2));
         SET_TYPEOF(call, LANGSXP);
-        SETCAR(call, install("as.character"));
+        SETCAR(call, R_AsCharacterSymbol);
         SETCADR(call, CADR(args));
         SETCADR(args, eval(call, env));
         UNPROTECT(1);

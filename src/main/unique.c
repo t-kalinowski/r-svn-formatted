@@ -927,7 +927,7 @@ static SEXP match_transform(SEXP s, SEXP env)
         { /* and maybe more classes in the future:
            * Call R's (generic)	 as.character(s) : */
             SEXP call, r;
-            PROTECT(call = lang2(install("as.character"), s));
+            PROTECT(call = lang2(R_AsCharacterSymbol, s));
             r = eval(call, env);
             UNPROTECT(1);
             return r;
