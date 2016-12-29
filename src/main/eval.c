@@ -1645,11 +1645,6 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedvars)
 
     R_Srcref = getAttrib(op, R_SrcrefSymbol);
 
-    /* The default return value is NULL.  FIXME: Is this really needed
-       or do we always get a sensible value returned?  */
-
-    tmp = R_NilValue;
-
     /* Debugging */
 
     SET_RDEBUG(newrho,
@@ -1730,11 +1725,6 @@ static SEXP R_execClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP newrh
 
     begincontext(&cntxt, CTXT_RETURN, call, newrho, rho, arglist, op);
     /* *** from here on : "Copy-Paste from applyClosure" (~ l.965) above ***/
-
-    /* The default return value is NULL.  FIXME: Is this really needed
-       or do we always get a sensible value returned?  */
-
-    tmp = R_NilValue;
 
     /* Debugging */
 
