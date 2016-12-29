@@ -1742,8 +1742,7 @@ static SEXP R_execClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP newrh
                (RDEBUG(op) && R_current_debug_state()) || RSTEP(op) || (RDEBUG(rho) && R_BrowserLastCommand == 's'));
     if (RSTEP(op))
         SET_RSTEP(op, 0);
-    //  RDEBUG(op) .. FIXME? applyClosure has RDEBUG(newrho) which has just been set
-    if (RDEBUG(op) && R_current_debug_state())
+    if (RDEBUG(newrho))
     {
         SEXP savesrcref;
         cntxt.browserfinish = 0; /* Don't want to inherit the "f" */
