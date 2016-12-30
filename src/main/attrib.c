@@ -124,7 +124,7 @@ SEXP attribute_hidden getAttrib0(SEXP vec, SEXP name)
                 s = getAttrib(vec, R_DimNamesSymbol);
                 if (!isNull(s))
                 {
-                    SET_NAMED(VECTOR_ELT(s, 0), 2);
+                    MARK_NOT_MUTABLE(VECTOR_ELT(s, 0));
                     return VECTOR_ELT(s, 0);
                 }
             }
@@ -151,7 +151,7 @@ SEXP attribute_hidden getAttrib0(SEXP vec, SEXP name)
             if (any)
             {
                 if (!isNull(s))
-                    SET_NAMED(s, 2);
+                    MARK_NOT_MUTABLE(s);
                 return (s);
             }
             return R_NilValue;
@@ -162,7 +162,11 @@ SEXP attribute_hidden getAttrib0(SEXP vec, SEXP name)
         {
             if (name == R_DimNamesSymbol && TYPEOF(CAR(s)) == LISTSXP)
                 error("old list is no longer allowed for dimnames attribute");
-            SET_NAMED(CAR(s), 2);
+            /**** this could be dropped for REFCNT or be less
+              stringend for NAMED for attributes where the setter
+              does not have a consistency check that could cail
+              after mutation in a complex assignment LT */
+            MARK_NOT_MUTABLE(CAR(s));
             return CAR(s);
         }
     return R_NilValue;
