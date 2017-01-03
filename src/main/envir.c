@@ -1509,7 +1509,7 @@ attribute_hidden SEXP findFun3(SEXP symbol, SEXP rho, SEXP call)
         }
         rho = ENCLOS(rho);
     }
-    errorcall(call, _("could not find function \"%s\""), EncodeChar(PRINTNAME(symbol)));
+    errorcall_cpy(call, _("could not find function \"%s\""), EncodeChar(PRINTNAME(symbol)));
     /* NOT REACHED */
     return R_UnboundValue;
 }

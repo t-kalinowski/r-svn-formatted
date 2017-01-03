@@ -2873,7 +2873,7 @@ SEXP attribute_hidden evalList(SEXP el, SEXP rho, SEXP call, int n)
         else if (isSymbol(CAR(el)) && R_isMissing(CAR(el), rho))
         {
             /* It was missing */
-            errorcall(call, _("'%s' is missing"), EncodeChar(PRINTNAME(CAR(el))));
+            errorcall_cpy(call, _("'%s' is missing"), EncodeChar(PRINTNAME(CAR(el))));
 #endif
         }
         else
