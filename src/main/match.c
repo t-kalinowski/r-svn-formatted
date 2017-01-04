@@ -237,10 +237,10 @@ SEXP attribute_hidden matchArgs(SEXP formals, SEXP supplied, SEXP call)
                     if (streql(ftag_name, btag_name))
                     {
                         if (fargused[arg_i] == 2)
-                            error(_("formal argument \"%s\" matched by multiple actual arguments"),
-                                  CHAR(PRINTNAME(TAG(f))));
+                            errorcall(call, _("formal argument \"%s\" matched by multiple actual arguments"),
+                                      CHAR(PRINTNAME(TAG(f))));
                         if (ARGUSED(b) == 2)
-                            error(_("argument %d matches multiple formal arguments"), i);
+                            errorcall(call, _("argument %d matches multiple formal arguments"), i);
                         SETCAR(a, CAR(b));
                         if (CAR(b) != R_MissingArg)
                             SET_MISSING(a, 0);
@@ -281,10 +281,10 @@ SEXP attribute_hidden matchArgs(SEXP formals, SEXP supplied, SEXP call)
                     if (ARGUSED(b) != 2 && TAG(b) != R_NilValue && pmatch(TAG(f), TAG(b), seendots))
                     {
                         if (ARGUSED(b))
-                            error(_("argument %d matches multiple formal arguments"), i);
+                            errorcall(call, _("argument %d matches multiple formal arguments"), i);
                         if (fargused[arg_i] == 1)
-                            error(_("formal argument \"%s\" matched by multiple actual arguments"),
-                                  CHAR(PRINTNAME(TAG(f))));
+                            errorcall(call, _("formal argument \"%s\" matched by multiple actual arguments"),
+                                      CHAR(PRINTNAME(TAG(f))));
                         if (R_warn_partial_match_args)
                         {
                             warningcall(call, _("partial argument match of '%s' to '%s'"), CHAR(PRINTNAME(TAG(b))),
