@@ -1633,6 +1633,7 @@ static R_INLINE SEXP R_execClosure(SEXP call, SEXP newrho, SEXP sysparent, SEXP 
 {
     volatile SEXP body;
     RCNTXT cntxt;
+    Rboolean dbg = FALSE;
 
     begincontext(&cntxt, CTXT_RETURN, call, newrho, sysparent, arglist, op);
 
@@ -1655,12 +1656,12 @@ static R_INLINE SEXP R_execClosure(SEXP call, SEXP newrho, SEXP sysparent, SEXP 
 
     /* Debugging */
 
-    SET_RDEBUG(newrho,
-               (RDEBUG(op) && R_current_debug_state()) || RSTEP(op) || (RDEBUG(rho) && R_BrowserLastCommand == 's'));
-    if (RSTEP(op))
-        SET_RSTEP(op, 0);
-    if (RDEBUG(newrho))
+    if ((RDEBUG(op) && R_current_debug_state()) || RSTEP(op) || (RDEBUG(rho) && R_BrowserLastCommand == 's'))
     {
+
+        dbg = TRUE;
+        SET_RSTEP(op, 0);
+        SET_RDEBUG(newrho, 1);
         cntxt.browserfinish = 0; /* Don't want to inherit the "f" */
         /* switch to interpreted version when debugging compiled code */
         if (TYPEOF(body) == BCODESXP)
@@ -1694,7 +1695,7 @@ static R_INLINE SEXP R_execClosure(SEXP call, SEXP newrho, SEXP sysparent, SEXP 
     R_Srcref = cntxt.srcref;
     endcontext(&cntxt);
 
-    if (RDEBUG(op) && R_current_debug_state())
+    if (dbg)
     {
         Rprintf("exiting from: ");
         PrintCall(call, rho);
