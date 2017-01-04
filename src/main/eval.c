@@ -1554,7 +1554,7 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedvars)
 {
     SEXP formals, actuals, savedrho;
     volatile SEXP body, newrho;
-    SEXP f, a, tmp;
+    SEXP f, a;
     RCNTXT cntxt;
 
     /* formals = list of formal parameters */
@@ -1682,16 +1682,15 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedvars)
         {
             cntxt.callflag = CTXT_RETURN; /* turn restart off */
             R_ReturnedValue = R_NilValue; /* remove restart token */
-            PROTECT(tmp = eval(body, newrho));
+            cntxt.returnValue = eval(body, newrho);
         }
         else
-            PROTECT(tmp = R_ReturnedValue);
+            cntxt.returnValue = R_ReturnedValue;
     }
     else
-    {
-        PROTECT(tmp = eval(body, newrho));
-    }
-    cntxt.returnValue = tmp; /* make it available to on.exit */
+        /* make it available to on.exit and implicitly protect */
+        cntxt.returnValue = eval(body, newrho);
+
     R_Srcref = cntxt.srcref;
     endcontext(&cntxt);
 
@@ -1700,8 +1699,8 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedvars)
         Rprintf("exiting from: ");
         PrintCall(call, rho);
     }
-    UNPROTECT(3);
-    return (tmp);
+    UNPROTECT(2);
+    return cntxt.returnValue;
 }
 
 /* **** FIXME: This code is factored out of applyClosure.  If we keep
@@ -1710,7 +1709,6 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedvars)
 static SEXP R_execClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP newrho)
 {
     volatile SEXP body;
-    SEXP tmp;
     RCNTXT cntxt;
 
     body = BODY(op);
@@ -1763,16 +1761,15 @@ static SEXP R_execClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP newrh
         {
             cntxt.callflag = CTXT_RETURN; /* turn restart off */
             R_ReturnedValue = R_NilValue; /* remove restart token */
-            PROTECT(tmp = eval(body, newrho));
+            cntxt.returnValue = eval(body, newrho);
         }
         else
-            PROTECT(tmp = R_ReturnedValue);
+            cntxt.returnValue = R_ReturnedValue;
     }
     else
-    {
-        PROTECT(tmp = eval(body, newrho));
-    }
-    cntxt.returnValue = tmp; /* make it available to on.exit */
+        /* make it available to on.exit and implicitly protect */
+        cntxt.returnValue = eval(body, newrho);
+
     R_Srcref = cntxt.srcref;
     endcontext(&cntxt);
 
@@ -1781,8 +1778,7 @@ static SEXP R_execClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP newrh
         Rprintf("exiting from: ");
         PrintCall(call, rho);
     }
-    UNPROTECT(1);
-    return (tmp);
+    return cntxt.returnValue;
 }
 
 SEXP R_forceAndCall(SEXP e, int n, SEXP rho)
