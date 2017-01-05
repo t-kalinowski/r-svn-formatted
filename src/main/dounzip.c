@@ -566,6 +566,7 @@ Rconnection attribute_hidden R_newunz(const char *description, const char *const
         free(new->class);
         free(new);
         error(_("allocation of 'unz' connection failed"));
+        /* for Solaris 12.5 */ new = NULL;
     }
     return new;
 }
