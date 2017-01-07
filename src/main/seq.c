@@ -1061,9 +1061,9 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             ans = allocVector(INTSXP, lout);
             if (lout > 0)
-                INTEGER(ans)[0] = rfrom;
+                INTEGER(ans)[0] = (int)rfrom;
             if (lout > 1)
-                INTEGER(ans)[lout - 1] = rto;
+                INTEGER(ans)[lout - 1] = (int)rto;
             if (lout > 2)
                 for (i = 1; i < lout - 1; i++)
                 {
