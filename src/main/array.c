@@ -618,7 +618,7 @@ SEXP attribute_hidden do_lengths(SEXP call, SEXP op, SEXP args, SEXP rho)
             setAttrib(ans, R_NamesSymbol, names);
         SEXP dimnames = getAttrib(x, R_DimNamesSymbol);
         if (!isNull(dimnames))
-            setAttrib(ans, R_DimNamesSymbol, names);
+            setAttrib(ans, R_DimNamesSymbol, dimnames);
     }
     UNPROTECT(1);
     return ans;
