@@ -950,7 +950,7 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
         else
         {
             if (length(from) != 1)
-                error(_("'%s' must be of length 1"), "from");
+                errorcall(call, _("'%s' must be of length 1"), "from");
             rfrom = asReal(from);
             if (!R_FINITE(rfrom))
                 errorcall(call, _("'%s' must be a finite number"), "from");
@@ -960,7 +960,7 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
         else
         {
             if (length(to) != 1)
-                error(_("'%s' must be of length 1"), "to");
+                errorcall(call, _("'%s' must be of length 1"), "to");
             rto = asReal(to);
             if (!R_FINITE(rto))
                 errorcall(call, _("'%s' must be a finite number"), "to");
@@ -970,7 +970,7 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
         else
         {
             if (length(by) != 1)
-                error(_("'%s' must be of length 1"), "by");
+                errorcall(call, _("'%s' must be of length 1"), "by");
             double del = rto - rfrom;
             if (del == 0.0 && rto == 0.0)
             {
