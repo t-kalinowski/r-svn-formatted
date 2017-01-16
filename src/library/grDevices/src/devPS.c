@@ -422,7 +422,7 @@ static int GetNextItem(FILE *fp, char *dest, int c, EncodingInputState *state)
             return 1;
         while (isspace((int)*state->p))
             state->p++;
-        if (state->p == '\0' || *state->p == '%' || *state->p == '\n')
+        if (*state->p == '\0' || *state->p == '%' || *state->p == '\n')
         {
             state->p = NULL;
             continue;
@@ -430,7 +430,7 @@ static int GetNextItem(FILE *fp, char *dest, int c, EncodingInputState *state)
         state->p0 = state->p;
         while (!isspace((int)*state->p))
             state->p++;
-        if (state->p != '\0')
+        if (*state->p != '\0')
             *state->p++ = '\0';
         if (c == 45)
             strcpy(dest, "/minus");
