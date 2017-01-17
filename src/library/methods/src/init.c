@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2005-12   The R Core Team.
+ *  Copyright (C) 2005-2017   The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 
 #include "methods.h"
 #include <R_ext/Rdynload.h>
+#include <R_ext/Visibility.h>
 
 #define CALLDEF(name, n)                                                                                               \
     {                                                                                                                  \
@@ -56,11 +57,7 @@ static const R_CallMethodDef CallEntries[] = {CALLDEF(R_M_setPrimitiveMethods, 5
                                               CALLDEF(new_object, 1),
                                               {NULL, NULL, 0}};
 
-void
-#ifdef HAVE_VISIBILITY_ATTRIBUTE
-    __attribute__((visibility("default")))
-#endif
-    R_init_methods(DllInfo *dll)
+void attribute_visible R_init_methods(DllInfo *dll)
 {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
