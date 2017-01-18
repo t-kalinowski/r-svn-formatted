@@ -67,4 +67,5 @@ void attribute_visible R_init_tools(DllInfo *dll)
 {
     R_registerRoutines(dll, NULL, CallEntries, NULL, ExtEntries);
     R_useDynamicSymbols(dll, FALSE);
+    R_forceSymbols(dll, FALSE);
 }
