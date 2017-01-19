@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
+ *  Copyright (C) 1998--2017  The R Core Team
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998--2015  The R Core Team
  *  based on code (C) 1979 and later Royal Statistical Society
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -237,7 +237,7 @@ attribute_hidden void qbeta_raw(double alpha, double p, double q, int lower_tail
 
      * NEW: 'acu' accuracy NOT for squared adjustment, but simple;
      * ---- i.e.,  "new acu" = sqrt(old acu)
-    */
+     */
     double acu = fmax2(acu_min, pow(10., -13. - 2.5 / (pp * pp) - 0.5 / (a * a)));
     // try to catch  "extreme left tail" early
     double tx, u0 = (la + log(pp) + logbeta) / pp;               // = log(x_0)
@@ -384,8 +384,7 @@ attribute_hidden void qbeta_raw(double alpha, double p, double q, int lower_tail
         /* Careful: "swap now"  should not fail if
            1) the above initial xinbta is "completely wrong"
            2) The correction step can go outside (u_n > 0 ==>  e^u > 1 is illegal)
-           e.g., for
-            qbeta(0.2066, 0.143891, 0.05)
+           e.g., for  qbeta(0.2066, 0.143891, 0.05)
         */
     }
 
@@ -400,10 +399,11 @@ attribute_hidden void qbeta_raw(double alpha, double p, double q, int lower_tail
     tx = xinbta;     // keeping "original initial x" (for now)
 
     if (bad_u || u < log_q_cut)
-    { /* e.g.
-qbeta(0.21, .001, 0.05)
-try "left border" quickly, i.e.,
-try at smallest positive number: */
+    {
+        /* e.g.
+           qbeta(0.21, .001, 0.05)
+           try "left border" quickly, i.e.,
+           try at smallest positive number: */
         w = pbeta_raw(DBL_very_MIN, pp, qq, TRUE, log_p);
         if (w > (log_p ? la : a))
         {
@@ -479,9 +479,9 @@ L_Newton:
              *   =  (L(.) - la)*F(.) / {F'(e^u) * e^u } =
              *   =  (L(.) - la) * e^L(.) * e^{-log F'(e^u) - u}
              *   =  ( y   - la) * e^{ y - u -log F'(e^u)}
-            and  -log F'(x)= -log f(x) =  + logbeta + (1-p) log(x) + (1-q) log(1-x)
-                       = logbeta + (1-p) u + (1-q) log(1-e^u)
-             */
+             and  -log F'(x)= -log f(x) =  + logbeta + (1-p) log(x) + (1-q) log(1-x)
+             = logbeta + (1-p) u + (1-q) log(1-e^u)
+            */
             w = (y == ML_NEGINF) // y = -Inf  well possible: we are on log scale!
                     ? 0.
                     : (y - la) * exp(y - u + logbeta + r * u + t * R_Log1_Exp(u));
@@ -489,8 +489,8 @@ L_Newton:
                 break;
             if (i_pb >= n_N && w * wprev <= 0.)
                 prev = fmax2(fabs(adj), fpu);
-            R_ifDEBUG_printf("N(i=%2d): u=%#20.16g, pb(e^u)=%#12.6g, w=%#15.9g, %s prev=%11g,", i_pb, u, y, w,
-                             (w * wprev <= 0.) ? "new" : "old", prev);
+            R_ifDEBUG_printf("N(i=%2d): u=%#20.16g, pb(e^u)=%#12.6g, w=%#15.9g, %s prev=%g,", i_pb, u, y, w,
+                             (i_pb >= n_N && w * wprev <= 0.) ? "new" : "old", prev);
             g = 1;
             for (i_inn = 0; i_inn < 1000; i_inn++)
             {
@@ -527,6 +527,7 @@ L_Newton:
         } // for(i )
     }
     else
+    { // "normal scale" Newton
 
         for (i_pb = 0; i_pb < 1000; i_pb++)
         {
@@ -550,8 +551,8 @@ L_Newton:
                       : (y - a) * exp(logbeta + r * log(xinbta) + t * log1p(-xinbta));
             if (i_pb >= n_N && w * wprev <= 0.)
                 prev = fmax2(fabs(adj), fpu);
-            R_ifDEBUG_printf("N(i=%2d): x0=%#17.15g, pb(x0)=%#17.15g, w=%#17.15g, %s prev=%g,", i_pb, xinbta, y, w,
-                             (w * wprev <= 0.) ? "new" : "old", prev);
+            R_ifDEBUG_printf("N(i=%2d): x0=%#17.15g, pb(x0)=%#17.15g, w=%#15.9g, %s prev=%g,", i_pb, xinbta, y, w,
+                             (i_pb >= n_N && w * wprev <= 0.) ? "new" : "old", prev);
             g = 1;
             for (i_inn = 0; i_inn < 1000; i_inn++)
             {
@@ -581,7 +582,9 @@ L_Newton:
             if (tx == 0) // "we have lost"
                 break;
             wprev = w;
-        }
+        } // for( i_pb ..)
+
+    } // {else}
 
     /*-- NOT converged: Iteration count --*/
     warned = TRUE;
@@ -642,7 +645,9 @@ L_return:
                 w = log_p ? (y - la) * exp(y + logbeta + r * log(xinbta) + t * log1p(-xinbta))
                           : (y - a) * exp(logbeta + r * log(xinbta) + t * log1p(-xinbta));
                 tx = xinbta - w;
-                R_ifDEBUG_printf("Final Newton correction(non-log scale): xinbta=%.16g, y=%g, w=%g. => new tx=%.16g\n",
+                R_ifDEBUG_printf(" Final Newton correction(non-log scale):\n"
+                                 //   \n  xinbta=%.16g
+                                 "  xinbta=%.16g, y=%g, w=-Delta(x)=%g. \n=> new x=%.16g\n",
                                  xinbta, y, w, tx);
             }
             else
