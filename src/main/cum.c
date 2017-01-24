@@ -178,11 +178,7 @@ SEXP attribute_hidden do_cum(SEXP call, SEXP op, SEXP args, SEXP env)
         UNPROTECT(1);
         if (n == 0)
             return s;
-        for (i = 0; i < n; i++)
-        {
-            COMPLEX(s)[i].r = NA_REAL;
-            COMPLEX(s)[i].i = NA_REAL;
-        }
+        /* no need to initialize s, ccum* set all elements */
         switch (PRIMVAL(op))
         {
         case 1: /* cumsum */
@@ -241,8 +237,7 @@ SEXP attribute_hidden do_cum(SEXP call, SEXP op, SEXP args, SEXP env)
         UNPROTECT(2);
         if (n == 0)
             return s;
-        for (i = 0; i < n; i++)
-            REAL(s)[i] = NA_REAL;
+        /* no need to initialize s, cum* set all elements */
         switch (PRIMVAL(op))
         {
         case 1: /* cumsum */
