@@ -743,7 +743,7 @@ static void internal_matprod(double *x, int nrx, int ncx, double *y, int nry, in
             sum = 0.0;                                                                                                 \
             for (int j = 0; j < ncx; j++)                                                                              \
                 sum += x[i + j * NRX] * y[j + k * NRY];                                                                \
-            z[i + k * NRX] = sum;                                                                                      \
+            z[i + k * NRX] = (double)sum;                                                                              \
         }
     MATPROD_BODY;
 }
@@ -765,7 +765,7 @@ static void internal_crossprod(double *x, int nrx, int ncx, double *y, int nry, 
             sum = 0.0;                                                                                                 \
             for (int j = 0; j < nrx; j++)                                                                              \
                 sum += x[j + i * NRX] * y[j + k * NRY];                                                                \
-            z[i + k * NCX] = sum;                                                                                      \
+            z[i + k * NCX] = (double)sum;                                                                              \
         }
     CROSSPROD_BODY;
 }
@@ -787,7 +787,7 @@ static void internal_tcrossprod(double *x, int nrx, int ncx, double *y, int nry,
             sum = 0.0;                                                                                                 \
             for (int j = 0; j < ncx; j++)                                                                              \
                 sum += x[i + j * NRX] * y[k + j * NRY];                                                                \
-            z[i + k * NRX] = sum;                                                                                      \
+            z[i + k * NRX] = (double)sum;                                                                              \
         }
     TCROSSPROD_BODY;
 }
@@ -875,8 +875,8 @@ static void internal_cmatprod(Rcomplex *x, int nrx, int ncx, Rcomplex *y, int nr
                 sum_r += (xij_r * yjk_r - xij_i * yjk_i);                                                              \
                 sum_i += (xij_r * yjk_i + xij_i * yjk_r);                                                              \
             }                                                                                                          \
-            z[i + k * NRX].r = sum_r;                                                                                  \
-            z[i + k * NRX].i = sum_i;                                                                                  \
+            z[i + k * NRX].r = (double)sum_r;                                                                          \
+            z[i + k * NRX].i = (double)sum_i;                                                                          \
         }
     CMATPROD_BODY;
 }
@@ -908,8 +908,8 @@ static void internal_ccrossprod(Rcomplex *x, int nrx, int ncx, Rcomplex *y, int 
                 sum_r += (xji_r * yjk_r - xji_i * yjk_i);                                                              \
                 sum_i += (xji_r * yjk_i + xji_i * yjk_r);                                                              \
             }                                                                                                          \
-            z[i + k * NCX].r = sum_r;                                                                                  \
-            z[i + k * NCX].i = sum_i;                                                                                  \
+            z[i + k * NCX].r = (double)sum_r;                                                                          \
+            z[i + k * NCX].i = (double)sum_i;                                                                          \
         }
     CCROSSPROD_BODY;
 }
@@ -941,8 +941,8 @@ static void internal_tccrossprod(Rcomplex *x, int nrx, int ncx, Rcomplex *y, int
                 sum_r += (xij_r * ykj_r - xij_i * ykj_i);                                                              \
                 sum_i += (xij_r * ykj_i + xij_i * ykj_r);                                                              \
             }                                                                                                          \
-            z[i + k * NRX].r = sum_r;                                                                                  \
-            z[i + k * NRX].i = sum_i;                                                                                  \
+            z[i + k * NRX].r = (double)sum_r;                                                                          \
+            z[i + k * NRX].i = (double)sum_i;                                                                          \
         }
     TCCROSSPROD_BODY;
 }
