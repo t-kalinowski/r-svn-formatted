@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1998-2001  Daniel Veillard.
- *  Copyright (C) 2001-2016   The R Core Team.
+ *  Copyright (C) 2001-2017   The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1620,7 +1620,11 @@ retry:
     if ((ctxt->location != NULL) && (ctxt->returnValue >= 300) && (ctxt->returnValue < 400))
     {
         if (strncmp(ctxt->location, "https://", 8) == 0)
-            RxmlMessage(2, _("cannot handle https redirection to: '%s'"), ctxt->location);
+        {
+            RxmlMessage(2, _("\"internal\" method cannot handle https redirection to: '%s'"), ctxt->location);
+            ctxt->contentLength = -999;
+            return ((void *)ctxt);
+        }
         else
             RxmlMessage(1, _("redirect to: '%s'"), ctxt->location);
         while (RxmlNanoHTTPRecv(ctxt))
