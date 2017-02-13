@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2000-2016   The R Core Team.
+ *  Copyright (C) 2000-2017   The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -616,6 +616,8 @@ static SEXP in_do_download(SEXP args)
             if (total == -999)
             { // https redirection
                 fclose(out);
+                if (strchr(mode, 'w'))
+                    unlink(R_ExpandFileName(file));
                 status = 2;
                 return ScalarInteger(status);
             }
@@ -717,6 +719,8 @@ static SEXP in_do_download(SEXP args)
                 warning(_("downloaded length %0.f != reported length %0.f"), (double)nbytes, (double)total);
         }
         fclose(out);
+        if (status == 1 && strchr(mode, 'w'))
+            unlink(R_ExpandFileName(file));
         R_Busy(0);
         if (status == 1)
             error(_("cannot open URL '%s'"), url);
@@ -851,6 +855,8 @@ static SEXP in_do_download(SEXP args)
         }
         R_Busy(0);
         fclose(out);
+        if (status == 1 && strchr(mode, 'w'))
+            unlink(R_ExpandFileName(file));
         if (status == 1)
             error(_("cannot open URL '%s'"), url);
     }
