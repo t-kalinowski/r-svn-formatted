@@ -630,8 +630,11 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
     {
         int numfds;
         CURLMcode mc = curl_multi_wait(mhnd, NULL, 0, 100, &numfds);
-        if (mc != CURLM_OK) // internal, do not translate
-            error("curl_multi_wait() failed, code %d", mc);
+        if (mc != CURLM_OK)
+        { // internal, do not translate
+            warning("curl_multi_wait() failed, code %d", mc);
+            break;
+        }
         if (!numfds)
         {
             /* 'numfds' being zero means either a timeout or no file
@@ -800,7 +803,10 @@ static int fetchData(RCurlconn ctxt)
         int numfds;
         CURLMcode mc = curl_multi_wait(mhnd, NULL, 0, 100, &numfds);
         if (mc != CURLM_OK)
-            error("curl_multi_wait() failed, code %d", mc);
+        {
+            warning("curl_multi_wait() failed, code %d", mc);
+            break;
+        }
         if (!numfds)
         {
             if (repeats++ > 0)
