@@ -568,13 +568,19 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
         /* check that destfile can be written */
         file = translateChar(STRING_ELT(sfile, i));
         out[i] = R_fopen(R_ExpandFileName(file), mode);
-        curl_easy_setopt(hnd[i], CURLOPT_WRITEDATA, out[i]);
-        curl_multi_add_handle(mhnd, hnd[i]);
         if (!out[i])
         {
             n_err += 1;
             warning(_("URL %s: cannot open destfile '%s', reason '%s'"), url, file, strerror(errno));
-            continue;
+            if (nurls == 1)
+                break;
+            else
+                continue;
+        }
+        else
+        {
+            curl_easy_setopt(hnd[i], CURLOPT_WRITEDATA, out[i]);
+            curl_multi_add_handle(mhnd, hnd[i]);
         }
 
         total = 0.;
@@ -619,6 +625,13 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
 
         if (!quiet)
             REprintf(_("trying URL '%s'\n"), url);
+    }
+
+    if (n_err == nurls)
+    {
+        // no dest files could be opened, so bail out
+        curl_multi_cleanup(mhnd);
+        return ScalarInteger(0);
     }
 
     R_Busy(1);
@@ -684,7 +697,7 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
             warning(_("downloaded length %0.f != reported length %0.f"), dl, cl);
     }
 
-    n_err += curlMultiCheckerrs(mhnd);
+    n_err = curlMultiCheckerrs(mhnd);
 
     for (int i = 0; i < nurls; i++)
     {
@@ -703,6 +716,7 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
 
     if (n_err != 0)
     {
+        /* FIXME fathom out which failed */
         if (strchr(mode, 'w'))
         {
             for (int i = 0; i < nurls; i++)
