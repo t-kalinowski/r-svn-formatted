@@ -465,14 +465,17 @@ static int progress(void *clientp, double dltotal, double dlnow, double ultotal,
 
 static int progress(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow)
 {
+    CURL *hnd = (CURL *)clientp;
+    long status;
+    curl_easy_getinfo(hnd, CURLINFO_RESPONSE_CODE, &status);
+
     // we only use downloads.  dltotal may be zero.
-    if (dltotal > 0.)
+    if ((status < 300) && (dltotal > 0.))
     {
         if (total == 0.)
         {
             total = dltotal;
             char *type = NULL;
-            CURL *hnd = (CURL *)clientp;
             curl_easy_getinfo(hnd, CURLINFO_CONTENT_TYPE, &type);
             REprintf("Content type '%s'", type ? type : "unknown");
             if (total > 1024.0 * 1024.0)
@@ -486,10 +489,6 @@ static int progress(void *clientp, double dltotal, double dlnow, double ultotal,
                 fflush(R_Consolefile);
         }
         putdashes(&ndashes, (int)(50 * dlnow / total));
-    }
-    else
-    {
-        total = 0.; /* multiple hops on FOLLOWLOCATION */
     }
     return 0;
 }
@@ -565,7 +564,6 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
         curl_easy_setopt(hnd[i], CURLOPT_TCP_KEEPALIVE, 1L);
         if (!cacheOK)
             curl_easy_setopt(hnd[i], CURLOPT_HTTPHEADER, slist1);
-        curl_easy_setopt(hnd[i], CURLOPT_HEADER, 0L);
 
         /* check that destfile can be written */
         file = translateChar(STRING_ELT(sfile, i));
