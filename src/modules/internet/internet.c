@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2000-2017   The R Core Team.
+ *  Copyright (C) 2000-2016   The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,14 +31,6 @@
 #include <R_ext/R-ftp-http.h>
 #include <errno.h>
 #include <R_ext/Print.h>
-
-/* note, ALL the possible structures have the first two elements */
-typedef struct
-{
-    DLsize_t length;
-    char *type;
-    void *ctxt;
-} inetconn;
 
 static void *in_R_HTTPOpen(const char *url, const char *headers, const int cacheOK);
 static int in_R_HTTPRead(void *ctx, char *dest, int len);
@@ -144,13 +136,6 @@ static Rboolean url_open(Rconnection con)
             /* if we call error() we get a connection leak*/
             /* so do_url has to raise the error*/
             /* error("cannot open URL '%s'", url); */
-            return FALSE;
-        }
-        DLsize_t len = ((inetconn *)ctxt)->length;
-        ((Rurlconn)(con->private))->status = 0;
-        if (len == -999)
-        { // https redirection
-            ((Rurlconn)(con->private))->status = 2;
             return FALSE;
         }
         ((Rurlconn)(con->private))->ctxt = ctxt;
@@ -452,6 +437,14 @@ static void putdashes(int *pold, int new)
         fflush(R_Consolefile);
 }
 
+/* note, ALL the possible structures have the first two elements */
+typedef struct
+{
+    DLsize_t length;
+    char *type;
+    void *ctxt;
+} inetconn;
+
 #ifdef Win32
 #include <ga.h>
 
@@ -612,15 +605,6 @@ static SEXP in_do_download(SEXP args)
         {
             //	    if(!quiet) REprintf(_("opened URL\n"), url);
             guess = total = ((inetconn *)ctxt)->length;
-
-            if (total == -999)
-            { // https redirection
-                fclose(out);
-                if (strchr(mode, 'w'))
-                    unlink(R_ExpandFileName(file));
-                status = 2;
-                return ScalarInteger(status);
-            }
 #ifdef Win32
             if (R_Interactive)
             {
@@ -879,15 +863,13 @@ void *in_R_HTTPOpen(const char *url, const char *headers, const int cacheOK)
 
     RxmlNanoHTTPTimeout(timeout);
     ctxt = RxmlNanoHTTPOpen(url, NULL, headers, cacheOK);
-    if (ctxt == NULL)
-        return NULL;
-    len = RxmlNanoHTTPContentLength(ctxt);
-    if (len != -999)
+    if (ctxt != NULL)
     {
         int rc = RxmlNanoHTTPReturnCode(ctxt);
         if (rc != 200)
         {
-            warning(_("cannot open URL '%s': HTTP status was '%d %s'"), url, rc, RxmlNanoHTTPStatusMsg(ctxt));
+            // FIXME: should this be ctxt->location, after redirection?
+            warning(_("cannot open URL '%s': %s status was '%d %s'"), url, "HTTP", rc, RxmlNanoHTTPStatusMsg(ctxt));
             RxmlNanoHTTPClose(ctxt);
             return NULL;
         }
@@ -913,6 +895,8 @@ void *in_R_HTTPOpen(const char *url, const char *headers, const int cacheOK)
             }
         }
     }
+    else
+        return NULL;
     con = (inetconn *)malloc(sizeof(inetconn));
     if (con)
     {
@@ -1066,7 +1050,7 @@ static void *in_R_HTTPOpen2(const char *url, const char *headers, const int cach
         InternetCloseHandle(wictxt->session);
         InternetCloseHandle(wictxt->hand);
         free(wictxt);
-        warning(_("cannot open URL '%s': HTTP status was '%d %s'"), url, status, buf);
+        warning(_("cannot open URL '%s': %s status was '%d %s'"), url, "HTTP", status, buf);
         return NULL;
     }
 
