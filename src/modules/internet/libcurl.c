@@ -37,17 +37,27 @@
 #ifdef HAVE_LIBCURL
 #include <curl/curl.h>
 /*
-  This needs libcurl >= 7.28.0 (Oct 2012) for curl_multi_wait.
+  This needed libcurl >= 7.28.0 (Oct 2012) for curl_multi_wait.
+  Substitute code is provided for a Unix-alike only.
+
   There is a configure test but it is not used on Windows and system
   software can change.
 */
+#ifdef Win32
+#if LIBCURL_VERSION_MAJOR < 7 || (LIBCURL_VERSION_MAJOR == 7 && LIBCURL_VERSION_MINOR < 28)
+#error libcurl 7.28.0 or later is required.
+#endif
+#else
 #if LIBCURL_VERSION_MAJOR < 7 || (LIBCURL_VERSION_MAJOR == 7 && LIBCURL_VERSION_MINOR < 22)
 #error libcurl 7.22.0 or later is required.
+#endif
 #endif
 extern void Rsleep(double timeint);
 #endif
 
 #if (LIBCURL_VERSION_MAJOR == 7 && LIBCURL_VERSION_MINOR < 28)
+
+// curl/curl.h includes <sys/select.h> and headers it requires.
 
 #define curl_multi_wait R_curl_multi_wait
 
