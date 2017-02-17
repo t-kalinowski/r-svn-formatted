@@ -1571,7 +1571,10 @@ SEXP R_removeTaskCallback(SEXP which)
 
     if (TYPEOF(which) == STRSXP)
     {
-        val = Rf_removeTaskCallbackByName(CHAR(STRING_ELT(which, 0)));
+        if (LENGTH(which) == 0)
+            val = FALSE;
+        else
+            val = Rf_removeTaskCallbackByName(CHAR(STRING_ELT(which, 0)));
     }
     else
     {
