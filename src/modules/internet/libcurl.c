@@ -326,7 +326,7 @@ static void curlCommon(CURL *hnd, int redirect, int verify)
         curl_easy_setopt(hnd, CURLOPT_SSL_VERIFYHOST, 0L);
         curl_easy_setopt(hnd, CURLOPT_SSL_VERIFYPEER, 0L);
     }
-    // for consistency, but all that does is look up an option.
+    // for consistency, but all utils:::makeUserAgent does is look up an option.
     SEXP sMakeUserAgent = install("makeUserAgent");
     SEXP agentFun = PROTECT(lang2(sMakeUserAgent, ScalarLogical(0)));
     SEXP utilsNS = PROTECT(R_FindNamespace(mkString("utils")));
@@ -631,6 +631,7 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
         }
         else
         {
+            // This uses the internal CURLOPT_WRITEFUNCTION
             curl_easy_setopt(hnd[i], CURLOPT_WRITEDATA, out[i]);
             curl_multi_add_handle(mhnd, hnd[i]);
         }
@@ -769,6 +770,9 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
         curl_multi_remove_handle(mhnd, hnd[i]);
         curl_easy_cleanup(hnd[i]);
     }
+    long status = 0L;
+    if (nurls == 1)
+        curl_easy_getinfo(hnd[0], CURLINFO_RESPONSE_CODE, &status);
     curl_multi_cleanup(mhnd);
     if (!cacheOK)
         curl_slist_free_all(slist1);
@@ -781,7 +785,12 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
             warning(_("some files were not downloaded"));
     }
     else if (n_err)
-        error(_("download failed"));
+    {
+        if (status != 200)
+            error(_("cannot open URL '%s'"), CHAR(STRING_ELT(scmd, 0)));
+        else
+            error(_("download from '%s' failed"), CHAR(STRING_ELT(scmd, 0)));
+    }
 
     return ScalarInteger(0);
 #endif
@@ -975,7 +984,7 @@ static Rboolean Curl_open(Rconnection con)
     if (n_err != 0)
     {
         Curl_close(con);
-        error(_("cannot open the connection"), n_err);
+        error(_("cannot open the connection to '%s'"), url);
     }
 
     con->isopen = TRUE;
