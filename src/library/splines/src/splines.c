@@ -261,7 +261,7 @@ SEXP spline_basis(SEXP knots, SEXP order, SEXP xvals, SEXP derivs)
 #name, (DL_FUNC)&name, n                                                                                       \
     }
 
-const static R_CallMethodDef R_CallDef[] = {CALLDEF(spline_basis, 4), CALLDEF(spline_value, 5), {NULL, NULL, 0}};
+static const R_CallMethodDef R_CallDef[] = {CALLDEF(spline_basis, 4), CALLDEF(spline_value, 5), {NULL, NULL, 0}};
 
 void
 #ifdef HAVE_VISIBILITY_ATTRIBUTE

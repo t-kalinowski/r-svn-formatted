@@ -271,7 +271,7 @@ SEXP attribute_hidden do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
             error(_("cannot popen '%s', probable reason '%s'"), cmd, strerror(errno));
 #ifdef HAVE_GETLINE
         size_t read;
-        for (i = 0; (read = getline(&buf, &buf_len, fp)) != -1; i++)
+        for (i = 0; (read = getline(&buf, &buf_len, fp)) != (size_t)-1; i++)
         {
             if (buf[read - 1] == '\n')
 #else

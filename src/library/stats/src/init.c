@@ -253,8 +253,8 @@ static const R_CallMethodDef CallEntries[] = {CALLDEF(cutree, 2),
 #name, (DL_FUNC)&F77_NAME(name), sizeof(name##_t) / sizeof(name##_t[0]), name##_t                              \
     }
 
-static R_NativePrimitiveArgType lowesw_t[] = {REALSXP, INTSXP, REALSXP, INTSXP};
-static R_NativePrimitiveArgType lowesp_t[] = {INTSXP, REALSXP, REALSXP, REALSXP, REALSXP, INTSXP, REALSXP};
+static const R_NativePrimitiveArgType lowesw_t[] = {REALSXP, INTSXP, REALSXP, INTSXP};
+static const R_NativePrimitiveArgType lowesp_t[] = {INTSXP, REALSXP, REALSXP, REALSXP, REALSXP, INTSXP, REALSXP};
 
 static const R_FortranMethodDef FortEntries[] = {FDEF(lowesw),
                                                  FDEF(lowesp),
