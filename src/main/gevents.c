@@ -35,6 +35,8 @@ static const char *mouseHandlers[] = {"onMouseDown", "onMouseUp", "onMouseMove"}
 
 static const char *keybdHandler = "onKeybd";
 
+static const char *idleHandler = "onIdle";
+
 static void checkHandler(const char *name, SEXP eventEnv)
 {
     SEXP handler = findVar(install(name), eventEnv);
@@ -65,7 +67,7 @@ SEXP do_setGraphicsEventEnv(SEXP call, SEXP op, SEXP args, SEXP env)
     if (TYPEOF(eventEnv) != ENVSXP)
         error(_("internal error"));
 
-    if (!dd->canGenMouseDown && !dd->canGenMouseUp && !dd->canGenMouseMove && !dd->canGenKeybd)
+    if (!dd->canGenMouseDown && !dd->canGenMouseUp && !dd->canGenMouseMove && !dd->canGenKeybd && !dd->canGenIdle)
         error(_("this graphics device does not support event handling"));
 
     if (!dd->canGenMouseDown)
@@ -76,6 +78,8 @@ SEXP do_setGraphicsEventEnv(SEXP call, SEXP op, SEXP args, SEXP env)
         checkHandler(mouseHandlers[2], eventEnv);
     if (!dd->canGenKeybd)
         checkHandler(keybdHandler, eventEnv);
+    if (!dd->canGenIdle)
+        checkHandler(idleHandler, eventEnv);
 
     dd->eventEnv = eventEnv;
 
@@ -294,4 +298,45 @@ void doKeybd(pDevDesc dd, R_KeyName rkey, const char *keyname)
     UNPROTECT(1); /* handler */
     dd->gettingEvent = TRUE;
     return;
+}
+
+/* Copy-modified from doKeybd -- Frederick Eaton 12 Jun 2016 */
+/* This "doIdle" (executing new "onIdle" hook) should enable users of
+   getGraphicsEvent to do background processing, e.g. reading from a
+   stream and updating a plot, in-between handling of keyboard and
+   mouse events.
+ */
+void doIdle(pDevDesc dd)
+{
+    SEXP handler, temp, result;
+
+    dd->gettingEvent = FALSE; /* avoid recursive calls */
+
+    PROTECT(handler = findVar(install(idleHandler), dd->eventEnv));
+    if (TYPEOF(handler) == PROMSXP)
+    {
+        handler = eval(handler, dd->eventEnv);
+        UNPROTECT(1); /* handler */
+        PROTECT(handler);
+    }
+
+    if (TYPEOF(handler) == CLOSXP)
+    {
+        SEXP s_which = install("which");
+        defineVar(s_which, ScalarInteger(ndevNumber(dd) + 1), dd->eventEnv);
+        PROTECT(temp = lang1(handler));
+        PROTECT(result = eval(temp, dd->eventEnv));
+        defineVar(install("result"), result, dd->eventEnv);
+        UNPROTECT(2);
+        R_FlushConsole();
+    }
+    UNPROTECT(1); /* handler */
+    dd->gettingEvent = TRUE;
+    return;
+}
+
+Rboolean doesIdle(pDevDesc dd)
+{
+    SEXP handler = findVar(install(idleHandler), dd->eventEnv);
+    return (handler != R_UnboundValue) && (handler != R_NilValue);
 }
