@@ -208,7 +208,11 @@ static long R_pcre_max_recursions()
     const uintptr_t recursion_size = 600;
 
     const uintptr_t fallback_used = 10000;
+    /* This is about 6MB stack, reasonable since stacks are usually >= 8MB
+       OTOH, the out-of-box limit is 10000000.
+    */
     const long fallback_limit = 10000;
+    /* Was PCRE compiled to use stack or heap for recursion? 1=stack */
     int use_recursion;
     pcre_config(PCRE_CONFIG_STACKRECURSE, &use_recursion);
     if (!use_recursion)
@@ -238,15 +242,18 @@ static void set_pcre_recursion_limit(pcre_extra **re_pe_ptr, const long limit)
     {
         if (!re_pe)
         {
-            // this will be freed by pcre_free_study
+            // this will be freed by pcre_free_study so cannot use Calloc
             re_pe = (pcre_extra *)calloc(1, sizeof(pcre_extra));
             if (!re_pe)
+            {
                 warning("allocation failure in set_pcre_recursion_limit");
+                return;
+            }
             re_pe->flags = PCRE_EXTRA_MATCH_LIMIT_RECURSION;
             *re_pe_ptr = re_pe;
         }
         else
-            re_pe->flags = re_pe->flags | PCRE_EXTRA_MATCH_LIMIT_RECURSION;
+            re_pe->flags |= PCRE_EXTRA_MATCH_LIMIT_RECURSION;
         re_pe->match_limit_recursion = (unsigned long)limit;
     }
 }
@@ -610,7 +617,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
             if (errorptr)
                 warning(_("PCRE pattern study error\n\t'%s'\n"), errorptr);
 #if PCRE_STUDY_JIT_COMPILE
-            else
+            else if (use_JIT)
                 setup_jit(re_pe);
 #endif
             set_pcre_recursion_limit(&re_pe, R_pcre_max_recursions());
@@ -1219,7 +1226,7 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
             if (errorptr)
                 warning(_("PCRE pattern study error\n\t'%s'\n"), errorptr);
 #if PCRE_STUDY_JIT_COMPILE
-            else
+            else if (use_JIT)
                 setup_jit(re_pe);
 #endif
         }
@@ -2205,7 +2212,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             if (errorptr)
                 warning(_("PCRE pattern study error\n\t'%s'\n"), errorptr);
 #if PCRE_STUDY_JIT_COMPILE
-            else
+            else if (use_JIT)
                 setup_jit(re_pe);
 #endif
         }
@@ -3177,7 +3184,7 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
             if (errorptr)
                 warning(_("PCRE pattern study error\n\t'%s'\n"), errorptr);
 #if PCRE_STUDY_JIT_COMPILE
-            else
+            else if (use_JIT)
                 setup_jit(re_pe);
 #endif
         }
