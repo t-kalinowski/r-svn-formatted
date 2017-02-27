@@ -609,15 +609,11 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                     warning(_("PCRE pattern compilation error\n\t'%s'\n\tat '%s'\n"), errorptr, split + erroffset);
                 error(_("invalid split pattern '%s'"), split);
             }
-            Rboolean use_JIT = TRUE;
-            SEXP op = GetOption1(install("PCRE_use_JIT"));
-            if (TYPEOF(op) == LGLSXP)
-                use_JIT = asLogical(op);
-            re_pe = pcre_study(re_pcre, use_JIT ? PCRE_STUDY_JIT_COMPILE : 0, &errorptr);
+            re_pe = pcre_study(re_pcre, R_PCRE_use_JIT ? PCRE_STUDY_JIT_COMPILE : 0, &errorptr);
             if (errorptr)
                 warning(_("PCRE pattern study error\n\t'%s'\n"), errorptr);
 #if PCRE_STUDY_JIT_COMPILE
-            else if (use_JIT)
+            else if (R_PCRE_use_JIT)
                 setup_jit(re_pe);
 #endif
             set_pcre_recursion_limit(&re_pe, R_pcre_max_recursions());
@@ -1191,18 +1187,7 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         int cflags = 0, erroffset;
         const char *errorptr;
-        Rboolean pcre_st = (n >= 10);
-        SEXP op = GetOption1(install("PCRE_study"));
-        if (TYPEOF(op) == LGLSXP)
-        {
-            pcre_st = asLogical(op) > 0;
-        }
-        else
-        {
-            int nth = asInteger(op);
-            if (nth >= 0)
-                pcre_st = (n > nth); // NA_INTEGER is < 0
-        }
+        Rboolean pcre_st = R_PCRE_study == -2 ? FALSE : n >= R_PCRE_study;
         if (igcase_opt)
             cflags |= PCRE_CASELESS;
         if (!useBytes && use_UTF8)
@@ -1218,15 +1203,11 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         if (pcre_st)
         {
-            Rboolean use_JIT = TRUE;
-            SEXP op = GetOption1(install("PCRE_use_JIT"));
-            if (TYPEOF(op) == LGLSXP)
-                use_JIT = asLogical(op);
-            re_pe = pcre_study(re_pcre, use_JIT ? PCRE_STUDY_JIT_COMPILE : 0, &errorptr);
+            re_pe = pcre_study(re_pcre, R_PCRE_use_JIT ? PCRE_STUDY_JIT_COMPILE : 0, &errorptr);
             if (errorptr)
                 warning(_("PCRE pattern study error\n\t'%s'\n"), errorptr);
 #if PCRE_STUDY_JIT_COMPILE
-            else if (use_JIT)
+            else if (R_PCRE_use_JIT)
                 setup_jit(re_pe);
 #endif
         }
@@ -2177,18 +2158,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         int cflags = 0, erroffset;
         const char *errorptr;
-        Rboolean pcre_st = (n >= 10);
-        SEXP op = GetOption1(install("PCRE_study"));
-        if (TYPEOF(op) == LGLSXP)
-        {
-            pcre_st = asLogical(op) > 0;
-        }
-        else
-        {
-            int nth = asInteger(op);
-            if (nth >= 0)
-                pcre_st = (n > nth); // NA_INTEGER is < 0
-        }
+        Rboolean pcre_st = R_PCRE_study == -2 ? FALSE : n >= R_PCRE_study;
         if (use_UTF8)
             cflags |= PCRE_UTF8;
         if (igcase_opt)
@@ -2204,15 +2174,11 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         if (pcre_st)
         {
-            Rboolean use_JIT = TRUE;
-            SEXP op = GetOption1(install("PCRE_use_JIT"));
-            if (TYPEOF(op) == LGLSXP)
-                use_JIT = asLogical(op);
-            re_pe = pcre_study(re_pcre, use_JIT ? PCRE_STUDY_JIT_COMPILE : 0, &errorptr);
+            re_pe = pcre_study(re_pcre, R_PCRE_use_JIT ? PCRE_STUDY_JIT_COMPILE : 0, &errorptr);
             if (errorptr)
                 warning(_("PCRE pattern study error\n\t'%s'\n"), errorptr);
 #if PCRE_STUDY_JIT_COMPILE
-            else if (use_JIT)
+            else if (R_PCRE_use_JIT)
                 setup_jit(re_pe);
 #endif
         }
@@ -3149,18 +3115,7 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         int cflags = 0, erroffset;
         const char *errorptr;
-        Rboolean pcre_st = (n >= 10);
-        SEXP op = GetOption1(install("PCRE_study"));
-        if (TYPEOF(op) == LGLSXP)
-        {
-            pcre_st = asLogical(op) > 0;
-        }
-        else
-        {
-            int nth = asInteger(op);
-            if (nth >= 0)
-                pcre_st = (n > nth); // NA_INTEGER is < 0
-        }
+        Rboolean pcre_st = R_PCRE_study == -2 ? FALSE : n >= R_PCRE_study;
         if (igcase_opt)
             cflags |= PCRE_CASELESS;
         if (!useBytes && use_UTF8)
@@ -3176,15 +3131,11 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         if (pcre_st)
         {
-            Rboolean use_JIT = TRUE;
-            SEXP op = GetOption1(install("PCRE_use_JIT"));
-            if (TYPEOF(op) == LGLSXP)
-                use_JIT = asLogical(op);
-            re_pe = pcre_study(re_pcre, use_JIT ? PCRE_STUDY_JIT_COMPILE : 0, &errorptr);
+            re_pe = pcre_study(re_pcre, R_PCRE_use_JIT ? PCRE_STUDY_JIT_COMPILE : 0, &errorptr);
             if (errorptr)
                 warning(_("PCRE pattern study error\n\t'%s'\n"), errorptr);
 #if PCRE_STUDY_JIT_COMPILE
-            else if (use_JIT)
+            else if (R_PCRE_use_JIT)
                 setup_jit(re_pe);
 #endif
         }
