@@ -395,11 +395,11 @@ SEXP attribute_hidden do_rep_int(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (TYPEOF(ncopy) != INTSXP)
         {
             double snc = asReal(ncopy);
-            if (!R_FINITE(snc) || snc <= -1 || (ns > 0 && snc >= R_XLEN_T_MAX + 1.0))
+            if (!R_FINITE(snc) || snc <= -1. || (ns > 0 && snc >= R_XLEN_T_MAX + 1.))
                 error(_("invalid '%s' value"), "times");
             nc = ns == 0 ? 1 : (R_xlen_t)snc;
         }
-        else if ((nc = asInteger(ncopy)) == NA_INTEGER || nc < 0) /* nc = 0 ok */
+        else if ((nc = asInteger(ncopy)) == NA_INTEGER || nc < 0) // nc = 0 ok
             error(_("invalid '%s' value"), "times");
         if ((double)nc * ns > R_XLEN_T_MAX)
             error(_("invalid '%s' value"), "times");
@@ -450,7 +450,7 @@ SEXP attribute_hidden do_rep_len(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (TYPEOF(len) != INTSXP)
     {
         double sna = asReal(len);
-        if (ISNAN(sna) || sna <= -1 || sna >= R_XLEN_T_MAX + 1.0)
+        if (ISNAN(sna) || sna <= -1. || sna >= R_XLEN_T_MAX + 1.)
             error(_("invalid '%s' value"), "length.out");
         na = (R_xlen_t)sna;
     }
@@ -744,7 +744,7 @@ SEXP attribute_hidden do_rep(SEXP call, SEXP op, SEXP args, SEXP rho)
         double seach = asReal(CADDDR(args));
         if (R_FINITE(seach))
         {
-            if (seach <= -1 || (lx > 0 && seach >= R_XLEN_T_MAX + 1.0))
+            if (seach <= -1. || (lx > 0 && seach >= R_XLEN_T_MAX + 1.))
                 errorcall(call, _("invalid '%s' argument"), "each");
             each = lx == 0 ? NA_INTEGER : (R_xlen_t)seach;
         }
