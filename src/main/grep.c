@@ -237,7 +237,7 @@ static long R_pcre_max_recursions()
 
 static void set_pcre_recursion_limit(pcre_extra **re_pe_ptr, const long limit)
 {
-    if (R_PCRE_limit_recursion && limit >= 0)
+    if (limit >= 0)
     {
         pcre_extra *re_pe = *re_pe_ptr;
         if (!re_pe)
@@ -616,7 +616,21 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
             else if (R_PCRE_use_JIT)
                 setup_jit(re_pe);
 #endif
-            set_pcre_recursion_limit(&re_pe, R_pcre_max_recursions());
+            if (R_PCRE_limit_recursion == NA_LOGICAL)
+            {
+                // use recursion limit only on long strings
+                Rboolean use = FALSE;
+                for (i = 0; i < len; i++)
+                    if (strlen(CHAR(STRING_ELT(x, i))) >= 1000)
+                    {
+                        use = TRUE;
+                        break;
+                    }
+                if (use)
+                    set_pcre_recursion_limit(&re_pe, R_pcre_max_recursions());
+            }
+            else if (R_PCRE_limit_recursion)
+                set_pcre_recursion_limit(&re_pe, R_pcre_max_recursions());
 
             vmax2 = vmaxget();
             for (i = itok; i < len; i += tlen)
@@ -1211,7 +1225,21 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
                 setup_jit(re_pe);
 #endif
         }
-        set_pcre_recursion_limit(&re_pe, R_pcre_max_recursions());
+        if (R_PCRE_limit_recursion == NA_LOGICAL)
+        {
+            // use recursion limit only on long strings
+            Rboolean use = FALSE;
+            for (i = 0; i < n; i++)
+                if (strlen(CHAR(STRING_ELT(text, i))) >= 1000)
+                {
+                    use = TRUE;
+                    break;
+                }
+            if (use)
+                set_pcre_recursion_limit(&re_pe, R_pcre_max_recursions());
+        }
+        else if (R_PCRE_limit_recursion)
+            set_pcre_recursion_limit(&re_pe, R_pcre_max_recursions());
     }
     else
     {
@@ -2182,7 +2210,21 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                 setup_jit(re_pe);
 #endif
         }
-        set_pcre_recursion_limit(&re_pe, R_pcre_max_recursions());
+        if (R_PCRE_limit_recursion == NA_LOGICAL)
+        {
+            // use recursion limit only on long strings
+            Rboolean use = FALSE;
+            for (i = 0; i < n; i++)
+                if (strlen(CHAR(STRING_ELT(text, i))) >= 1000)
+                {
+                    use = TRUE;
+                    break;
+                }
+            if (use)
+                set_pcre_recursion_limit(&re_pe, R_pcre_max_recursions());
+        }
+        else if (R_PCRE_limit_recursion)
+            set_pcre_recursion_limit(&re_pe, R_pcre_max_recursions());
         replen = strlen(srep);
     }
     else
@@ -3139,7 +3181,21 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
                 setup_jit(re_pe);
 #endif
         }
-        set_pcre_recursion_limit(&re_pe, R_pcre_max_recursions());
+        if (R_PCRE_limit_recursion == NA_LOGICAL)
+        {
+            // use recursion limit only on long strings
+            Rboolean use = FALSE;
+            for (i = 0; i < n; i++)
+                if (strlen(CHAR(STRING_ELT(text, i))) >= 1000)
+                {
+                    use = TRUE;
+                    break;
+                }
+            if (use)
+                set_pcre_recursion_limit(&re_pe, R_pcre_max_recursions());
+        }
+        else if (R_PCRE_limit_recursion)
+            set_pcre_recursion_limit(&re_pe, R_pcre_max_recursions());
         /* also extract info for named groups */
         pcre_fullinfo(re_pcre, re_pe, PCRE_INFO_NAMECOUNT, &name_count);
         pcre_fullinfo(re_pcre, re_pe, PCRE_INFO_NAMEENTRYSIZE, &name_entry_size);
