@@ -1285,7 +1285,7 @@ SEXP R_set_prim_method(SEXP fname, SEXP op, SEXP code_vec, SEXP fundef, SEXP mli
     if (!isPrimitive(op))
     {
         SEXP internal = R_do_slot(op, install("internal"));
-        op = INTERNAL(installChar(asChar(internal)));
+        op = INTERNAL(installTrChar(asChar(internal)));
         if (op == R_NilValue)
         {
             error("'internal' slot does not name an internal function: %s", CHAR(asChar(internal)));

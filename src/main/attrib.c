@@ -1846,7 +1846,7 @@ int R_has_slot(SEXP obj, SEXP name)
     if (!s_dot_Data)                                                                                                   \
         init_slot_handling();                                                                                          \
     if (isString(name))                                                                                                \
-    name = installChar(STRING_ELT(name, 0))
+    name = installTrChar(STRING_ELT(name, 0))
 
     R_SLOT_INIT;
     if (name == s_dot_Data && TYPEOF(obj) != S4SXP)
