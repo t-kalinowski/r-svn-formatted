@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1995, 1996	Robert Gentleman and Ross Ihaka
  *  Copyright (C) 1998--2017	The R Core Team.
+ *  Copyright (C) 1995, 1996	Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1947,7 +1947,11 @@ static R_INLINE Rboolean asLogicalNoNA(SEXP s, SEXP call)
     if (length(s) > 1)
     {
         PROTECT(s); /* needed as per PR#15990.  call gets protected by warningcall() */
-        warningcall(call, _("the condition has length > 1 and only the first element will be used"));
+        char *check = getenv("_R_CHECK_LENGTH_1_CONDITION_");
+        if ((check != NULL) ? StringTrue(check) : FALSE) // warn by default
+            errorcall(call, _("the condition has length > 1"));
+        else
+            warningcall(call, _("the condition has length > 1 and only the first element will be used"));
         UNPROTECT(1);
     }
     if (length(s) > 0)
