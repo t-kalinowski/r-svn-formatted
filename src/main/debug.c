@@ -239,7 +239,7 @@ SEXP attribute_hidden do_retracemem(SEXP call, SEXP op, SEXP args, SEXP rho)
         errorcall(call, _("argument must not be a function"));
 
     previous = CADR(argList);
-    if (!isNull(previous) && !isString(previous))
+    if (!isNull(previous) && (!isString(previous) || LENGTH(previous) != 1))
         errorcall(call, _("invalid '%s' argument"), "previous");
 
     if (RTRACE(object))
