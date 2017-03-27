@@ -608,13 +608,13 @@ static SEXP D(SEXP expr, SEXP var)
         {
             ans = simplify(DivideSymbol, PP(D(CADR(expr), var)),
                            PP_S(TimesSymbol, CADR(expr), PP_S2(LogSymbol, PP(Constant(2.)))));
-            UNPROTECT(3);
+            UNPROTECT(4);
         }
         else if (CAR(expr) == Log10Symbol)
         {
             ans = simplify(DivideSymbol, PP(D(CADR(expr), var)),
                            PP_S(TimesSymbol, CADR(expr), PP_S2(LogSymbol, PP(Constant(10.)))));
-            UNPROTECT(3);
+            UNPROTECT(4);
         }
         else if (CAR(expr) == CosPiSymbol)
         {
