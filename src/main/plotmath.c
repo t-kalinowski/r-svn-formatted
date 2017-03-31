@@ -1271,7 +1271,7 @@ static BBOX RenderSpace(SEXP expr, int draw, mathContext *mc, pGEcontext gc, pGE
     return NullBBox(); /* -Wall */
 }
 
-static SymTab BinTable[] = {{"*", 052}, /* Binary Operators */
+static SymTab BinTable[] = {{"!", 041},        {"*", 052}, /* Binary Operators */
                             {"+", 053},        {"-", 055},    {"/", 057},    {":", 072},
                             {"%+-%", 0261},    {"%*%", 0264}, {"%/%", 0270}, {"%intersection%", 0307},
                             {"%union%", 0310}, {"%.%", 0327}, /* cdot or dotmath */
