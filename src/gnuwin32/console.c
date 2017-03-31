@@ -3,7 +3,7 @@
  *  file console.c
  *  Copyright (C) 1998--2003  Guido Masarotto and Brian Ripley
  *  Copyright (C) 2004-8      The R Foundation
- *  Copyright (C) 2004-2016   The R Core Team
+ *  Copyright (C) 2004-2017   The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1116,15 +1116,17 @@ static void performCompletion(control c)
         }
     }
 
-    /* FIXME: need to escape quotes properly */
-    wchar_t *pline = (wchar_t *)R_alloc(wcslen(partial_line) + 1, sizeof(wchar_t));
-    wcscpy(pline, partial_line);
-    /* poor attempt at escaping quotes that sort of works */
-    alen = wcslen(pline);
+    alen = wcslen(partial_line);
+    wchar_t orig[alen + 1], pline[2 * alen + 1], *pchar = pline, achar;
+    wcscpy(orig, partial_line);
     for (i = 0; i < alen; i++)
-        if (pline[i] == '"')
-            pline[i] = L'\'';
-
+    {
+        achar = orig[i];
+        if (achar == '"' || achar == '\\')
+            *pchar++ = '\\';
+        *pchar++ = achar;
+    }
+    *pchar = 0;
     size_t len = wcslen(pline) + 100;
     char cmd[len];
     snprintf(cmd, len, "utils:::.win32consoleCompletion(\"%ls\", %d)", pline, cursor_position);
@@ -1160,11 +1162,12 @@ static void performCompletion(control c)
     if (alen)
     {
         /* make a copy of the current string first */
-        wchar_t *p1 = LINE(NUMLINES - 1);
+        wchar_t p1[wcslen(LINE(NUMLINES - 1)) + 1];
+        wcscpy(p1, LINE(NUMLINES - 1));
         checkpointpos(p->lbuf, 1);
         size_t len = MB_CUR_MAX * wcslen(p1) + 1;
-        char buf1[len];
-        snprintf(buf1, len, "%ls\n", p1);
+        char buf1[len + 1];
+        snprintf(buf1, len + 1, "%ls\n", p1);
         consolewrites(c, buf1);
 
         for (i = 0; i < min(alen, max_show); i++)
