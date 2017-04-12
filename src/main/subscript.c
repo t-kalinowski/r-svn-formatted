@@ -359,8 +359,10 @@ SEXP attribute_hidden vectorIndex(SEXP x, SEXP thesub, int start, int stop, int 
             x = CAR(cx);
             if (dup && MAYBE_SHARED(x))
             {
+                PROTECT(cx);
                 x = shallow_duplicate(x);
                 SETCAR(cx, x);
+                UNPROTECT(1); /* cx */
             }
         }
         else
@@ -371,8 +373,10 @@ SEXP attribute_hidden vectorIndex(SEXP x, SEXP thesub, int start, int stop, int 
                 SET_NAMED(x, NAMED(cx));
             if (dup && MAYBE_SHARED(x))
             {
+                PROTECT(cx);
                 x = shallow_duplicate(x);
                 SET_VECTOR_ELT(cx, offset, x);
+                UNPROTECT(1); /* cx */
             }
         }
     }
