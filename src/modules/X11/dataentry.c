@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Langage for Statistical Data Analysis
- *  Copyright (C) 1998--2017  The R Core Team
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
+ *  Copyright (C) 1998--2015  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -2415,8 +2415,6 @@ static void copyH(DEstruct DE, int src_x, int dest_x, int width)
 static void drawrectangle(DEstruct DE, int xpos, int ypos, int width, int height, int lwd, int fore)
 {
 #ifdef USE_Xt
-    if (xdev.geometry == NULL)
-        return; // prevents seg.fault in R 3.4.0 on some Fedora F24
     if (fore == 0)
         XSetForeground(iodisplay, DE->iogc, xdev.background);
     else
