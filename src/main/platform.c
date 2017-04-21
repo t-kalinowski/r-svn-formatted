@@ -942,6 +942,8 @@ SEXP attribute_hidden do_fileinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
                         success = 1;
                     }
                 }
+                else
+                    warning(_("cannot open file '%ls': %s"), wfn, formatError(GetLastError()));
                 if (!success)
                 {
                     REAL(mtime)[i] = NA_REAL;
