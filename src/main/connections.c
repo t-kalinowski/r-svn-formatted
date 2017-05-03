@@ -577,6 +577,9 @@ typedef struct fileconn
     Rboolean raw;
 #ifdef Win32
     Rboolean anon_file;
+    Rboolean use_fgetwc;
+    Rboolean have_wcbuffered;
+    char wcbuf;
     char name[PATH_MAX + 1];
 #endif
 } * Rfileconn;
@@ -603,13 +606,27 @@ static Rboolean file_open(Rconnection con)
     if (strcmp(name, "stdin"))
     {
 #ifdef Win32
+        char mode[20]; /* 4 byte mode plus "t,ccs=UTF-16LE" plus one for luck. */
+        strncpy(mode, con->mode, 4);
+        mode[4] = '\0';
+        if (!strpbrk(mode, "bt"))
+            strcat(mode, "t");
+        if (strchr(mode, 't') && (!strcmp(con->encname, "UTF-16LE") || !strcmp(con->encname, "UCS-2LE")))
+        {
+            strcat(mode, ",ccs=UTF-16LE");
+            if (con->canread)
+            {
+                this->use_fgetwc = TRUE;
+                this->have_wcbuffered = FALSE;
+            }
+        }
         if (con->enc == CE_UTF8)
         {
             int n = strlen(name);
-            wchar_t wname[2 * (n + 1)], wmode[10];
+            wchar_t wname[2 * (n + 1)], wmode[20];
+            mbstowcs(wmode, mode, 19);
             R_CheckStack();
             Rf_utf8towcs(wname, name, n + 1);
-            mbstowcs(wmode, con->mode, 10);
             fp = _wfopen(wname, wmode);
             if (!fp)
             {
@@ -618,8 +635,12 @@ static Rboolean file_open(Rconnection con)
             }
         }
         else
+        {
+            fp = R_fopen(name, mode);
+        }
+#else
+        fp = R_fopen(name, con->mode);
 #endif
-            fp = R_fopen(name, con->mode);
     }
     else
     { /* use file("stdin") to refer to the file and not the console */
@@ -723,7 +744,25 @@ static int file_fgetc_internal(Rconnection con)
         this->last_was_write = FALSE;
         f_seek(this->fp, this->rpos, SEEK_SET);
     }
-    c = fgetc(fp);
+#ifdef Win32
+    if (this->use_fgetwc)
+    {
+        if (this->have_wcbuffered)
+        {
+            c = this->wcbuf;
+            this->have_wcbuffered = FALSE;
+        }
+        else
+        {
+            wint_t wc = fgetwc(fp);
+            c = (char)wc & 0xFF;
+            this->wcbuf = (char)wc >> 8;
+            this->have_wcbuffered = TRUE;
+        }
+    }
+    else
+#endif
+        c = fgetc(fp);
     return feof(fp) ? R_EOF : c;
 }
 
@@ -892,6 +931,9 @@ static Rconnection newfile(const char *description, int enc, const char *mode, i
         /* for Solaris 12.5 */ new = NULL;
     }
     ((Rfileconn)(new->private))->raw = raw;
+#ifdef Win32
+    ((Rfileconn)(new->private))->use_fgetwc = FALSE;
+#endif
     return new;
 }
 
