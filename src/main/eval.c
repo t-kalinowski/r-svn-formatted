@@ -2285,6 +2285,7 @@ SEXP attribute_hidden do_begin(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (args != R_NilValue)
     {
         SEXP srcrefs = getBlockSrcrefs(call);
+        PROTECT(srcrefs);
         int i = 1;
         while (args != R_NilValue)
         {
@@ -2300,6 +2301,7 @@ SEXP attribute_hidden do_begin(SEXP call, SEXP op, SEXP args, SEXP rho)
             args = CDR(args);
         }
         R_Srcref = R_NilValue;
+        UNPROTECT(1); /* srcrefs */
     }
     return s;
 }
