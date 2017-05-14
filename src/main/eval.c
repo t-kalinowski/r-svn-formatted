@@ -721,7 +721,7 @@ SEXP eval(SEXP e, SEXP rho)
         {
             int save = R_PPStackTop, flag = PRIMPRINT(op);
             const void *vmax = vmaxget();
-            PROTECT(CDR(e));
+            PROTECT(e);
             R_Visible = flag != 1;
             tmp = PRIMFUN(op)(e, op, CDR(e), rho);
 #ifdef CHECK_VISIBILITY
@@ -1715,7 +1715,7 @@ SEXP R_forceAndCall(SEXP e, int n, SEXP rho)
     if (TYPEOF(fun) == SPECIALSXP)
     {
         int flag = PRIMPRINT(fun);
-        PROTECT(CDR(e));
+        PROTECT(e);
         R_Visible = flag != 1;
         tmp = PRIMFUN(fun)(e, fun, CDR(e), rho);
         if (flag < 2)
