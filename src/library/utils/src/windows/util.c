@@ -3,7 +3,7 @@
  *  file util.c
  *  Copyright (C) 1998--2003  Guido Masarotto and Brian Ripley
  *  Copyright (C) 2004	      The R Foundation
- *  Copyright (C) 2005--2013  The R Core Team
+ *  Copyright (C) 2005--2017  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -285,9 +285,9 @@ SEXP readClipboard(SEXP sformat, SEXP sraw)
                 int n, ienc = CE_NATIVE;
                 const wchar_t *wpc = (wchar_t *)pc;
                 n = wcslen(wpc);
-                char text[2 * (n + 1)]; /* UTF-8 is at most 1.5x longer */
+                char text[4 * n + 1];
                 R_CheckStack();
-                wcstoutf8(text, wpc, n + 1);
+                wcstoutf8(text, wpc, sizeof(text));
                 if (!strIsASCII(text))
                     ienc = CE_UTF8;
                 ans = splitClipboardText(text, ienc);
