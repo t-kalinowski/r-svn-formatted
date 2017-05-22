@@ -1471,7 +1471,7 @@ static size_t Rwcrtomb32(char *s, Rwchar_t cvalue, size_t n)
     for (i = 0; i < sizeof(utf8_table1) / sizeof(int); i++)
         if (cvalue <= utf8_table1[i])
             break;
-    if (i >= n)
+    if (i >= n - 1)
         return 0; /* need space for terminal null */
     if (s)
     {
