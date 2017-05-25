@@ -725,7 +725,7 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
     } while (still_running);
     R_Busy(0);
 #ifdef Win32
-    if (R_Interactive && !quiet)
+    if (R_Interactive && !quiet && nurls <= 1)
     {
         endcontext(&(pbar.cntxt));
         doneprogressbar(&pbar);
