@@ -4369,7 +4369,6 @@ static R_size_t R_MemReportingThreshold;
 
 static void R_OutputStackTrace(FILE *file)
 {
-    int newline = 0;
     RCNTXT *cptr;
 
     for (cptr = R_GlobalContext; cptr; cptr = cptr->nextcontext)
@@ -4377,13 +4376,9 @@ static void R_OutputStackTrace(FILE *file)
         if ((cptr->callflag & (CTXT_FUNCTION | CTXT_BUILTIN)) && TYPEOF(cptr->call) == LANGSXP)
         {
             SEXP fun = CAR(cptr->call);
-            if (!newline)
-                newline = 1;
             fprintf(file, "\"%s\" ", TYPEOF(fun) == SYMSXP ? CHAR(PRINTNAME(fun)) : "<Anonymous>");
         }
     }
-    if (newline)
-        fprintf(file, "\n");
 }
 
 static void R_ReportAllocation(R_size_t size)
@@ -4394,6 +4389,7 @@ static void R_ReportAllocation(R_size_t size)
         {
             fprintf(R_MemReportingOutfile, "%lu :", (unsigned long)size);
             R_OutputStackTrace(R_MemReportingOutfile);
+            fprintf(R_MemReportingOutfile, "\n");
         }
     }
     return;
@@ -4405,6 +4401,7 @@ static void R_ReportNewPage(void)
     {
         fprintf(R_MemReportingOutfile, "new page:");
         R_OutputStackTrace(R_MemReportingOutfile);
+        fprintf(R_MemReportingOutfile, "\n");
     }
     return;
 }
