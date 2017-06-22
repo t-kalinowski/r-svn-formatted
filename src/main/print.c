@@ -201,7 +201,10 @@ static void PrintLanguageEtc(SEXP s, Rboolean useSource, Rboolean isClosure)
     }
     PROTECT(t);
     for (i = 0; i < LENGTH(t); i++)
-        Rprintf("%s\n", CHAR(STRING_ELT(t, i))); /* translated */
+    {
+        const char *ctmp = EncodeString(STRING_ELT(t, i), 0, 0, Rprt_adj_none);
+        Rprintf("%s\n", ctmp); /* translated */
+    }
     UNPROTECT(1);
     if (isClosure)
     {
