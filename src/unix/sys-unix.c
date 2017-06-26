@@ -600,6 +600,25 @@ static int R_system_timeout(const char *cmd, int timeout)
         return -1;
 }
 
+static void warn_status(const char *cmd, int res)
+{
+    if (!res)
+        return;
+
+    if (errno)
+        /* FIXME: TK: non-zero errno is a sign of an error only when
+           a function that modified it also signals an error by its
+           return value, usually -1 or EOF. We should not be reporting
+           an error here (CERT ERR30-C).*/
+        /* on Solaris, if the command ends with non-zero status and timeout
+           is 0, "Illegal seek" error is reported; the timeout version
+           works this around by using close(fileno) */
+        warningcall(R_NilValue, _("running command '%s' had status %d and error message '%s'"), cmd, res,
+                    strerror(errno));
+    else
+        warningcall(R_NilValue, _("running command '%s' had status %d"), cmd, res);
+}
+
 #define INTERN_BUFSIZE 8096
 SEXP attribute_hidden do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
@@ -615,7 +634,7 @@ SEXP attribute_hidden do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
         error(_("'intern' must be logical and not NA"));
     timeout = asInteger(CADDR(args));
     if (timeout == NA_INTEGER || timeout < 0)
-        error(_("invalid '%s' argument"), "type");
+        error(_("invalid '%s' argument"), "timeout");
     const char *cmd = translateChar(STRING_ELT(CAR(args), 0));
     if (timeout > 0)
     {
@@ -687,11 +706,7 @@ SEXP attribute_hidden do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (timeout == 0)
             res = pclose(fp);
         else
-        {
             res = R_pclose_timeout(fp);
-            if (tost.timedout)
-                warning(_("command '%s' timed out"), cmd);
-        }
 #ifdef HAVE_SYS_WAIT_H
         if (WIFEXITED(res))
             res = WEXITSTATUS(res);
@@ -709,21 +724,14 @@ SEXP attribute_hidden do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
             else
                 error(_("error in running command"));
         }
-        else if (res)
+
+        if (timeout && tost.timedout)
         {
-            if (errno)
-                /* FIXME: TK: non-zero errno is a sign of an error only when
-                   a function that modified it also signals an error by its
-                   return value, usually -1 or EOF. We should not be reporting
-                   an error here (CERT ERR30-C).*/
-                /* on Solaris, if the command ends with non-zero status and timeout
-                   is 0, "Illegal seek" error is reported; the timeout version
-                   works this around by using close(fileno) */
-                warningcall(R_NilValue, _("running command '%s' had status %d and error message '%s'"), cmd, res,
-                            strerror(errno));
-            else
-                warningcall(R_NilValue, _("running command '%s' had status %d"), cmd, res);
+            res = 124;
+            warningcall(R_NilValue, _("command '%s' timed out"), cmd);
         }
+        else
+            warn_status(cmd, res);
 
         rval = PROTECT(allocVector(STRSXP, i));
         for (j = (i - 1); j >= 0; j--)
@@ -756,9 +764,12 @@ SEXP attribute_hidden do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
             res = R_system(cmd);
         else
             res = R_system_timeout(cmd, timeout);
+        if (timeout && tost.timedout)
+        {
+            res = 124;
+            warningcall(R_NilValue, _("command '%s' timed out"), cmd);
+        }
         INTEGER(tlist)[0] = res;
-        if (tost.timedout)
-            warning(_("command '%s' timed out"), cmd);
 #ifdef HAVE_AQUA
         R_Busy(0);
 #endif
