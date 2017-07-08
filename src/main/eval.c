@@ -6884,6 +6884,8 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                         SEXP val;
                         if (ftype == BUILTINSXP)
                             val = eval(CAR(h), rho);
+                        else if (TYPEOF(CAR(h)) == PROMSXP || CAR(h) == R_MissingArg)
+                            val = CAR(h);
                         else
                             val = mkPROMISE(CAR(h), rho);
                         PUSHCALLARG(val);
