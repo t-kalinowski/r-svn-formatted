@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
+ *  Copyright (C) 1997--2017  The R Core Team
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2015  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -311,6 +311,7 @@ R_xlen_t attribute_hidden get1index(SEXP s, SEXP names, R_xlen_t len, int pok, i
                 vmaxset(vmax);
                 break;
             }
+        break;
     default:
         ECALL3(call, _("invalid subscript type '%s'"), type2char(TYPEOF(s)));
     }
