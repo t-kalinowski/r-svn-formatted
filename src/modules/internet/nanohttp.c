@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1998-2001  Daniel Veillard.
- *  Copyright (C) 2001-2017   The R Core Team.
+ *  Copyright (C) 2001-2017  The R Core Team.
+ *  Copyright (C) 1998-2012  Daniel Veillard.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
  */
 
 /* based on libxml2-2.3.6:
+ * (but updated to protect against CVE-2004-0989):
  * nanohttp.c: minimalist HTTP GET implementation to fetch external subsets.
  *             focuses on size, streamability, reentrancy and portability
  *
@@ -72,6 +73,7 @@ extern void R_FlushConsole(void);
 #define R_SelectEx(n, rfd, wrd, efd, tv, ih) select(n, rfd, wrd, efd, tv)
 #endif
 
+// ../../include/R_ext/R-ftp-http.h :
 #include <R_ext/R-ftp-http.h>
 #ifdef Win32
 #include <R_ext/Print.h>
@@ -347,6 +349,7 @@ static void RxmlNanoHTTPScanURL(RxmlNanoHTTPCtxtPtr ctxt, const char *URL)
     const char *cur = URL;
     char buf[40960];
     int indx = 0;
+    const int indxMax = 40960 - 1;
     int port = 0;
 
     if (ctxt->protocol != NULL)
@@ -367,7 +370,7 @@ static void RxmlNanoHTTPScanURL(RxmlNanoHTTPCtxtPtr ctxt, const char *URL)
     if (URL == NULL)
         return;
     buf[indx] = 0;
-    while (*cur != 0)
+    while (*cur != 0 && (indx < indxMax))
     {
         if ((cur[0] == ':') && (cur[1] == '/') && (cur[2] == '/'))
         {
@@ -377,18 +380,13 @@ static void RxmlNanoHTTPScanURL(RxmlNanoHTTPCtxtPtr ctxt, const char *URL)
             cur += 3;
             break;
         }
-        if (indx >= 40959)
-            RxmlMessage(2, _("RxmlNanoHTTPScanURL: overlong (invalid?) URL"));
-        else
-        {
-            buf[indx++] = *cur++;
-        }
+        buf[indx++] = *cur++;
     }
     if (*cur == 0)
         return;
 
     buf[indx] = 0;
-    while (1)
+    while (indx < indxMax)
     {
         if (cur[0] == ':')
         {
@@ -415,12 +413,7 @@ static void RxmlNanoHTTPScanURL(RxmlNanoHTTPCtxtPtr ctxt, const char *URL)
             indx = 0;
             break;
         }
-        if (indx >= 40959)
-            RxmlMessage(2, _("RxmlNanoHTTPScanURL: overlong (invalid?) URL"));
-        else
-        {
-            buf[indx++] = *cur++;
-        }
+        buf[indx++] = *cur++;
     }
     if (*cur == 0)
         ctxt->path = xmlMemStrdup("/");
@@ -428,10 +421,8 @@ static void RxmlNanoHTTPScanURL(RxmlNanoHTTPCtxtPtr ctxt, const char *URL)
     {
         indx = 0;
         buf[indx] = 0;
-        while (*cur != 0)
+        while (*cur != 0 && (indx < indxMax))
         {
-            if (indx >= 40959)
-                RxmlMessage(2, _("RxmlNanoHTTPScanURL: overlong (invalid?) URL"));
             buf[indx++] = *cur++;
         }
         buf[indx] = 0;
@@ -454,6 +445,7 @@ void RxmlNanoHTTPScanProxy(const char *URL)
     const char *cur = URL;
     char buf[4096];
     int indx = 0;
+    const int indxMax = 4096 - 1;
     int port = 0;
 
     if (proxy != NULL)
@@ -471,7 +463,7 @@ void RxmlNanoHTTPScanProxy(const char *URL)
     if (URL == NULL)
         return;
     buf[indx] = 0;
-    while (*cur != 0)
+    while (*cur != 0 && (indx < indxMax))
     {
         if ((cur[0] == ':') && (cur[1] == '/') && (cur[2] == '/'))
         {
@@ -480,12 +472,7 @@ void RxmlNanoHTTPScanProxy(const char *URL)
             cur += 3;
             break;
         }
-        if (indx >= 4095)
-            RxmlMessage(2, _("RxmlNanoHTTPScanProxy: overlong (invalid?) URL"));
-        else
-        {
-            buf[indx++] = *cur++;
-        }
+        buf[indx++] = *cur++;
     }
     if (*cur == 0)
         return;
@@ -500,7 +487,7 @@ void RxmlNanoHTTPScanProxy(const char *URL)
         cur += (int)strlen(buf) + 1;
     }
     buf[indx] = 0;
-    while (1)
+    while (indx < indxMax)
     {
         if (cur[0] == ':')
         {
@@ -527,12 +514,7 @@ void RxmlNanoHTTPScanProxy(const char *URL)
             indx = 0;
             break;
         }
-        if (indx >= 4095)
-            RxmlMessage(2, _("RxmlNanoHTTPScanProxy: overlong (invalid?) URL"));
-        else
-        {
-            buf[indx++] = *cur++;
-        }
+        buf[indx++] = *cur++;
     }
 }
 
@@ -1264,6 +1246,8 @@ static int RxmlNanoHTTPConnectHost(const char *host, int port)
         if (h->h_addrtype == AF_INET)
         {
             /* A records (IPv4) */
+            if ((unsigned int)h->h_length > sizeof(ia))
+                continue;
             memcpy(&ia, h->h_addr_list[i], h->h_length);
 #ifdef _WIN32
             // this is a u_short
@@ -1280,6 +1264,8 @@ static int RxmlNanoHTTPConnectHost(const char *host, int port)
         else if (h->h_addrtype == AF_INET6)
         {
             /* AAAA records (IPv6) */
+            if ((unsigned int)h->h_length > sizeof(ia6))
+                continue;
             memcpy(&ia6, h->h_addr_list[i], h->h_length);
             sockin6.sin6_family = h->h_addrtype;
             sockin6.sin6_addr = ia6;
