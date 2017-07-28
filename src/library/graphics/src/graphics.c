@@ -2637,6 +2637,7 @@ void GForceClip(pGEDevDesc dd)
         return;
     setClipRect(&x1, &y1, &x2, &y2, DEVICE, dd);
     GESetClip(x1, y1, x2, y2, dd);
+    gpptr(dd)->oldxpd = gpptr(dd)->xpd;
 }
 
 /*
