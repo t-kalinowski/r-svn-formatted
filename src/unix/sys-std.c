@@ -1121,7 +1121,8 @@ void R_CleanTempDir(void)
 
     if ((Sys_TempDir))
     {
-#if defined(sun) || defined(__sun)
+// Only __sun is neeed on Solaris >= 10 (2005).
+#if defined(__sun) || defined(sun)
         /* On Solaris the working directory must be outside this one */
         chdir(R_HomeDir());
 #endif
