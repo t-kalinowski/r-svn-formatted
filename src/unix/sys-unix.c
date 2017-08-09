@@ -349,7 +349,11 @@ static void timeout_handler(int sig)
     if (sig == SIGALRM)
     {
         tost.timedout = 1;
-        sig = SIGTERM;
+        sig = SIGINT;
+        /* one can also use SIGTERM but e.g. when installing a package, SIGINT
+           seems to be handled better by applications: applications happen to
+           wait for child processes to terminate, and hence their execution is
+           included into getrusage/RUSAGE_CHILDREN (proc.time) */
     }
     if (tost.child_pid > 0)
     {
@@ -402,7 +406,7 @@ static void timeout_cend(void *data)
 {
     if (tost.child_pid > 0)
     {
-        timeout_handler(SIGTERM);
+        timeout_handler(SIGINT);
         timeout_wait(NULL);
     }
     timeout_cleanup();
