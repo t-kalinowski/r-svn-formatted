@@ -3575,8 +3575,10 @@ Rboolean PSDeviceDriver(pDevDesc dd, const char *file, const char *paper, const 
     }
     else
     {
+        char errbuf[strlen(pd->papername) + 1];
+        strcpy(errbuf, pd->papername);
         PS_cleanup(4, dd, pd);
-        error(_("invalid page type '%s' (postscript)"), paper);
+        error(_("invalid page type '%s' (postscript)"), errbuf);
     }
     pd->pagecentre = pagecentre;
     pd->paperwidth = (int)(72 * pd->pagewidth);
@@ -3807,8 +3809,10 @@ static Rboolean PS_Open(pDevDesc dd, PostScriptDesc *pd)
         pd->open_type = 1;
         if (!pd->psfp || errno != 0)
         {
+            char errbuf[strlen(pd->command) + 1];
+            strcpy(errbuf, pd->command);
             PS_cleanup(4, dd, pd);
-            error(_("cannot open 'postscript' pipe to <command>)"));
+            error(_("cannot open 'postscript' pipe to '%s'"), errbuf);
             return FALSE;
         }
     }
@@ -3819,8 +3823,10 @@ static Rboolean PS_Open(pDevDesc dd, PostScriptDesc *pd)
         pd->open_type = 1;
         if (!pd->psfp || errno != 0)
         {
+            char errbuf[strlen(pd->filename + 1) + 1];
+            strcpy(errbuf, pd->filename + 1);
             PS_cleanup(4, dd, pd);
-            error(_("cannot open 'postscript' pipe to <file>"));
+            error(_("cannot open 'postscript' pipe to '%s'"), errbuf);
             return FALSE;
         }
     }
@@ -5213,8 +5219,10 @@ static Rboolean XFig_Open(pDevDesc dd, XFigDesc *pd)
     if (!pd->tmpfp)
     {
         fclose(pd->psfp);
+        char errbuf[strlen(pd->tmpname) + 1];
+        strcpy(errbuf, pd->tmpname);
         XFig_cleanup(dd, pd);
-        error(_("cannot open file '%s'"), R_tmpnam("Rxfig", R_TempDir));
+        error(_("cannot open file '%s'"), errbuf);
         return FALSE;
     }
     XF_FileHeader(pd->psfp, pd->papername, pd->landscape, pd->onefile);
@@ -6003,8 +6011,8 @@ static Rboolean addPDFDevicefont(type1fontfamily family, PDFDesc *pd, int *fontI
             encoding = findEncoding(family->encoding->encpath, pd->encodings, TRUE);
             if (!encoding)
             {
-                freeDeviceFontList(fontlist);
                 warning(_("corrupt loaded encodings;  font not added"));
+                /* NOTE: in fact the font was added */
             }
             else
             {
@@ -6016,10 +6024,8 @@ static Rboolean addPDFDevicefont(type1fontfamily family, PDFDesc *pd, int *fontI
                     result = TRUE;
                 }
                 else
-                {
-                    freeDeviceFontList(fontlist);
                     warning(_("failed to record device encoding; font not added"));
-                }
+                /* NOTE: in fact the font was added */
             }
         }
     }
@@ -6231,6 +6237,7 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
         if (!strcmp(family, "User") || isType1Font(family, PDFFonts, NULL))
         {
             addPDFDevicefont(font, pd, &gotFont);
+            /* NOTE: should check result, encoding may not have been found */
             pd->defaultFont = pd->fonts->family;
             pd->defaultCIDFont = NULL;
         }
@@ -6243,7 +6250,7 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
     }
     if (!gotFont)
     {
-        PDFcleanup(3, pd);
+        PDFcleanup(4, pd);
         free(dd);
         error(_("failed to initialise default PDF font"));
     }
@@ -6401,9 +6408,11 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
     }
     else
     {
+        char errbuf[strlen(pd->papername) + 1];
+        strcpy(errbuf, pd->papername);
         PDFcleanup(6, pd);
         free(dd);
-        error(_("invalid paper type '%s' (pdf)"), paper);
+        error(_("invalid paper type '%s' (pdf)"), errbuf);
     }
     pd->pagecentre = pagecentre;
     pd->paperwidth = (int)(72 * pd->pagewidth);
@@ -7384,8 +7393,10 @@ static Rboolean PDF_Open(pDevDesc dd, PDFDesc *pd)
         pd->pipefp = R_popen(pd->cmd, "w");
         if (!pd->pipefp || errno != 0)
         {
+            char errbuf[strlen(pd->cmd) + 1];
+            strcpy(errbuf, pd->cmd);
             PDFcleanup(6, pd);
-            error(_("cannot open 'pdf' pipe  | <cmd>"));
+            error(_("cannot open 'pdf' pipe to '%s'"), errbuf);
             return FALSE;
         }
         pd->open_type = 1;
