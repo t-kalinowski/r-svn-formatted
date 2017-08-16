@@ -1,8 +1,8 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 2002-3     The R Foundation
- *  Copyright (C) 1999-2015  The R Core Team.
+ *  Copyright (C) 2002-2017  The R Foundation
+ *  Copyright (C) 1999-2017  The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1024,6 +1024,7 @@ int R_check_class_and_super(SEXP x, const char **valid, SEXP rho)
         PROTECT(classExts = R_do_slot(classDef, s_contains));
         PROTECT(_call = lang3(s_selectSuperCl, classExts,
                               /* dropVirtual = */ ScalarLogical(1)));
+        // .selectSuperClasses(getClassDef(class)@contains, dropVirtual = TRUE) :
         superCl = eval(_call, rho);
         UNPROTECT(3); /* _call, classExts, classDef */
         PROTECT(superCl);
