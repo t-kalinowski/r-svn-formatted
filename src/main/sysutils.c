@@ -704,7 +704,10 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
         else
         {
             if (TYPEOF(x) != STRSXP)
+            {
+                Riconv_close(obj);
                 error(_("'x' must be a character vector"));
+            }
             if (toRaw)
             {
                 PROTECT(ans = allocVector(VECSXP, LENGTH(x)));
@@ -726,7 +729,10 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
                     continue;
                 }
                 else if (TYPEOF(si) != RAWSXP)
+                {
+                    Riconv_close(obj);
                     error(_("'x' must be a character vector or a list of NULL or raw vectors"));
+                }
             }
             else
             {
@@ -1590,12 +1596,32 @@ next_char:
 
 void attribute_hidden invalidate_cached_recodings(void)
 {
-    latin1_obj = NULL;
-    utf8_obj = NULL;
-    ucsmb_obj = NULL;
+    if (latin1_obj)
+    {
+        Riconv_close(latin1_obj);
+        latin1_obj = NULL;
+    }
+    if (utf8_obj)
+    {
+        Riconv_close(utf8_obj);
+        utf8_obj = NULL;
+    }
+    if (ucsmb_obj)
+    {
+        Riconv_close(ucsmb_obj);
+        ucsmb_obj = NULL;
+    }
 #ifdef Win32
-    latin1_wobj = NULL;
-    utf8_wobj = NULL;
+    if (latin1_wobj)
+    {
+        Riconv_close(latin1_wobj);
+        latin1_wobj = NULL;
+    }
+    if (utf8_wobj)
+    {
+        Riconv_close(utf8_wobj);
+        utf8_wobj = NULL;
+    }
 #endif
 }
 
