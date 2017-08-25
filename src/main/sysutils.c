@@ -970,9 +970,9 @@ static void translateToNative(const char *ans, R_StringBuffer *cbuff, nttype_t t
             /* should never happen */
             if (obj == (void *)(-1))
 #ifdef Win32
-                error(_("unsupported conversion from '%s' in codepage %d"), "latin1", localeCP);
+                error(_("unsupported conversion from '%s' in codepage %d"), "UTF-8", localeCP);
 #else
-                error(_("unsupported conversion from '%s' to '%s'"), "latin1", "");
+                error(_("unsupported conversion from '%s' to '%s'"), "UTF-8", "");
 #endif
             utf8_obj = obj;
         }
@@ -1126,9 +1126,9 @@ const char *translateCharUTF8(SEXP x)
     obj = Riconv_open("UTF-8", IS_LATIN1(x) ? "latin1" : "");
     if (obj == (void *)(-1))
 #ifdef Win32
-        error(_("unsupported conversion from '%s' in codepage %d"), "latin1", localeCP);
+        error(_("unsupported conversion from '%s' in codepage %d"), IS_LATIN1(x) ? "latin1" : "", localeCP);
 #else
-        error(_("unsupported conversion from '%s' to '%s'"), "latin1", "UTF-8");
+        error(_("unsupported conversion from '%s' to '%s'"), IS_LATIN1(x) ? "latin1" : "", "UTF-8");
 #endif
     R_AllocStringBuffer(0, &cbuff);
 top_of_loop:
@@ -1224,7 +1224,7 @@ attribute_hidden /* but not hidden on Windows, where it was used in tcltk.c */
         {
             obj = Riconv_open(TO_WCHAR, "UTF-8");
             if (obj == (void *)(-1))
-                error(_("unsupported conversion from '%s' to '%s'"), "latin1", TO_WCHAR);
+                error(_("unsupported conversion from '%s' to '%s'"), "UTF-8", TO_WCHAR);
             utf8_wobj = obj;
         }
         else
