@@ -937,10 +937,11 @@ static void deparse2buff(SEXP s, LocalParseData *d)
             print2buff("expression()", d);
         else
         {
+            int locOpts = d->opts;
             print2buff("expression(", d);
             d->opts &= SIMPLE_OPTS;
             vec2buff(s, d);
-            d->opts = localOpts;
+            d->opts = locOpts;
             print2buff(")", d);
         }
         if (localOpts & SHOWATTRIBUTES)
