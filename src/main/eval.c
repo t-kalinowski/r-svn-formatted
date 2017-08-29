@@ -4160,6 +4160,7 @@ static R_INLINE int bcStackScalarRealEx(R_bcstack_t *s, scalar_value_t *px, SEXP
         SKIP_OP();                                                                                                     \
         SETSTACK_LOGICAL(-2, ((a)op(b)) ? TRUE : FALSE);                                                               \
         R_BCNodeStackTop--;                                                                                            \
+        R_Visible = TRUE;                                                                                              \
         NEXT();                                                                                                        \
     } while (0)
 
@@ -4276,6 +4277,7 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
         SEXP call = VECTOR_ELT(constants, GETOP());                                                                    \
         SETSTACK(-1, CONS_NR(GETSTACK(-1), R_NilValue));                                                               \
         SETSTACK(-1, do_fun(call, getPrimitive(which, BUILTINSXP), GETSTACK(-1), rho));                                \
+        R_Visible = TRUE;                                                                                              \
         NEXT();                                                                                                        \
     } while (0)
 
@@ -4289,6 +4291,7 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
         SETSTACK(-2, CONS_NR(stack2, tmp));                                                                            \
         R_BCNodeStackTop--;                                                                                            \
         SETSTACK(-1, do_fun(call, getPrimitive(which, BUILTINSXP), GETSTACK(-1), rho));                                \
+        R_Visible = TRUE;                                                                                              \
         NEXT();                                                                                                        \
     } while (0)
 
@@ -4300,6 +4303,7 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
         SEXP y = GETSTACK(-1);                                                                                         \
         SETSTACK(-2, do_fun(call, opval, opsym, x, y, rho));                                                           \
         R_BCNodeStackTop--;                                                                                            \
+        R_Visible = TRUE;                                                                                              \
         NEXT();                                                                                                        \
     } while (0)
 
@@ -4309,6 +4313,7 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
         SEXP call = VECTOR_ELT(constants, GETOP());                                                                    \
         SEXP x = GETSTACK(-1);                                                                                         \
         SETSTACK(-1, cmp_arith1(call, opsym, x, rho));                                                                 \
+        R_Visible = TRUE;                                                                                              \
         NEXT();                                                                                                        \
     } while (0)
 
@@ -4339,12 +4344,14 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
             else                                                                                                       \
                 SKIP_OP();                                                                                             \
             SETSTACK_REAL_EX(-1, dval, sa);                                                                            \
+            R_Visible = TRUE;                                                                                          \
             NEXT();                                                                                                    \
         }                                                                                                              \
         else if (typex == INTSXP && vx.ival != NA_INTEGER)                                                             \
         {                                                                                                              \
             SKIP_OP();                                                                                                 \
             SETSTACK_REAL_EX(-1, fun(vx.ival), NULL);                                                                  \
+            R_Visible = TRUE;                                                                                          \
             NEXT();                                                                                                    \
         }                                                                                                              \
         Builtin1(do_math1, sym, rho);                                                                                  \
@@ -4357,6 +4364,7 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
         SKIP_OP();                                                                                                     \
         SETSTACK_REAL(-2, fun(a, b));                                                                                  \
         R_BCNodeStackTop--;                                                                                            \
+        R_Visible = TRUE;                                                                                              \
         NEXT();                                                                                                        \
     } while (0)
 
@@ -4369,6 +4377,7 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
             SKIP_OP();                                                                                                 \
             SETSTACK_INTEGER(-2, (int)dval);                                                                           \
             R_BCNodeStackTop--;                                                                                        \
+            R_Visible = TRUE;                                                                                          \
             NEXT();                                                                                                    \
         }                                                                                                              \
     } while (0)
@@ -4383,6 +4392,7 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
         double dval = fun(a, b);                                                                                       \
         SETSTACK_REAL_EX(-2, dval, ans);                                                                               \
         R_BCNodeStackTop--;                                                                                            \
+        R_Visible = TRUE;                                                                                              \
         NEXT();                                                                                                        \
     } while (0)
 
@@ -4396,6 +4406,7 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
             SKIP_OP();                                                                                                 \
             SETSTACK_INTEGER_EX(-2, val, ans);                                                                         \
             R_BCNodeStackTop--;                                                                                        \
+            R_Visible = TRUE;                                                                                          \
             NEXT();                                                                                                    \
         }                                                                                                              \
     } while (0)
@@ -4411,12 +4422,14 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
         {                                                                                                              \
             SKIP_OP();                                                                                                 \
             SETSTACK_REAL_EX(-1, op vx.dval, sa);                                                                      \
+            R_Visible = TRUE;                                                                                          \
             NEXT();                                                                                                    \
         }                                                                                                              \
         else if (typex == INTSXP && vx.ival != NA_INTEGER)                                                             \
         {                                                                                                              \
             SKIP_OP();                                                                                                 \
             SETSTACK_INTEGER_EX(-1, op vx.ival, sa);                                                                   \
+            R_Visible = TRUE;                                                                                          \
             NEXT();                                                                                                    \
         }                                                                                                              \
         Arith1(opsym);                                                                                                 \
@@ -4491,6 +4504,7 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
             else                                                                                                       \
                 SKIP_OP();                                                                                             \
             SETSTACK_REAL_EX(-1, dval, sa);                                                                            \
+            R_Visible = TRUE;                                                                                          \
             NEXT();                                                                                                    \
         }                                                                                                              \
         SEXP call = VECTOR_ELT(constants, GETOP());                                                                    \
@@ -4498,6 +4512,7 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
         SETSTACK(-1, args); /* to protect */                                                                           \
         SEXP op = getPrimitive(R_LogSym, SPECIALSXP);                                                                  \
         SETSTACK(-1, do_log_builtin(call, op, args, rho));                                                             \
+        R_Visible = TRUE;                                                                                              \
         NEXT();                                                                                                        \
     } while (0)
 
@@ -4526,6 +4541,7 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
                 SKIP_OP();                                                                                             \
             R_BCNodeStackTop--;                                                                                        \
             SETSTACK_REAL_EX(-1, dval, sa);                                                                            \
+            R_Visible = TRUE;                                                                                          \
             NEXT();                                                                                                    \
         }                                                                                                              \
         SEXP call = VECTOR_ELT(constants, GETOP());                                                                    \
@@ -4535,6 +4551,7 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
         SETSTACK(-1, args); /* to protect */                                                                           \
         SEXP op = getPrimitive(R_LogSym, SPECIALSXP);                                                                  \
         SETSTACK(-1, do_log_builtin(call, op, args, rho));                                                             \
+        R_Visible = TRUE;                                                                                              \
         NEXT();                                                                                                        \
     } while (0)
 
@@ -4594,6 +4611,7 @@ static R_INLINE double (*getMath1Fun(int i, SEXP call))(double)
                     warningcall(call, R_MSG_NA);                                                                       \
             }                                                                                                          \
             SETSTACK_REAL_EX(-1, dval, sa);                                                                            \
+            R_Visible = TRUE;                                                                                          \
             NEXT();                                                                                                    \
         }                                                                                                              \
         SEXP args = CONS_NR(GETSTACK(-1), R_NilValue);                                                                 \
@@ -4601,6 +4619,7 @@ static R_INLINE double (*getMath1Fun(int i, SEXP call))(double)
         SETSTACK(-1, args); /* to protect */                                                                           \
         SEXP op = getPrimitive(sym, BUILTINSXP);                                                                       \
         SETSTACK(-1, do_math1(call, op, args, rho));                                                                   \
+        R_Visible = TRUE;                                                                                              \
         NEXT();                                                                                                        \
     } while (0)
 
@@ -4623,6 +4642,7 @@ static R_INLINE double (*getMath1Fun(int i, SEXP call))(double)
             vmaxset(vmax);                                                                                             \
             R_BCNodeStackTop -= nargs;                                                                                 \
             SETSTACK(-1, val);                                                                                         \
+            R_Visible = TRUE;                                                                                          \
             NEXT();                                                                                                    \
         }                                                                                                              \
         SEXP args = R_NilValue;                                                                                        \
@@ -4636,6 +4656,7 @@ static R_INLINE double (*getMath1Fun(int i, SEXP call))(double)
         SEXP sym = CAR(call);                                                                                          \
         SEXP op = getPrimitive(sym, BUILTINSXP);                                                                       \
         SETSTACK(-1, do_dotcall(call, op, args, rho));                                                                 \
+        R_Visible = TRUE;                                                                                              \
         NEXT();                                                                                                        \
     } while (0)
 
@@ -4656,6 +4677,7 @@ static R_INLINE double (*getMath1Fun(int i, SEXP call))(double)
                 SKIP_OP(); /* skip 'call' index */                                                                     \
                 R_BCNodeStackTop--;                                                                                    \
                 SETSTACK_INTSEQ(-1, rn1, rn2);                                                                         \
+                R_Visible = TRUE;                                                                                      \
                 NEXT();                                                                                                \
             }                                                                                                          \
         }                                                                                                              \
@@ -4673,6 +4695,7 @@ static R_INLINE double (*getMath1Fun(int i, SEXP call))(double)
             {                                                                                                          \
                 SKIP_OP(); /* skip 'call' index */                                                                     \
                 SETSTACK_INTSEQ(-1, 1, len);                                                                           \
+                R_Visible = TRUE;                                                                                      \
                 NEXT();                                                                                                \
             }                                                                                                          \
         }                                                                                                              \
@@ -4691,6 +4714,7 @@ static R_INLINE double (*getMath1Fun(int i, SEXP call))(double)
             {                                                                                                          \
                 SKIP_OP(); /* skip 'call' index */                                                                     \
                 SETSTACK_INTSEQ(-1, 1, rlen);                                                                          \
+                R_Visible = TRUE;                                                                                      \
                 NEXT();                                                                                                \
             }                                                                                                          \
         }                                                                                                              \
@@ -5367,6 +5391,7 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
         SEXP args = CALL_FRAME_ARGS();                                                                                 \
         SEXP value = fun(call, symbol, args, rho);                                                                     \
         POP_CALL_FRAME_PLUS(2, value);                                                                                 \
+        R_Visible = TRUE;                                                                                              \
         NEXT();                                                                                                        \
     } while (0)
 
@@ -5465,12 +5490,14 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
     do                                                                                                                 \
     {                                                                                                                  \
         SETSTACK(-1, fun(GETSTACK(-1)) ? R_TrueValue : R_FalseValue);                                                  \
+        R_Visible = TRUE;                                                                                              \
         NEXT();                                                                                                        \
     } while (0)
 #define DO_ISTYPE(type)                                                                                                \
     do                                                                                                                 \
     {                                                                                                                  \
         SETSTACK(-1, TYPEOF(GETSTACK(-1)) == type ? R_TrueValue : R_FalseValue);                                       \
+        R_Visible = TRUE;                                                                                              \
         NEXT();                                                                                                        \
     } while (0)
 #define isNumericOnly(x) (isNumeric(x) && !isLogical(x))
@@ -5636,6 +5663,7 @@ static R_INLINE void VECSUBSET_PTR(R_bcstack_t *sx, R_bcstack_t *si, R_bcstack_t
         VECSUBSET_PTR(R_BCNodeStackTop - 2, R_BCNodeStackTop - 1, R_BCNodeStackTop - 2, rho, constants, callidx,       \
                       sub2);                                                                                           \
         R_BCNodeStackTop--;                                                                                            \
+        R_Visible = TRUE;                                                                                              \
     } while (0)
 
 static R_INLINE SEXP getMatrixDim(SEXP mat)
@@ -5731,6 +5759,7 @@ static R_INLINE void MATSUBSET_PTR(R_bcstack_t *sx, R_bcstack_t *si, R_bcstack_t
         MATSUBSET_PTR(R_BCNodeStackTop - 3, R_BCNodeStackTop - 2, R_BCNodeStackTop - 1, R_BCNodeStackTop - 3, rho,     \
                       constants, callidx, sub2);                                                                       \
         R_BCNodeStackTop -= 2;                                                                                         \
+        R_Visible = TRUE;                                                                                              \
     } while (0)
 
 static R_INLINE SEXP addStackArgsList(int n, R_bcstack_t *start, SEXP val)
@@ -5787,6 +5816,7 @@ static R_INLINE void SUBSET_N_PTR(R_bcstack_t *sx, int rank, R_bcstack_t *si, R_
         SUBSET_N_PTR(R_BCNodeStackTop - rank - 1, rank, R_BCNodeStackTop - rank, R_BCNodeStackTop - rank - 1, rho,     \
                      constants, callidx, sub2);                                                                        \
         R_BCNodeStackTop -= rank;                                                                                      \
+        R_Visible = TRUE;                                                                                              \
     } while (0)
 
 static R_INLINE Rboolean setElementFromScalar(SEXP vec, R_xlen_t i, int typev, scalar_value_t *v)
@@ -7124,6 +7154,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 SETSTACK(-1, value);
             else
                 SETSTACK(-1, R_subset3_dflt(x, PRINTNAME(symbol), R_NilValue));
+            R_Visible = TRUE;
             NEXT();
         }
         OP(DOLLARGETS, 2) :
@@ -7164,6 +7195,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             SEXP arg = GETSTACK(-1);
             Rboolean test = (TYPEOF(arg) == INTSXP) && !inherits(arg, "factor");
             SETSTACK(-1, test ? R_TrueValue : R_FalseValue);
+            R_Visible = TRUE;
             NEXT();
         }
         OP(ISDOUBLE, 0) : DO_ISTYPE(REALSXP);
@@ -7188,6 +7220,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             SEXP value = GETSTACK(-1);
             if (LOGICAL(value)[0] == FALSE)
                 pc = codebase + label;
+            R_Visible = TRUE;
             NEXT();
         }
         OP(AND2ND, 1) :
@@ -7202,6 +7235,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             if (LOGICAL(value)[0] != TRUE)
                 SETSTACK(-2, value);
             R_BCNodeStackTop -= 1;
+            R_Visible = TRUE;
             NEXT();
         }
         OP(OR1ST, 2) :
@@ -7212,6 +7246,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             SEXP value = GETSTACK(-1);
             if (LOGICAL(value)[0] != NA_LOGICAL && LOGICAL(value)[0]) /* is true */
                 pc = codebase + label;
+            R_Visible = TRUE;
             NEXT();
         }
         OP(OR2ND, 1) :
@@ -7226,6 +7261,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             if (LOGICAL(value)[0] != FALSE)
                 SETSTACK(-2, value);
             R_BCNodeStackTop -= 1;
+            R_Visible = TRUE;
             NEXT();
         }
         OP(GETVAR_MISSOK, 1) : DO_GETVAR(FALSE, TRUE);
