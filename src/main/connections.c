@@ -3357,7 +3357,7 @@ static void outtext_close(Rconnection con)
         SET_STRING_ELT(tmp, this->len - 1, mkCharLocal(this->lastline));
         if (this->namesymbol)
             defineVar(this->namesymbol, tmp, env);
-        SET_NAMED(tmp, 2);
+        ENSURE_NAMEDMAX(tmp);
         this->data = tmp;
         UNPROTECT(1);
     }
@@ -3456,7 +3456,7 @@ static int text_vfprintf(Rconnection con, const char *format, va_list ap)
                 R_PreserveObject(tmp);
             }
             this->data = tmp;
-            SET_NAMED(tmp, 2);
+            ENSURE_NAMEDMAX(tmp);
             UNPROTECT(1);
         }
         else
@@ -3511,7 +3511,7 @@ static void outtext_init(Rconnection con, SEXP stext, const char *mode, int idx)
             PROTECT(val = allocVector(STRSXP, 0));
             defineVar(this->namesymbol, val, VECTOR_ELT(OutTextData, idx));
             /* Not clear if this is needed, but be conservative */
-            SET_NAMED(val, 2);
+            ENSURE_NAMEDMAX(val);
             UNPROTECT(1);
         }
         else
@@ -3523,7 +3523,7 @@ static void outtext_init(Rconnection con, SEXP stext, const char *mode, int idx)
                 warning(_("text connection: appending to a non-existent char vector"));
                 PROTECT(val = allocVector(STRSXP, 0));
                 defineVar(this->namesymbol, val, VECTOR_ELT(OutTextData, idx));
-                SET_NAMED(val, 2);
+                ENSURE_NAMEDMAX(val);
                 UNPROTECT(1);
             }
             PROTECT(val);
