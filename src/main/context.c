@@ -750,12 +750,17 @@ Rboolean R_ToplevelExec(void (*fun)(void *), void *data)
 {
     RCNTXT thiscontext;
     RCNTXT *volatile saveToplevelContext;
-    volatile SEXP topExp, oldHStack;
+    volatile SEXP topExp, oldHStack, oldRStack, oldRVal;
+    volatile Rboolean oldvis;
     Rboolean result;
 
     PROTECT(topExp = R_CurrentExpr);
     PROTECT(oldHStack = R_HandlerStack);
+    PROTECT(oldRStack = R_RestartStack);
+    PROTECT(oldRVal = R_ReturnedValue);
+    oldvis = R_Visible;
     R_HandlerStack = R_NilValue;
+    R_RestartStack = R_NilValue;
     saveToplevelContext = R_ToplevelContext;
 
     begincontext(&thiscontext, CTXT_TOPLEVEL, R_NilValue, R_GlobalEnv, R_BaseEnv, R_NilValue, R_NilValue);
@@ -772,7 +777,10 @@ Rboolean R_ToplevelExec(void (*fun)(void *), void *data)
     R_ToplevelContext = saveToplevelContext;
     R_CurrentExpr = topExp;
     R_HandlerStack = oldHStack;
-    UNPROTECT(2);
+    R_RestartStack = oldRStack;
+    R_ReturnedValue = oldRVal;
+    R_Visible = oldvis;
+    UNPROTECT(4);
 
     return result;
 }
