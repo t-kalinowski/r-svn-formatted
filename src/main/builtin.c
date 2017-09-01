@@ -145,7 +145,7 @@ SEXP attribute_hidden do_makelazy(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP attribute_hidden do_onexit(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     RCNTXT *ctxt;
-    SEXP code, oldcode, tmp, argList;
+    SEXP code, oldcode, argList;
     int addit = 0;
     static SEXP do_onexit_formals = NULL;
 
@@ -174,28 +174,21 @@ SEXP attribute_hidden do_onexit(SEXP call, SEXP op, SEXP args, SEXP rho)
         ctxt = ctxt->nextcontext;
     if (ctxt->callflag & CTXT_FUNCTION)
     {
-        if (addit && (oldcode = ctxt->conexit) != R_NilValue)
+        if (code == R_NilValue && !addit)
+            ctxt->conexit = R_NilValue;
+        else
         {
-            if (CAR(oldcode) != R_BraceSymbol)
-            {
-                PROTECT(tmp = allocList(3));
-                SETCAR(tmp, R_BraceSymbol);
-                SETCADR(tmp, oldcode);
-                SETCADDR(tmp, code);
-                SET_TYPEOF(tmp, LANGSXP);
-                ctxt->conexit = tmp;
-                UNPROTECT(1);
-            }
+            SEXP codelist = LCONS(code, R_NilValue);
+            oldcode = ctxt->conexit;
+            if (oldcode == R_NilValue || !addit)
+                ctxt->conexit = codelist;
             else
             {
-                PROTECT(tmp = allocList(1));
-                SETCAR(tmp, code);
-                ctxt->conexit = listAppend(duplicate(oldcode), tmp);
+                PROTECT(codelist);
+                ctxt->conexit = listAppend(duplicate(oldcode), codelist);
                 UNPROTECT(1);
             }
         }
-        else
-            ctxt->conexit = code;
     }
     UNPROTECT(1);
     return R_NilValue;
