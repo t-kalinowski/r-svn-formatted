@@ -3861,58 +3861,84 @@ SEXP(SET_VECTOR_ELT)(SEXP x, R_xlen_t i, SEXP v)
     return VECTOR_ELT(x, i) = v;
 }
 
+/* check for a CONS-like object */
+#ifdef TESTING_WRITE_BARRIER
+static R_INLINE SEXP CHKCONS(SEXP e)
+{
+    switch (TYPEOF(e))
+    {
+    case LISTSXP:
+    case LANGSXP:
+    case NILSXP:
+    case DOTSXP:
+    case CLOSXP:    /**** use separate accessors? */
+    case BCODESXP:  /**** use separate accessors? */
+    case ENVSXP:    /**** use separate accessors? */
+    case PROMSXP:   /**** use separate accessors? */
+    case EXTPTRSXP: /**** use separate accessors? */
+        return CHK(e);
+    default:
+        error("CAR/CDR/TAG or similar applied to %s object", type2char(TYPEOF(e)));
+    }
+}
+#else
+#define CHKCONS(e) CHK(e)
+#endif
+
 /* List Accessors */
 SEXP(TAG)(SEXP e)
 {
-    return CHK(TAG(CHK(e)));
+    return CHK(TAG(CHKCONS(e)));
 }
 SEXP(CAR)(SEXP e)
 {
-    return CHK(CAR(CHK(e)));
+    return CHK(CAR(CHKCONS(e)));
 }
 SEXP(CDR)(SEXP e)
 {
-    return CHK(CDR(CHK(e)));
+    return CHK(CDR(CHKCONS(e)));
 }
 SEXP(CAAR)(SEXP e)
 {
-    return CHK(CAAR(CHK(e)));
+    return CHK(CAAR(CHKCONS(e)));
 }
 SEXP(CDAR)(SEXP e)
 {
-    return CHK(CDAR(CHK(e)));
+    return CHK(CDAR(CHKCONS(e)));
 }
 SEXP(CADR)(SEXP e)
 {
-    return CHK(CADR(CHK(e)));
+    return CHK(CADR(CHKCONS(e)));
 }
 SEXP(CDDR)(SEXP e)
 {
-    return CHK(CDDR(CHK(e)));
+    return CHK(CDDR(CHKCONS(e)));
 }
 SEXP(CDDDR)(SEXP e)
 {
-    return CHK(CDDDR(CHK(e)));
+    return CHK(CDDDR(CHKCONS(e)));
 }
 SEXP(CADDR)(SEXP e)
 {
-    return CHK(CADDR(CHK(e)));
+    return CHK(CADDR(CHKCONS(e)));
 }
 SEXP(CADDDR)(SEXP e)
 {
-    return CHK(CADDDR(CHK(e)));
+    return CHK(CADDDR(CHKCONS(e)));
 }
 SEXP(CAD4R)(SEXP e)
 {
-    return CHK(CAD4R(CHK(e)));
+    return CHK(CAD4R(CHKCONS(e)));
 }
 int(MISSING)(SEXP x)
 {
-    return MISSING(CHK(x));
+    return MISSING(CHKCONS(x));
 }
 
 void(SET_TAG)(SEXP x, SEXP v)
 {
+    if (CHKCONS(x) == NULL || x == R_NilValue)
+        error(_("bad value"));
     FIX_REFCNT(x, TAG(x), v);
     CHECK_OLD_TO_NEW(x, v);
     TAG(x) = v;
@@ -3920,7 +3946,7 @@ void(SET_TAG)(SEXP x, SEXP v)
 
 SEXP(SETCAR)(SEXP x, SEXP y)
 {
-    if (x == NULL || x == R_NilValue)
+    if (CHKCONS(x) == NULL || x == R_NilValue)
         error(_("bad value"));
     FIX_REFCNT(x, CAR(x), y);
     CHECK_OLD_TO_NEW(x, y);
@@ -3930,7 +3956,7 @@ SEXP(SETCAR)(SEXP x, SEXP y)
 
 SEXP(SETCDR)(SEXP x, SEXP y)
 {
-    if (x == NULL || x == R_NilValue)
+    if (CHKCONS(x) == NULL || x == R_NilValue)
         error(_("bad value"));
     FIX_REFCNT(x, CDR(x), y);
     CHECK_OLD_TO_NEW(x, y);
@@ -3941,7 +3967,7 @@ SEXP(SETCDR)(SEXP x, SEXP y)
 SEXP(SETCADR)(SEXP x, SEXP y)
 {
     SEXP cell;
-    if (x == NULL || x == R_NilValue || CDR(x) == NULL || CDR(x) == R_NilValue)
+    if (CHKCONS(x) == NULL || x == R_NilValue || CHKCONS(CDR(x)) == NULL || CDR(x) == R_NilValue)
         error(_("bad value"));
     cell = CDR(x);
     FIX_REFCNT(cell, CAR(cell), y);
@@ -3953,8 +3979,8 @@ SEXP(SETCADR)(SEXP x, SEXP y)
 SEXP(SETCADDR)(SEXP x, SEXP y)
 {
     SEXP cell;
-    if (x == NULL || x == R_NilValue || CDR(x) == NULL || CDR(x) == R_NilValue || CDDR(x) == NULL ||
-        CDDR(x) == R_NilValue)
+    if (CHKCONS(x) == NULL || x == R_NilValue || CHKCONS(CDR(x)) == NULL || CDR(x) == R_NilValue ||
+        CHKCONS(CDDR(x)) == NULL || CDDR(x) == R_NilValue)
         error(_("bad value"));
     cell = CDDR(x);
     FIX_REFCNT(cell, CAR(cell), y);
@@ -3966,8 +3992,8 @@ SEXP(SETCADDR)(SEXP x, SEXP y)
 SEXP(SETCADDDR)(SEXP x, SEXP y)
 {
     SEXP cell;
-    if (CHK(x) == NULL || x == R_NilValue || CHK(CDR(x)) == NULL || CDR(x) == R_NilValue || CHK(CDDR(x)) == NULL ||
-        CDDR(x) == R_NilValue || CHK(CDDDR(x)) == NULL || CDDDR(x) == R_NilValue)
+    if (CHKCONS(x) == NULL || x == R_NilValue || CHKCONS(CDR(x)) == NULL || CDR(x) == R_NilValue ||
+        CHKCONS(CDDR(x)) == NULL || CDDR(x) == R_NilValue || CHKCONS(CDDDR(x)) == NULL || CDDDR(x) == R_NilValue)
         error(_("bad value"));
     cell = CDDDR(x);
     FIX_REFCNT(cell, CAR(cell), y);
@@ -3981,9 +4007,9 @@ SEXP(SETCADDDR)(SEXP x, SEXP y)
 SEXP(SETCAD4R)(SEXP x, SEXP y)
 {
     SEXP cell;
-    if (CHK(x) == NULL || x == R_NilValue || CHK(CDR(x)) == NULL || CDR(x) == R_NilValue || CHK(CDDR(x)) == NULL ||
-        CDDR(x) == R_NilValue || CHK(CDDDR(x)) == NULL || CDDDR(x) == R_NilValue || CHK(CD4R(x)) == NULL ||
-        CD4R(x) == R_NilValue)
+    if (CHKCONS(x) == NULL || x == R_NilValue || CHKCONS(CDR(x)) == NULL || CDR(x) == R_NilValue ||
+        CHKCONS(CDDR(x)) == NULL || CDDR(x) == R_NilValue || CHKCONS(CDDDR(x)) == NULL || CDDDR(x) == R_NilValue ||
+        CHKCONS(CD4R(x)) == NULL || CD4R(x) == R_NilValue)
         error(_("bad value"));
     cell = CD4R(x);
     FIX_REFCNT(cell, CAR(cell), y);
@@ -3994,7 +4020,7 @@ SEXP(SETCAD4R)(SEXP x, SEXP y)
 
 void(SET_MISSING)(SEXP x, int v)
 {
-    SET_MISSING(CHK(x), v);
+    SET_MISSING(CHKCONS(x), v);
 }
 
 /* Closure Accessors */
