@@ -3723,8 +3723,7 @@ void(SET_GROWABLE_BIT)(SEXP x)
     SET_GROWABLE_BIT(CHK(x));
 }
 
-static int nvec[32] = {0, 1, 1, 1, 1, 1, 1, 1, // does NILSXP really count?
-                       1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1};
+static int nvec[32] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1};
 
 static R_INLINE SEXP CHK2(SEXP x)
 {
