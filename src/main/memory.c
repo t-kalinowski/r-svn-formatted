@@ -3736,7 +3736,7 @@ static R_INLINE SEXP CHK2(SEXP x)
 /* Vector Accessors */
 int(LENGTH)(SEXP x)
 {
-    return LENGTH(CHK2(x));
+    return x == R_NilValue ? 0 : LENGTH(CHK2(x));
 }
 int(TRUELENGTH)(SEXP x)
 {
