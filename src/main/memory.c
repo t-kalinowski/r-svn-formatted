@@ -3634,7 +3634,7 @@ int(REFCNT)(SEXP x)
 void(SET_ATTRIB)(SEXP x, SEXP v)
 {
     if (TYPEOF(v) != LISTSXP && TYPEOF(v) != NILSXP)
-        error("value of 'SET_ATTRIB' must be a pairlist or NULL, not a '%s'", type2char(TYPEOF(x)));
+        error("value of 'SET_ATTRIB' must be a pairlist or NULL, not a '%s'", type2char(TYPEOF(v)));
     FIX_REFCNT(x, ATTRIB(x), v);
     CHECK_OLD_TO_NEW(x, v);
     ATTRIB(x) = v;
