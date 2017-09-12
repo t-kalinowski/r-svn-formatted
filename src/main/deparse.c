@@ -679,7 +679,7 @@ static void attr1(SEXP s, LocalParseData *d)
 
 static void attr2(SEXP s, LocalParseData *d)
 {
-    int localOpts = d->opts, nice_names = (localOpts & NICE_NAMES);
+    int d_opts_in = d->opts, nice_names = (d_opts_in & NICE_NAMES);
 
     if (hasAttributes(s, nice_names))
     {
@@ -722,7 +722,7 @@ static void attr2(SEXP s, LocalParseData *d)
                         deparse2buff(TAG(a), d);
                         print2buff("\"", d);
                     }
-                    d->opts = localOpts;
+                    d->opts = d_opts_in;
                 }
                 print2buff(" = ", d);
                 d->fnarg = TRUE;
@@ -826,7 +826,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
     PPinfo fop;
     Rboolean lookahead = FALSE, lbreak = FALSE, parens, fnarg = d->fnarg, outerparens, doquote;
     SEXP op, t;
-    int localOpts = d->opts, i, n;
+    int d_opts_in = d->opts, i, n;
 
     d->fnarg = FALSE;
 
@@ -842,13 +842,13 @@ static void deparse2buff(SEXP s, LocalParseData *d)
         print2buff("NULL", d);
         break;
     case SYMSXP:
-        doquote = (localOpts & QUOTEEXPRESSIONS) && strlen(CHAR(PRINTNAME(s)));
+        doquote = (d_opts_in & QUOTEEXPRESSIONS) && strlen(CHAR(PRINTNAME(s)));
         if (doquote)
         {
             attr1(s, d);
             print2buff("quote(", d);
         }
-        if (localOpts & S_COMPAT)
+        if (d_opts_in & S_COMPAT)
         {
             print2buff(quotify(PRINTNAME(s), '"'), d);
         }
@@ -885,7 +885,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
             print2buff("<promise: ", d);
             d->opts &= ~QUOTEEXPRESSIONS; /* don't want delay(quote()) */
             deparse2buff(PREXPR(s), d);
-            d->opts = localOpts;
+            d->opts = d_opts_in;
             print2buff(">", d);
         }
         else
@@ -896,7 +896,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
         }
         break;
     case CLOSXP:
-        if (localOpts & SHOWATTRIBUTES)
+        if (d_opts_in & SHOWATTRIBUTES)
             attr1(s, d);
         if ((d->opts & USESOURCE) && !isNull(t = getAttrib(s, R_SrcrefSymbol)))
             src2buff1(t, d);
@@ -911,9 +911,9 @@ static void deparse2buff(SEXP s, LocalParseData *d)
 
             writeline(d);
             deparse2buff(BODY_EXPR(s), d);
-            d->opts = localOpts;
+            d->opts = d_opts_in;
         }
-        if (localOpts & SHOWATTRIBUTES)
+        if (d_opts_in & SHOWATTRIBUTES)
             attr2(s, d);
         break;
     case ENVSXP:
@@ -922,18 +922,18 @@ static void deparse2buff(SEXP s, LocalParseData *d)
         break;
     case VECSXP:
         d->opts |= NICE_NAMES; // as vec2buf() already prints names nicely
-        if (localOpts & SHOWATTRIBUTES)
+        if (d_opts_in & SHOWATTRIBUTES)
             attr1(s, d);
         print2buff("list(", d);
         vec2buff(s, d);
         print2buff(")", d);
-        if (localOpts & SHOWATTRIBUTES)
+        if (d_opts_in & SHOWATTRIBUTES)
             attr2(s, d);
-        d->opts = localOpts;
+        d->opts = d_opts_in;
         break;
     case EXPRSXP:
         d->opts |= NICE_NAMES; // as vec2buf() already prints names nicely
-        if (localOpts & SHOWATTRIBUTES)
+        if (d_opts_in & SHOWATTRIBUTES)
             attr1(s, d);
         if (length(s) <= 0)
             print2buff("expression()", d);
@@ -946,12 +946,12 @@ static void deparse2buff(SEXP s, LocalParseData *d)
             d->opts = locOpts;
             print2buff(")", d);
         }
-        if (localOpts & SHOWATTRIBUTES)
+        if (d_opts_in & SHOWATTRIBUTES)
             attr2(s, d);
-        d->opts = localOpts;
+        d->opts = d_opts_in;
         break;
     case LISTSXP:
-        if (localOpts & SHOWATTRIBUTES)
+        if (d_opts_in & SHOWATTRIBUTES)
             attr1(s, d);
         print2buff("pairlist(", d);
         d->inlist++;
@@ -961,7 +961,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
             {
                 d->opts = SIMPLEDEPARSE; /* turn off quote()ing */
                 deparse2buff(TAG(t), d);
-                d->opts = localOpts;
+                d->opts = d_opts_in;
                 print2buff(" = ", d);
             }
             deparse2buff(CAR(t), d);
@@ -971,20 +971,20 @@ static void deparse2buff(SEXP s, LocalParseData *d)
         {
             d->opts = SIMPLEDEPARSE; /* turn off quote()ing */
             deparse2buff(TAG(t), d);
-            d->opts = localOpts;
+            d->opts = d_opts_in;
             print2buff(" = ", d);
         }
         deparse2buff(CAR(t), d);
         print2buff(")", d);
         d->inlist--;
-        if (localOpts & SHOWATTRIBUTES)
+        if (d_opts_in & SHOWATTRIBUTES)
             attr2(s, d);
         break;
     case LANGSXP:
         printcomment(s, d);
         if (!isNull(ATTRIB(s)))
             d->sourceable = FALSE;
-        if (localOpts & QUOTEEXPRESSIONS)
+        if (d_opts_in & QUOTEEXPRESSIONS)
         {
             print2buff("quote(", d);
             d->opts &= SIMPLE_OPTS;
@@ -1342,9 +1342,9 @@ static void deparse2buff(SEXP s, LocalParseData *d)
             args2buff(CDR(s), 0, 0, d);
             print2buff(")", d);
         }
-        if (localOpts & QUOTEEXPRESSIONS)
+        if (d_opts_in & QUOTEEXPRESSIONS)
         {
-            d->opts = localOpts;
+            d->opts = d_opts_in;
             print2buff(")", d);
         }
         break; // case LANGSXP
@@ -1354,10 +1354,10 @@ static void deparse2buff(SEXP s, LocalParseData *d)
     case REALSXP:
     case CPLXSXP:
     case RAWSXP:
-        if (localOpts & SHOWATTRIBUTES)
+        if (d_opts_in & SHOWATTRIBUTES)
             attr1(s, d);
         vector2buff(s, d);
-        if (localOpts & SHOWATTRIBUTES)
+        if (d_opts_in & SHOWATTRIBUTES)
             attr2(s, d);
         break;
     case EXTPTRSXP: {
@@ -1523,7 +1523,7 @@ static void deparse2buf_name(SEXP nv, int i, LocalParseData *d)
             deparse2buff(STRING_ELT(nv, i), d);
             print2buff("\"", d);
         }
-        /* d->opts = localOpts; */
+        /* d->opts = d_opts_in; */
         print2buff(" = ", d);
     }
 }
