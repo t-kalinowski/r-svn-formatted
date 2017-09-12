@@ -89,6 +89,16 @@
 #include <R_ext/RS.h> /* for test of S4 objects */
 #include <R_ext/Itermacros.h>
 
+/* The SET_STDVEC_LENGTH macro is used to modify the length of
+   growable vectors. This would need to change to allow ALTREP vectors to
+   grow in place.
+
+   SETLENGTH is used when checking the write barrier.
+   Always using SETLENGTH would be OK but maybe a little less efficient. */
+#ifndef SET_STDVEC_LENGTH
+#define SET_STDVEC_LENGTH(x, v) SETLENGTH(x, v)
+#endif
+
 /* This version of SET_VECTOR_ELT does not increment the REFCNT for
    the new vector->element link. It assumes that the old vector is
    becoming garbage and so it's references become no longer
@@ -145,9 +155,9 @@ static SEXP EnlargeVector(SEXP x, R_xlen_t newlen)
 
     /* if the vector is not shared, is growable. and has room, then
        increase its length */
-    if (!MAYBE_SHARED(x) && IS_GROWABLE(x) && TRUELENGTH(x) >= newlen)
+    if (!MAYBE_SHARED(x) && IS_GROWABLE(x) && XTRUELENGTH(x) >= newlen)
     {
-        SETLENGTH(x, newlen);
+        SET_STDVEC_LENGTH(x, newlen);
         names = getNames(x);
         if (!isNull(names))
         {
@@ -180,14 +190,15 @@ static SEXP EnlargeVector(SEXP x, R_xlen_t newlen)
         /* sometimes this is called when no expansion is needed */
         newtruelen = newlen;
 
-        /**** for now, don't cross the long vector boundary; drop when
-          ALTREP is merged */
-#ifdef ALTREP
-#error drop the limitation to short vectors
-#endif
-    if (newtruelen > R_LEN_T_MAX)
-        newtruelen = newlen;
+    /**** for now, don't cross the long vector boundary; drop when
+      ALTREP is merged */
+    /*
+    #ifdef ALTREP
+    #error drop the limitation to short vectors
+    #endif
 
+        if (newtruelen > R_LEN_T_MAX) newtruelen = newlen;
+    */
     PROTECT(x);
     PROTECT(newx = allocVector(TYPEOF(x), newtruelen));
 
@@ -242,7 +253,7 @@ static SEXP EnlargeVector(SEXP x, R_xlen_t newlen)
     {
         SET_GROWABLE_BIT(newx);
         SET_TRUELENGTH(newx, newtruelen);
-        SETLENGTH(newx, newlen);
+        SET_STDVEC_LENGTH(newx, newlen);
     }
 
     /* Adjust the attribute list. */
