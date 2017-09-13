@@ -61,7 +61,7 @@
 /* Copy the first part of user declarations.  */
 
 /*
- *  R : A Computer Langage for Statistical Data Analysis
+ *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996, 1997  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 1997--2016  The R Core Team
  *  Copyright (C) 2010 Duncan Murdoch
