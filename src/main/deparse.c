@@ -153,10 +153,7 @@ SEXP attribute_hidden do_deparse(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
 
-    if (length(args) < 1)
-        error(_("too few arguments"));
-
-    SEXP ca1 = CAR(args);
+    SEXP expr = CAR(args);
     args = CDR(args);
     int cut0 = DEFAULT_Cutoff;
     if (!isNull(CAR(args)))
@@ -176,8 +173,7 @@ SEXP attribute_hidden do_deparse(SEXP call, SEXP op, SEXP args, SEXP rho)
     int nlines = asInteger(CAR(args));
     if (nlines == NA_INTEGER)
         nlines = -1;
-    ca1 = deparse1WithCutoff(ca1, FALSE, cut0, backtick, opts, nlines);
-    return ca1;
+    return deparse1WithCutoff(expr, FALSE, cut0, backtick, opts, nlines);
 }
 
 SEXP deparse1(SEXP call, Rboolean abbrev, int opts)
@@ -855,7 +851,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
         doquote = (d_opts_in & QUOTEEXPRESSIONS) && strlen(CHAR(PRINTNAME(s)));
         if (doquote)
         {
-            doAttr = attr1(s, d);
+            doAttr = (d_opts_in & SHOWATTRIBUTES) ? attr1(s, d) : FALSE;
             print2buff("quote(", d);
         }
         if (d_opts_in & S_COMPAT)
@@ -1542,7 +1538,8 @@ static void vector2buff(SEXP vector, LocalParseData *d)
     char *buff = 0, hex[64]; // 64 is more than enough
     int i, d_opts_in = d->opts, tlen = length(vector), quote = isString(vector) ? '"' : 0;
     SEXP nv = R_NilValue;
-    if (d_opts_in & NICE_NAMES)
+    Rboolean nice_names = d_opts_in & NICE_NAMES;
+    if (nice_names)
     {
         nv = getAttrib(vector, R_NamesSymbol);
         if (length(nv) == 0)
@@ -1565,12 +1562,16 @@ static void vector2buff(SEXP vector, LocalParseData *d)
             }
     }
 
-    Rboolean namesX = (intSeq || tlen == 0);
-    if (namesX) // need to use structure(.,*) for names
+    Rboolean namesX = nice_names && (intSeq || tlen == 0);
+    if (namesX) // use structure(.,*) for names even if(nice_names)
         d->opts &= ~NICE_NAMES;
-    Rboolean doAttr = (d->opts & SHOWATTRIBUTES) ? attr1(vector, d) : FALSE;
+    Rboolean doAttr = (d_opts_in & SHOWATTRIBUTES) ? attr1(vector, d) : FALSE;
     if (tlen == 0)
     {
+#ifdef DEBUG_DEPARSE
+        REprintf("vector2buff(<tlen = 0>): namesX = %s, doAttr = %s\n", namesX ? "TRUE" : "FALSE",
+                 doAttr ? "TRUE" : "FALSE");
+#endif
         switch (TYPEOF(vector))
         {
         case LGLSXP:
