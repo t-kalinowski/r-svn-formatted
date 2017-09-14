@@ -3792,10 +3792,30 @@ SEXP(VECTOR_ELT)(SEXP x, R_xlen_t i)
     return CHK(VECTOR_ELT(x, i));
 }
 
+#ifdef CATCH_ZERO_LENGTH_ACCESS
+/* Attempts to read or write elements of a zero length vector will
+   result in a segfault, rather than read and write random memory. Not
+   enabled for now since Matrix seems to assume that even zero-length
+   arrays return non-NULL data pointers. */
+#define CHKZLN(x)                                                                                                      \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        CHK(x);                                                                                                        \
+        if (STDVEC_LENGTH(x) == 0)                                                                                     \
+            return NULL;                                                                                               \
+    } while (0)
+#else
+#define CHKZLN(x)                                                                                                      \
+    do                                                                                                                 \
+    {                                                                                                                  \
+    } while (0)
+#endif
+
 void *(STDVEC_DATAPTR)(SEXP x)
 {
     if (!isVector(x) && TYPEOF(x) != WEAKREFSXP)
         error("STDVEC_DATAPTR can only be applied to a vector, not a '%s'", type2char(TYPEOF(x)));
+    CHKZLN(x);
     return STDVEC_DATAPTR(x);
 }
 
@@ -3803,6 +3823,7 @@ int *(LOGICAL)(SEXP x)
 {
     if (TYPEOF(x) != LGLSXP)
         error("%s() can only be applied to a '%s', not a '%s'", "LOGICAL", "logical", type2char(TYPEOF(x)));
+    CHKZLN(x);
     return LOGICAL(x);
 }
 
@@ -3811,6 +3832,7 @@ int *(INTEGER)(SEXP x)
 {
     if (TYPEOF(x) != INTSXP && TYPEOF(x) != LGLSXP)
         error("%s() can only be applied to a '%s', not a '%s'", "INTEGER", "integer", type2char(TYPEOF(x)));
+    CHKZLN(x);
     return INTEGER(x);
 }
 
@@ -3818,6 +3840,7 @@ Rbyte *(RAW)(SEXP x)
 {
     if (TYPEOF(x) != RAWSXP)
         error("%s() can only be applied to a '%s', not a '%s'", "RAW", "raw", type2char(TYPEOF(x)));
+    CHKZLN(x);
     return RAW(x);
 }
 
@@ -3832,6 +3855,7 @@ Rcomplex *(COMPLEX)(SEXP x)
 {
     if (TYPEOF(x) != CPLXSXP)
         error("%s() can only be applied to a '%s', not a '%s'", "COMPLEX", "complex", type2char(TYPEOF(x)));
+    CHKZLN(x);
     return COMPLEX(x);
 }
 
@@ -3839,6 +3863,7 @@ SEXP *(STRING_PTR)(SEXP x)
 {
     if (TYPEOF(x) != STRSXP)
         error("%s() can only be applied to a '%s', not a '%s'", "STRING_PTR", "character", type2char(TYPEOF(x)));
+    CHKZLN(x);
     return STRING_PTR(CHK(x));
 }
 
