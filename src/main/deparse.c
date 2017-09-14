@@ -1550,7 +1550,7 @@ static void vector2buff(SEXP vector, LocalParseData *d)
     if (TYPEOF(vector) == INTSXP)
     {
         int *vec = INTEGER(vector), d_i;
-        intSeq = (vec[0] != NA_INTEGER && tlen > 1 && vec[1] != NA_INTEGER && abs(d_i = vec[1] - vec[0]) == 1);
+        intSeq = (tlen > 1 && vec[0] != NA_INTEGER && vec[1] != NA_INTEGER && abs(d_i = vec[1] - vec[0]) == 1);
         if (intSeq)
             for (i = 2; i < tlen; i++)
             {
