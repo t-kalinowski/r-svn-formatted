@@ -1089,7 +1089,7 @@ static void ReleaseLargeFreeVectors()
                 R_size_t size;
 #ifdef PROTECTCHECK
                 if (TYPEOF(s) == FREESXP)
-                    size = XLENGTH(s);
+                    size = STDVEC_LENGTH(s);
                 else
                     /* should not get here -- arrange for a warning/error? */
                     size = getVecSizeInVEC(s);
