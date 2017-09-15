@@ -3607,15 +3607,15 @@ int(LEVELS)(SEXP x)
 }
 int(REFCNT)(SEXP x)
 {
-    return REFCNT(x);
+    return REFCNT(CHK(x));
 }
 int(ALTREP)(SEXP x)
 {
-    return ALTREP(x);
+    return ALTREP(CHK(x));
 }
 int(IS_SCALAR)(SEXP x, int type)
 {
-    return IS_SCALAR(x, type);
+    return IS_SCALAR(CHK(x), type);
 }
 
 void(SET_ATTRIB)(SEXP x, SEXP v)
@@ -3774,14 +3774,14 @@ const char *(R_CHAR)(SEXP x)
 {
     if (TYPEOF(x) != CHARSXP) // Han-Tak proposes to prepend  'x && '
         error("%s() can only be applied to a '%s', not a '%s'", "CHAR", "CHARSXP", type2char(TYPEOF(x)));
-    return (const char *)CHAR(x);
+    return (const char *)CHAR(CHK(x));
 }
 
 SEXP(STRING_ELT)(SEXP x, R_xlen_t i)
 {
     if (TYPEOF(x) != STRSXP)
         error("%s() can only be applied to a '%s', not a '%s'", "STRING_ELT", "character vector", type2char(TYPEOF(x)));
-    return CHK(STRING_PTR(x)[i]);
+    return CHK(STRING_PTR(CHK(x))[i]);
 }
 
 SEXP(VECTOR_ELT)(SEXP x, R_xlen_t i)
@@ -3789,7 +3789,7 @@ SEXP(VECTOR_ELT)(SEXP x, R_xlen_t i)
     /* We need to allow vector-like types here */
     if (TYPEOF(x) != VECSXP && TYPEOF(x) != EXPRSXP && TYPEOF(x) != WEAKREFSXP)
         error("%s() can only be applied to a '%s', not a '%s'", "VECTOR_ELT", "list", type2char(TYPEOF(x)));
-    return CHK(VECTOR_ELT(x, i));
+    return CHK(VECTOR_ELT(CHK(x), i));
 }
 
 #ifdef TESTING_WRITE_BARRIER
@@ -3868,7 +3868,7 @@ SEXP *(STRING_PTR)(SEXP x)
     if (TYPEOF(x) != STRSXP)
         error("%s() can only be applied to a '%s', not a '%s'", "STRING_PTR", "character", type2char(TYPEOF(x)));
     CHKZLN(x);
-    return STRING_PTR(CHK(x));
+    return STRING_PTR(x);
 }
 
 SEXP *NORET(VECTOR_PTR)(SEXP x)
@@ -4121,11 +4121,11 @@ void(SET_RSTEP)(SEXP x, int v)
 /* not hidden since needed in some base packages */
 int(PRIMOFFSET)(SEXP x)
 {
-    return PRIMOFFSET(x);
+    return PRIMOFFSET(CHK(x));
 }
 attribute_hidden void(SET_PRIMOFFSET)(SEXP x, int v)
 {
-    SET_PRIMOFFSET(x, v);
+    SET_PRIMOFFSET(CHK(x), v);
 }
 #endif
 
@@ -4287,99 +4287,99 @@ attribute_hidden SEXP(SET_CXTAIL)(SEXP x, SEXP v)
 /* Test functions */
 Rboolean Rf_isNull(SEXP s)
 {
-    return isNull(s);
+    return isNull(CHK(s));
 }
 Rboolean Rf_isSymbol(SEXP s)
 {
-    return isSymbol(s);
+    return isSymbol(CHK(s));
 }
 Rboolean Rf_isLogical(SEXP s)
 {
-    return isLogical(s);
+    return isLogical(CHK(s));
 }
 Rboolean Rf_isReal(SEXP s)
 {
-    return isReal(s);
+    return isReal(CHK(s));
 }
 Rboolean Rf_isComplex(SEXP s)
 {
-    return isComplex(s);
+    return isComplex(CHK(s));
 }
 Rboolean Rf_isExpression(SEXP s)
 {
-    return isExpression(s);
+    return isExpression(CHK(s));
 }
 Rboolean Rf_isEnvironment(SEXP s)
 {
-    return isEnvironment(s);
+    return isEnvironment(CHK(s));
 }
 Rboolean Rf_isString(SEXP s)
 {
-    return isString(s);
+    return isString(CHK(s));
 }
 Rboolean Rf_isObject(SEXP s)
 {
-    return isObject(s);
+    return isObject(CHK(s));
 }
 
 /* Bindings accessors */
 Rboolean attribute_hidden(IS_ACTIVE_BINDING)(SEXP b)
 {
-    return IS_ACTIVE_BINDING(b);
+    return IS_ACTIVE_BINDING(CHK(b));
 }
 Rboolean attribute_hidden(BINDING_IS_LOCKED)(SEXP b)
 {
-    return BINDING_IS_LOCKED(b);
+    return BINDING_IS_LOCKED(CHK(b));
 }
 void attribute_hidden(SET_ACTIVE_BINDING_BIT)(SEXP b)
 {
-    SET_ACTIVE_BINDING_BIT(b);
+    SET_ACTIVE_BINDING_BIT(CHK(b));
 }
 void attribute_hidden(LOCK_BINDING)(SEXP b)
 {
-    LOCK_BINDING(b);
+    LOCK_BINDING(CHK(b));
 }
 void attribute_hidden(UNLOCK_BINDING)(SEXP b)
 {
-    UNLOCK_BINDING(b);
+    UNLOCK_BINDING(CHK(b));
 }
 
 attribute_hidden void(SET_BASE_SYM_CACHED)(SEXP b)
 {
-    SET_BASE_SYM_CACHED(b);
+    SET_BASE_SYM_CACHED(CHK(b));
 }
 attribute_hidden void(UNSET_BASE_SYM_CACHED)(SEXP b)
 {
-    UNSET_BASE_SYM_CACHED(b);
+    UNSET_BASE_SYM_CACHED(CHK(b));
 }
 attribute_hidden Rboolean(BASE_SYM_CACHED)(SEXP b)
 {
-    return BASE_SYM_CACHED(b);
+    return BASE_SYM_CACHED(CHK(b));
 }
 
 attribute_hidden void(SET_SPECIAL_SYMBOL)(SEXP b)
 {
-    SET_SPECIAL_SYMBOL(b);
+    SET_SPECIAL_SYMBOL(CHK(b));
 }
 attribute_hidden void(UNSET_SPECIAL_SYMBOL)(SEXP b)
 {
-    UNSET_SPECIAL_SYMBOL(b);
+    UNSET_SPECIAL_SYMBOL(CHK(b));
 }
 attribute_hidden Rboolean(IS_SPECIAL_SYMBOL)(SEXP b)
 {
-    return IS_SPECIAL_SYMBOL(b);
+    return IS_SPECIAL_SYMBOL(CHK(b));
 }
 attribute_hidden void(SET_NO_SPECIAL_SYMBOLS)(SEXP b)
 {
-    SET_NO_SPECIAL_SYMBOLS(b);
+    SET_NO_SPECIAL_SYMBOLS(CHK(b));
 }
 attribute_hidden void(UNSET_NO_SPECIAL_SYMBOLS)(SEXP b)
 {
-    UNSET_NO_SPECIAL_SYMBOLS(b);
+    UNSET_NO_SPECIAL_SYMBOLS(CHK(b));
 }
 attribute_hidden Rboolean(NO_SPECIAL_SYMBOLS)(SEXP b)
 {
-    return NO_SPECIAL_SYMBOLS(b);
+    return NO_SPECIAL_SYMBOLS(CHK(b));
 }
 
 /* R_FunTab accessors, only needed when write barrier is on */
@@ -4387,63 +4387,63 @@ attribute_hidden Rboolean(NO_SPECIAL_SYMBOLS)(SEXP b)
 /* attribute_hidden */
 int(PRIMVAL)(SEXP x)
 {
-    return PRIMVAL(x);
+    return PRIMVAL(CHK(x));
 }
 /* attribute_hidden */
 CCODE(PRIMFUN)(SEXP x)
 {
-    return PRIMFUN(x);
+    return PRIMFUN(CHK(x));
 }
 /* attribute_hidden */
 void(SET_PRIMFUN)(SEXP x, CCODE f)
 {
-    PRIMFUN(x) = f;
+    PRIMFUN(CHK(x)) = f;
 }
 
 /* for use when testing the write barrier */
 int attribute_hidden(IS_BYTES)(SEXP x)
 {
-    return IS_BYTES(x);
+    return IS_BYTES(CHK(x));
 }
 int attribute_hidden(IS_LATIN1)(SEXP x)
 {
-    return IS_LATIN1(x);
+    return IS_LATIN1(CHK(x));
 }
 int attribute_hidden(IS_ASCII)(SEXP x)
 {
-    return IS_ASCII(x);
+    return IS_ASCII(CHK(x));
 }
 int attribute_hidden(IS_UTF8)(SEXP x)
 {
-    return IS_UTF8(x);
+    return IS_UTF8(CHK(x));
 }
 void attribute_hidden(SET_BYTES)(SEXP x)
 {
-    SET_BYTES(x);
+    SET_BYTES(CHK(x));
 }
 void attribute_hidden(SET_LATIN1)(SEXP x)
 {
-    SET_LATIN1(x);
+    SET_LATIN1(CHK(x));
 }
 void attribute_hidden(SET_UTF8)(SEXP x)
 {
-    SET_UTF8(x);
+    SET_UTF8(CHK(x));
 }
 void attribute_hidden(SET_ASCII)(SEXP x)
 {
-    SET_ASCII(x);
+    SET_ASCII(CHK(x));
 }
 int(ENC_KNOWN)(SEXP x)
 {
-    return ENC_KNOWN(x);
+    return ENC_KNOWN(CHK(x));
 }
 void attribute_hidden(SET_CACHED)(SEXP x)
 {
-    SET_CACHED(x);
+    SET_CACHED(CHK(x));
 }
 int(IS_CACHED)(SEXP x)
 {
-    return IS_CACHED(x);
+    return IS_CACHED(CHK(x));
 }
 
 /*******************************************/
