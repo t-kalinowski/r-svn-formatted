@@ -333,9 +333,10 @@ void f2xact(int nrow, int ncol, const int table[], int ldtabl, double expect, do
 
     /* Local variables -- changed from "static"
      *  (*does* change results very slightly on i386 linux) */
-    int i, ii, j, k, n, ifreq, ikkey, ikstp, ikstp2, ipn, ipo, itop,
-        itp = 0, jkey, jstp, jstp2, jstp3, jstp4, k1, kb, kd, ks, kval = 0, kmax, last, ntot, nco, nro, nro2, nrb, i31,
-        i32, i33, i34, i35, i36, i37, i38, i39, i41, i42, i43, i44, i45, i46, i47, i48, i310, i311;
+    int i, ii = 0, j, k, n, // initialized for gcc >= 7.2
+        ifreq, ikkey, ikstp, ikstp2, ipn, ipo, itop, itp = 0, jkey, jstp, jstp2, jstp3, jstp4, k1, kb, kd, ks, kval = 0,
+           kmax, last, ntot, nco, nro, nro2, nrb, i31, i32, i33, i34, i35, i36, i37, i38, i39, i41, i42, i43, i44, i45,
+           i46, i47, i48, i310, i311;
 
     double dspt, df, ddf, drn, dro, obs, obs2, obs3, pastp, pv, tmp = 0.;
 
