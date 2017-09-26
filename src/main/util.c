@@ -1123,9 +1123,25 @@ const char *getTZinfo(void)
     // This works on Linux, macOS and *BSD: other known OSes set TZ.
     static char abspath[PATH_MAX + 1] = "";
     if (abspath[0])
-        return abspath + 20;
+        return abspath;
+#ifdef __APPLE__
+    // macOS 10.13 links /usr/share/zoneinfo/ to /usr/share/zoneinfo.default/
+    const char *lt = realpath("/etc/localtime", abspath);
+    if (lt)
+    {
+        if (strstr(abspath, ".default/"))
+            memmove(abspath, abspath, 28);
+        else
+            memmove(abspath, abspath, 20);
+        return abspath;
+    }
+#else
     if (realpath("/etc/localtime", abspath))
-        return abspath + 20; // strip prefix of /usr/share/zoneinfo/
+    {
+        memmove(abspath, abspath, 20); // strip prefix of /usr/share/zoneinfo/
+        return abspath;
+    }
+#endif
 #endif
     warning("system timezone name is unknown: set environment variable TZ");
     return "unknown";
