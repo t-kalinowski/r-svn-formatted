@@ -3763,6 +3763,22 @@ R_xlen_t ALTREP_TRUELENGTH(SEXP x)
 {
     return 0;
 }
+SEXP ALTREP_DUPLICATE_EX(SEXP x, Rboolean deep)
+{
+    return NULL;
+}
+SEXP ALTREP_SERIALIZED_CLASS(SEXP x)
+{
+    return NULL;
+}
+SEXP ALTREP_SERIALIZED_STATE(SEXP x)
+{
+    return NULL;
+}
+SEXP ALTREP_UNSERIALIZE_EX(SEXP info, SEXP state, SEXP attr, int objf, int levs)
+{
+    return NULL;
+}
 
 /* temporary, to ease transition away from remapping */
 R_xlen_t Rf_XLENGTH(SEXP x)
