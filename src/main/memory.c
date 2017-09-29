@@ -669,57 +669,65 @@ static R_size_t R_NodesInUse = 0;
 #else
 #define FREE_FORWARD_CASE
 #endif
+/*** assume for now all ALTREP nodes are based on CONS nodes */
 #define DO_CHILDREN(__n__, dc__action__, dc__extra__)                                                                  \
     do                                                                                                                 \
     {                                                                                                                  \
         if (HAS_GENUINE_ATTRIB(__n__))                                                                                 \
             dc__action__(ATTRIB(__n__), dc__extra__);                                                                  \
-        switch (TYPEOF(__n__))                                                                                         \
+        if (ALTREP(__n__))                                                                                             \
         {                                                                                                              \
-        case NILSXP:                                                                                                   \
-        case BUILTINSXP:                                                                                               \
-        case SPECIALSXP:                                                                                               \
-        case CHARSXP:                                                                                                  \
-        case LGLSXP:                                                                                                   \
-        case INTSXP:                                                                                                   \
-        case REALSXP:                                                                                                  \
-        case CPLXSXP:                                                                                                  \
-        case WEAKREFSXP:                                                                                               \
-        case RAWSXP:                                                                                                   \
-        case S4SXP:                                                                                                    \
-            break;                                                                                                     \
-        case STRSXP:                                                                                                   \
-        case EXPRSXP:                                                                                                  \
-        case VECSXP: {                                                                                                 \
-            R_xlen_t i;                                                                                                \
-            for (i = 0; i < XLENGTH(__n__); i++)                                                                       \
-                dc__action__(VECTOR_ELT(__n__, i), dc__extra__);                                                       \
-        }                                                                                                              \
-        break;                                                                                                         \
-        case ENVSXP:                                                                                                   \
-            dc__action__(FRAME(__n__), dc__extra__);                                                                   \
-            dc__action__(ENCLOS(__n__), dc__extra__);                                                                  \
-            dc__action__(HASHTAB(__n__), dc__extra__);                                                                 \
-            break;                                                                                                     \
-        case CLOSXP:                                                                                                   \
-        case PROMSXP:                                                                                                  \
-        case LISTSXP:                                                                                                  \
-        case LANGSXP:                                                                                                  \
-        case DOTSXP:                                                                                                   \
-        case SYMSXP:                                                                                                   \
-        case BCODESXP:                                                                                                 \
             dc__action__(TAG(__n__), dc__extra__);                                                                     \
             dc__action__(CAR(__n__), dc__extra__);                                                                     \
             dc__action__(CDR(__n__), dc__extra__);                                                                     \
-            break;                                                                                                     \
-        case EXTPTRSXP:                                                                                                \
-            dc__action__(EXTPTR_PROT(__n__), dc__extra__);                                                             \
-            dc__action__(EXTPTR_TAG(__n__), dc__extra__);                                                              \
-            break;                                                                                                     \
-            FREE_FORWARD_CASE                                                                                          \
-        default:                                                                                                       \
-            register_bad_sexp_type(__n__, __LINE__);                                                                   \
         }                                                                                                              \
+        else                                                                                                           \
+            switch (TYPEOF(__n__))                                                                                     \
+            {                                                                                                          \
+            case NILSXP:                                                                                               \
+            case BUILTINSXP:                                                                                           \
+            case SPECIALSXP:                                                                                           \
+            case CHARSXP:                                                                                              \
+            case LGLSXP:                                                                                               \
+            case INTSXP:                                                                                               \
+            case REALSXP:                                                                                              \
+            case CPLXSXP:                                                                                              \
+            case WEAKREFSXP:                                                                                           \
+            case RAWSXP:                                                                                               \
+            case S4SXP:                                                                                                \
+                break;                                                                                                 \
+            case STRSXP:                                                                                               \
+            case EXPRSXP:                                                                                              \
+            case VECSXP: {                                                                                             \
+                R_xlen_t i;                                                                                            \
+                for (i = 0; i < XLENGTH(__n__); i++)                                                                   \
+                    dc__action__(VECTOR_ELT(__n__, i), dc__extra__);                                                   \
+            }                                                                                                          \
+            break;                                                                                                     \
+            case ENVSXP:                                                                                               \
+                dc__action__(FRAME(__n__), dc__extra__);                                                               \
+                dc__action__(ENCLOS(__n__), dc__extra__);                                                              \
+                dc__action__(HASHTAB(__n__), dc__extra__);                                                             \
+                break;                                                                                                 \
+            case CLOSXP:                                                                                               \
+            case PROMSXP:                                                                                              \
+            case LISTSXP:                                                                                              \
+            case LANGSXP:                                                                                              \
+            case DOTSXP:                                                                                               \
+            case SYMSXP:                                                                                               \
+            case BCODESXP:                                                                                             \
+                dc__action__(TAG(__n__), dc__extra__);                                                                 \
+                dc__action__(CAR(__n__), dc__extra__);                                                                 \
+                dc__action__(CDR(__n__), dc__extra__);                                                                 \
+                break;                                                                                                 \
+            case EXTPTRSXP:                                                                                            \
+                dc__action__(EXTPTR_PROT(__n__), dc__extra__);                                                         \
+                dc__action__(EXTPTR_TAG(__n__), dc__extra__);                                                          \
+                break;                                                                                                 \
+                FREE_FORWARD_CASE                                                                                      \
+            default:                                                                                                   \
+                register_bad_sexp_type(__n__, __LINE__);                                                               \
+            }                                                                                                          \
     } while (0)
 
 /* Forwarding Nodes.  These macros mark nodes or children of nodes and
@@ -3754,60 +3762,11 @@ R_xlen_t(STDVEC_TRUELENGTH)(SEXP x)
 {
     return STDVEC_TRUELENGTH(CHK2(x));
 }
+void(SETALTREP)(SEXP x, int v)
+{
+    SETALTREP(x, v);
+}
 #endif
-R_xlen_t ALTREP_LENGTH(SEXP x)
-{
-    return 0;
-}
-R_xlen_t ALTREP_TRUELENGTH(SEXP x)
-{
-    return 0;
-}
-SEXP ALTREP_DUPLICATE_EX(SEXP x, Rboolean deep)
-{
-    return NULL;
-}
-SEXP ALTREP_SERIALIZED_CLASS(SEXP x)
-{
-    return NULL;
-}
-SEXP ALTREP_SERIALIZED_STATE(SEXP x)
-{
-    return NULL;
-}
-SEXP ALTREP_UNSERIALIZE_EX(SEXP info, SEXP state, SEXP attr, int objf, int levs)
-{
-    return NULL;
-}
-Rboolean ALTREP_INSPECT(SEXP x, int pre, int deep, int pvec, void (*inspect_subtree)(SEXP, int, int, int))
-{
-    return FALSE;
-}
-void *ALTVEC_DATAPTR(SEXP x, Rboolean writeable)
-{
-    return NULL;
-}
-void *ALTVEC_DATAPTR_OR_NULL(SEXP x, Rboolean writeable)
-{
-    return NULL;
-}
-int ALTINTEGER_ELT(SEXP x, R_xlen_t i)
-{
-    return 0;
-}
-int ALTLOGICAL_ELT(SEXP x, R_xlen_t i)
-{
-    return 0;
-}
-double ALTREAL_ELT(SEXP x, R_xlen_t i)
-{
-    return 0.0;
-}
-Rcomplex ALTCOMPLEX_ELT(SEXP x, R_xlen_t i)
-{
-    Rcomplex v = {0.0, 0.0};
-    return v;
-}
 
 /* temporary, to ease transition away from remapping */
 R_xlen_t Rf_XLENGTH(SEXP x)
@@ -3826,7 +3785,10 @@ SEXP(STRING_ELT)(SEXP x, R_xlen_t i)
 {
     if (TYPEOF(x) != STRSXP)
         error("%s() can only be applied to a '%s', not a '%s'", "STRING_ELT", "character vector", type2char(TYPEOF(x)));
-    return CHK(STRING_PTR(CHK(x))[i]);
+    if (ALTREP(x))
+        return CHK(ALTSTRING_ELT(CHK(x), i));
+    else
+        return CHK(STRING_PTR(CHK(x))[i]);
 }
 
 SEXP(VECTOR_ELT)(SEXP x, R_xlen_t i)
@@ -3862,6 +3824,8 @@ SEXP(VECTOR_ELT)(SEXP x, R_xlen_t i)
 
 void *(STDVEC_DATAPTR)(SEXP x)
 {
+    if (ALTREP(x))
+        error("cannot get STDVEC_DATAPTR from ALTREP object");
     if (!isVector(x) && TYPEOF(x) != WEAKREFSXP)
         error("STDVEC_DATAPTR can only be applied to a vector, not a '%s'", type2char(TYPEOF(x)));
     CHKZLN(x);
@@ -3932,7 +3896,10 @@ void(SET_STRING_ELT)(SEXP x, R_xlen_t i, SEXP v)
         error(_("attempt to set index %lu/%lu in SET_STRING_ELT"), i, XLENGTH(x));
     FIX_REFCNT(x, STRING_ELT(x, i), v);
     CHECK_OLD_TO_NEW(x, v);
-    STRING_PTR(x)[i] = v;
+    if (ALTREP(x))
+        ALTSTRING_SET_ELT(x, i, v);
+    else
+        STRING_PTR(x)[i] = v;
 }
 
 SEXP(SET_VECTOR_ELT)(SEXP x, R_xlen_t i, SEXP v)
@@ -3953,6 +3920,8 @@ SEXP(SET_VECTOR_ELT)(SEXP x, R_xlen_t i, SEXP v)
 #ifdef TESTING_WRITE_BARRIER
 static R_INLINE SEXP CHKCONS(SEXP e)
 {
+    if (ALTREP(e))
+        return CHK(e);
     switch (TYPEOF(e))
     {
     case LISTSXP:
@@ -4680,3 +4649,64 @@ R_len_t NORET R_BadLongVector(SEXP x, const char *file, int line)
     error(_("long vectors not supported yet: %s:%d"), file, line);
 }
 #endif
+
+#define ALTREP_STUBS
+#ifdef ALTREP_STUBS
+R_xlen_t ALTREP_LENGTH(SEXP x)
+{
+    return 0;
+}
+R_xlen_t ALTREP_TRUELENGTH(SEXP x)
+{
+    return 0;
+}
+SEXP ALTREP_DUPLICATE_EX(SEXP x, Rboolean deep)
+{
+    return NULL;
+}
+SEXP ALTREP_SERIALIZED_CLASS(SEXP x)
+{
+    return NULL;
+}
+SEXP ALTREP_SERIALIZED_STATE(SEXP x)
+{
+    return NULL;
+}
+SEXP ALTREP_UNSERIALIZE_EX(SEXP info, SEXP state, SEXP attr, int objf, int levs)
+{
+    return NULL;
+}
+Rboolean ALTREP_INSPECT(SEXP x, int pre, int deep, int pvec, void (*inspect_subtree)(SEXP, int, int, int))
+{
+    return FALSE;
+}
+void *ALTVEC_DATAPTR(SEXP x, Rboolean writeable)
+{
+    return NULL;
+}
+void *ALTVEC_DATAPTR_OR_NULL(SEXP x, Rboolean writeable)
+{
+    return NULL;
+}
+int ALTINTEGER_ELT(SEXP x, R_xlen_t i)
+{
+    return 0;
+}
+int ALTLOGICAL_ELT(SEXP x, R_xlen_t i)
+{
+    return 0;
+}
+double ALTREAL_ELT(SEXP x, R_xlen_t i)
+{
+    return 0.0;
+}
+Rcomplex ALTCOMPLEX_ELT(SEXP x, R_xlen_t i)
+{
+    Rcomplex v = {0.0, 0.0};
+    return v;
+}
+#endif
+SEXP ALTSTRING_ELT(SEXP x, R_xlen_t i)
+{
+    return NULL;
+}
