@@ -4705,7 +4705,7 @@ Rcomplex ALTCOMPLEX_ELT(SEXP x, R_xlen_t i)
     Rcomplex v = {0.0, 0.0};
     return v;
 }
-#endif
+
 SEXP ALTSTRING_ELT(SEXP x, R_xlen_t i)
 {
     return NULL;
@@ -4713,3 +4713,4 @@ SEXP ALTSTRING_ELT(SEXP x, R_xlen_t i)
 void ALTSTRING_SET_ELT(SEXP x, R_xlen_t i, SEXP v)
 {
 }
+#endif
