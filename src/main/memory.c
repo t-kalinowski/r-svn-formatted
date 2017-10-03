@@ -4688,6 +4688,10 @@ void *ALTVEC_DATAPTR_OR_NULL(SEXP x, Rboolean writeable)
 {
     return NULL;
 }
+SEXP ALTVEC_EXTRACT_SUBSET(SEXP x, SEXP indx, SEXP call)
+{
+    return NULL;
+}
 int ALTINTEGER_ELT(SEXP x, R_xlen_t i)
 {
     return 0;
