@@ -952,7 +952,7 @@ static void GetNewPage(int node_class)
         SNAP_NODE(s, base);
 #if VALGRIND_LEVEL > 1
         if (NodeClassSize[node_class] > 0)
-            VALGRIND_MAKE_MEM_NOACCESS(DATAPTR(s), NodeClassSize[node_class] * sizeof(VECREC));
+            VALGRIND_MAKE_MEM_NOACCESS(STDVEC_DATAPTR(s), NodeClassSize[node_class] * sizeof(VECREC));
 #endif
         s->sxpinfo = UnmarkedNodeTemplate.sxpinfo;
         INIT_REFCNT(s);
@@ -1934,7 +1934,7 @@ again:
     {
         for (s = NEXT_NODE(R_GenHeap[i].New); s != R_GenHeap[i].Free; s = NEXT_NODE(s))
         {
-            VALGRIND_MAKE_MEM_NOACCESS(DATAPTR(s), NodeClassSize[i] * sizeof(VECREC));
+            VALGRIND_MAKE_MEM_NOACCESS(STDVEC_DATAPTR(s), NodeClassSize[i] * sizeof(VECREC));
         }
     }
 #endif
@@ -2694,7 +2694,7 @@ SEXP allocVector3(SEXPTYPE type, R_xlen_t length, R_allocator_t *allocator)
                 actual_size = sizeof(int);
                 break;
             }
-            VALGRIND_MAKE_MEM_UNDEFINED(DATAPTR(s), actual_size);
+            VALGRIND_MAKE_MEM_UNDEFINED(STDVEC_DATAPTR(s), actual_size);
 #endif
             s->sxpinfo = UnmarkedNodeTemplate.sxpinfo;
             SETSCALAR(s, 1);
@@ -2858,7 +2858,7 @@ SEXP allocVector3(SEXPTYPE type, R_xlen_t length, R_allocator_t *allocator)
         {
             CLASS_GET_FREE_NODE(node_class, s);
 #if VALGRIND_LEVEL > 1
-            VALGRIND_MAKE_MEM_UNDEFINED(DATAPTR(s), actual_size);
+            VALGRIND_MAKE_MEM_UNDEFINED(STDVEC_DATAPTR(s), actual_size);
 #endif
             s->sxpinfo = UnmarkedNodeTemplate.sxpinfo;
             INIT_REFCNT(s);
