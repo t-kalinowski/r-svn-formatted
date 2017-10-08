@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1995-2015	The R Core Team
+ *  Copyright (C) 1995-2017	The R Core Team
  *  Copyright (C) 2003		The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -289,7 +289,7 @@ static void cov_complete1(int n, int ncx, double *x, double *xm, int *ind, doubl
                 sum = 0.;
                 for (k = 0; k < n; k++)
                     if (ind[k] != 0)
-                        sum += (xx[k] - xxm) * (yy[k] - yym);
+                        sum += (LDOUBLE)(xx[k] - xxm) * (yy[k] - yym);
                 ANS(j, i) = ANS(i, j) = (double)(sum / n1);
             }
         }
@@ -369,7 +369,7 @@ static void cov_na_1(int n, int ncx, double *x, double *xm, int *has_na, double 
                         yym = xm[j];
                         sum = 0.;
                         for (k = 0; k < n; k++)
-                            sum += (xx[k] - xxm) * (yy[k] - yym);
+                            sum += (LDOUBLE)(xx[k] - xxm) * (yy[k] - yym);
                         ANS(j, i) = ANS(i, j) = (double)(sum / n1);
                     }
             }
@@ -443,7 +443,7 @@ static void cov_complete2(int n, int ncx, int ncy, double *x, double *y, double 
                 sum = 0.;
                 for (k = 0; k < n; k++)
                     if (ind[k] != 0)
-                        sum += (xx[k] - xxm) * (yy[k] - yym);
+                        sum += (LDOUBLE)(xx[k] - xxm) * (yy[k] - yym);
                 ANS(i, j) = (double)(sum / n1);
             }
         }
@@ -476,7 +476,7 @@ static void cov_complete2(int n, int ncx, int ncy, double *x, double *y, double 
             xxm = _X_##m[i];                                                                                           \
             for (k = 0; k < n; k++)                                                                                    \
                 if (ind[k] != 0)                                                                                       \
-                    sum += (xx[k] - xxm) * (xx[k] - xxm);                                                              \
+                    sum += (LDOUBLE)(xx[k] - xxm) * (xx[k] - xxm);                                                     \
             sum /= n1;                                                                                                 \
         }                                                                                                              \
         else                                                                                                           \
@@ -545,7 +545,7 @@ static void cov_na_2(int n, int ncx, int ncy, double *x, double *y, double *xm, 
                         yym = ym[j];
                         sum = 0.;
                         for (k = 0; k < n; k++)
-                            sum += (xx[k] - xxm) * (yy[k] - yym);
+                            sum += (LDOUBLE)(xx[k] - xxm) * (yy[k] - yym);
                         ANS(i, j) = (double)(sum / n1);
                     }
             }
@@ -582,7 +582,7 @@ static void cov_na_2(int n, int ncx, int ncy, double *x, double *y, double *xm, 
             {                                                                                                          \
                 xxm = _X_##m[i];                                                                                       \
                 for (k = 0; k < n; k++)                                                                                \
-                    sum += (xx[k] - xxm) * (xx[k] - xxm);                                                              \
+                    sum += (LDOUBLE)(xx[k] - xxm) * (xx[k] - xxm);                                                     \
                 sum /= n1;                                                                                             \
             }                                                                                                          \
             else                                                                                                       \
