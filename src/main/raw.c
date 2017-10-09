@@ -252,7 +252,7 @@ static int mbrtoint(int *w, const char *s)
         else
             return -1;
     }
-    else if (byte < 0xF4)
+    else if (byte <= 0xF4)
     { // for RFC3629
         if (!s[1] || !s[2] || !s[3])
             return -2;
