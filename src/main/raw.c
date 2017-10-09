@@ -401,6 +401,7 @@ SEXP attribute_hidden do_intToUtf8(SEXP call, SEXP op, SEXP args, SEXP env)
                     break;
                 }
                 len += 4;
+                ##all points not in the basic plane have length 4
             }
             else
                 len += inttomb(NULL, this);
