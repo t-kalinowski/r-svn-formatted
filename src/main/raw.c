@@ -260,7 +260,7 @@ static int mbrtoint(int *w, const char *s)
         {
             *w = (int)(((byte & 0x07) << 18) | ((s[1] & 0x3F) << 12) | ((s[2] & 0x3F) << 6) | (s[3] & 0x3F));
             byte = *w;
-            return (byte <= 0x10FFF) ? 4 : -1;
+            return (byte <= 0x10FFFF) ? 4 : -1;
         }
         else
             return -1;
@@ -400,7 +400,7 @@ SEXP attribute_hidden do_intToUtf8(SEXP call, SEXP op, SEXP args, SEXP env)
                     haveNA = TRUE;
                     break;
                 }
-                len += 4; /* all points not in the basic plane have length 4 */
+                len += 4; // all points not in the basic plane have length 4
             }
             else
                 len += inttomb(NULL, this);
