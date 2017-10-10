@@ -166,7 +166,7 @@ R_xlen_t attribute_hidden OneIndex(SEXP x, SEXP s, R_xlen_t len, int partial, SE
         }
         if (indx == -1)
             indx = nx;
-        *newname = STRING_ELT(s, pos);
+        *newname = PRINTNAME(s);
         vmaxset(vmax);
         break;
     default:
