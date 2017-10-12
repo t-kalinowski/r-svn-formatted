@@ -240,9 +240,13 @@ SEXP spline_basis(SEXP knots, SEXP order, SEXP xvals, SEXP derivs)
             if (der_i >= ord)
             {
                 if (nd == 1)
+                {
                     error(_("derivs = %d >= ord = %d, but should be in {0,..,ord-1}"), der_i, ord);
+                }
                 else
+                {
                     error(_("derivs[%d] = %d >= ord = %d, but should be in {0,..,ord-1}"), i + 1, der_i, ord);
+                }
             }
             for (int ii = 0; ii < ord; ii++)
             {
