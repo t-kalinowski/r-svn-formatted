@@ -3398,7 +3398,7 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP pat, text, ans, matchpos, matchlen;
+    SEXP pat, text, ans, matchpos, matchlen, itype;
     int opt_icase, opt_fixed, useBytes;
 
     Rboolean use_WC = FALSE;
@@ -3447,6 +3447,8 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (!isString(text))
         error(_("invalid '%s' argument"), "text");
+
+    itype = ScalarString(mkChar(useBytes ? "bytes" : "chars"));
 
     n = XLENGTH(text);
 
@@ -3566,6 +3568,7 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
                     INTEGER(matchlen)[j] = pmatch[j].rm_eo - so;
                 }
                 setAttrib(matchpos, install("match.length"), matchlen);
+                setAttrib(matchpos, install("index.type"), itype);
                 if (useBytes)
                     setAttrib(matchpos, install("useBytes"), R_TrueValue);
                 SET_VECTOR_ELT(ans, i, matchpos);
@@ -3582,6 +3585,7 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
                 PROTECT(matchpos = ScalarInteger(-1));
                 PROTECT(matchlen = ScalarInteger(-1));
                 setAttrib(matchpos, install("match.length"), matchlen);
+                setAttrib(matchpos, install("index.type"), itype);
                 if (useBytes)
                     setAttrib(matchpos, install("useBytes"), R_TrueValue);
                 SET_VECTOR_ELT(ans, i, matchpos);
