@@ -52,6 +52,7 @@ int main(int argc, char **argv)
                 break;
             }
         if (hasspace)
+            /* NOTE: short names are not always enabled */
             GetShortPathName(buf, buf, MAX_PATH);
         for (p = buf; *p; p++)
             if (*p == '\\')

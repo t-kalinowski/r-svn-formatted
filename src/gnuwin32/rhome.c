@@ -72,6 +72,7 @@ char *getRHOME(int m)
             break;
         }
     if (hasspace)
+        /* NOTE: this fails when short names are not enabled */
         GetShortPathName(rhomebuf, rhomebuf, MAX_PATH);
     return (rhomebuf);
 }
