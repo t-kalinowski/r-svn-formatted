@@ -2597,7 +2597,7 @@ static int getNc(const char *s, int st)
     return (int)utf8towcs(NULL, buf, 0);
 }
 
-static SEXP gregexpr_Regexc(const regex_t *reg, SEXP sstr, int useBytes, int use_WC, R_xlen_t i)
+static SEXP gregexpr_Regexc(const regex_t *reg, SEXP sstr, int useBytes, int use_WC, R_xlen_t i, SEXP itype)
 {
     int matchIndex = -1, j, st, foundAll = 0, foundAny = 0, rc;
     size_t len, offset = 0;
@@ -2691,13 +2691,14 @@ static SEXP gregexpr_Regexc(const regex_t *reg, SEXP sstr, int useBytes, int use
     setAttrib(ans, install("match.length"), matchlen);
     if (useBytes)
     {
+        setAttrib(ans, install("index.type"), itype);
         setAttrib(ans, install("useBytes"), R_TrueValue);
     }
     UNPROTECT(4);
     return ans;
 }
 
-static SEXP gregexpr_fixed(const char *pattern, const char *string, Rboolean useBytes, Rboolean use_UTF8)
+static SEXP gregexpr_fixed(const char *pattern, const char *string, Rboolean useBytes, Rboolean use_UTF8, SEXP itype)
 {
     int patlen, matchIndex, st = 0, foundAll = 0, foundAny = 0, j, ansSize, nb = 0;
     size_t curpos = 0, slen;
@@ -2779,6 +2780,7 @@ static SEXP gregexpr_fixed(const char *pattern, const char *string, Rboolean use
     setAttrib(ans, install("match.length"), matchlen);
     if (useBytes)
     {
+        setAttrib(ans, install("index.type"), itype);
         setAttrib(ans, install("useBytes"), R_TrueValue);
     }
     UNPROTECT(4);
@@ -2848,7 +2850,7 @@ static Rboolean extract_match_and_groups(Rboolean use_UTF8, int *ovector, int ca
 
 static SEXP gregexpr_perl(const char *pattern, const char *string, pcre *re_pcre, pcre_extra *re_pe, Rboolean useBytes,
                           Rboolean use_UTF8, int *ovector, int ovector_size, int capture_count, SEXP capture_names,
-                          R_xlen_t n)
+                          R_xlen_t n, SEXP itype)
 {
     Rboolean foundAll = FALSE, foundAny = FALSE;
     int matchIndex = -1, start = 0;
@@ -2923,6 +2925,7 @@ static SEXP gregexpr_perl(const char *pattern, const char *string, pcre *re_pcre
     setAttrib(ans, install("match.length"), matchlen);
     if (useBytes)
     {
+        setAttrib(ans, install("index.type"), itype);
         setAttrib(ans, install("useBytes"), R_TrueValue);
     }
     UNPROTECT(1);
@@ -2993,7 +2996,7 @@ static SEXP gregexpr_BadStringAns(void)
 
 SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP pat, text, ans;
+    SEXP pat, text, ans, itype;
     regex_t reg;
     regmatch_t regmatch[10];
     R_xlen_t i, n;
@@ -3048,6 +3051,8 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
 
     if (!isString(text))
         error(_("invalid '%s' argument"), "text");
+
+    itype = ScalarString(mkChar(useBytes ? "bytes" : "chars"));
 
     n = XLENGTH(text);
     if (!useBytes)
@@ -3210,6 +3215,7 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
         setAttrib(ans, install("match.length"), matchlen);
         if (useBytes)
         {
+            setAttrib(ans, install("index.type"), itype);
             setAttrib(ans, install("useBytes"), R_TrueValue);
         }
         UNPROTECT(1);
@@ -3364,14 +3370,14 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
                     else
                     {
                         if (fixed_opt)
-                            elt = gregexpr_fixed(spat, s, useBytes, use_UTF8);
+                            elt = gregexpr_fixed(spat, s, useBytes, use_UTF8, itype);
                         else
                             elt = gregexpr_perl(spat, s, re_pcre, re_pe, useBytes, use_UTF8, ovector, ovector_size,
-                                                capture_count, capture_names, i);
+                                                capture_count, capture_names, i, itype);
                     }
                 }
                 else
-                    elt = gregexpr_Regexc(&reg, STRING_ELT(text, i), useBytes, use_WC, i);
+                    elt = gregexpr_Regexc(&reg, STRING_ELT(text, i), useBytes, use_WC, i, itype);
             }
             SET_VECTOR_ELT(ans, i, elt);
             vmaxset(vmax);
@@ -3568,9 +3574,9 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
                     INTEGER(matchlen)[j] = pmatch[j].rm_eo - so;
                 }
                 setAttrib(matchpos, install("match.length"), matchlen);
-                setAttrib(matchpos, install("index.type"), itype);
                 if (useBytes)
-                    setAttrib(matchpos, install("useBytes"), R_TrueValue);
+                    setAttrib(matchpos, install("index.type"), itype);
+                setAttrib(matchpos, install("useBytes"), R_TrueValue);
                 SET_VECTOR_ELT(ans, i, matchpos);
                 UNPROTECT(2);
             }
@@ -3585,9 +3591,9 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
                 PROTECT(matchpos = ScalarInteger(-1));
                 PROTECT(matchlen = ScalarInteger(-1));
                 setAttrib(matchpos, install("match.length"), matchlen);
-                setAttrib(matchpos, install("index.type"), itype);
                 if (useBytes)
-                    setAttrib(matchpos, install("useBytes"), R_TrueValue);
+                    setAttrib(matchpos, install("index.type"), itype);
+                setAttrib(matchpos, install("useBytes"), R_TrueValue);
                 SET_VECTOR_ELT(ans, i, matchpos);
                 UNPROTECT(2);
             }
