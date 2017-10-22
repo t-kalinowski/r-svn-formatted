@@ -243,15 +243,17 @@ static int sequal(SEXP x, R_xlen_t i, SEXP y, R_xlen_t j)
 {
     if (i < 0 || j < 0)
         return 0;
+    SEXP xi = STRING_ELT(x, i);
+    SEXP yj = STRING_ELT(y, j);
     /* Two strings which have the same address must be the same,
        so avoid looking at the contents */
-    if (STRING_ELT(x, i) == STRING_ELT(y, j))
+    if (xi == yj)
         return 1;
     /* Then if either is NA the other cannot be */
     /* Once all CHARSXPs are cached, Seql will handle this */
-    if (STRING_ELT(x, i) == NA_STRING || STRING_ELT(y, j) == NA_STRING)
+    if (xi == NA_STRING || yj == NA_STRING)
         return 0;
-    return Seql(STRING_ELT(x, i), STRING_ELT(y, j));
+    return Seql(xi, yj);
 }
 
 static hlen rawhash(SEXP x, R_xlen_t indx, HashData *d)
