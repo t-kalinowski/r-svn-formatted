@@ -555,7 +555,7 @@ extern size_t Rf_utf8towcs(wchar_t *wc, const char *s, size_t n);
 
 int R_ShowFiles(int nfile, const char **file, const char **headers, const char *wtitle, Rboolean del, const char *pager)
 {
-    int i;
+    int i, ll;
     char buf[1024];
 
     if (nfile > 0)
@@ -601,7 +601,9 @@ int R_ShowFiles(int nfile, const char **file, const char **headers, const char *
                         snprintf(buf, 1024, "\"%s\" \"%s\"", pager, file[i]);
                     else
                         snprintf(buf, 1024, "%s \"%s\"", pager, file[i]);
-                    runcmd(buf, CE_NATIVE, 0, 1, NULL, NULL, NULL);
+                    ll = runcmd(buf, CE_NATIVE, 0, 1, NULL, NULL, NULL);
+                    if (ll == NOLAUNCH)
+                        error(runerror());
                 }
             }
             else
@@ -630,7 +632,7 @@ int R_ShowFiles(int nfile, const char **file, const char **headers, const char *
 /* As from R 2.7.0 we assume file, editor are in UTF-8 */
 int R_EditFiles(int nfile, const char **file, const char **title, const char *editor)
 {
-    int i;
+    int i, ll;
     char buf[1024];
 
     if (nfile > 0)
@@ -650,7 +652,9 @@ int R_EditFiles(int nfile, const char **file, const char **title, const char *ed
                     snprintf(buf, 1024, "\"%s\" \"%s\"", editor, file[i]);
                 else
                     snprintf(buf, 1024, "%s \"%s\"", editor, file[i]);
-                runcmd(buf, CE_UTF8, 0, 1, NULL, NULL, NULL);
+                ll = runcmd(buf, CE_UTF8, 0, 1, NULL, NULL, NULL);
+                if (ll == NOLAUNCH)
+                    error(runerror());
             }
         }
         return 0;
