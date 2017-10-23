@@ -2063,7 +2063,7 @@ SEXP attribute_hidden do_dotCode(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             else
             {
-                int *iptr = INTEGER(arg), tmp;
+                int *iptr = (int *)p, tmp;
                 for (R_xlen_t i = 0; i < n; i++)
                 {
                     tmp = iptr[i];
