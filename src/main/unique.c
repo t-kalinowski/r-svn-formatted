@@ -87,18 +87,16 @@ static hlen scatter(unsigned int key, HashData *d)
 
 static hlen lhash(SEXP x, R_xlen_t indx, HashData *d)
 {
-    int xi = LOGICAL_ELT(x, indx);
-    if (xi == NA_LOGICAL)
+    if (LOGICAL(x)[indx] == NA_LOGICAL)
         return 2U;
-    return (hlen)xi;
+    return (hlen)LOGICAL(x)[indx];
 }
 
 static hlen ihash(SEXP x, R_xlen_t indx, HashData *d)
 {
-    int xi = INTEGER_ELT(x, indx);
-    if (xi == NA_INTEGER)
+    if (INTEGER(x)[indx] == NA_INTEGER)
         return 0;
-    return scatter((unsigned int)xi, d);
+    return scatter((unsigned int)(INTEGER(x)[indx]), d);
 }
 
 /* We use unions here because Solaris gcc -O2 has trouble with
@@ -113,8 +111,7 @@ union foo {
 static hlen rhash(SEXP x, R_xlen_t indx, HashData *d)
 {
     /* There is a problem with signed 0s under IEC60559 */
-    double xi = REAL_ELT(x, indx);
-    double tmp = (xi == 0.0) ? 0.0 : xi;
+    double tmp = (REAL(x)[indx] == 0.0) ? 0.0 : REAL(x)[indx];
     /* need to use both 32-byte chunks or endianness is an issue */
     /* we want all NaNs except NA equal, and all NAs equal */
     if (R_IsNA(tmp))
@@ -146,7 +143,7 @@ static Rcomplex unify_complex_na(Rcomplex z)
 
 static hlen chash(SEXP x, R_xlen_t indx, HashData *d)
 {
-    Rcomplex tmp = unify_complex_na(COMPLEX_ELT(x, indx));
+    Rcomplex tmp = unify_complex_na(COMPLEX(x)[indx]);
 
 #if 2 * SIZEOF_INT == SIZEOF_DOUBLE
     {
@@ -195,14 +192,14 @@ static int lequal(SEXP x, R_xlen_t i, SEXP y, R_xlen_t j)
 {
     if (i < 0 || j < 0)
         return 0;
-    return (LOGICAL_ELT(x, i) == LOGICAL_ELT(y, j));
+    return (LOGICAL(x)[i] == LOGICAL(y)[j]);
 }
 
 static int iequal(SEXP x, R_xlen_t i, SEXP y, R_xlen_t j)
 {
     if (i < 0 || j < 0)
         return 0;
-    return (INTEGER_ELT(x, i) == INTEGER_ELT(y, j));
+    return (INTEGER(x)[i] == INTEGER(y)[j]);
 }
 
 /* BDR 2002-1-17  We don't want NA and other NaNs to be equal */
@@ -210,13 +207,11 @@ static int requal(SEXP x, R_xlen_t i, SEXP y, R_xlen_t j)
 {
     if (i < 0 || j < 0)
         return 0;
-    double xi = REAL_ELT(x, i);
-    double yj = REAL_ELT(y, j);
-    if (!ISNAN(xi) && !ISNAN(yj))
-        return (xi == yj);
-    else if (R_IsNA(xi) && R_IsNA(yj))
+    if (!ISNAN(REAL(x)[i]) && !ISNAN(REAL(y)[j]))
+        return (REAL(x)[i] == REAL(y)[j]);
+    else if (R_IsNA(REAL(x)[i]) && R_IsNA(REAL(y)[j]))
         return 1;
-    else if (R_IsNaN(xi) && R_IsNaN(yj))
+    else if (R_IsNaN(REAL(x)[i]) && R_IsNaN(REAL(y)[j]))
         return 1;
     else
         return 0;
@@ -244,7 +239,7 @@ static int cequal(SEXP x, R_xlen_t i, SEXP y, R_xlen_t j)
 {
     if (i < 0 || j < 0)
         return 0;
-    return cplx_eq(COMPLEX_ELT(x, i), COMPLEX_ELT(y, j));
+    return cplx_eq(COMPLEX(x)[i], COMPLEX(y)[j]);
 }
 
 static int sequal(SEXP x, R_xlen_t i, SEXP y, R_xlen_t j)
