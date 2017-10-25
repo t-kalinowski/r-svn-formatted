@@ -627,7 +627,8 @@ int R_EditFiles(int nfile, const char **file, const char **title, const char *ed
                 snprintf(buf, 1024, "\"%s\" \"%s\"", editor, file[0]);
             else
                 snprintf(buf, 1024, "%s \"%s\"", editor, file[0]);
-            R_system(buf);
+            if (R_system(buf) == 127)
+                warningcall(R_NilValue, _("error in running command"));
         }
         return 0;
     }

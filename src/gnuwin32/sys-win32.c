@@ -282,7 +282,7 @@ SEXP do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
         ll = runcmd_timeout(CHAR(STRING_ELT(cmd, 0)), getCharCE(STRING_ELT(cmd, 0)), flag, vis,
                             CHAR(STRING_ELT(fin, 0)), fout, ferr, timeout, &timedout);
         if (ll == NOLAUNCH)
-            error(runerror());
+            warning(runerror());
     }
     else
     {
