@@ -3222,6 +3222,8 @@ static void text_init(Rconnection con, SEXP text, int type)
     double dnc = 0.0;
     Rtextconn this = con->private;
     const void *vmax = vmaxget();
+    const char *s;
+    char *t;
 
     for (i = 0; i < nlines; i++)
         dnc += (double)strlen(
@@ -3241,14 +3243,16 @@ static void text_init(Rconnection con, SEXP text, int type)
         free(con);
         error(_("cannot allocate memory for text connection"));
     }
-    *(this->data) = '\0';
+    t = this->data;
     for (i = 0; i < nlines; i++)
     {
-        strcat(this->data, type == 1
-                               ? translateChar(STRING_ELT(text, i))
-                               : ((type == 3) ? translateCharUTF8(STRING_ELT(text, i)) : CHAR(STRING_ELT(text, i))));
-        strcat(this->data, "\n");
+        s = (type == 1) ? translateChar(STRING_ELT(text, i))
+                        : ((type == 3) ? translateCharUTF8(STRING_ELT(text, i)) : CHAR(STRING_ELT(text, i)));
+        while (*s)
+            *t++ = *s++;
+        *t++ = '\n';
     }
+    *t = '\0';
     this->nchars = nchars;
     this->cur = this->save = 0;
     vmaxset(vmax);
