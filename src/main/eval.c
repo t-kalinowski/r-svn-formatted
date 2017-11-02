@@ -5888,6 +5888,8 @@ static R_INLINE Rboolean setElementFromScalar(SEXP vec, R_xlen_t i, int typev, s
         if (setElementFromScalar(vec, i, typev, &v))                                                                   \
         {                                                                                                              \
             SETSTACK_PTR(sv, vec);                                                                                     \
+            if (NAMED(vec) == 1)                                                                                       \
+                SET_NAMED(vec, 0);                                                                                     \
             return;                                                                                                    \
         }                                                                                                              \
         else if (subassign2 && TYPEOF(vec) == VECSXP && i < XLENGTH(vec))                                              \
@@ -5896,6 +5898,8 @@ static R_INLINE Rboolean setElementFromScalar(SEXP vec, R_xlen_t i, int typev, s
             if (rhs != R_NilValue)                                                                                     \
             {                                                                                                          \
                 SET_VECTOR_ELT(vec, i, rhs);                                                                           \
+                if (NAMED(vec) == 1)                                                                                   \
+                    SET_NAMED(vec, 0);                                                                                 \
                 SETSTACK_PTR(sv, vec);                                                                                 \
                 return;                                                                                                \
             }                                                                                                          \
@@ -5913,8 +5917,6 @@ static R_INLINE void VECSUBASSIGN_PTR(R_bcstack_t *sx, R_bcstack_t *srhs, R_bcst
         vec = duplicate(vec);
         SETSTACK_PTR(sx, vec);
     }
-    else if (NAMED(vec) == 1)
-        SET_NAMED(vec, 0);
 
     R_xlen_t i = bcStackIndex(si) - 1;
     if (i >= 0)
@@ -5957,8 +5959,6 @@ static R_INLINE void MATSUBASSIGN_PTR(R_bcstack_t *sx, R_bcstack_t *srhs, R_bcst
         mat = duplicate(mat);
         SETSTACK_PTR(sx, mat);
     }
-    else if (NAMED(mat) == 1)
-        SET_NAMED(mat, 0);
 
     dim = getMatrixDim(mat);
 
@@ -6014,8 +6014,6 @@ static R_INLINE void SUBASSIGN_N_PTR(R_bcstack_t *sx, int rank, R_bcstack_t *srh
         x = duplicate(x);
         SETSTACK_PTR(sx, x);
     }
-    else if (NAMED(x) == 1)
-        SET_NAMED(x, 0);
 
     dim = getArrayDim(x);
 
