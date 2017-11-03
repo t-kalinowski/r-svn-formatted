@@ -61,6 +61,9 @@ static R_INLINE SEXP VECTOR_ELT_FIX_NAMED(SEXP y, R_xlen_t i)
 
    The EXTRACT_SUBSET_LOOP macro allows the branches based on index
    type and vector type to happen outside the loop.
+
+   This could avoid using data pointers, but there is little point as
+   currently the subscript code forces allocation.
 */
 
 #define EXTRACT_SUBSET_LOOP(STDCODE, NACODE)                                                                           \
@@ -68,36 +71,30 @@ static R_INLINE SEXP VECTOR_ELT_FIX_NAMED(SEXP y, R_xlen_t i)
     {                                                                                                                  \
         if (TYPEOF(indx) == INTSXP)                                                                                    \
         {                                                                                                              \
+            int *pindx = INTEGER(indx);                                                                                \
             for (i = 0; i < n; i++)                                                                                    \
             {                                                                                                          \
-                ii = INTEGER_ELT(indx, i);                                                                             \
-                if (ii == NA_INTEGER)                                                                                  \
-                    NACODE;                                                                                            \
-                else                                                                                                   \
+                ii = pindx[i];                                                                                         \
+                if (0 < ii && ii <= nx)                                                                                \
                 {                                                                                                      \
                     ii--;                                                                                              \
-                    if (0 <= ii && ii < nx)                                                                            \
-                        STDCODE;                                                                                       \
-                    else                                                                                               \
-                        NACODE;                                                                                        \
+                    STDCODE;                                                                                           \
                 }                                                                                                      \
+                else /* out of bounds or NA */                                                                         \
+                    NACODE;                                                                                            \
             }                                                                                                          \
         }                                                                                                              \
         else                                                                                                           \
         {                                                                                                              \
+            double *pindx = REAL(indx);                                                                                \
             for (i = 0; i < n; i++)                                                                                    \
             {                                                                                                          \
-                double di = REAL_ELT(indx, i);                                                                         \
-                if (!R_FINITE(di))                                                                                     \
-                    NACODE;                                                                                            \
+                double di = pindx[i];                                                                                  \
+                ii = (R_xlen_t)(di - 1);                                                                               \
+                if (R_FINITE(di) && 0 <= ii && ii < nx)                                                                \
+                    STDCODE;                                                                                           \
                 else                                                                                                   \
-                {                                                                                                      \
-                    ii = (R_xlen_t)(di - 1);                                                                           \
-                    if (0 <= ii && ii < nx)                                                                            \
-                        STDCODE;                                                                                       \
-                    else                                                                                               \
-                        NACODE;                                                                                        \
-                }                                                                                                      \
+                    NACODE;                                                                                            \
             }                                                                                                          \
         }                                                                                                              \
     } while (0)
