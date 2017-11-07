@@ -40,6 +40,7 @@
 #define _WIN32_WINNT 0x0500 /* for MEMORYSTATUSEX */
 #endif
 #include <windows.h> /* for CreateEvent,.. */
+#include <shlobj.h>  /* for SHGetFolderPath */
 #include <process.h> /* for _beginthread,... */
 #include <io.h>      /* for isatty, chdir */
 #ifdef _MSC_VER      /* for chdir */
@@ -1076,6 +1077,16 @@ int cmdlineoptions(int ac, char **av)
             {
                 R_ShowMessage(PrintUsage());
                 exit(0);
+            }
+            else if (!strcmp(*av, "--cd-to-userdocs"))
+            {
+                /* This is used in shortcuts created by the installer. Previously, the
+                   installer resolved the user documents folder at installation time,
+                   but that is not good for installation under SCCM/system context where
+                   it resolved to documents folder in systemprofile. */
+                TCHAR mydocs[MAX_PATH + 1];
+                if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_PERSONAL | CSIDL_FLAG_CREATE, NULL, 0, mydocs)))
+                    SetCurrentDirectory(mydocs);
             }
             else if (!strcmp(*av, "--no-environ"))
             {
