@@ -384,6 +384,8 @@ int Rf_initialize_R(int ac, char **av)
      */
     for (i = 0, avv = av; i < ac; i++, avv++)
     {
+        if (!strcmp(*avv, "--args"))
+            break;
         if (!strncmp(*avv, "--gui", 5) || !strncmp(*avv, "-g", 2))
         {
             if (!strncmp(*avv, "--gui", 5) && strlen(*avv) >= 7)
