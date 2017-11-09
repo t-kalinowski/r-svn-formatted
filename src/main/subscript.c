@@ -778,25 +778,25 @@ static SEXP positiveSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx)
 static SEXP integerSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch, SEXP call)
 {
     R_xlen_t i;
-    int ii, min, max, canstretch;
+    int ii, neg, max, canstretch;
     Rboolean isna = FALSE;
     canstretch = *stretch > 0;
     *stretch = 0;
-    min = 0;
+    neg = FALSE;
     max = 0;
     int *ps = INTEGER(s);
     for (i = 0; i < ns; i++)
     {
         ii = ps[i];
-        if (ii != NA_INTEGER)
+        if (ii < 0)
         {
-            if (ii < min)
-                min = ii;
-            if (ii > max)
-                max = ii;
+            if (ii == NA_INTEGER)
+                isna = TRUE;
+            else
+                neg = TRUE;
         }
-        else
-            isna = TRUE;
+        else if (ii > max)
+            max = ii;
     }
     if (max > nx)
     {
@@ -807,7 +807,7 @@ static SEXP integerSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, R_xlen_t *stretch
             ECALL(call, _("subscript out of bounds"));
         }
     }
-    if (min < 0)
+    if (neg)
     {
         if (max == 0 && !isna)
             return negativeSubscript(s, ns, nx, call);
