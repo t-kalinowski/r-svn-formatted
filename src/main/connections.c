@@ -5446,7 +5446,7 @@ SEXP attribute_hidden do_writechar(SEXP call, SEXP op, SEXP args, SEXP env)
             memcpy(buf, CHAR(si), len);
             if (usesep)
             {
-                strcat(buf, ssep);
+                strcpy(buf + len, ssep);
                 len += slen;
             }
             if (!isRaw)
@@ -5498,7 +5498,7 @@ SEXP attribute_hidden do_writechar(SEXP call, SEXP op, SEXP args, SEXP env)
             strncpy(buf, s, lenb);
             if (usesep)
             {
-                strcat(buf, ssep);
+                strcpy(buf + lenb, ssep);
                 lenb += slen;
             }
             if (!isRaw)
