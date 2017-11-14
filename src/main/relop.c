@@ -410,8 +410,8 @@ static SEXP complex_relop(RELOP_TYPE code, SEXP s1, SEXP s2, SEXP call)
     PROTECT(s2);
     ans = allocVector(LGLSXP, n);
 
-    Rcomplex *px1 = COMPLEX(s1);
-    Rcomplex *px2 = COMPLEX(s2);
+    const Rcomplex *px1 = COMPLEX_RO(s1);
+    const Rcomplex *px2 = COMPLEX_RO(s2);
     int *pa = LOGICAL(ans);
 
     switch (code)
@@ -585,8 +585,8 @@ static SEXP raw_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
     PROTECT(s2);
     ans = allocVector(LGLSXP, n);
 
-    Rbyte *px1 = RAW(s1);
-    Rbyte *px2 = RAW(s2);
+    const Rbyte *px1 = RAW_RO(s1);
+    const Rbyte *px2 = RAW_RO(s2);
     int *pa = LOGICAL(ans);
 
     switch (code)
@@ -646,23 +646,28 @@ static SEXP raw_relop(RELOP_TYPE code, SEXP s1, SEXP s2)
 
 static SEXP bitwiseNot(SEXP a)
 {
+    SEXP ans;
     int np = 0;
     if (isReal(a))
     {
         a = PROTECT(coerceVector(a, INTSXP));
         np++;
     }
-    R_xlen_t i, m = XLENGTH(a);
-    SEXP ans = allocVector(TYPEOF(a), m);
+
     switch (TYPEOF(a))
     {
-    case INTSXP:
-        for (i = 0; i < m; i++)
+    case INTSXP: {
+        R_xlen_t m = XLENGTH(a);
+        ans = allocVector(INTSXP, m);
+        int *pans = INTEGER(ans);
+        const int *pa = INTEGER_RO(a);
+        for (R_xlen_t i = 0; i < m; i++)
         {
-            int aa = INTEGER(a)[i];
-            INTEGER(ans)[i] = (aa == NA_INTEGER) ? aa : ~aa;
+            int aa = pa[i];
+            pans[i] = (aa == NA_INTEGER) ? aa : ~aa;
         }
-        break;
+    }
+    break;
     default:
         UNIMPLEMENTED_TYPE("bitwNot", a);
     }
@@ -674,6 +679,7 @@ static SEXP bitwiseNot(SEXP a)
 #define mymax(x, y) ((x >= y) ? x : y)
 
 #define BIT(op, name)                                                                                                  \
+    SEXP ans;                                                                                                          \
     int np = 0;                                                                                                        \
     if (isReal(a))                                                                                                     \
     {                                                                                                                  \
@@ -687,18 +693,21 @@ static SEXP bitwiseNot(SEXP a)
     }                                                                                                                  \
     if (TYPEOF(a) != TYPEOF(b))                                                                                        \
         error(_("'a' and 'b' must have the same type"));                                                               \
-    R_xlen_t i, m = XLENGTH(a), n = XLENGTH(b), mn = (m && n) ? mymax(m, n) : 0;                                       \
-    R_xlen_t ia, ib;                                                                                                   \
-    SEXP ans = allocVector(TYPEOF(a), mn);                                                                             \
     switch (TYPEOF(a))                                                                                                 \
     {                                                                                                                  \
-    case INTSXP:                                                                                                       \
+    case INTSXP: {                                                                                                     \
+        R_xlen_t i, ia, ib;                                                                                            \
+        R_xlen_t m = XLENGTH(a), n = XLENGTH(b), mn = (m && n) ? mymax(m, n) : 0;                                      \
+        ans = allocVector(INTSXP, mn);                                                                                 \
+        int *pans = INTEGER(ans);                                                                                      \
+        const int *pa = INTEGER_RO(a), *pb = INTEGER_RO(b);                                                            \
         MOD_ITERATE2(mn, m, n, i, ia, ib, {                                                                            \
-            int aa = INTEGER(a)[ia];                                                                                   \
-            int bb = INTEGER(b)[ib];                                                                                   \
-            INTEGER(ans)[i] = (aa == NA_INTEGER || bb == NA_INTEGER) ? NA_INTEGER : aa op bb;                          \
+            int aa = pa[ia];                                                                                           \
+            int bb = pb[ib];                                                                                           \
+            pans[i] = (aa == NA_INTEGER || bb == NA_INTEGER) ? NA_INTEGER : aa op bb;                                  \
         });                                                                                                            \
-        break;                                                                                                         \
+    }                                                                                                                  \
+    break;                                                                                                             \
     default:                                                                                                           \
         UNIMPLEMENTED_TYPE(name, a);                                                                                   \
     }                                                                                                                  \
@@ -723,6 +732,7 @@ static SEXP bitwiseXor(SEXP a, SEXP b)
 
 static SEXP bitwiseShiftL(SEXP a, SEXP b)
 {
+    SEXP ans;
     int np = 0;
     if (isReal(a))
     {
@@ -734,19 +744,25 @@ static SEXP bitwiseShiftL(SEXP a, SEXP b)
         b = PROTECT(coerceVector(b, INTSXP));
         np++;
     }
-    R_xlen_t i, m = XLENGTH(a), n = XLENGTH(b), mn = (m && n) ? mymax(m, n) : 0;
-    R_xlen_t ia, ib;
-    SEXP ans = allocVector(TYPEOF(a), mn);
+    if (TYPEOF(a) != TYPEOF(b))
+        error(_("'a' and 'b' must have the same type"));
+
     switch (TYPEOF(a))
     {
-    case INTSXP:
+    case INTSXP: {
+        R_xlen_t i, ia, ib;
+        R_xlen_t m = XLENGTH(a), n = XLENGTH(b), mn = (m && n) ? mymax(m, n) : 0;
+        ans = allocVector(INTSXP, mn);
+        int *pans = INTEGER(ans);
+        const int *pa = INTEGER_RO(a), *pb = INTEGER_RO(b);
         MOD_ITERATE2(mn, m, n, i, ia, ib, {
-            int aa = INTEGER(a)[ia];
-            int bb = INTEGER(b)[ib];
-            INTEGER(ans)
-            [i] = (aa == NA_INTEGER || bb == NA_INTEGER || bb < 0 || bb > 31) ? NA_INTEGER : ((unsigned int)aa << bb);
+            int aa = pa[ia];
+            int bb = pb[ib];
+            pans[i] =
+                (aa == NA_INTEGER || bb == NA_INTEGER || bb < 0 || bb > 31) ? NA_INTEGER : ((unsigned int)aa << bb);
         });
-        break;
+    }
+    break;
     default:
         UNIMPLEMENTED_TYPE("bitShiftL", a);
     }
@@ -757,6 +773,7 @@ static SEXP bitwiseShiftL(SEXP a, SEXP b)
 
 static SEXP bitwiseShiftR(SEXP a, SEXP b)
 {
+    SEXP ans;
     int np = 0;
     if (isReal(a))
     {
@@ -768,19 +785,25 @@ static SEXP bitwiseShiftR(SEXP a, SEXP b)
         b = PROTECT(coerceVector(b, INTSXP));
         np++;
     }
-    R_xlen_t i, m = XLENGTH(a), n = XLENGTH(b), mn = (m && n) ? mymax(m, n) : 0;
-    R_xlen_t ia, ib;
-    SEXP ans = allocVector(TYPEOF(a), mn);
+    if (TYPEOF(a) != TYPEOF(b))
+        error(_("'a' and 'b' must have the same type"));
+
     switch (TYPEOF(a))
     {
-    case INTSXP:
+    case INTSXP: {
+        R_xlen_t i, ia, ib;
+        R_xlen_t m = XLENGTH(a), n = XLENGTH(b), mn = (m && n) ? mymax(m, n) : 0;
+        ans = allocVector(TYPEOF(a), mn);
+        int *pans = INTEGER(ans);
+        const int *pa = INTEGER_RO(a), *pb = INTEGER_RO(b);
         MOD_ITERATE2(mn, m, n, i, ia, ib, {
-            int aa = INTEGER(a)[ia];
-            int bb = INTEGER(b)[ib];
-            INTEGER(ans)
-            [i] = (aa == NA_INTEGER || bb == NA_INTEGER || bb < 0 || bb > 31) ? NA_INTEGER : ((unsigned int)aa >> bb);
+            int aa = pa[ia];
+            int bb = pb[ib];
+            pans[i] =
+                (aa == NA_INTEGER || bb == NA_INTEGER || bb < 0 || bb > 31) ? NA_INTEGER : ((unsigned int)aa >> bb);
         });
-        break;
+    }
+    break;
     default:
         UNIMPLEMENTED_TYPE("bitShiftR", a);
     }
