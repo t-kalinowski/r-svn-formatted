@@ -71,7 +71,7 @@ static R_INLINE SEXP VECTOR_ELT_FIX_NAMED(SEXP y, R_xlen_t i)
     {                                                                                                                  \
         if (TYPEOF(indx) == INTSXP)                                                                                    \
         {                                                                                                              \
-            int *pindx = INTEGER(indx);                                                                                \
+            const int *pindx = INTEGER_RO(indx);                                                                       \
             for (i = 0; i < n; i++)                                                                                    \
             {                                                                                                          \
                 ii = pindx[i];                                                                                         \
@@ -86,7 +86,7 @@ static R_INLINE SEXP VECTOR_ELT_FIX_NAMED(SEXP y, R_xlen_t i)
         }                                                                                                              \
         else                                                                                                           \
         {                                                                                                              \
-            double *pindx = REAL(indx);                                                                                \
+            const double *pindx = REAL_RO(indx);                                                                       \
             for (i = 0; i < n; i++)                                                                                    \
             {                                                                                                          \
                 double di = pindx[i];                                                                                  \
@@ -298,8 +298,8 @@ static SEXP MatrixSubset(SEXP x, SEXP s, SEXP call, int drop)
     PROTECT(sr);
     PROTECT(sc);
     result = allocVector(TYPEOF(x), (R_xlen_t)nrs * (R_xlen_t)ncs);
-    int *psr = INTEGER(sr);
-    int *psc = INTEGER(sc);
+    const int *psr = INTEGER_RO(sr);
+    const int *psc = INTEGER_RO(sc);
     PROTECT(result);
     switch (TYPEOF(x))
     {
@@ -380,7 +380,8 @@ static SEXP MatrixSubset(SEXP x, SEXP s, SEXP call, int drop)
     return result;
 }
 
-static R_INLINE R_xlen_t findASubIndex(R_xlen_t k, int **subs, int *indx, int *pxdims, R_xlen_t *offset, SEXP call)
+static R_INLINE R_xlen_t findASubIndex(R_xlen_t k, const int *const *subs, const int *indx, const int *pxdims,
+                                       const R_xlen_t *offset, SEXP call)
 {
     R_xlen_t ii = 0;
     for (int j = 0; j < k; j++)
@@ -424,10 +425,10 @@ static SEXP ArraySubset(SEXP x, SEXP s, SEXP call, int drop)
     mode = TYPEOF(x);
     xdims = getAttrib(x, R_DimSymbol);
     k = length(xdims);
-    int *pxdims = INTEGER(xdims);
+    const int *pxdims = INTEGER_RO(xdims);
 
     /* k is now the number of dims */
-    int **subs = (int **)R_alloc(k, sizeof(int *));
+    const int **subs = (const int **)R_alloc(k, sizeof(int *));
     int *indx = (int *)R_alloc(k, sizeof(int));
     int *bound = (int *)R_alloc(k, sizeof(int));
     R_xlen_t *offset = (R_xlen_t *)R_alloc(k, sizeof(R_xlen_t));
@@ -449,7 +450,7 @@ static SEXP ArraySubset(SEXP x, SEXP s, SEXP call, int drop)
     for (int i = 0; i < k; i++)
     {
         indx[i] = 0;
-        subs[i] = INTEGER(CAR(r));
+        subs[i] = INTEGER_RO(CAR(r));
         r = CDR(r);
     }
     offset[0] = 1;
@@ -1090,7 +1091,7 @@ SEXP attribute_hidden do_subset2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
 
         PROTECT(indx = allocVector(INTSXP, nsubs));
         int *pindx = INTEGER(indx);
-        int *pdims = INTEGER(dims);
+        const int *pdims = INTEGER_RO(dims);
         dimnames = getAttrib(x, R_DimNamesSymbol);
         ndn = length(dimnames);
         for (i = 0; i < nsubs; i++)
