@@ -46,12 +46,12 @@
 #include <Print.h>
 
 /* this is just for conformity with other types */
-attribute_hidden void formatRaw(Rbyte *x, R_xlen_t n, int *fieldwidth)
+attribute_hidden void formatRaw(const Rbyte *x, R_xlen_t n, int *fieldwidth)
 {
     *fieldwidth = 2;
 }
 
-attribute_hidden void formatString(SEXP *x, R_xlen_t n, int *fieldwidth, int quote)
+attribute_hidden void formatString(const SEXP *x, R_xlen_t n, int *fieldwidth, int quote)
 {
     int xmax = 0;
     int l;
@@ -70,7 +70,7 @@ attribute_hidden void formatString(SEXP *x, R_xlen_t n, int *fieldwidth, int quo
     *fieldwidth = xmax;
 }
 
-void formatLogical(int *x, R_xlen_t n, int *fieldwidth)
+void formatLogical(const int *x, R_xlen_t n, int *fieldwidth)
 {
     *fieldwidth = 1;
     for (R_xlen_t i = 0; i < n; i++)
@@ -93,7 +93,7 @@ void formatLogical(int *x, R_xlen_t n, int *fieldwidth)
     }
 }
 
-void formatInteger(int *x, R_xlen_t n, int *fieldwidth)
+void formatInteger(const int *x, R_xlen_t n, int *fieldwidth)
 {
     int xmin = INT_MAX, xmax = INT_MIN, naflag = 0;
     int l;
@@ -204,7 +204,7 @@ static const double tbl[] = {1e-1, 1e00, 1e01, 1e02, 1e03, 1e04, 1e05, 1e06, 1e0
 #define KP_MAX 22
 #endif
 
-static void scientific(double *x, int *neg, int *kpower, int *nsig, Rboolean *roundingwidens)
+static void scientific(const double *x, int *neg, int *kpower, int *nsig, Rboolean *roundingwidens)
 {
     /* for a number x , determine
      *	neg    = 1_{x < 0}  {0/1}
@@ -347,7 +347,7 @@ static void scientific(double *x, int *neg, int *kpower, int *nsig, Rboolean *ro
    it is 0 except when called from do_format.
 */
 
-void formatReal(double *x, R_xlen_t n, int *w, int *d, int *e, int nsmall)
+void formatReal(const double *x, R_xlen_t n, int *w, int *d, int *e, int nsmall)
 {
     int left, right, sleft;
     int mnl, mxl, rgt, mxsl, mxns, wF;
@@ -459,9 +459,9 @@ void formatReal(double *x, R_xlen_t n, int *w, int *d, int *e, int nsmall)
 
 /* As from 2.2.0 the number of digits applies to real and imaginary parts
    together, not separately */
-void z_prec_r(Rcomplex *r, Rcomplex *x, double digits);
+void z_prec_r(Rcomplex *r, const Rcomplex *x, double digits);
 
-void formatComplex(Rcomplex *x, R_xlen_t n, int *wr, int *dr, int *er, int *wi, int *di, int *ei, int nsmall)
+void formatComplex(const Rcomplex *x, R_xlen_t n, int *wr, int *dr, int *er, int *wi, int *di, int *ei, int nsmall)
 {
     /* format.info() for  x[1..n] for both Re & Im */
     int left, right, sleft;
