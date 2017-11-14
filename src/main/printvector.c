@@ -193,13 +193,13 @@ void printVector(SEXP x, int indx, int quote)
         switch (TYPEOF(x))
         {
         case LGLSXP:
-            printLogicalVector(LOGICAL(x), n_pr, indx);
+            printLogicalVector(LOGICAL_RO(x), n_pr, indx);
             break;
         case INTSXP:
-            printIntegerVector(INTEGER(x), n_pr, indx);
+            printIntegerVector(INTEGER_RO(x), n_pr, indx);
             break;
         case REALSXP:
-            printRealVector(REAL(x), n_pr, indx);
+            printRealVector(REAL_RO(x), n_pr, indx);
             break;
         case STRSXP:
             if (quote)
@@ -208,10 +208,10 @@ void printVector(SEXP x, int indx, int quote)
                 printStringVector(STRING_PTR(x), n_pr, 0, indx);
             break;
         case CPLXSXP:
-            printComplexVector(COMPLEX(x), n_pr, indx);
+            printComplexVector(COMPLEX_RO(x), n_pr, indx);
             break;
         case RAWSXP:
-            printRawVector(RAW(x), n_pr, indx);
+            printRawVector(RAW_RO(x), n_pr, indx);
             break;
         }
         if (n_pr < n)
@@ -353,16 +353,16 @@ static void printNamedLogicalVector(const int *x, int n, SEXP *names)
         switch (TYPEOF(x))
         {
         case LGLSXP:
-            printNamedLogicalVector(LOGICAL(x), n_pr, STRING_PTR(names));
+            printNamedLogicalVector(LOGICAL_RO(x), n_pr, STRING_PTR(names));
             break;
         case INTSXP:
-            printNamedIntegerVector(INTEGER(x), n_pr, STRING_PTR(names));
+            printNamedIntegerVector(INTEGER_RO(x), n_pr, STRING_PTR(names));
             break;
         case REALSXP:
-            printNamedRealVector(REAL(x), n_pr, STRING_PTR(names));
+            printNamedRealVector(REAL_RO(x), n_pr, STRING_PTR(names));
             break;
         case CPLXSXP:
-            printNamedComplexVector(COMPLEX(x), n_pr, STRING_PTR(names));
+            printNamedComplexVector(COMPLEX_RO(x), n_pr, STRING_PTR(names));
             break;
         case STRSXP:
             if (quote)
@@ -370,7 +370,7 @@ static void printNamedLogicalVector(const int *x, int n, SEXP *names)
             printNamedStringVector(STRING_PTR(x), n_pr, quote, STRING_PTR(names));
             break;
         case RAWSXP:
-            printNamedRawVector(RAW(x), n_pr, STRING_PTR(names));
+            printNamedRawVector(RAW_RO(x), n_pr, STRING_PTR(names));
             break;
         }
         if (n_pr < n)

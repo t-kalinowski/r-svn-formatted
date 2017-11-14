@@ -368,8 +368,9 @@ static void PrintGenericVector(SEXP s, SEXP env)
             case LGLSXP:
                 if (LENGTH(tmp) == 1)
                 {
-                    formatLogical(LOGICAL(tmp), 1, &w);
-                    snprintf(pbuf, 115, "%s", EncodeLogical(LOGICAL(tmp)[0], w));
+                    const int *x = LOGICAL_RO(tmp);
+                    formatLogical(x, 1, &w);
+                    snprintf(pbuf, 115, "%s", EncodeLogical(x[0], w));
                 }
                 else
                     snprintf(pbuf, 115, "Logical,%d", LENGTH(tmp));
@@ -384,8 +385,9 @@ static void PrintGenericVector(SEXP s, SEXP env)
                 {
                     if (LENGTH(tmp) == 1)
                     {
-                        formatInteger(INTEGER(tmp), 1, &w);
-                        snprintf(pbuf, 115, "%s", EncodeInteger(INTEGER(tmp)[0], w));
+                        const int *x = INTEGER_RO(tmp);
+                        formatInteger(x, 1, &w);
+                        snprintf(pbuf, 115, "%s", EncodeInteger(x[0], w));
                     }
                     else
                         snprintf(pbuf, 115, "Integer,%d", LENGTH(tmp));
@@ -394,8 +396,9 @@ static void PrintGenericVector(SEXP s, SEXP env)
             case REALSXP:
                 if (LENGTH(tmp) == 1)
                 {
-                    formatReal(REAL(tmp), 1, &w, &d, &e, 0);
-                    snprintf(pbuf, 115, "%s", EncodeReal0(REAL(tmp)[0], w, d, e, OutDec));
+                    const double *x = REAL_RO(tmp);
+                    formatReal(x, 1, &w, &d, &e, 0);
+                    snprintf(pbuf, 115, "%s", EncodeReal0(x[0], w, d, e, OutDec));
                 }
                 else
                     snprintf(pbuf, 115, "Numeric,%d", LENGTH(tmp));
@@ -403,7 +406,7 @@ static void PrintGenericVector(SEXP s, SEXP env)
             case CPLXSXP:
                 if (LENGTH(tmp) == 1)
                 {
-                    Rcomplex *x = COMPLEX(tmp);
+                    const Rcomplex *x = COMPLEX_RO(tmp);
                     if (ISNA(x[0].r) || ISNA(x[0].i))
                         /* formatReal(NA) --> w=R_print.na_width, d=0, e=0 */
                         snprintf(pbuf, 115, "%s", EncodeReal0(NA_REAL, R_print.na_width, 0, 0, OutDec));
