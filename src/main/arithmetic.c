@@ -847,7 +847,7 @@ static SEXP logical_unary(ARITHOP_TYPE code, SEXP s1, SEXP call)
     UNPROTECT(3);
 
     int *pa = INTEGER(ans);
-    int *px = LOGICAL(s1);
+    const int *px = LOGICAL_RO(s1);
 
     switch (code)
     {
@@ -872,7 +872,6 @@ static SEXP logical_unary(ARITHOP_TYPE code, SEXP s1, SEXP call)
 static SEXP integer_unary(ARITHOP_TYPE code, SEXP s1, SEXP call)
 {
     R_xlen_t i, n;
-    int x, *px, *pa;
     SEXP ans;
 
     switch (code)
@@ -881,12 +880,12 @@ static SEXP integer_unary(ARITHOP_TYPE code, SEXP s1, SEXP call)
         return s1;
     case MINUSOP:
         ans = NO_REFERENCES(s1) ? s1 : duplicate(s1);
-        pa = INTEGER(ans);
-        px = INTEGER(s1);
+        int *pa = INTEGER(ans);
+        const int *px = INTEGER_RO(s1);
         n = XLENGTH(s1);
         for (i = 0; i < n; i++)
         {
-            x = px[i];
+            int x = px[i];
             pa[i] = (x == NA_INTEGER) ? NA_INTEGER : ((x == 0.0) ? 0 : -x);
         }
         return ans;
@@ -900,7 +899,6 @@ static SEXP real_unary(ARITHOP_TYPE code, SEXP s1, SEXP lcall)
 {
     R_xlen_t i, n;
     SEXP ans;
-    double *pa, *px;
 
     switch (code)
     {
@@ -908,8 +906,8 @@ static SEXP real_unary(ARITHOP_TYPE code, SEXP s1, SEXP lcall)
         return s1;
     case MINUSOP:
         ans = NO_REFERENCES(s1) ? s1 : duplicate(s1);
-        pa = REAL(ans);
-        px = REAL(s1);
+        double *pa = REAL(ans);
+        const double *px = REAL_RO(s1);
         n = XLENGTH(s1);
         for (i = 0; i < n; i++)
             pa[i] = -px[i];
@@ -947,8 +945,8 @@ static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
     {
     case PLUSOP: {
         int *pa = INTEGER(ans);
-        int *px1 = INTEGER(s1);
-        int *px2 = INTEGER(s2);
+        const int *px1 = INTEGER_RO(s1);
+        const int *px2 = INTEGER_RO(s2);
         MOD_ITERATE2_CHECK(NINTERRUPT, n, n1, n2, i, i1, i2, {
             x1 = px1[i1];
             x2 = px2[i2];
@@ -960,8 +958,8 @@ static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
     break;
     case MINUSOP: {
         int *pa = INTEGER(ans);
-        int *px1 = INTEGER(s1);
-        int *px2 = INTEGER(s2);
+        const int *px1 = INTEGER_RO(s1);
+        const int *px2 = INTEGER_RO(s2);
         MOD_ITERATE2_CHECK(NINTERRUPT, n, n1, n2, i, i1, i2, {
             x1 = px1[i1];
             x2 = px2[i2];
@@ -973,8 +971,8 @@ static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
     break;
     case TIMESOP: {
         int *pa = INTEGER(ans);
-        int *px1 = INTEGER(s1);
-        int *px2 = INTEGER(s2);
+        const int *px1 = INTEGER_RO(s1);
+        const int *px2 = INTEGER_RO(s2);
         MOD_ITERATE2_CHECK(NINTERRUPT, n, n1, n2, i, i1, i2, {
             x1 = px1[i1];
             x2 = px2[i2];
@@ -986,8 +984,8 @@ static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
     break;
     case DIVOP: {
         double *pa = REAL(ans);
-        int *px1 = INTEGER(s1);
-        int *px2 = INTEGER(s2);
+        const int *px1 = INTEGER_RO(s1);
+        const int *px2 = INTEGER_RO(s2);
         MOD_ITERATE2_CHECK(NINTERRUPT, n, n1, n2, i, i1, i2, {
             x1 = px1[i1];
             x2 = px2[i2];
@@ -997,8 +995,8 @@ static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
     break;
     case POWOP: {
         double *pa = REAL(ans);
-        int *px1 = INTEGER(s1);
-        int *px2 = INTEGER(s2);
+        const int *px1 = INTEGER_RO(s1);
+        const int *px2 = INTEGER_RO(s2);
         MOD_ITERATE2_CHECK(NINTERRUPT, n, n1, n2, i, i1, i2, {
             if ((x1 = px1[i1]) == 1 || (x2 = px2[i2]) == 0)
                 pa[i] = 1.;
@@ -1011,8 +1009,8 @@ static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
     break;
     case MODOP: {
         int *pa = INTEGER(ans);
-        int *px1 = INTEGER(s1);
-        int *px2 = INTEGER(s2);
+        const int *px1 = INTEGER_RO(s1);
+        const int *px2 = INTEGER_RO(s2);
         MOD_ITERATE2_CHECK(NINTERRUPT, n, n1, n2, i, i1, i2, {
             x1 = px1[i1];
             x2 = px2[i2];
@@ -1028,8 +1026,8 @@ static SEXP integer_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2, SEXP lcall)
     break;
     case IDIVOP: {
         int *pa = INTEGER(ans);
-        int *px1 = INTEGER(s1);
-        int *px2 = INTEGER(s2);
+        const int *px1 = INTEGER_RO(s1);
+        const int *px2 = INTEGER_RO(s2);
         MOD_ITERATE2_CHECK(NINTERRUPT, n, n1, n2, i, i1, i2, {
             x1 = px1[i1];
             x2 = px2[i2];
@@ -1083,8 +1081,8 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         if (TYPEOF(s1) == REALSXP && TYPEOF(s2) == REALSXP)
         {
             double *da = REAL(ans);
-            double *dx = REAL(s1);
-            double *dy = REAL(s2);
+            const double *dx = REAL_RO(s1);
+            const double *dy = REAL_RO(s2);
             if (n2 == 1)
             {
                 double tmp = dy[0];
@@ -1103,15 +1101,15 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         else if (TYPEOF(s1) == INTSXP)
         {
             double *da = REAL(ans);
-            int *px1 = INTEGER(s1);
-            double *px2 = REAL(s2);
+            const int *px1 = INTEGER_RO(s1);
+            const double *px2 = REAL_RO(s2);
             MOD_ITERATE2_CHECK(NINTERRUPT, n, n1, n2, i, i1, i2, da[i] = R_INTEGER(px1[i1]) + px2[i2];);
         }
         else if (TYPEOF(s2) == INTSXP)
         {
             double *da = REAL(ans);
-            double *px1 = REAL(s1);
-            int *px2 = INTEGER(s2);
+            const double *px1 = REAL_RO(s1);
+            const int *px2 = INTEGER_RO(s2);
             MOD_ITERATE2_CHECK(NINTERRUPT, n, n1, n2, i, i1, i2, da[i] = px1[i1] + R_INTEGER(px2[i2]););
         }
         break;
@@ -1119,8 +1117,8 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         if (TYPEOF(s1) == REALSXP && TYPEOF(s2) == REALSXP)
         {
             double *da = REAL(ans);
-            double *dx = REAL(s1);
-            double *dy = REAL(s2);
+            const double *dx = REAL_RO(s1);
+            const double *dy = REAL_RO(s2);
             if (n2 == 1)
             {
                 double tmp = dy[0];
@@ -1139,15 +1137,15 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         else if (TYPEOF(s1) == INTSXP)
         {
             double *da = REAL(ans);
-            int *px1 = INTEGER(s1);
-            double *px2 = REAL(s2);
+            const int *px1 = INTEGER_RO(s1);
+            const double *px2 = REAL_RO(s2);
             MOD_ITERATE2_CHECK(NINTERRUPT, n, n1, n2, i, i1, i2, da[i] = R_INTEGER(px1[i1]) - px2[i2];);
         }
         else if (TYPEOF(s2) == INTSXP)
         {
             double *da = REAL(ans);
-            double *px1 = REAL(s1);
-            int *px2 = INTEGER(s2);
+            const double *px1 = REAL_RO(s1);
+            const int *px2 = INTEGER_RO(s2);
             MOD_ITERATE2_CHECK(NINTERRUPT, n, n1, n2, i, i1, i2, da[i] = px1[i1] - R_INTEGER(px2[i2]););
         }
         break;
@@ -1155,8 +1153,8 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         if (TYPEOF(s1) == REALSXP && TYPEOF(s2) == REALSXP)
         {
             double *da = REAL(ans);
-            double *dx = REAL(s1);
-            double *dy = REAL(s2);
+            const double *dx = REAL_RO(s1);
+            const double *dy = REAL_RO(s2);
             if (n2 == 1)
             {
                 double tmp = dy[0];
@@ -1175,15 +1173,15 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         else if (TYPEOF(s1) == INTSXP)
         {
             double *da = REAL(ans);
-            int *px1 = INTEGER(s1);
-            double *px2 = REAL(s2);
+            const int *px1 = INTEGER_RO(s1);
+            const double *px2 = REAL_RO(s2);
             MOD_ITERATE2_CHECK(NINTERRUPT, n, n1, n2, i, i1, i2, da[i] = R_INTEGER(px1[i1]) * px2[i2];);
         }
         else if (TYPEOF(s2) == INTSXP)
         {
             double *da = REAL(ans);
-            double *px1 = REAL(s1);
-            int *px2 = INTEGER(s2);
+            const double *px1 = REAL_RO(s1);
+            const int *px2 = INTEGER_RO(s2);
             MOD_ITERATE2_CHECK(NINTERRUPT, n, n1, n2, i, i1, i2, da[i] = px1[i1] * R_INTEGER(px2[i2]););
         }
         break;
@@ -1191,8 +1189,8 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         if (TYPEOF(s1) == REALSXP && TYPEOF(s2) == REALSXP)
         {
             double *da = REAL(ans);
-            double *dx = REAL(s1);
-            double *dy = REAL(s2);
+            const double *dx = REAL_RO(s1);
+            const double *dy = REAL_RO(s2);
             if (n2 == 1)
             {
                 double tmp = dy[0];
@@ -1211,15 +1209,15 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         else if (TYPEOF(s1) == INTSXP)
         {
             double *da = REAL(ans);
-            int *px1 = INTEGER(s1);
-            double *px2 = REAL(s2);
+            const int *px1 = INTEGER_RO(s1);
+            const double *px2 = REAL_RO(s2);
             MOD_ITERATE2_CHECK(NINTERRUPT, n, n1, n2, i, i1, i2, da[i] = R_INTEGER(px1[i1]) / px2[i2];);
         }
         else if (TYPEOF(s2) == INTSXP)
         {
             double *da = REAL(ans);
-            double *px1 = REAL(s1);
-            int *px2 = INTEGER(s2);
+            const double *px1 = REAL_RO(s1);
+            const int *px2 = INTEGER_RO(s2);
             MOD_ITERATE2_CHECK(NINTERRUPT, n, n1, n2, i, i1, i2, da[i] = px1[i1] / R_INTEGER(px2[i2]););
         }
         break;
@@ -1227,8 +1225,8 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         if (TYPEOF(s1) == REALSXP && TYPEOF(s2) == REALSXP)
         {
             double *da = REAL(ans);
-            double *dx = REAL(s1);
-            double *dy = REAL(s2);
+            const double *dx = REAL_RO(s1);
+            const double *dy = REAL_RO(s2);
             if (n2 == 1)
             {
                 double tmp = dy[0];
@@ -1247,15 +1245,15 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         else if (TYPEOF(s1) == INTSXP)
         {
             double *da = REAL(ans);
-            int *px1 = INTEGER(s1);
-            double *px2 = REAL(s2);
+            const int *px1 = INTEGER_RO(s1);
+            const double *px2 = REAL_RO(s2);
             MOD_ITERATE2_CHECK(NINTERRUPT, n, n1, n2, i, i1, i2, da[i] = R_POW(R_INTEGER(px1[i1]), px2[i2]););
         }
         else if (TYPEOF(s2) == INTSXP)
         {
             double *da = REAL(ans);
-            double *px1 = REAL(s1);
-            int *px2 = INTEGER(s2);
+            const double *px1 = REAL_RO(s1);
+            const int *px2 = INTEGER_RO(s2);
             MOD_ITERATE2_CHECK(NINTERRUPT, n, n1, n2, i, i1, i2, da[i] = R_POW(px1[i1], R_INTEGER(px2[i2])););
         }
         break;
@@ -1263,22 +1261,22 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         if (TYPEOF(s1) == REALSXP && TYPEOF(s2) == REALSXP)
         {
             double *da = REAL(ans);
-            double *px1 = REAL(s1);
-            double *px2 = REAL(s2);
+            const double *px1 = REAL_RO(s1);
+            const double *px2 = REAL_RO(s2);
             MOD_ITERATE2_CHECK(NINTERRUPT, n, n1, n2, i, i1, i2, da[i] = myfmod(px1[i1], px2[i2]););
         }
         else if (TYPEOF(s1) == INTSXP)
         {
             double *da = REAL(ans);
-            int *px1 = INTEGER(s1);
-            double *px2 = REAL(s2);
+            const int *px1 = INTEGER_RO(s1);
+            const double *px2 = REAL_RO(s2);
             MOD_ITERATE2_CHECK(NINTERRUPT, n, n1, n2, i, i1, i2, da[i] = myfmod(R_INTEGER(px1[i1]), px2[i2]););
         }
         else if (TYPEOF(s2) == INTSXP)
         {
             double *da = REAL(ans);
-            double *px1 = REAL(s1);
-            int *px2 = INTEGER(s2);
+            const double *px1 = REAL_RO(s1);
+            const int *px2 = INTEGER_RO(s2);
             MOD_ITERATE2_CHECK(NINTERRUPT, n, n1, n2, i, i1, i2, da[i] = myfmod(px1[i1], R_INTEGER(px2[i2])););
         }
         break;
@@ -1286,22 +1284,22 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
         if (TYPEOF(s1) == REALSXP && TYPEOF(s2) == REALSXP)
         {
             double *da = REAL(ans);
-            double *px1 = REAL(s1);
-            double *px2 = REAL(s2);
+            const double *px1 = REAL_RO(s1);
+            const double *px2 = REAL_RO(s2);
             MOD_ITERATE2_CHECK(NINTERRUPT, n, n1, n2, i, i1, i2, da[i] = myfloor(px1[i1], px2[i2]););
         }
         else if (TYPEOF(s1) == INTSXP)
         {
             double *da = REAL(ans);
-            int *px1 = INTEGER(s1);
-            double *px2 = REAL(s2);
+            const int *px1 = INTEGER_RO(s1);
+            const double *px2 = REAL_RO(s2);
             MOD_ITERATE2_CHECK(NINTERRUPT, n, n1, n2, i, i1, i2, da[i] = myfloor(R_INTEGER(px1[i1]), px2[i2]););
         }
         else if (TYPEOF(s2) == INTSXP)
         {
             double *da = REAL(ans);
-            double *px1 = REAL(s1);
-            int *px2 = INTEGER(s2);
+            const double *px1 = REAL_RO(s1);
+            const int *px2 = INTEGER_RO(s2);
             MOD_ITERATE2_CHECK(NINTERRUPT, n, n1, n2, i, i1, i2, da[i] = myfloor(px1[i1], R_INTEGER(px2[i2])););
         }
         break;
@@ -1327,7 +1325,6 @@ static SEXP real_binary(ARITHOP_TYPE code, SEXP s1, SEXP s2)
 static SEXP math1(SEXP sa, double (*f)(double), SEXP lcall)
 {
     SEXP sy;
-    double *y, *a;
     R_xlen_t i, n;
     int naflag;
 
@@ -1338,8 +1335,8 @@ static SEXP math1(SEXP sa, double (*f)(double), SEXP lcall)
     /* coercion can lose the object bit */
     PROTECT(sa = coerceVector(sa, REALSXP));
     PROTECT(sy = NO_REFERENCES(sa) ? sa : allocVector(REALSXP, n));
-    a = REAL(sa);
-    y = REAL(sy);
+    const double *a = REAL_RO(sa);
+    double *y = REAL(sy);
     naflag = 0;
     for (i = 0; i < n; i++)
     {
@@ -1494,7 +1491,7 @@ SEXP attribute_hidden do_abs(SEXP call, SEXP op, SEXP args, SEXP env)
         PROTECT(s);
         /* Note: relying on INTEGER(.) === LOGICAL(.) : */
         int *pa = INTEGER(s);
-        int *px = INTEGER(x);
+        const int *px = INTEGER_RO(x);
         for (i = 0; i < n; i++)
         {
             int xi = px[i];
@@ -1506,7 +1503,7 @@ SEXP attribute_hidden do_abs(SEXP call, SEXP op, SEXP args, SEXP env)
         R_xlen_t i, n = XLENGTH(x);
         PROTECT(s = NO_REFERENCES(x) ? x : allocVector(REALSXP, n));
         double *pa = REAL(s);
-        double *px = REAL(x);
+        const double *px = REAL_RO(x);
         for (i = 0; i < n; i++)
             pa[i] = fabs(px[i]);
     }
@@ -1540,7 +1537,8 @@ static SEXP math2(SEXP sa, SEXP sb, double (*f)(double, double), SEXP lcall)
 {
     SEXP sy;
     R_xlen_t i, ia, ib, n, na, nb;
-    double ai, bi, *a, *b, *y;
+    double ai, bi, *y;
+    const double *a, *b;
     int naflag;
 
     if (!isNumeric(sa) || !isNumeric(sb))
@@ -1563,8 +1561,8 @@ static SEXP math2(SEXP sa, SEXP sb, double (*f)(double, double), SEXP lcall)
     PROTECT(sa = coerceVector(sa, REALSXP));                                                                           \
     PROTECT(sb = coerceVector(sb, REALSXP));                                                                           \
     PROTECT(sy = allocVector(REALSXP, n));                                                                             \
-    a = REAL(sa);                                                                                                      \
-    b = REAL(sb);                                                                                                      \
+    a = REAL_RO(sa);                                                                                                   \
+    b = REAL_RO(sb);                                                                                                   \
     y = REAL(sy);                                                                                                      \
     naflag = 0
 
@@ -1600,7 +1598,8 @@ static SEXP math2_1(SEXP sa, SEXP sb, SEXP sI, double (*f)(double, double, int),
 {
     SEXP sy;
     R_xlen_t i, ia, ib, n, na, nb;
-    double ai, bi, *a, *b, *y;
+    double ai, bi, *y;
+    const double *a, *b;
     int m_opt;
     int naflag;
 
@@ -1629,7 +1628,8 @@ static SEXP math2_2(SEXP sa, SEXP sb, SEXP sI1, SEXP sI2, double (*f)(double, do
 {
     SEXP sy;
     R_xlen_t i, ia, ib, n, na, nb;
-    double ai, bi, *a, *b, *y;
+    double ai, bi, *y;
+    const double *a, *b;
     int i_1, i_2;
     int naflag;
     if (!isNumeric(sa) || !isNumeric(sb))
@@ -1660,7 +1660,8 @@ static SEXP math2B(SEXP sa, SEXP sb, double (*f)(double, double, double *), SEXP
 {
     SEXP sy;
     R_xlen_t i, ia, ib, n, na, nb;
-    double ai, bi, *a, *b, *y;
+    double ai, bi, *y;
+    const double *a, *b;
     int naflag;
     double amax, *work;
     size_t nw;
@@ -2013,9 +2014,9 @@ SEXP attribute_hidden do_log_builtin(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(sb = coerceVector(sb, REALSXP));                                                                           \
     PROTECT(sc = coerceVector(sc, REALSXP));                                                                           \
     PROTECT(sy = allocVector(REALSXP, n));                                                                             \
-    a = REAL(sa);                                                                                                      \
-    b = REAL(sb);                                                                                                      \
-    c = REAL(sc);                                                                                                      \
+    a = REAL_RO(sa);                                                                                                   \
+    b = REAL_RO(sb);                                                                                                   \
+    c = REAL_RO(sc);                                                                                                   \
     y = REAL(sy);                                                                                                      \
     naflag = 0
 
@@ -2035,7 +2036,8 @@ static SEXP math3_1(SEXP sa, SEXP sb, SEXP sc, SEXP sI, double (*f)(double, doub
 {
     SEXP sy;
     R_xlen_t i, ia, ib, ic, n, na, nb, nc;
-    double ai, bi, ci, *a, *b, *c, *y;
+    double ai, bi, ci, *y;
+    const double *a, *b, *c;
     int i_1;
     int naflag;
 
@@ -2064,7 +2066,8 @@ static SEXP math3_2(SEXP sa, SEXP sb, SEXP sc, SEXP sI, SEXP sJ, double (*f)(dou
 {
     SEXP sy;
     R_xlen_t i, ia, ib, ic, n, na, nb, nc;
-    double ai, bi, ci, *a, *b, *c, *y;
+    double ai, bi, ci, *y;
+    const double *a, *b, *c;
     int i_1, i_2;
     int naflag;
 
@@ -2095,7 +2098,8 @@ static SEXP math3B(SEXP sa, SEXP sb, SEXP sc, double (*f)(double, double, double
 {
     SEXP sy;
     R_xlen_t i, ia, ib, ic, n, na, nb, nc;
-    double ai, bi, ci, *a, *b, *c, *y;
+    double ai, bi, ci, *y;
+    const double *a, *b, *c;
     int naflag;
     double amax, *work;
     size_t nw;
@@ -2276,7 +2280,8 @@ static SEXP math4(SEXP sa, SEXP sb, SEXP sc, SEXP sd, double (*f)(double, double
 {
     SEXP sy;
     R_xlen_t i, ia, ib, ic, id, n, na, nb, nc, nd;
-    double ai, bi, ci, di, *a, *b, *c, *d, *y;
+    double ai, bi, ci, di, *y;
+    const double *a, *b, *c, *d;
     int naflag;
 
 #define SETUP_Math4                                                                                                    \
@@ -2301,10 +2306,10 @@ static SEXP math4(SEXP sa, SEXP sb, SEXP sc, SEXP sd, double (*f)(double, double
     PROTECT(sc = coerceVector(sc, REALSXP));                                                                           \
     PROTECT(sd = coerceVector(sd, REALSXP));                                                                           \
     PROTECT(sy = allocVector(REALSXP, n));                                                                             \
-    a = REAL(sa);                                                                                                      \
-    b = REAL(sb);                                                                                                      \
-    c = REAL(sc);                                                                                                      \
-    d = REAL(sd);                                                                                                      \
+    a = REAL_RO(sa);                                                                                                   \
+    b = REAL_RO(sb);                                                                                                   \
+    c = REAL_RO(sc);                                                                                                   \
+    d = REAL_RO(sd);                                                                                                   \
     y = REAL(sy);                                                                                                      \
     naflag = 0
 
@@ -2348,7 +2353,8 @@ static SEXP math4_1(SEXP sa, SEXP sb, SEXP sc, SEXP sd, SEXP sI, double (*f)(dou
 {
     SEXP sy;
     R_xlen_t i, ia, ib, ic, id, n, na, nb, nc, nd;
-    double ai, bi, ci, di, *a, *b, *c, *d, *y;
+    double ai, bi, ci, di, *y;
+    const double *a, *b, *c, *d;
     int i_1;
     int naflag;
 
@@ -2377,7 +2383,8 @@ static SEXP math4_2(SEXP sa, SEXP sb, SEXP sc, SEXP sd, SEXP sI, SEXP sJ,
 {
     SEXP sy;
     R_xlen_t i, ia, ib, ic, id, n, na, nb, nc, nd;
-    double ai, bi, ci, di, *a, *b, *c, *d, *y;
+    double ai, bi, ci, di, *y;
+    const double *a, *b, *c, *d;
     int i_1, i_2;
     int naflag;
 
@@ -2468,7 +2475,8 @@ static SEXP math5(SEXP sa, SEXP sb, SEXP sc, SEXP sd, SEXP se, double (*f)())
 {
     SEXP sy;
     R_xlen_t i, ia, ib, ic, id, ie, n, na, nb, nc, nd, ne;
-    double ai, bi, ci, di, ei, *a, *b, *c, *d, *e, *y;
+    double ai, bi, ci, di, ei, *y;
+    const double *a, *b, *c, *d, *e;
 
 #define SETUP_Math5                                                                                                    \
     if (!isNumeric(sa) || !isNumeric(sb) || !isNumeric(sc) || !isNumeric(sd) || !isNumeric(se))                        \
@@ -2496,11 +2504,11 @@ static SEXP math5(SEXP sa, SEXP sb, SEXP sc, SEXP sd, SEXP se, double (*f)())
     PROTECT(sd = coerceVector(sd, REALSXP));                                                                           \
     PROTECT(se = coerceVector(se, REALSXP));                                                                           \
     PROTECT(sy = allocVector(REALSXP, n));                                                                             \
-    a = REAL(sa);                                                                                                      \
-    b = REAL(sb);                                                                                                      \
-    c = REAL(sc);                                                                                                      \
-    d = REAL(sd);                                                                                                      \
-    e = REAL(se);                                                                                                      \
+    a = REAL_RO(sa);                                                                                                   \
+    b = REAL_RO(sb);                                                                                                   \
+    c = REAL_RO(sc);                                                                                                   \
+    d = REAL_RO(sd);                                                                                                   \
+    e = REAL_RO(se);                                                                                                   \
     y = REAL(sy);                                                                                                      \
     naflag = 0
 
