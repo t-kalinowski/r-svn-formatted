@@ -103,6 +103,17 @@ static SEXP stripAttrib(SEXP tag, SEXP lst)
     return lst;
 }
 
+static Rboolean isOneDimensionalArray(SEXP vec)
+{
+    if (isVector(vec) || isList(vec) || isLanguage(vec))
+    {
+        SEXP s = getAttrib(vec, R_DimSymbol);
+        if (TYPEOF(s) == INTSXP && LENGTH(s) == 1)
+            return TRUE;
+    }
+    return FALSE;
+}
+
 /* NOTE: For environments serialize.c calls this function to find if
    there is a class attribute in order to reconstruct the object bit
    if needed.  This means the function cannot use OBJECT(vec) == 0 to
@@ -116,17 +127,13 @@ SEXP attribute_hidden getAttrib0(SEXP vec, SEXP name)
 
     if (name == R_NamesSymbol)
     {
-        if (isVector(vec) || isList(vec) || isLanguage(vec))
+        if (isOneDimensionalArray(vec))
         {
-            s = getAttrib(vec, R_DimSymbol);
-            if (TYPEOF(s) == INTSXP && LENGTH(s) == 1)
+            s = getAttrib(vec, R_DimNamesSymbol);
+            if (!isNull(s))
             {
-                s = getAttrib(vec, R_DimNamesSymbol);
-                if (!isNull(s))
-                {
-                    MARK_NOT_MUTABLE(VECTOR_ELT(s, 0));
-                    return VECTOR_ELT(s, 0);
-                }
+                MARK_NOT_MUTABLE(VECTOR_ELT(s, 0));
+                return VECTOR_ELT(s, 0);
             }
         }
         if (isList(vec) || isLanguage(vec))
@@ -251,14 +258,9 @@ SEXP setAttrib(SEXP vec, SEXP name, SEXP val)
     if (val == R_NilValue)
     {
         /* FIXME: see do_namesgets().
-        if (name == R_NamesSymbol) {
-            if(isVector(vec) || isList(vec) || isLanguage(vec)) {
-            SEXP s = getAttrib(vec, R_DimSymbol);
-            if(TYPEOF(s) == INTSXP && LENGTH(s) == 1) {
-                UNPROTECT(2);
-                return removeAttrib(vec, R_DimNamesSymbol);
-            }
-            }
+        if (name == R_NamesSymbol && isOneDimensionalArray(vec)) {
+            UNPROTECT(2);
+            return removeAttrib(vec, R_DimNamesSymbol);
         }
         */
         UNPROTECT(2);
@@ -994,22 +996,10 @@ SEXP attribute_hidden do_namesgets(SEXP call, SEXP op, SEXP args, SEXP env)
          setAttrib(x, R_NamesSymbol, R_NilValue)
        to actually remove the names, as needed in subset.c.
     */
-    if (names == R_NilValue)
-    {
-        SEXP vec = CAR(args);
-        if (isVector(vec) || isList(vec) || isLanguage(vec))
-        {
-            SEXP s = getAttrib(vec, R_DimSymbol);
-            if (TYPEOF(s) == INTSXP && LENGTH(s) == 1)
-            {
-                setAttrib(CAR(args), R_DimNamesSymbol, names);
-                UNPROTECT(1);
-                SET_NAMED(CAR(args), 0);
-                return CAR(args);
-            }
-        }
-    }
-    setAttrib(CAR(args), R_NamesSymbol, names);
+    if (names == R_NilValue && isOneDimensionalArray(CAR(args)))
+        setAttrib(CAR(args), R_DimNamesSymbol, names);
+    else
+        setAttrib(CAR(args), R_NamesSymbol, names);
     UNPROTECT(1);
     SET_NAMED(CAR(args), 0);
     return CAR(args);
@@ -1061,17 +1051,12 @@ SEXP namesgets(SEXP vec, SEXP val)
     checkNames(vec, val);
 
     /* Special treatment for one dimensional arrays */
-
-    if (isVector(vec) || isList(vec) || isLanguage(vec))
+    if (isOneDimensionalArray(vec))
     {
-        s = getAttrib(vec, R_DimSymbol);
-        if (TYPEOF(s) == INTSXP && length(s) == 1)
-        {
-            PROTECT(val = CONS(val, R_NilValue));
-            setAttrib(vec, R_DimNamesSymbol, val);
-            UNPROTECT(3);
-            return vec;
-        }
+        PROTECT(val = CONS(val, R_NilValue));
+        setAttrib(vec, R_DimNamesSymbol, val);
+        UNPROTECT(3);
+        return vec;
     }
 
     if (isList(vec) || isLanguage(vec))
