@@ -331,6 +331,7 @@ SEXP deparse1line(SEXP call, Rboolean abbrev)
     return (temp);
 }
 
+// called only from ./errors.c  for calls in warnings and errors :
 SEXP attribute_hidden deparse1s(SEXP call)
 {
     SEXP temp;
@@ -713,6 +714,7 @@ static attr_type hasAttributes(SEXP s, Rboolean nice_names)
     return has_names ? OK_NAMES : SIMPLE;
 }
 
+// is *only* called  if (d->opts & SHOW_ATTR_OR_NMS) = d->opts & (SHOW_A | NICE_N)
 static attr_type attr1(SEXP s, LocalParseData *d)
 {
     attr_type attr = hasAttributes(s, /* nice_names = */ d->opts & NICE_NAMES);
@@ -728,8 +730,6 @@ static attr_type attr1(SEXP s, LocalParseData *d)
 
 static void attr2(SEXP s, LocalParseData *d, Rboolean not_names)
 {
-    // not needed, as attr2() must be called only if(hasAttributes(.)) :
-    /* if(hasAttributes(s, nice_names)) { */
     SEXP a = ATTRIB(s);
     while (!isNull(a))
     {
@@ -781,7 +781,6 @@ static void attr2(SEXP s, LocalParseData *d, Rboolean not_names)
         a = CDR(a);
     }
     print2buff(")", d);
-    /* } */
 }
 
 static void printcomment(SEXP s, LocalParseData *d)
@@ -874,10 +873,9 @@ static Rboolean parenthesizeCaller(SEXP s)
 
 static void deparse2buff(SEXP s, LocalParseData *d)
 {
-    PPinfo fop;
-    Rboolean lookahead = FALSE, lbreak = FALSE, parens, fnarg = d->fnarg, outerparens, doquote, missing;
+    Rboolean lookahead = FALSE, lbreak = FALSE, fnarg = d->fnarg;
     attr_type attr = STRUC_ATTR;
-    SEXP op, t;
+    SEXP t;
     int d_opts_in = d->opts, i, n;
 
     d->fnarg = FALSE;
@@ -893,8 +891,8 @@ static void deparse2buff(SEXP s, LocalParseData *d)
     case NILSXP:
         print2buff("NULL", d);
         break;
-    case SYMSXP:
-        doquote = (d_opts_in & QUOTEEXPRESSIONS) && strlen(CHAR(PRINTNAME(s)));
+    case SYMSXP: {
+        Rboolean doquote = (d_opts_in & QUOTEEXPRESSIONS) && strlen(CHAR(PRINTNAME(s)));
         if (doquote)
         {
             attr = (d_opts_in & SHOW_ATTR_OR_NMS) ? attr1(s, d) : SIMPLE;
@@ -915,6 +913,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
                 attr2(s, d, (attr == STRUC_ATTR));
         }
         break;
+    }
     case CHARSXP: {
         const void *vmax = vmaxget();
         const char *ts = translateChar(s);
@@ -1002,11 +1001,11 @@ static void deparse2buff(SEXP s, LocalParseData *d)
             attr2(s, d, (attr == STRUC_ATTR));
         d->opts = d_opts_in;
         break;
-    case LISTSXP:
+    case LISTSXP: {
         attr = (d_opts_in & SHOW_ATTR_OR_NMS) ? attr1(s, d) : SIMPLE;
         /* pairlist(x=) cannot be evaluated, hence with missings we use
            as.pairlist(alist(...)) to allow evaluation of deparsed formals */
-        missing = FALSE;
+        Rboolean missing = FALSE;
         for (t = s; t != R_NilValue; t = CDR(t))
             if (CAR(t) == R_MissingArg)
             {
@@ -1046,6 +1045,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
         if (attr >= STRUC_ATTR)
             attr2(s, d, (attr == STRUC_ATTR));
         break;
+    }
     case LANGSXP:
         printcomment(s, d);
         if (!isNull(ATTRIB(s)))
@@ -1058,10 +1058,12 @@ static void deparse2buff(SEXP s, LocalParseData *d)
         if (TYPEOF(CAR(s)) == SYMSXP)
         {
             int userbinop = 0;
-            op = CAR(s);
+            SEXP op = CAR(s);
             if ((TYPEOF(SYMVALUE(op)) == BUILTINSXP) || (TYPEOF(SYMVALUE(op)) == SPECIALSXP) ||
                 (userbinop = isUserBinop(op)))
             {
+                PPinfo fop;
+                Rboolean parens;
                 s = CDR(s);
                 if (userbinop)
                 {
@@ -1238,8 +1240,9 @@ static void deparse2buff(SEXP s, LocalParseData *d)
                     }
                     break;
                 case PP_ASSIGN:
-                case PP_ASSIGN2:
-                    if ((outerparens = (fnarg && !strcmp(CHAR(PRINTNAME(op)), "="))))
+                case PP_ASSIGN2: {
+                    Rboolean outerparens = fnarg && !strcmp(CHAR(PRINTNAME(op)), "=");
+                    if (outerparens)
                         print2buff("(", d);
                     if ((parens = needsparens(fop, CAR(s), 1)))
                         print2buff("(", d);
@@ -1257,6 +1260,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
                     if (outerparens)
                         print2buff(")", d);
                     break;
+                }
                 case PP_DOLLAR:
                     if ((parens = needsparens(fop, CAR(s), 1)))
                         print2buff("(", d);
