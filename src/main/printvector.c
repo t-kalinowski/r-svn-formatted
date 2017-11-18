@@ -203,9 +203,9 @@ void printVector(SEXP x, int indx, int quote)
             break;
         case STRSXP:
             if (quote)
-                printStringVector(STRING_PTR(x), n_pr, '"', indx);
+                printStringVector(STRING_PTR_RO(x), n_pr, '"', indx);
             else
-                printStringVector(STRING_PTR(x), n_pr, 0, indx);
+                printStringVector(STRING_PTR_RO(x), n_pr, 0, indx);
             break;
         case CPLXSXP:
             printComplexVector(COMPLEX_RO(x), n_pr, indx);
@@ -282,10 +282,10 @@ void printVector(SEXP x, int indx, int quote)
         Rprintf("\n");                                                                                                 \
     }
 
-static void printNamedLogicalVector(const int *x, int n, SEXP *names)
+static void printNamedLogicalVector(const int *x, int n, const SEXP *names)
     PRINT_N_VECTOR(formatLogical(x, n, &w), Rprintf("%s%*s", EncodeLogical(x[k], w), R_print.gap, ""))
 
-        static void printNamedIntegerVector(const int *x, int n, SEXP *names)
+        static void printNamedIntegerVector(const int *x, int n, const SEXP *names)
             PRINT_N_VECTOR(formatInteger(x, n, &w), Rprintf("%s%*s", EncodeInteger(x[k], w), R_print.gap, ""))
 
 #undef INI_F_REAL
@@ -293,7 +293,7 @@ static void printNamedLogicalVector(const int *x, int n, SEXP *names)
     int d, e;                                                                                                          \
     formatReal(x, n, &w, &d, &e, 0)
 
-                static void printNamedRealVector(const double *x, int n, SEXP *names)
+                static void printNamedRealVector(const double *x, int n, const SEXP *names)
                     PRINT_N_VECTOR(INI_F_REAL, Rprintf("%s%*s", EncodeReal0(x[k], w, d, e, OutDec), R_print.gap, ""))
 
 #undef INI_F_CPLX
@@ -308,7 +308,7 @@ static void printNamedLogicalVector(const int *x, int n, SEXP *names)
         Rprintf("+%si", "NaN");                                                                                        \
     else
 
-                        static void printNamedComplexVector(const Rcomplex *x, int n, SEXP *names)
+                        static void printNamedComplexVector(const Rcomplex *x, int n, const SEXP *names)
                             PRINT_N_VECTOR(INI_F_CPLX,
                                            { /* PRINT_1 */
                                              if (j)
@@ -328,12 +328,12 @@ static void printNamedLogicalVector(const int *x, int n, SEXP *names)
                                              }
                                            })
 
-                                static void printNamedStringVector(SEXP *x, int n, int quote, SEXP *names)
+                                static void printNamedStringVector(const SEXP *x, int n, int quote, const SEXP *names)
                                     PRINT_N_VECTOR(formatString(x, n, &w, quote),
                                                    Rprintf("%s%*s", EncodeString(x[k], w, quote, Rprt_adj_right),
                                                            R_print.gap, ""))
 
-                                        static void printNamedRawVector(const Rbyte *x, int n, SEXP *names)
+                                        static void printNamedRawVector(const Rbyte *x, int n, const SEXP *names)
                                             PRINT_N_VECTOR(formatRaw(x, n, &w),
                                                            Rprintf("%*s%s%*s", w - 2, "", EncodeRaw(x[k], ""),
                                                                    R_print.gap, ""))
@@ -353,24 +353,24 @@ static void printNamedLogicalVector(const int *x, int n, SEXP *names)
         switch (TYPEOF(x))
         {
         case LGLSXP:
-            printNamedLogicalVector(LOGICAL_RO(x), n_pr, STRING_PTR(names));
+            printNamedLogicalVector(LOGICAL_RO(x), n_pr, STRING_PTR_RO(names));
             break;
         case INTSXP:
-            printNamedIntegerVector(INTEGER_RO(x), n_pr, STRING_PTR(names));
+            printNamedIntegerVector(INTEGER_RO(x), n_pr, STRING_PTR_RO(names));
             break;
         case REALSXP:
-            printNamedRealVector(REAL_RO(x), n_pr, STRING_PTR(names));
+            printNamedRealVector(REAL_RO(x), n_pr, STRING_PTR_RO(names));
             break;
         case CPLXSXP:
-            printNamedComplexVector(COMPLEX_RO(x), n_pr, STRING_PTR(names));
+            printNamedComplexVector(COMPLEX_RO(x), n_pr, STRING_PTR_RO(names));
             break;
         case STRSXP:
             if (quote)
                 quote = '"';
-            printNamedStringVector(STRING_PTR(x), n_pr, quote, STRING_PTR(names));
+            printNamedStringVector(STRING_PTR_RO(x), n_pr, quote, STRING_PTR_RO(names));
             break;
         case RAWSXP:
-            printNamedRawVector(RAW_RO(x), n_pr, STRING_PTR(names));
+            printNamedRawVector(RAW_RO(x), n_pr, STRING_PTR_RO(names));
             break;
         }
         if (n_pr < n)
