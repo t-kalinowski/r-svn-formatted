@@ -281,7 +281,7 @@ static void R_ReportNewPage();
     } while (0)
 
 static void R_gc_internal(R_size_t size_needed);
-static void R_gc_full(R_size_t size_needed);
+static void R_gc_no_finalizers(R_size_t size_needed);
 static void mem_err_heap(R_size_t size);
 static void mem_err_malloc(R_size_t size);
 
@@ -932,7 +932,7 @@ static void GetNewPage(int node_class)
     page = malloc(R_PAGE_SIZE);
     if (page == NULL)
     {
-        R_gc_full(0);
+        R_gc_no_finalizers(0);
         page = malloc(R_PAGE_SIZE);
         if (page == NULL)
             mem_err_malloc((R_size_t)R_PAGE_SIZE);
@@ -2145,7 +2145,6 @@ SEXP attribute_hidden do_gc(SEXP call, SEXP op, SEXP args, SEXP rho)
     ogc = gc_reporting;
     gc_reporting = asLogical(CAR(args));
     reset_max = asLogical(CADR(args));
-    num_old_gens_to_collect = NUM_OLD_GENERATIONS;
     R_gc();
 
     gc_reporting = ogc;
@@ -2904,7 +2903,7 @@ SEXP allocVector3(SEXPTYPE type, R_xlen_t length, R_allocator_t *allocator)
                     /* If we are near the address space limit, we
                        might be short of address space.  So return
                        all unused objects to malloc and try again. */
-                    R_gc_full(alloc_size);
+                    R_gc_no_finalizers(alloc_size);
                     mem = allocator ? custom_node_alloc(allocator, hdrsize + size * sizeof(VECREC))
                                     : malloc(hdrsize + size * sizeof(VECREC));
                 }
@@ -3082,13 +3081,14 @@ SEXP allocFormalsList6(SEXP sym1, SEXP sym2, SEXP sym3, SEXP sym4, SEXP sym5, SE
 
 void R_gc(void)
 {
+    num_old_gens_to_collect = NUM_OLD_GENERATIONS;
     R_gc_internal(0);
 #ifndef IMMEDIATE_FINALIZERS
     R_RunPendingFinalizers();
 #endif
 }
 
-static void R_gc_full(R_size_t size_needed)
+static void R_gc_no_finalizers(R_size_t size_needed)
 {
     num_old_gens_to_collect = NUM_OLD_GENERATIONS;
     R_gc_internal(size_needed);
@@ -3287,7 +3287,6 @@ SEXP attribute_hidden do_memoryprofile(SEXP call, SEXP op, SEXP args, SEXP env)
         int gen;
 
         /* run a full GC to make sure that all stuff in use is in Old space */
-        num_old_gens_to_collect = NUM_OLD_GENERATIONS;
         R_gc();
         for (gen = 0; gen < NUM_OLD_GENERATIONS; gen++)
         {
