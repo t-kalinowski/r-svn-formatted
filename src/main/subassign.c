@@ -611,13 +611,45 @@ static R_INLINE SEXP VECTOR_ELT_FIX_NAMED(SEXP y, R_xlen_t i)
     return val;
 }
 
+#define VECTOR_ASSIGN_LOOP(CODE)                                                                                       \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (TYPEOF(indx) == INTSXP)                                                                                    \
+        {                                                                                                              \
+            const int *pindx = INTEGER_RO(indx);                                                                       \
+            MOD_ITERATE1(n, ny, i, iny, {                                                                              \
+                ii = pindx[i];                                                                                         \
+                if (ii == NA_INTEGER)                                                                                  \
+                    continue;                                                                                          \
+                ii = ii - 1;                                                                                           \
+                do                                                                                                     \
+                {                                                                                                      \
+                    CODE                                                                                               \
+                } while (0);                                                                                           \
+            });                                                                                                        \
+        }                                                                                                              \
+        else /* could specialize this to REALSXP case */                                                               \
+            MOD_ITERATE1(n, ny, i, iny, {                                                                              \
+                ii = gi(indx, i);                                                                                      \
+                if (ii == NA_INTEGER)                                                                                  \
+                    continue;                                                                                          \
+                ii = ii - 1;                                                                                           \
+                do                                                                                                     \
+                {                                                                                                      \
+                    CODE                                                                                               \
+                } while (0);                                                                                           \
+            });                                                                                                        \
+    } while (0)
+
+/**** This could use SET_REAL_ELT and such, but would also have to
+      change byte code instructions in eval.c */
+
 static SEXP VectorAssign(SEXP call, SEXP rho, SEXP x, SEXP s, SEXP y)
 {
     SEXP indx, newnames;
     R_xlen_t i, ii, n, nx, ny, iny;
-    int iy, which;
+    int which;
     R_xlen_t stretch;
-    double ry;
 
     /* try for quick return for simple scalar case */
     if (ATTRIB(s) == R_NilValue)
@@ -734,100 +766,88 @@ static SEXP VectorAssign(SEXP call, SEXP rho, SEXP x, SEXP s, SEXP y)
     /* case 1013:  logical   <- integer	  */
     case 1313: /* integer   <- integer	  */
 
-        MOD_ITERATE1(n, ny, i, iny, {
-            ii = gi(indx, i);
-            if (ii == NA_INTEGER)
-                continue;
-            ii = ii - 1;
-            INTEGER(x)[ii] = INTEGER_ELT(y, iny);
-        });
-        break;
+    {
+        int *px = INTEGER(x);
+        VECTOR_ASSIGN_LOOP(px[ii] = INTEGER_ELT(y, iny););
+    }
+    break;
 
     case 1410: /* real	     <- logical	  */
     case 1413: /* real	     <- integer	  */
 
-        MOD_ITERATE1(n, ny, i, iny, {
-            ii = gi(indx, i);
-            if (ii == NA_INTEGER)
-                continue;
-            ii = ii - 1;
-            iy = INTEGER_ELT(y, iny);
+    {
+        double *px = REAL(x);
+        VECTOR_ASSIGN_LOOP({
+            int iy = INTEGER_ELT(y, iny);
             if (iy == NA_INTEGER)
-                REAL(x)[ii] = NA_REAL;
+                px[ii] = NA_REAL;
             else
-                REAL(x)[ii] = iy;
+                px[ii] = iy;
         });
-        break;
+    }
+    break;
 
     /* case 1014:  logical   <- real	  */
     /* case 1314:  integer   <- real	  */
     case 1414: /* real	     <- real	  */
 
-        MOD_ITERATE1(n, ny, i, iny, {
-            ii = gi(indx, i);
-            if (ii == NA_INTEGER)
-                continue;
-            ii = ii - 1;
-            REAL(x)[ii] = REAL_ELT(y, iny);
-        });
-        break;
+    {
+        double *px = REAL(x);
+        VECTOR_ASSIGN_LOOP(px[ii] = REAL_ELT(y, iny););
+    }
+    break;
 
     case 1510: /* complex   <- logical	  */
     case 1513: /* complex   <- integer	  */
 
-        MOD_ITERATE1(n, ny, i, iny, {
-            ii = gi(indx, i);
-            if (ii == NA_INTEGER)
-                continue;
-            ii = ii - 1;
-            iy = INTEGER_ELT(y, iny);
+    {
+        Rcomplex *px = COMPLEX(x);
+        VECTOR_ASSIGN_LOOP({
+            int iy = INTEGER_ELT(y, iny);
             if (iy == NA_INTEGER)
             {
-                COMPLEX(x)[ii].r = NA_REAL;
-                COMPLEX(x)[ii].i = NA_REAL;
+                px[ii].r = NA_REAL;
+                px[ii].i = NA_REAL;
             }
             else
             {
-                COMPLEX(x)[ii].r = iy;
-                COMPLEX(x)[ii].i = 0.0;
+                px[ii].r = iy;
+                px[ii].i = 0.0;
             }
         });
-        break;
+    }
+    break;
 
     case 1514: /* complex   <- real	  */
 
-        MOD_ITERATE1(n, ny, i, iny, {
-            ii = gi(indx, i);
-            if (ii == NA_INTEGER)
-                continue;
-            ii = ii - 1;
-            ry = REAL_ELT(y, iny);
+    {
+        Rcomplex *px = COMPLEX(x);
+        VECTOR_ASSIGN_LOOP({
+            double ry = REAL_ELT(y, iny);
             if (ISNA(ry))
             {
-                COMPLEX(x)[ii].r = NA_REAL;
-                COMPLEX(x)[ii].i = NA_REAL;
+                px[ii].r = NA_REAL;
+                px[ii].i = NA_REAL;
             }
             else
             {
-                COMPLEX(x)[ii].r = ry;
-                COMPLEX(x)[ii].i = 0.0;
+                px[ii].r = ry;
+                px[ii].i = 0.0;
             }
         });
-        break;
+    }
+    break;
 
     /* case 1015:  logical   <- complex	  */
     /* case 1315:  integer   <- complex	  */
     /* case 1415:  real	     <- complex	  */
     case 1515: /* complex   <- complex	  */
 
-        MOD_ITERATE1(n, ny, i, iny, {
-            ii = gi(indx, i);
-            if (ii == NA_INTEGER)
-                continue;
-            ii = ii - 1;
-            COMPLEX(x)[ii] = COMPLEX_ELT(y, iny);
-        });
-        break;
+    {
+        Rcomplex *px = COMPLEX(x);
+        VECTOR_ASSIGN_LOOP(px[ii] = COMPLEX_ELT(y, iny););
+    }
+    break;
 
     case 1610: /* character <- logical	  */
     case 1613: /* character <- integer	  */
@@ -839,13 +859,7 @@ static SEXP VectorAssign(SEXP call, SEXP rho, SEXP x, SEXP s, SEXP y)
                /* case 1416:  real	     <- character */
                /* case 1516:  complex   <- character */
 
-        MOD_ITERATE1(n, ny, i, iny, {
-            ii = gi(indx, i);
-            if (ii == NA_INTEGER)
-                continue;
-            ii = ii - 1;
-            SET_STRING_ELT(x, ii, STRING_ELT(y, iny));
-        });
+        VECTOR_ASSIGN_LOOP(SET_STRING_ELT(x, ii, STRING_ELT(y, iny)););
         break;
 
         /* case 1019:  logial     <- vector   */
@@ -862,12 +876,7 @@ static SEXP VectorAssign(SEXP call, SEXP rho, SEXP x, SEXP s, SEXP y)
 
     case 1919: /* vector     <- vector     */
 
-        MOD_ITERATE1(n, ny, i, iny, {
-            ii = gi(indx, i);
-            if (ii == NA_INTEGER)
-                continue;
-            ii = ii - 1;
-
+        VECTOR_ASSIGN_LOOP({
             /* set NAMED on RHS value to NAMEDMAX if used more than once
                (PR15098) */
             if (i >= ny)
@@ -888,13 +897,7 @@ static SEXP VectorAssign(SEXP call, SEXP rho, SEXP x, SEXP s, SEXP y)
           RHS  to a list */
     case 2020: /* expression <- expression */
 
-        MOD_ITERATE1(n, ny, i, iny, {
-            ii = gi(indx, i);
-            if (ii == NA_INTEGER)
-                continue;
-            ii = ii - 1;
-            SET_VECTOR_ELT(x, ii, VECTOR_ELT(y, iny));
-        });
+        VECTOR_ASSIGN_LOOP(SET_VECTOR_ELT(x, ii, VECTOR_ELT(y, iny)););
         break;
 
     case 1900: /* vector     <- null       */
@@ -907,14 +910,11 @@ static SEXP VectorAssign(SEXP call, SEXP rho, SEXP x, SEXP s, SEXP y)
 
     case 2424: /* raw   <- raw	  */
 
-        MOD_ITERATE1(n, ny, i, iny, {
-            ii = gi(indx, i);
-            if (ii == NA_INTEGER)
-                continue;
-            ii = ii - 1;
-            RAW(x)[ii] = RAW(y)[iny];
-        });
-        break;
+    {
+        Rbyte *px = RAW(x);
+        VECTOR_ASSIGN_LOOP(px[ii] = RAW_ELT(y, iny););
+    }
+    break;
 
     default:
         warningcall(call, "sub assignment (*[*] <- *) not done; __bug?__");
