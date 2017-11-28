@@ -170,7 +170,7 @@ wchar_t *filenameToWchar(const SEXP fn, const Rboolean expand)
         return filename;
     }
     if (IS_LATIN1(fn))
-        from = "latin1";
+        from = "CP1252";
     if (IS_UTF8(fn))
         from = "UTF-8";
     if (IS_BYTES(fn))
@@ -905,7 +905,7 @@ typedef enum
 {
     NT_NONE = 0,        /* no translation to native encoding is needed */
     NT_FROM_UTF8 = 1,   /* need to translate from UTF8 */
-    NT_FROM_LATIN1 = 2, /* need to translated from latin1 */
+    NT_FROM_LATIN1 = 2, /* need to translate from latin1 */
 } nttype_t;
 
 /* Decides whether translation to native encoding is needed. */
@@ -950,7 +950,7 @@ static void translateToNative(const char *ans, R_StringBuffer *cbuff, nttype_t t
     {
         if (!latin1_obj)
         {
-            obj = Riconv_open("", "latin1");
+            obj = Riconv_open("", "CP1252");
             /* should never happen */
             if (obj == (void *)(-1))
 #ifdef Win32
@@ -1123,7 +1123,7 @@ const char *translateCharUTF8(SEXP x)
     if (IS_BYTES(x))
         error(_("translating strings with \"bytes\" encoding is not allowed"));
 
-    obj = Riconv_open("UTF-8", IS_LATIN1(x) ? "latin1" : "");
+    obj = Riconv_open("UTF-8", IS_LATIN1(x) ? "CP1252" : "");
     if (obj == (void *)(-1))
 #ifdef Win32
         error(_("unsupported conversion from '%s' in codepage %d"), IS_LATIN1(x) ? "latin1" : "", localeCP);
@@ -1209,7 +1209,7 @@ attribute_hidden /* but not hidden on Windows, where it was used in tcltk.c */
     {
         if (!latin1_wobj)
         {
-            obj = Riconv_open(TO_WCHAR, "latin1");
+            obj = Riconv_open(TO_WCHAR, "CP1252");
             if (obj == (void *)(-1))
                 error(_("unsupported conversion from '%s' to '%s'"), "latin1", TO_WCHAR);
             latin1_wobj = obj;
@@ -1345,7 +1345,7 @@ const char *reEnc(const char *x, cetype_t ce_in, cetype_t ce_out, int subst)
         break;
     case CE_LATIN1:
         fromcode = "latin1";
-        break;
+        break; /* FIXME: allow CP1252? */
 #endif
     case CE_UTF8:
         fromcode = "UTF-8";
