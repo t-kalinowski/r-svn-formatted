@@ -170,7 +170,11 @@ wchar_t *filenameToWchar(const SEXP fn, const Rboolean expand)
         return filename;
     }
     if (IS_LATIN1(fn))
+#ifdef HAVE_ICONV_CP1252
         from = "CP1252";
+#else
+        from = "latin1";
+#endif
     if (IS_UTF8(fn))
         from = "UTF-8";
     if (IS_BYTES(fn))
@@ -942,7 +946,7 @@ static void translateToNative(const char *ans, R_StringBuffer *cbuff, nttype_t t
         error(_("internal error: no translation needed"));
 
     void *obj;
-    const char *inbuf;
+    const char *inbuf, *from;
     char *outbuf;
     size_t inb, outb, res;
 
@@ -950,13 +954,18 @@ static void translateToNative(const char *ans, R_StringBuffer *cbuff, nttype_t t
     {
         if (!latin1_obj)
         {
-            obj = Riconv_open("", "CP1252");
+#ifdef HAVE_ICONV_CP1252
+            from = "CP1252";
+#else
+            from = "latin1";
+#endif
+            obj = Riconv_open("", from);
             /* should never happen */
             if (obj == (void *)(-1))
 #ifdef Win32
-                error(_("unsupported conversion from '%s' in codepage %d"), "latin1", localeCP);
+                error(_("unsupported conversion from '%s' in codepage %d"), from, localeCP);
 #else
-                error(_("unsupported conversion from '%s' to '%s'"), "latin1", "");
+                error(_("unsupported conversion from '%s' to '%s'"), from, "");
 #endif
             latin1_obj = obj;
         }
@@ -1108,7 +1117,7 @@ const char *translateCharUTF8(SEXP x)
 {
     void *obj;
     const char *inbuf, *ans = CHAR(x);
-    char *outbuf, *p;
+    char *outbuf, *p, *from = "";
     size_t inb, outb, res;
     R_StringBuffer cbuff = {NULL, 0, MAXELTSIZE};
 
@@ -1123,12 +1132,18 @@ const char *translateCharUTF8(SEXP x)
     if (IS_BYTES(x))
         error(_("translating strings with \"bytes\" encoding is not allowed"));
 
-    obj = Riconv_open("UTF-8", IS_LATIN1(x) ? "CP1252" : "");
+    if (IS_LATIN1(x))
+#ifdef HAVE_ICONV_CP1252
+        from = "CP1252";
+#else
+        from = "latin1";
+#endif
+    obj = Riconv_open("UTF-8", from);
     if (obj == (void *)(-1))
 #ifdef Win32
-        error(_("unsupported conversion from '%s' in codepage %d"), IS_LATIN1(x) ? "latin1" : "", localeCP);
+        error(_("unsupported conversion from '%s' in codepage %d"), from, localeCP);
 #else
-        error(_("unsupported conversion from '%s' to '%s'"), IS_LATIN1(x) ? "latin1" : "", "UTF-8");
+        error(_("unsupported conversion from '%s' to '%s'"), from, "UTF-8");
 #endif
     R_AllocStringBuffer(0, &cbuff);
 top_of_loop:
@@ -1192,7 +1207,7 @@ attribute_hidden /* but not hidden on Windows, where it was used in tcltk.c */
     wtransChar(SEXP x)
 {
     void *obj;
-    const char *inbuf, *ans = CHAR(x);
+    const char *inbuf, *ans = CHAR(x), *from;
     char *outbuf;
     wchar_t *p;
     size_t inb, outb, res, top;
@@ -1209,9 +1224,14 @@ attribute_hidden /* but not hidden on Windows, where it was used in tcltk.c */
     {
         if (!latin1_wobj)
         {
-            obj = Riconv_open(TO_WCHAR, "CP1252");
+#ifdef HAVE_ICONV_CP1252
+            from = "CP1252";
+#else
+            from = "latin1";
+#endif
+            obj = Riconv_open(TO_WCHAR, from);
             if (obj == (void *)(-1))
-                error(_("unsupported conversion from '%s' to '%s'"), "latin1", TO_WCHAR);
+                error(_("unsupported conversion from '%s' to '%s'"), from, TO_WCHAR);
             latin1_wobj = obj;
         }
         else
