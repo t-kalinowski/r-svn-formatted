@@ -1750,7 +1750,9 @@ SEXP attribute_hidden do_subassign_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
     else if (xlength(x) == 0)
     {
-        if (xlength(y) == 0 && (isNull(x) || TYPEOF(x) == TYPEOF(y)))
+        if (xlength(y) == 0 && (isNull(x) || TYPEOF(x) == TYPEOF(y) ||
+                                // isVectorList(y):
+                                TYPEOF(y) == VECSXP || TYPEOF(y) == EXPRSXP))
         {
             UNPROTECT(1);
             return (x);
