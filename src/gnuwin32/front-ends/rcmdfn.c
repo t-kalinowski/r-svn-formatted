@@ -150,7 +150,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
             fprintf(stdout, "%s", getRHOME(3));
             return (0);
         }
-        snprintf(cmd, CMD_LEN, "\"%s/%s/Rterm.exe\"", getRHOME(3), BINDIR);
+        snprintf(cmd, CMD_LEN, "\"\"%s/%s/Rterm.exe\"", getRHOME(3), BINDIR);
         for (i = cmdarg + 1; i < argc; i++)
         {
             strcat(cmd, " ");
@@ -168,6 +168,8 @@ int rcmdfn(int cmdarg, int argc, char **argv)
             else
                 strcat(cmd, argv[i]);
         }
+        /* the outermost double quotes are needed for cmd.exe */
+        strcat(cmd, "\"");
         /* R.exe should ignore Ctrl-C, and let Rterm.exe handle it */
         SetConsoleCtrlHandler(NULL, TRUE);
         return system(cmd);
@@ -289,6 +291,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
         }
 
         /* Unix has --restore --save --no-readline */
+        /* cmd is used with CreateProcess, hence no outermost double quotes */
         snprintf(cmd, CMD_LEN, "\"%s/%s/Rterm.exe\" -f \"%s\" --restore --save", getRHOME(3), BINDIR, infile);
         if (strlen(cmd) + strlen(cmd_extra) >= CMD_LEN)
         {
@@ -420,7 +423,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
     else if (!strcmp(argv[cmdarg], "REMOVE"))
     {
         snprintf(cmd, CMD_LEN,
-                 "\"%s/%s/Rterm.exe\" -f \"%s/share/R/REMOVE.R\" R_DEFAULT_PACKAGES=NULL --no-restore --slave --args",
+                 "\"\"%s/%s/Rterm.exe\" -f \"%s/share/R/REMOVE.R\" R_DEFAULT_PACKAGES=NULL --no-restore --slave --args",
                  getRHOME(3), BINDIR, getRHOME(3));
         for (i = cmdarg + 1; i < argc; i++)
         {
@@ -440,6 +443,8 @@ int rcmdfn(int cmdarg, int argc, char **argv)
             else
                 strcat(cmd, argv[i]);
         }
+        /* the outermost double quotes are needed for cmd.exe */
+        strcat(cmd, "\"");
         return (system(cmd));
     }
     else if (!strcmp(argv[cmdarg], "build"))
@@ -531,18 +536,18 @@ int rcmdfn(int cmdarg, int argc, char **argv)
         /* not one of those handled internally */
         p = argv[cmdarg];
         if (!strcmp(p, "config"))
-            snprintf(cmd, CMD_LEN, "sh %s/bin/config.sh", RHome);
+            snprintf(cmd, CMD_LEN, "\"sh \"%s/bin/config.sh\"", RHome);
         else if (!strcmp(p, "open"))
-            snprintf(cmd, CMD_LEN, "%s/%s/open.exe", RHome, BINDIR);
+            snprintf(cmd, CMD_LEN, "\"\"%s/%s/open.exe\"", RHome, BINDIR);
         else
         {
             /* RHOME/BINDIR is first in the path, so looks there first */
             if (!strcmp(".sh", p + strlen(p) - 3))
-                strcpy(cmd, "sh ");
+                strcpy(cmd, "\"sh ");
             else if (!strcmp(".pl", p + strlen(p) - 3))
-                strcpy(cmd, "perl ");
+                strcpy(cmd, "\"perl ");
             else
-                strcpy(cmd, "");
+                strcpy(cmd, "\"");
             strcat(cmd, p);
         }
 
@@ -563,6 +568,8 @@ int rcmdfn(int cmdarg, int argc, char **argv)
             else
                 strcat(cmd, argv[i]);
         }
+        /* the outermost double quotes are needed for cmd.exe */
+        strcat(cmd, "\"");
         /* printf("cmd is %s\n", cmd); */
         status = system(cmd);
     }
