@@ -221,7 +221,7 @@ int tre_islower_func(tre_cint_t c)
 }
 int tre_isprint_func(tre_cint_t c)
 {
-    return tre_isprint(c);
+    return c != '\t' && tre_isprint(c); /* Windows has \t as printable */
 }
 int tre_ispunct_func(tre_cint_t c)
 {
