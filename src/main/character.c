@@ -289,7 +289,7 @@ SEXP attribute_hidden do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
     for (R_xlen_t i = 0; i < len; i++)
     {
         SEXP sxi = STRING_ELT(x, i);
-        char msg_i[20];
+        char msg_i[30];
         sprintf(msg_i, "element %ld", (long)i + 1);
         s_[i] = R_nchar(sxi, type_, allowNA, keepNA, msg_i);
     }
