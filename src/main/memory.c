@@ -2945,9 +2945,6 @@ SEXP allocVector3(SEXPTYPE type, R_xlen_t length, R_allocator_t *allocator)
                 R_LargeVallocSize += size;
             R_GenHeap[node_class].AllocCount++;
             R_NodesInUse++;
-            /* FIXME: for long vectors, the R_long_vec_hdr_t size will not be
-               included into memory usage. It is neither in VallocSize nor in
-               NodesInUse. */
             SNAP_NODE(s, R_GenHeap[node_class].New);
         }
         ATTRIB(s) = R_NilValue;
@@ -3919,6 +3916,7 @@ double *(REAL)(SEXP x)
 {
     if (TYPEOF(x) != REALSXP)
         error("%s() can only be applied to a '%s', not a '%s'", "REAL", "numeric", type2char(TYPEOF(x)));
+    CHKZLN(x);
     return REAL(x);
 }
 
@@ -3926,6 +3924,7 @@ const double *(REAL_RO)(SEXP x)
 {
     if (TYPEOF(x) != REALSXP)
         error("%s() can only be applied to a '%s', not a '%s'", "REAL", "numeric", type2char(TYPEOF(x)));
+    CHKZLN(x);
     return REAL_RO(x);
 }
 
