@@ -2567,7 +2567,10 @@ SEXP NewEnvironment(SEXP namelist, SEXP valuelist, SEXP rho)
     INIT_REFCNT(newrho);
     SET_TYPEOF(newrho, ENVSXP);
     FRAME(newrho) = valuelist;
+    INCREMENT_REFCNT(valuelist);
     ENCLOS(newrho) = CHK(rho);
+    if (rho != NULL)
+        INCREMENT_REFCNT(rho);
     HASHTAB(newrho) = R_NilValue;
     ATTRIB(newrho) = R_NilValue;
 
@@ -2615,7 +2618,9 @@ SEXP attribute_hidden mkPROMISE(SEXP expr, SEXP rho)
     INIT_REFCNT(s);
     SET_TYPEOF(s, PROMSXP);
     PRCODE(s) = CHK(expr);
+    INCREMENT_REFCNT(expr);
     PRENV(s) = CHK(rho);
+    INCREMENT_REFCNT(rho);
     PRVALUE(s) = R_UnboundValue;
     PRSEEN(s) = 0;
     ATTRIB(s) = R_NilValue;
