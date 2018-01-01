@@ -1820,7 +1820,7 @@ SEXP attribute_hidden do_subassign_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
     /* in a naked fashion. */
 
     UNPROTECT(2);
-    SET_NAMED(x, 0);
+    SETTER_CLEAR_NAMED(x);
     if (S4)
         SET_S4_OBJECT(x);
     return x;
@@ -2239,7 +2239,7 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
         xtop = x;
 
     UNPROTECT(3); /* xup, x, args */
-    SET_NAMED(xtop, 0);
+    SETTER_CLEAR_NAMED(xtop);
     if (S4)
         SET_S4_OBJECT(xtop);
     return xtop;
@@ -2464,7 +2464,7 @@ SEXP R_subassign3_dflt(SEXP call, SEXP x, SEXP nlist, SEXP val)
     UNPROTECT(2);
     if (xS4 != R_NilValue)
         x = xS4; /* x was an env't, the data slot of xS4 */
-    SET_NAMED(x, 0);
+    SETTER_CLEAR_NAMED(x);
     if (S4)
         SET_S4_OBJECT(x);
     return x;

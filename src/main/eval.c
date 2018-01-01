@@ -6058,8 +6058,7 @@ static R_INLINE Rboolean setElementFromScalar(SEXP vec, R_xlen_t i, int typev, s
         if (setElementFromScalar(vec, i, typev, &v))                                                                   \
         {                                                                                                              \
             SETSTACK_PTR(sv, vec);                                                                                     \
-            if (NAMED(vec) == 1)                                                                                       \
-                SET_NAMED(vec, 0);                                                                                     \
+            SETTER_CLEAR_NAMED(vec);                                                                                   \
             return;                                                                                                    \
         }                                                                                                              \
         else if (subassign2 && TYPEOF(vec) == VECSXP && i < XLENGTH(vec))                                              \
@@ -6068,8 +6067,7 @@ static R_INLINE Rboolean setElementFromScalar(SEXP vec, R_xlen_t i, int typev, s
             if (rhs != R_NilValue)                                                                                     \
             {                                                                                                          \
                 SET_VECTOR_ELT(vec, i, rhs);                                                                           \
-                if (NAMED(vec) == 1)                                                                                   \
-                    SET_NAMED(vec, 0);                                                                                 \
+                SETTER_CLEAR_NAMED(vec);                                                                               \
                 SETSTACK_PTR(sv, vec);                                                                                 \
                 return;                                                                                                \
             }                                                                                                          \

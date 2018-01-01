@@ -3712,6 +3712,10 @@ void(ENSURE_NAMED)(SEXP x)
 {
     ENSURE_NAMED(CHK(x));
 }
+void(SETTER_CLEAR_NAMED)(SEXP x)
+{
+    SETTER_CLEAR_NAMED(CHK(x));
+}
 
 /* S4 object testing */
 int(IS_S4_OBJECT)(SEXP x)
