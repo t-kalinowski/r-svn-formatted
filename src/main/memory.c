@@ -3650,6 +3650,10 @@ int(REFCNT)(SEXP x)
 {
     return REFCNT(CHK(x));
 }
+int(TRACKREFS)(SEXP x)
+{
+    return TRACKREFS(CHK(x));
+}
 int(ALTREP)(SEXP x)
 {
     return ALTREP(CHK(x));
