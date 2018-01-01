@@ -672,8 +672,8 @@ SEXP eval(SEXP e, SEXP rho)
                 tmp = PRVALUE(tmp);
             ENSURE_NAMEDMAX(tmp);
         }
-        else if (!isNull(tmp) && NAMED(tmp) == 0)
-            SET_NAMED(tmp, 1);
+        else
+            ENSURE_NAMED(tmp); /* should not really be needed - LT */
         break;
     case PROMSXP:
         if (PRVALUE(e) == R_UnboundValue)
@@ -2051,12 +2051,8 @@ static SEXP EnsureLocal(SEXP symbol, SEXP rho)
         {
             PROTECT(vl = shallow_duplicate(vl));
             defineVar(symbol, vl, rho);
+            INCREMENT_NAMED(vl);
             UNPROTECT(1);
-            /* set NAMED = 1 for true duplicates which have NAMED = 0;
-               leave alone for SYMSXP and such for which duplicate()
-               just returns its argument */
-            if (NAMED(vl) == 0)
-                SET_NAMED(vl, 1);
         }
         return vl;
     }
@@ -2067,12 +2063,8 @@ static SEXP EnsureLocal(SEXP symbol, SEXP rho)
 
     PROTECT(vl = shallow_duplicate(vl));
     defineVar(symbol, vl, rho);
+    INCREMENT_NAMED(vl);
     UNPROTECT(1);
-    /* set NAMED = 1 for true duplicates which have NAMED = 0;
-       leave alone for SYMSXP and such for which duplicate()
-       just returns its argument */
-    if (NAMED(vl) == 0)
-        SET_NAMED(vl, 1);
     return vl;
 }
 
@@ -2186,7 +2178,7 @@ static R_INLINE Rboolean asLogicalNoNA(SEXP s, SEXP call)
         if (v == R_NilValue || MAYBE_SHARED(v))                                                                        \
         {                                                                                                              \
             REPROTECT(v = allocVector(val_type, 1), vpi);                                                              \
-            SET_NAMED(v, 1);                                                                                           \
+            INCREMENT_NAMED(v);                                                                                        \
         }                                                                                                              \
     } while (0)
 
@@ -2662,7 +2654,7 @@ static void tmp_cleanup(void *data)
         if (MAYBE_SHARED(__v__))                                                                                       \
         {                                                                                                              \
             __v__ = shallow_duplicate(__v__);                                                                          \
-            SET_NAMED(__v__, 1);                                                                                       \
+            ENSURE_NAMED(__v__);                                                                                       \
             SETCAR(__lhs__, __v__);                                                                                    \
         }                                                                                                              \
         R_SetVarLocValue(loc, __v__);                                                                                  \
@@ -5360,8 +5352,8 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
         value = FORCE_PROMISE(value, symbol, rho, keepmiss);
         UNPROTECT(1);
     }
-    else if (NAMED(value) == 0 && value != R_NilValue)
-        SET_NAMED(value, 1);
+    else
+        ENSURE_NAMED(value); /* should not really be needed - LT */
     return value;
 }
 
@@ -5391,9 +5383,7 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
             case REALSXP:                                                                                              \
             case INTSXP:                                                                                               \
             case LGLSXP:                                                                                               \
-                /* may be ok to skip this test: */                                                                     \
-                if (NAMED(value) == 0)                                                                                 \
-                    SET_NAMED(value, 1);                                                                               \
+                ENSURE_NAMED(value); /* should not really be needed - LT */                                            \
                 R_Visible = TRUE;                                                                                      \
                 BCNPUSH(value);                                                                                        \
                 NEXT();                                                                                                \
@@ -5414,8 +5404,9 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
                         else                                                                                           \
                             value = pv;                                                                                \
                     }                                                                                                  \
-                    else if (NAMED(value) == 0)                                                                        \
-                        SET_NAMED(value, 1);                                                                           \
+                    /* should not really be needed - LT */                                                             \
+                    else                                                                                               \
+                        ENSURE_NAMED(value);                                                                           \
                     R_Visible = TRUE;                                                                                  \
                     BCNPUSH(value);                                                                                    \
                     NEXT();                                                                                            \
@@ -5614,7 +5605,7 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
         {                                                                                                              \
             lhs = shallow_duplicate(lhs);                                                                              \
             SETSTACK(-2, lhs);                                                                                         \
-            SET_NAMED(lhs, 1);                                                                                         \
+            ENSURE_NAMED(lhs);                                                                                         \
         }                                                                                                              \
         SEXP value = NULL;                                                                                             \
         if (isObject(lhs) && tryAssignDispatch(generic, call, lhs, rhs, rho, &value))                                  \
@@ -5680,7 +5671,7 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
             {                                                                                                          \
                 lhs = shallow_duplicate(lhs);                                                                          \
                 SETSTACK(-2, lhs);                                                                                     \
-                SET_NAMED(lhs, 1);                                                                                     \
+                ENSURE_NAMED(lhs);                                                                                     \
             }                                                                                                          \
             SEXP value = NULL;                                                                                         \
             if (tryAssignDispatch(generic, call, lhs, rhs, rho, &value))                                               \
@@ -6304,7 +6295,7 @@ static R_INLINE void checkForMissings(SEXP args, SEXP call)
         {                                                                                                              \
             (var) = allocVector(TYPEOF(seq), 1);                                                                       \
             SETSTACK(pos, var);                                                                                        \
-            SET_NAMED(var, 1);                                                                                         \
+            INCREMENT_NAMED(var);                                                                                      \
         }                                                                                                              \
     } while (0)
 
@@ -6838,7 +6829,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             case STRSXP:
             case RAWSXP:
                 value = allocVector(TYPEOF(seq), 1);
-                SET_NAMED(value, 1);
+                INCREMENT_NAMED(value);
                 BCNPUSH(value);
                 break;
             default:
@@ -7390,7 +7381,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             {
                 x = shallow_duplicate(x);
                 SETSTACK(-2, x);
-                SET_NAMED(x, 1);
+                ENSURE_NAMED(x);
             }
             SEXP value = NULL;
             if (isObject(x))
@@ -7540,7 +7531,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             {
                 lhs = shallow_duplicate(lhs);
                 SETSTACK_BELOW_CALL_FRAME(-2, lhs);
-                SET_NAMED(lhs, 1);
+                ENSURE_NAMED(lhs);
             }
             SEXP value = NULL;
             switch (TYPEOF(fun))

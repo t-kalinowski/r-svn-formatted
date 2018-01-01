@@ -2103,16 +2103,17 @@ SEXP attribute_hidden do_get(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
 
 #define GET_VALUE(rval)                                                                                                \
-    /* We need to evaluate if it is a promise */                                                                       \
-    if (TYPEOF(rval) == PROMSXP)                                                                                       \
+    do                                                                                                                 \
     {                                                                                                                  \
-        PROTECT(rval);                                                                                                 \
-        rval = eval(rval, genv);                                                                                       \
-        UNPROTECT(1);                                                                                                  \
-    }                                                                                                                  \
-                                                                                                                       \
-    if (!ISNULL(rval) && NAMED(rval) == 0)                                                                             \
-    SET_NAMED(rval, 1)
+        /* We need to evaluate if it is a promise */                                                                   \
+        if (TYPEOF(rval) == PROMSXP)                                                                                   \
+        {                                                                                                              \
+            PROTECT(rval);                                                                                             \
+            rval = eval(rval, genv);                                                                                   \
+            UNPROTECT(1);                                                                                              \
+        }                                                                                                              \
+        ENSURE_NAMED(rval);                                                                                            \
+    } while (0)
 
         GET_VALUE(rval);
         break;
@@ -2156,8 +2157,7 @@ static SEXP gfind(const char *name, SEXP env, SEXPTYPE mode, SEXP ifnotfound, in
         rval = eval(rval, env);
         UNPROTECT(1);
     }
-    if (!ISNULL(rval) && NAMED(rval) == 0)
-        SET_NAMED(rval, 1);
+    ENSURE_NAMED(rval);
     return rval;
 }
 
@@ -3115,9 +3115,9 @@ SEXP attribute_hidden do_eapply(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(R_fcall = LCONS(FUN, LCONS(tmp, LCONS(R_DotsSymbol, R_NilValue))));
 
     defineVar(Xsym, tmp2, rho);
-    SET_NAMED(tmp2, 1);
+    INCREMENT_NAMED(tmp2);
     defineVar(isym, ind, rho);
-    SET_NAMED(ind, 1);
+    INCREMENT_NAMED(ind);
 
     for (i = 0; i < k2; i++)
     {
