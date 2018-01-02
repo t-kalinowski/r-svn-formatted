@@ -273,8 +273,7 @@ SEXP attribute_hidden do_formals(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (TYPEOF(CAR(args)) == CLOSXP)
     {
         SEXP f = FORMALS(CAR(args));
-        if (NAMED(CAR(args)) > NAMED(f))
-            SET_NAMED(f, NAMED(CAR(args)));
+        RAISE_NAMED(f, NAMED(CAR(args)));
         return f;
     }
     else
@@ -291,8 +290,7 @@ SEXP attribute_hidden do_body(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (TYPEOF(CAR(args)) == CLOSXP)
     {
         SEXP b = BODY_EXPR(CAR(args));
-        if (NAMED(CAR(args)) > NAMED(b))
-            SET_NAMED(b, NAMED(CAR(args)));
+        RAISE_NAMED(b, NAMED(CAR(args)));
         return b;
     }
     else
@@ -309,8 +307,7 @@ SEXP attribute_hidden do_bodyCode(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (TYPEOF(CAR(args)) == CLOSXP)
     {
         SEXP bc = BODY(CAR(args));
-        if (NAMED(CAR(args)) > NAMED(bc))
-            SET_NAMED(bc, NAMED(CAR(args)));
+        RAISE_NAMED(bc, NAMED(CAR(args)));
         return bc;
     }
     else

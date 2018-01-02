@@ -5809,8 +5809,7 @@ static R_INLINE SEXP mkVector1(SEXP s)
             if (XLENGTH(vec) <= i)                                                                                     \
                 break;                                                                                                 \
             SEXP elt = VECTOR_ELT(vec, i);                                                                             \
-            if (NAMED(vec) > NAMED(elt))                                                                               \
-                SET_NAMED(elt, NAMED(vec));                                                                            \
+            RAISE_NAMED(elt, NAMED(vec));                                                                              \
             if (subset2)                                                                                               \
                 SETSTACK_PTR(sv, elt);                                                                                 \
             else                                                                                                       \

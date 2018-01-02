@@ -355,8 +355,7 @@ SEXP attribute_hidden vectorIndex(SEXP x, SEXP thesub, int start, int stop, int 
                 error("invalid subscript for pairlist");
 #endif
             cx = nthcdr(x, (int)offset);
-            if (NAMED(x) > NAMED(CAR(cx)))
-                SET_NAMED(CAR(x), NAMED(x));
+            RAISE_NAMED(CAR(x), NAMED(x));
             x = CAR(cx);
             if (dup && MAYBE_SHARED(x))
             {
@@ -370,8 +369,7 @@ SEXP attribute_hidden vectorIndex(SEXP x, SEXP thesub, int start, int stop, int 
         {
             cx = x;
             x = VECTOR_ELT(x, offset);
-            if (NAMED(cx) > NAMED(x))
-                SET_NAMED(x, NAMED(cx));
+            RAISE_NAMED(x, NAMED(cx));
             if (dup && MAYBE_SHARED(x))
             {
                 PROTECT(cx);
