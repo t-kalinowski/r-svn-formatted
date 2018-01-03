@@ -4413,11 +4413,6 @@ static SEXP cmp_arith1(SEXP call, SEXP opsym, SEXP x, SEXP rho)
 static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rho)
 {
     SEXP op = getPrimitive(opsym, BUILTINSXP);
-    if (TYPEOF(op) == PROMSXP)
-    {
-        op = forcePromise(op);
-        ENSURE_NAMEDMAX(op);
-    }
     if (isObject(x) || isObject(y))
     {
         SEXP args, ans;
