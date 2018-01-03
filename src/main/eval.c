@@ -1182,8 +1182,6 @@ static R_INLINE Rboolean R_CheckJIT(SEXP fun)
     } while (0)
 #endif
 
-SEXP topenv(SEXP, SEXP); /**** should be in a header file */
-
 /* FIXME: this should not depend on internals from envir.c but does for now. */
 /* copied from envir.c for now */
 #define IS_USER_DATABASE(rho) (OBJECT((rho)) && inherits((rho), "UserDefinedDatabase"))
