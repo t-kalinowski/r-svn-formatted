@@ -271,7 +271,7 @@ attribute_hidden SEXP R_LookupMethod(SEXP method, SEXP rho, SEXP callrho, SEXP d
     if (lookup_registry_after_topenv == -1)
     {
         lookup = getenv("_R_S3_METHOD_LOOKUP_REGISTRY_AFTER_TOPENV_");
-        lookup_registry_after_topenv = ((lookup != NULL) && StringTrue(lookup)) ? 1 : 0;
+        lookup_registry_after_topenv = ((lookup != NULL) && StringFalse(lookup)) ? 0 : 1;
     }
     if (lookup_baseenv_after_globalenv == -1)
     {
