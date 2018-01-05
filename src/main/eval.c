@@ -31,8 +31,8 @@
 
 static SEXP bcEval(SEXP, SEXP, Rboolean);
 
-/* BC_PROILFING needs to be enabled at build time. It is not enabled
-   by default as enabling it disabled the more efficient threaded code
+/* BC_PROFILING needs to be enabled at build time. It is not enabled
+   by default as enabling it disables the more efficient threaded code
    implementation of the byte code interpreter. */
 #ifdef BC_PROFILING
 static Rboolean bc_profiling = FALSE;
@@ -2892,7 +2892,7 @@ SEXP attribute_hidden do_set(SEXP call, SEXP op, SEXP args, SEXP rho)
  */
 SEXP attribute_hidden evalList(SEXP el, SEXP rho, SEXP call, int n)
 {
-    SEXP head, tail, ev, h;
+    SEXP head, tail, ev, h, val;
 
     head = R_NilValue;
     tail = R_NilValue; /* to prevent uninitialized variable warnings */
@@ -2916,7 +2916,10 @@ SEXP attribute_hidden evalList(SEXP el, SEXP rho, SEXP call, int n)
             {
                 while (h != R_NilValue)
                 {
-                    ev = CONS_NR(eval(CAR(h), rho), R_NilValue);
+                    val = eval(CAR(h), rho);
+                    if (CDR(el) != R_NilValue)
+                        INCREMENT_NAMED(val);
+                    ev = CONS_NR(val, R_NilValue);
                     if (head == R_NilValue)
                     {
                         UNPROTECT(1); /* h */
@@ -2958,7 +2961,10 @@ SEXP attribute_hidden evalList(SEXP el, SEXP rho, SEXP call, int n)
         }
         else
         {
-            ev = CONS_NR(eval(CAR(el), rho), R_NilValue);
+            val = eval(CAR(el), rho);
+            if (CDR(el) != R_NilValue)
+                INCREMENT_NAMED(val);
+            ev = CONS_NR(val, R_NilValue);
             if (head == R_NilValue)
                 PROTECT(head = ev);
             else
@@ -2968,6 +2974,10 @@ SEXP attribute_hidden evalList(SEXP el, SEXP rho, SEXP call, int n)
         }
         el = CDR(el);
     }
+
+    for (el = head; el != R_NilValue; el = CDR(el))
+        if (CDR(el) != R_NilValue)
+            DECREMENT_NAMED(CAR(el));
 
     if (head != R_NilValue)
         UNPROTECT(1);
@@ -2981,7 +2991,7 @@ SEXP attribute_hidden evalList(SEXP el, SEXP rho, SEXP call, int n)
 /* used in evalArgs, arithmetic.c, seq.c */
 SEXP attribute_hidden evalListKeepMissing(SEXP el, SEXP rho)
 {
-    SEXP head, tail, ev, h;
+    SEXP head, tail, ev, h, val;
 
     head = R_NilValue;
     tail = R_NilValue; /* to prevent uninitialized variable warnings */
@@ -3005,9 +3015,12 @@ SEXP attribute_hidden evalListKeepMissing(SEXP el, SEXP rho)
                 while (h != R_NilValue)
                 {
                     if (CAR(h) == R_MissingArg)
-                        ev = CONS_NR(R_MissingArg, R_NilValue);
+                        val = R_MissingArg;
                     else
-                        ev = CONS_NR(eval(CAR(h), rho), R_NilValue);
+                        val = eval(CAR(h), rho);
+                    if (CDR(el) != R_NilValue)
+                        INCREMENT_NAMED(val);
+                    ev = CONS_NR(val, R_NilValue);
                     if (head == R_NilValue)
                     {
                         UNPROTECT(1); /* h */
@@ -3028,9 +3041,12 @@ SEXP attribute_hidden evalListKeepMissing(SEXP el, SEXP rho)
         else
         {
             if (CAR(el) == R_MissingArg || (isSymbol(CAR(el)) && R_isMissing(CAR(el), rho)))
-                ev = CONS_NR(R_MissingArg, R_NilValue);
+                val = R_MissingArg;
             else
-                ev = CONS_NR(eval(CAR(el), rho), R_NilValue);
+                val = eval(CAR(el), rho);
+            if (CDR(el) != R_NilValue)
+                INCREMENT_NAMED(val);
+            ev = CONS_NR(val, R_NilValue);
             if (head == R_NilValue)
                 PROTECT(head = ev);
             else
@@ -3040,6 +3056,10 @@ SEXP attribute_hidden evalListKeepMissing(SEXP el, SEXP rho)
         }
         el = CDR(el);
     }
+
+    for (el = head; el != R_NilValue; el = CDR(el))
+        if (CDR(el) != R_NilValue)
+            DECREMENT_NAMED(CAR(el));
 
     if (head != R_NilValue)
         UNPROTECT(1);
