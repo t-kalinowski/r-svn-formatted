@@ -6571,6 +6571,24 @@ static R_INLINE void FIX_CLOSURE_CALL_ARG_REFCNTS(SEXP args)
     }
 }
 
+static R_INLINE Rboolean FIND_ON_STACK(SEXP x, R_bcstack_t *base, int skip, int crude)
+{
+    /* Check whether the value is on the stack before modifying.  If
+       'crude' is true possible existence of BCNALLOC is ignored,
+       which could result in false positives avoids checking and
+       branching. If 'skip' is true the top value on the stack is
+       ignored. LT */
+    R_bcstack_t *checktop = skip ? R_BCNodeStackTop - 1 : R_BCNodeStackTop;
+    for (R_bcstack_t *p = base; p < checktop; p++)
+    {
+        if (crude && p->tag == RAWMEM_TAG)
+            p += p->u.ival;
+        else if (p->u.sxpval == x && p->tag == 0)
+            return TRUE;
+    }
+    return FALSE;
+}
+
 static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
 {
     SEXP retvalue = R_NilValue, constants;
@@ -6634,6 +6652,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
     R_BCpc = &currentpc;
     R_binding_cache_t vcache = NULL;
     Rboolean smallcache = TRUE;
+    R_bcstack_t *vcache_top = NULL;
 #ifdef USE_BINDING_CACHE
     if (useCache)
     {
@@ -6648,6 +6667,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
 #ifdef CACHE_ON_STACK
         /* initialize binding cache on the stack */
         vcache = R_BCNodeStackTop;
+        vcache_top = vcache + n;
         if (R_BCNodeStackTop + n > R_BCNodeStackEnd)
             nodeStackOverflow();
         while (n > 0)
@@ -6660,6 +6680,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         /* allocate binding cache and protect on stack */
         vcache = allocVector(VECSXP, n);
         BCNPUSH(vcache);
+        vcache_top = R_BCNodeStackTop;
 #endif
     }
 #endif
@@ -6946,7 +6967,22 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                        scalar of the same type as the immediate value,
                        then we can copy the stack value into the binding
                        value */
-                    switch (s->tag)
+
+#define MAX_ON_STACK_CHECK 63
+                    /* Check whether the value is on the stack before
+                       modifying.  Limit the number of items to check to
+                       MAX_ON_STACK_CHECK; this will result in some
+                       defensive boxing. This number could be tuned; in
+                       some limited testing ncheck never went above
+                       36. Not worrying BCNALLOC stuff could result in
+                       false positives and unnecessary boxing but is
+                       probably worth it for avoiding checking and
+                       branching. LT */
+                    int tag = s->tag;
+                    if (R_BCNodeStackTop - vcache_top > MAX_ON_STACK_CHECK || FIND_ON_STACK(x, vcache_top, TRUE, TRUE))
+                        tag = 0;
+
+                    switch (tag)
                     {
                     case REALSXP:
                         SET_SCALAR_DVAL(x, s->u.dval);
@@ -7277,6 +7313,10 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
 #endif
             )
                 value = EnsureLocal(symbol, rho);
+
+            if (MAYBE_REFERENCED(value) && FIND_ON_STACK(value, vcache_top, FALSE, FALSE))
+                value = shallow_duplicate(value);
+
             BCNPUSH(value);
             BCNDUP2ND();
             /* top three stack entries are now RHS value, LHS value, RHS value */
@@ -7632,8 +7672,10 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
     (IS_STACKVAL_BOXED(idx) && MAYBE_REFERENCED(GETSTACK_SXPVAL_PTR(R_BCNodeStackTop + (idx))))
 #define STACKVAL_MAYBE_SHARED(idx)                                                                                     \
     (IS_STACKVAL_BOXED(idx) && MAYBE_SHARED(GETSTACK_SXPVAL_PTR(R_BCNodeStackTop + (idx))))
+#define STACKVAL_IS_ON_STACK(idx) FIND_ON_STACK(GETSTACK_SXPVAL(idx), vcache_top, TRUE, FALSE)
 
-            if (STACKVAL_MAYBE_REFERENCED(-1) && (STACKVAL_MAYBE_SHARED(-1) || STACKVAL_MAYBE_SHARED(-3)))
+            if (STACKVAL_MAYBE_REFERENCED(-1) &&
+                (STACKVAL_MAYBE_SHARED(-1) || STACKVAL_MAYBE_SHARED(-3) || STACKVAL_IS_ON_STACK(-1)))
                 GETSTACK_SXPVAL_PTR(&tmp) = shallow_duplicate(GETSTACK_SXPVAL_PTR(&tmp));
 
             R_BCNodeStackTop[-1] = R_BCNodeStackTop[-2];
