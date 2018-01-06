@@ -5417,6 +5417,28 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
 #define CALL_FRAME_FTYPE() TYPEOF(CALL_FRAME_FUN())
 #define CALL_FRAME_SIZE() (3)
 
+static R_INLINE SEXP BUILTIN_CALL_FRAME_ARGS()
+{
+    return CALL_FRAME_ARGS();
+}
+
+static R_INLINE SEXP CLOSURE_CALL_FRAME_ARGS()
+{
+    SEXP args = CALL_FRAME_ARGS();
+    /* it would be better not to build this arglist with CONS_NR in
+       the first place */
+    for (SEXP a = args; a != R_NilValue; a = CDR(a))
+    {
+        if (!TRACKREFS(a))
+        {
+            ENABLE_REFCNT(a);
+            INCREMENT_REFCNT(CAR(a));
+            INCREMENT_REFCNT(CDR(a));
+        }
+    }
+    return args;
+}
+
 #define GETSTACK_BELOW_CALL_FRAME(n) GETSTACK((n)-CALL_FRAME_SIZE())
 #define SETSTACK_BELOW_CALL_FRAME(n, v) SETSTACK((n)-CALL_FRAME_SIZE(), v)
 
@@ -5568,7 +5590,7 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
     do                                                                                                                 \
     {                                                                                                                  \
         SEXP call = GETSTACK_BELOW_CALL_FRAME(-1);                                                                     \
-        SEXP args = CALL_FRAME_ARGS();                                                                                 \
+        SEXP args = BUILTIN_CALL_FRAME_ARGS();                                                                         \
         SEXP value = fun(call, symbol, args, rho);                                                                     \
         POP_CALL_FRAME_PLUS(2, value);                                                                                 \
         R_Visible = TRUE;                                                                                              \
@@ -5612,7 +5634,7 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
     {                                                                                                                  \
         SEXP rhs = GETSTACK_BELOW_CALL_FRAME(-2);                                                                      \
         SEXP call = GETSTACK_BELOW_CALL_FRAME(-1);                                                                     \
-        SEXP args = CALL_FRAME_ARGS();                                                                                 \
+        SEXP args = BUILTIN_CALL_FRAME_ARGS();                                                                         \
         PUSHCALLARG(rhs);                                                                                              \
         SEXP value = fun(call, symbol, args, rho);                                                                     \
         POP_CALL_FRAME_PLUS(3, value);                                                                                 \
@@ -6577,21 +6599,6 @@ Rboolean attribute_hidden R_BCVersionOK(SEXP s)
     return version < 2 || (version >= R_bcMinVersion && version <= R_bcVersion);
 }
 
-static R_INLINE void FIX_CLOSURE_CALL_ARG_REFCNTS(SEXP args)
-{
-    /* it would be better not to build this arglist with CONS_NR in
-       the first place */
-    for (SEXP a = args; a != R_NilValue; a = CDR(a))
-    {
-        if (!TRACKREFS(a))
-        {
-            ENABLE_REFCNT(a);
-            INCREMENT_REFCNT(CAR(a));
-            INCREMENT_REFCNT(CDR(a));
-        }
-    }
-}
-
 static R_INLINE Rboolean FIND_ON_STACK(SEXP x, R_bcstack_t *base, int skip, int crude)
 {
     /* Check whether the value is on the stack before modifying.  If
@@ -7172,8 +7179,6 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         }
         OP(PUSHARG, 0) : PUSHCALLARG(BCNPOP());
         NEXT();
-        /**** for now PUSHCONST, PUSHTRUE, and PUSHFALSE duplicate/allocate to
-          be defensive against bad package C code */
         OP(PUSHCONSTARG, 1) :
         {
             SEXP value = VECTOR_ELT(constants, GETOP());
@@ -7193,12 +7198,13 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         {
             SEXP fun = CALL_FRAME_FUN();
             SEXP call = VECTOR_ELT(constants, GETOP());
-            SEXP args = CALL_FRAME_ARGS();
+            SEXP args;
             SEXP value = NULL;
             int flag;
             switch (TYPEOF(fun))
             {
             case BUILTINSXP:
+                args = BUILTIN_CALL_FRAME_ARGS();
                 checkForMissings(args, call);
                 flag = PRIMPRINT(fun);
                 R_Visible = flag != 1;
@@ -7214,7 +7220,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                     R_Visible = flag != 1;
                 break;
             case CLOSXP:
-                FIX_CLOSURE_CALL_ARG_REFCNTS(args);
+                args = CLOSURE_CALL_FRAME_ARGS();
                 value = applyClosure(call, fun, args, rho, R_NilValue);
 #ifdef ADJUST_ENVIR_REFCNTS
                 unpromiseArgs(args);
@@ -7230,7 +7236,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         {
             SEXP fun = CALL_FRAME_FUN();
             SEXP call = VECTOR_ELT(constants, GETOP());
-            SEXP args = CALL_FRAME_ARGS();
+            SEXP args = BUILTIN_CALL_FRAME_ARGS();
             int flag;
             const void *vmax = vmaxget();
             if (TYPEOF(fun) != BUILTINSXP)
@@ -7573,7 +7579,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 PUSHCALLARG(rhs);
                 SETCALLARG_TAG_SYMBOL(R_valueSym);
                 /* replace first argument with LHS value */
-                args = CALL_FRAME_ARGS();
+                args = BUILTIN_CALL_FRAME_ARGS();
                 SETCAR(args, lhs);
                 /* make the call */
                 checkForMissings(args, call);
@@ -7603,11 +7609,10 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 SETCALLARG_TAG_SYMBOL(R_valueSym);
                 /* replace first argument with evaluated promise for LHS */
                 /* promise might be captured, so track references */
-                args = CALL_FRAME_ARGS();
+                args = CLOSURE_CALL_FRAME_ARGS();
                 prom = R_mkEVPROMISE(R_TmpvalSymbol, lhs);
                 SETCAR(args, prom);
                 /* make the call */
-                FIX_CLOSURE_CALL_ARG_REFCNTS(args);
                 value = applyClosure(call, fun, args, rho, R_NilValue);
 #ifdef ADJUST_ENVIR_REFCNTS
                 unpromiseArgs(args);
@@ -7630,7 +7635,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             {
             case BUILTINSXP:
                 /* replace first argument with LHS value */
-                args = CALL_FRAME_ARGS();
+                args = BUILTIN_CALL_FRAME_ARGS();
                 SETCAR(args, lhs);
                 /* make the call */
                 checkForMissings(args, call);
@@ -7650,11 +7655,10 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             case CLOSXP:
                 /* replace first argument with evaluated promise for LHS */
                 /* promise might be captured, so track references */
-                args = CALL_FRAME_ARGS();
+                args = CLOSURE_CALL_FRAME_ARGS();
                 prom = R_mkEVPROMISE(R_TmpvalSymbol, lhs);
                 SETCAR(args, prom);
                 /* make the call */
-                FIX_CLOSURE_CALL_ARG_REFCNTS(args);
                 value = applyClosure(call, fun, args, rho, R_NilValue);
 #ifdef ADJUST_ENVIR_REFCNTS
                 unpromiseArgs(args);
