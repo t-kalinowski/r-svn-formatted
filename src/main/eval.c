@@ -5243,8 +5243,8 @@ static R_INLINE SEXP GET_BINDING_CELL_CACHE(SEXP symbol, SEXP rho, R_binding_cac
 {
     SEXP cell = GET_CACHED_BINDING_CELL(vcache, idx);
     /* The value returned by GET_CACHED_BINDING_CELL is either a
-       binding cell or R_NilValue.  TAG(R_NilValue) is R_NilVelue, and
-       that will no equal symbol. So a separate test for cell !=
+       binding cell or R_NilValue.  TAG(R_NilValue) is R_NilValue, and
+       that will not equal symbol. So a separate test for cell !=
        R_NilValue is not needed. */
     if (TAG(cell) == symbol && CAR(cell) != R_UnboundValue)
         return cell;
