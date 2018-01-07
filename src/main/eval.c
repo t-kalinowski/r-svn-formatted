@@ -5419,7 +5419,10 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
 
 static R_INLINE SEXP BUILTIN_CALL_FRAME_ARGS()
 {
-    return CALL_FRAME_ARGS();
+    SEXP args = CALL_FRAME_ARGS();
+    for (SEXP a = args; a != R_NilValue; a = CDR(a))
+        DECREMENT_LINKS(CAR(a));
+    return args;
 }
 
 static R_INLINE SEXP CLOSURE_CALL_FRAME_ARGS()
@@ -5429,6 +5432,7 @@ static R_INLINE SEXP CLOSURE_CALL_FRAME_ARGS()
        the first place */
     for (SEXP a = args; a != R_NilValue; a = CDR(a))
     {
+        DECREMENT_LINKS(CAR(a));
         if (!TRACKREFS(a))
         {
             ENABLE_REFCNT(a);
@@ -5481,6 +5485,7 @@ static R_INLINE SEXP CLOSURE_CALL_FRAME_ARGS()
         else                                                                                                           \
             SETCDR(GETSTACK(-1), __cell__);                                                                            \
         SETSTACK(-1, __cell__);                                                                                        \
+        INCREMENT_LINKS(CAR(__cell__));                                                                                \
     } while (0)
 
 /* place a tag on the most recently pushed call argument */
