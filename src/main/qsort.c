@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2002-2012   The R Core Team.
+ *  Copyright (C) 2002-2017   The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -129,6 +129,7 @@ void F77_SUB(qsort3)(double *v, int *ii, int *jj)
     R_qsort(v, *ii, *jj);
 }
 
+//  sort with index : --------------------------
 #define qsort_Index
 #define INTt int
 #define INDt int
@@ -157,8 +158,10 @@ void R_qsort_I(double *v, int *I, int i, int j)
             static void R_qsort_int_R(int *v, double *I, size_t i, size_t j)
 #include "qsort-body.c"
 #undef NUMERIC
+#undef INDt
 #endif // LONG_VECTOR_SUPPORT
 
+//  sort withOUT index : -----------------------
 #undef qsort_Index
 
 #define NUMERIC double
