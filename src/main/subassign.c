@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1997-2018   The R Core Team
+ *  Copyright (C) 1997-2017   The R Core Team
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -1875,11 +1875,15 @@ SEXP attribute_hidden do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
+    SEXP dims, indx, names, newname, subs, x, xtop, xup, y, thesub = R_NilValue, xOrig = R_NilValue;
+    int i, ndims, nsubs, which, len = 0 /* -Wall */;
+    R_xlen_t stretch, offset, off = -1; /* -Wall */
+    Rboolean S4, recursed = FALSE;
+
     PROTECT(args);
-    //   x[[subs]] <- y
-    SEXP x, subs, y;
-    int nsubs = SubAssignArgs(args, &x, &subs, &y);
-    Rboolean S4 = IS_S4_OBJECT(x);
+
+    nsubs = SubAssignArgs(args, &x, &subs, &y);
+    S4 = IS_S4_OBJECT(x);
 
     /* Handle NULL left-hand sides.  If the right-hand side */
     /* is NULL, just return the left-hand size otherwise, */
@@ -1905,7 +1909,6 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
         SETCAR(args, x = shallow_duplicate(x));
 
     /* code to allow classes to extend ENVSXP */
-    SEXP xOrig = R_NilValue;
     if (TYPEOF(x) == S4SXP)
     {
         xOrig = x; /* will be an S4 object */
@@ -1915,6 +1918,20 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
     }
 
     PROTECT(x);
+    xtop = xup = x; /* x will be the element which is assigned to */
+
+    dims = getAttrib(x, R_DimSymbol);
+    ndims = length(dims);
+
+    int *pdims = NULL;
+    if (ndims > 0)
+    {
+        if (TYPEOF(dims) == INTSXP)
+            pdims = INTEGER(dims);
+        else
+            error(_("improper dimensions"));
+    }
+
     /* ENVSXP special case first */
     if (TYPEOF(x) == ENVSXP)
     {
@@ -1925,23 +1942,8 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
         return (S4 ? xOrig : x);
     }
 
-    SEXP xup = x, dims = getAttrib(x, R_DimSymbol);
-    int ndims = length(dims);
-    int *pdims = NULL;
-    if (ndims > 0)
-    {
-        if (TYPEOF(dims) == INTSXP)
-            pdims = INTEGER(dims);
-        else
-            error(_("improper dimensions"));
-    }
-
     /* new case in 1.7.0, one vector index for a list,
        more general as of 2.10.0 */
-    SEXP thesub = R_NilValue, newname, indx, names;
-    Rboolean recursed = FALSE;
-    int len = 0 /* -Wall */;
-    R_xlen_t off = -1; /* -Wall */
     if (nsubs == 1)
     {
         thesub = CAR(subs);
@@ -1960,14 +1962,15 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
     }
     PROTECT(xup);
 
-    SEXP xtop = xup; /* xtop will be the element which is assigned to */
-    R_xlen_t offset, stretch = 0;
+    stretch = 0;
     if (isVector(x))
     {
         if (!isVectorList(x) && LENGTH(y) == 0)
             error(_("replacement has length zero"));
         if (!isVectorList(x) && LENGTH(y) > 1)
             error(_("more elements supplied than there are to replace"));
+        if (nsubs == 0 || CAR(subs) == R_MissingArg)
+            error(_("[[ ]] with missing subscript"));
         if (nsubs == 1)
         {
             offset = OneIndex(x, thesub, xlength(x), 0, &newname, recursed ? len - 1 : -1, R_NilValue);
@@ -1996,13 +1999,13 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
                 stretch = offset + 1;
         }
         else
-        { // nsubs >= 2
+        {
             if (ndims != nsubs)
                 error(_("[[ ]] improper number of subscripts"));
             PROTECT(indx = allocVector(INTSXP, ndims));
             int *pindx = INTEGER0(indx);
             names = getAttrib(x, R_DimNamesSymbol);
-            for (int i = 0; i < ndims; i++)
+            for (i = 0; i < ndims; i++)
             {
                 pindx[i] = (int)get1index(CAR(subs), isNull(names) ? R_NilValue : VECTOR_ELT(names, i), pdims[i],
                                           /*partial ok*/ FALSE, -1, call);
@@ -2011,13 +2014,13 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
                     error(_("[[ ]] subscript out of bounds"));
             }
             offset = 0;
-            for (int i = (ndims - 1); i > 0; i--)
+            for (i = (ndims - 1); i > 0; i--)
                 offset = (offset + pindx[i]) * pdims[i - 1];
             offset += pindx[0];
             UNPROTECT(1); /* indx */
         }
 
-        int which = SubassignTypeFix(&x, &y, stretch, 2, call, rho);
+        which = SubassignTypeFix(&x, &y, stretch, 2, call, rho);
 
         PROTECT(x);
         PROTECT(y);
@@ -2153,9 +2156,10 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
             error(_("incompatible types (from %s to %s) in [[ assignment"), type2char(which % 100),
                   type2char(which / 100));
         }
-        /* If we stretched, we may have a new name.  In this case we must
-         * create a names attribute (if it doesn't already exist) and set the
-         * new value in the names attribute. */
+        /* If we stretched, we may have a new name. */
+        /* In this case we must create a names attribute */
+        /* (if it doesn't already exist) and set the new */
+        /* value in the names attribute. */
         if (stretch && newname != R_NilValue)
         {
             names = getAttrib(x, R_NamesSymbol);
@@ -2174,7 +2178,7 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
         PROTECT(xup);
     }
     else if (isPairList(x))
-    { // incl LANGSXP
+    {
         y = R_FixupRHS(x, y);
         PROTECT(y);
         if (nsubs == 1)
@@ -2195,7 +2199,7 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
             PROTECT(indx = allocVector(INTSXP, ndims));
             int *pindx = INTEGER0(indx);
             names = getAttrib(x, R_DimNamesSymbol);
-            for (int i = 0; i < ndims; i++)
+            for (i = 0; i < ndims; i++)
             {
                 pindx[i] = (int)get1index(CAR(subs), VECTOR_ELT(names, i), pdims[i],
                                           /*partial ok*/ FALSE, -1, call);
@@ -2204,12 +2208,12 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
                     error(_("[[ ]] subscript (%d) out of bounds"), i + 1);
             }
             offset = 0;
-            for (int i = (ndims - 1); i > 0; i--)
+            for (i = (ndims - 1); i > 0; i--)
                 offset = (offset + pindx[i]) * pdims[i - 1];
             offset += pindx[0];
             SEXP slot = nthcdr(x, (int)offset);
             SETCAR(slot, duplicate(y));
-            // FIXME PR#17225: add name. See '(stretch && newname != R_NilValue)' above!
+            /* FIXME: add name */
             UNPROTECT(1); /* indx */
         }
         UNPROTECT(3); /* y, xup, x */
