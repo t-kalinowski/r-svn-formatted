@@ -1319,28 +1319,27 @@ SEXP dimgets(SEXP vec, SEXP val)
 
 SEXP attribute_hidden do_attributes(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP attrs, names, namesattr, value;
-    int nvalues;
-
     checkArity(op, args);
     check1arg(args, call, "x");
-    namesattr = R_NilValue;
 
     if (TYPEOF(CAR(args)) == ENVSXP)
         R_CheckStack(); /* in case attributes might lead to a cycle */
 
-    attrs = ATTRIB(CAR(args));
-    nvalues = length(attrs);
+    SEXP attrs = ATTRIB(CAR(args)), namesattr;
+    int nvalues = length(attrs);
     if (isList(CAR(args)))
     {
         namesattr = getAttrib(CAR(args), R_NamesSymbol);
         if (namesattr != R_NilValue)
             nvalues++;
     }
+    else
+        namesattr = R_NilValue;
     /* FIXME */
     if (nvalues <= 0)
         return R_NilValue;
     /* FIXME */
+    SEXP value, names;
     PROTECT(namesattr);
     PROTECT(value = allocVector(VECSXP, nvalues));
     PROTECT(names = allocVector(STRSXP, nvalues));
@@ -1357,10 +1356,10 @@ SEXP attribute_hidden do_attributes(SEXP call, SEXP op, SEXP args, SEXP env)
         if (TYPEOF(tag) == SYMSXP)
         {
             SET_VECTOR_ELT(value, nvalues, getAttrib(CAR(args), tag));
-            SET_STRING_ELT(names, nvalues, PRINTNAME(TAG(attrs)));
+            SET_STRING_ELT(names, nvalues, PRINTNAME(tag));
         }
         else
-        {
+        { // empty tag, hence name = ""
             MARK_NOT_MUTABLE(CAR(attrs));
             SET_VECTOR_ELT(value, nvalues, CAR(attrs));
             SET_STRING_ELT(names, nvalues, R_BlankString);
@@ -1925,7 +1924,7 @@ SEXP R_do_slot_assign(SEXP obj, SEXP name, SEXP value)
     /* Ensure that name is a symbol */
     if (isString(name) && LENGTH(name) == 1)
         name = installTrChar(STRING_ELT(name, 0));
-    if (TYPEOF(name) == CHARSXP)
+    else if (TYPEOF(name) == CHARSXP)
         name = installTrChar(name);
     if (!isSymbol(name))
         error(_("invalid type or length for slot name"));
