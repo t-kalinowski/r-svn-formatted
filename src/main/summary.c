@@ -629,9 +629,9 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
 
     ans = matchArgExact(R_NaRmSymbol, &args);
     Rboolean int_a, real_a, complex_a, narm = asLogical(ans),
-                                       empty = TRUE; // <==> only zero-length arguments, or NA with na.rm=T
-    int updated = 0;
-    /* updated := 1 , as soon as (i)tmp (do_summary),
+                                       empty = TRUE, // <==> only zero-length arguments, or NA with na.rm=T
+        updated = FALSE;
+    /* updated := TRUE , as soon as (i)tmp (do_summary),
        or *value ([ir]min / max) is assigned */
     SEXP a;
     double tmp = 0.0, s;
@@ -721,7 +721,7 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
 
         if (xlength(a) > 0)
         {
-            updated = 0; /*- GLOBAL -*/
+            updated = FALSE; /*- GLOBAL -*/
 
             switch (iop)
             {
