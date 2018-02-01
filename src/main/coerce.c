@@ -2193,9 +2193,36 @@ SEXP attribute_hidden do_isvector(SEXP call, SEXP op, SEXP args, SEXP rho)
     return (ans);
 }
 
+static R_INLINE void copyDimAndNames(SEXP x, SEXP ans)
+{
+    if (isVector(x))
+    {
+        /* PROTECT/UNPROTECT are probably not needed here */
+        SEXP dims, names;
+        PROTECT(dims = getAttrib(x, R_DimSymbol));
+        if (dims != R_NilValue)
+            setAttrib(ans, R_DimSymbol, dims);
+        UNPROTECT(1);
+        if (isArray(x))
+        {
+            PROTECT(names = getAttrib(x, R_DimNamesSymbol));
+            if (names != R_NilValue)
+                setAttrib(ans, R_DimNamesSymbol, names);
+            UNPROTECT(1);
+        }
+        else
+        {
+            PROTECT(names = getAttrib(x, R_NamesSymbol));
+            if (names != R_NilValue)
+                setAttrib(ans, R_NamesSymbol, names);
+            UNPROTECT(1);
+        }
+    }
+}
+
 SEXP attribute_hidden do_isna(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP ans, dims, names, x;
+    SEXP ans, x;
     R_xlen_t i, n;
 
     checkArity(op, args);
@@ -2213,16 +2240,6 @@ SEXP attribute_hidden do_isna(SEXP call, SEXP op, SEXP args, SEXP rho)
     n = xlength(x);
     PROTECT(ans = allocVector(LGLSXP, n));
     int *pa = LOGICAL(ans);
-    if (isVector(x))
-    {
-        PROTECT(dims = getAttrib(x, R_DimSymbol));
-        if (isArray(x))
-            PROTECT(names = getAttrib(x, R_DimNamesSymbol));
-        else
-            PROTECT(names = getAttrib(x, R_NamesSymbol));
-    }
-    else
-        dims = names = R_NilValue;
     switch (TYPEOF(x))
     {
     case LGLSXP:
@@ -2303,19 +2320,9 @@ SEXP attribute_hidden do_isna(SEXP call, SEXP op, SEXP args, SEXP rho)
         for (i = 0; i < n; i++)
             pa[i] = 0;
     }
-    if (dims != R_NilValue)
-        setAttrib(ans, R_DimSymbol, dims);
-    if (names != R_NilValue)
-    {
-        if (isArray(x))
-            setAttrib(ans, R_DimNamesSymbol, names);
-        else
-            setAttrib(ans, R_NamesSymbol, names);
-    }
-    if (isVector(x))
-        UNPROTECT(2);
-    UNPROTECT(1);
-    UNPROTECT(1); /*ans*/
+
+    copyDimAndNames(x, ans);
+    UNPROTECT(2); /* args, ans */
     return ans;
 }
 
@@ -2461,7 +2468,7 @@ SEXP attribute_hidden do_anyNA(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 SEXP attribute_hidden do_isnan(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP ans, dims, names, x;
+    SEXP ans, x;
     R_xlen_t i, n;
 
     checkArity(op, args);
@@ -2479,16 +2486,6 @@ SEXP attribute_hidden do_isnan(SEXP call, SEXP op, SEXP args, SEXP rho)
     n = xlength(x);
     PROTECT(ans = allocVector(LGLSXP, n));
     int *pa = LOGICAL(ans);
-    if (isVector(x))
-    {
-        PROTECT(dims = getAttrib(x, R_DimSymbol));
-        if (isArray(x))
-            PROTECT(names = getAttrib(x, R_DimNamesSymbol));
-        else
-            PROTECT(names = getAttrib(x, R_NamesSymbol));
-    }
-    else
-        dims = names = R_NilValue;
     switch (TYPEOF(x))
     {
     case STRSXP:
@@ -2513,19 +2510,8 @@ SEXP attribute_hidden do_isnan(SEXP call, SEXP op, SEXP args, SEXP rho)
     default:
         errorcall(call, _("default method not implemented for type '%s'"), type2char(TYPEOF(x)));
     }
-    if (dims != R_NilValue)
-        setAttrib(ans, R_DimSymbol, dims);
-    if (names != R_NilValue)
-    {
-        if (isArray(x))
-            setAttrib(ans, R_DimNamesSymbol, names);
-        else
-            setAttrib(ans, R_NamesSymbol, names);
-    }
-    if (isVector(x))
-        UNPROTECT(2);
-    UNPROTECT(1);
-    UNPROTECT(1); /*ans*/
+    copyDimAndNames(x, ans);
+    UNPROTECT(2); /* args, ans*/
     return ans;
 }
 
