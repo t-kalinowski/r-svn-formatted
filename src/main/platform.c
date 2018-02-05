@@ -2381,7 +2381,7 @@ SEXP attribute_hidden do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP path;
     wchar_t *p, dir[MAX_PATH];
-    int res, show, recursive, serrno = 0;
+    int res, show, recursive, serrno = 0, maybeshare;
 
     checkArity(op, args);
     path = CAR(args);
@@ -2409,11 +2409,14 @@ SEXP attribute_hidden do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
     if (recursive)
     {
         p = dir;
-        /* skip leading \\share */
+        maybeshare = 0;
+        /* skip leading \\server\\share, \\share */
+        /* FIXME: is \\share (still) possible? */
         if (*p == L'\\' && *(p + 1) == L'\\')
         {
             p += 2;
             p = wcschr(p, L'\\');
+            maybeshare = 1; /* the next element may be a share name */
         }
         while ((p = wcschr(p + 1, L'\\')))
         {
@@ -2422,9 +2425,10 @@ SEXP attribute_hidden do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
             {
                 res = _wmkdir(dir);
                 serrno = errno;
-                if (res && serrno != EEXIST)
+                if (res && serrno != EEXIST && !maybeshare)
                     goto end;
             }
+            maybeshare = 0;
             *p = L'\\';
         }
     }
