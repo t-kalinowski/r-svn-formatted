@@ -138,14 +138,20 @@ static void SET_ALTREP_CLASS(SEXP x, SEXP class)
     R_altinteger_Elt_method_t Elt;                                                                                     \
     R_altinteger_Get_region_method_t Get_region;                                                                       \
     R_altinteger_Is_sorted_method_t Is_sorted;                                                                         \
-    R_altinteger_No_NA_method_t No_NA
+    R_altinteger_No_NA_method_t No_NA;                                                                                 \
+    R_altinteger_Sum_method_t Sum;                                                                                     \
+    R_altinteger_Min_method_t Min;                                                                                     \
+    R_altinteger_Max_method_t Max
 
 #define ALTREAL_METHODS                                                                                                \
     ALTVEC_METHODS;                                                                                                    \
     R_altreal_Elt_method_t Elt;                                                                                        \
     R_altreal_Get_region_method_t Get_region;                                                                          \
     R_altreal_Is_sorted_method_t Is_sorted;                                                                            \
-    R_altreal_No_NA_method_t No_NA
+    R_altreal_No_NA_method_t No_NA;                                                                                    \
+    R_altreal_Sum_method_t Sum;                                                                                        \
+    R_altreal_Min_method_t Min;                                                                                        \
+    R_altreal_Max_method_t Max
 
 #define ALTSTRING_METHODS                                                                                              \
     ALTVEC_METHODS;                                                                                                    \
@@ -452,6 +458,36 @@ int STRING_NO_NA(SEXP x)
     return ALTREP(x) ? ALTSTRING_DISPATCH(No_NA, x) : 0;
 }
 
+SEXP ALTINTEGER_SUM(SEXP x, Rboolean narm)
+{
+    return ALTINTEGER_DISPATCH(Sum, x, narm);
+}
+
+SEXP ALTINTEGER_MIN(SEXP x, Rboolean narm)
+{
+    return ALTINTEGER_DISPATCH(Min, x, narm);
+}
+
+SEXP ALTINTEGER_MAX(SEXP x, Rboolean narm)
+{
+    return ALTINTEGER_DISPATCH(Max, x, narm);
+}
+
+SEXP ALTREAL_SUM(SEXP x, Rboolean narm)
+{
+    return ALTREAL_DISPATCH(Sum, x, narm);
+}
+
+SEXP ALTREAL_MIN(SEXP x, Rboolean narm)
+{
+    return ALTREAL_DISPATCH(Min, x, narm);
+}
+
+SEXP ALTREAL_MAX(SEXP x, Rboolean narm)
+{
+    return ALTREAL_DISPATCH(Max, x, narm);
+}
+
 /*
  * Not yet implemented
  */
@@ -600,6 +636,19 @@ static int altinteger_No_NA_default(SEXP x)
     return 0;
 }
 
+static SEXP altinteger_Sum_default(SEXP x, Rboolean narm)
+{
+    return NULL;
+}
+static SEXP altinteger_Min_default(SEXP x, Rboolean narm)
+{
+    return NULL;
+}
+static SEXP altinteger_Max_default(SEXP x, Rboolean narm)
+{
+    return NULL;
+}
+
 static double altreal_Elt_default(SEXP x, R_xlen_t i)
 {
     return REAL(x)[i];
@@ -621,6 +670,19 @@ static int altreal_Is_sorted_default(SEXP x)
 static int altreal_No_NA_default(SEXP x)
 {
     return 0;
+}
+
+static SEXP altreal_Sum_default(SEXP x, Rboolean narm)
+{
+    return NULL;
+}
+static SEXP altreal_Min_default(SEXP x, Rboolean narm)
+{
+    return NULL;
+}
+static SEXP altreal_Max_default(SEXP x, Rboolean narm)
+{
+    return NULL;
 }
 
 static SEXP altstring_Elt_default(SEXP x, R_xlen_t i)
@@ -660,7 +722,10 @@ static altinteger_methods_t altinteger_default_methods = {.UnserializeEX = altre
                                                           .Elt = altinteger_Elt_default,
                                                           .Get_region = altinteger_Get_region_default,
                                                           .Is_sorted = altinteger_Is_sorted_default,
-                                                          .No_NA = altinteger_No_NA_default};
+                                                          .No_NA = altinteger_No_NA_default,
+                                                          .Sum = altinteger_Sum_default,
+                                                          .Min = altinteger_Min_default,
+                                                          .Max = altinteger_Max_default};
 
 static altreal_methods_t altreal_default_methods = {.UnserializeEX = altrep_UnserializeEX_default,
                                                     .Unserialize = altrep_Unserialize_default,
@@ -676,7 +741,10 @@ static altreal_methods_t altreal_default_methods = {.UnserializeEX = altrep_Unse
                                                     .Elt = altreal_Elt_default,
                                                     .Get_region = altreal_Get_region_default,
                                                     .Is_sorted = altreal_Is_sorted_default,
-                                                    .No_NA = altreal_No_NA_default};
+                                                    .No_NA = altreal_No_NA_default,
+                                                    .Sum = altreal_Sum_default,
+                                                    .Min = altreal_Min_default,
+                                                    .Max = altreal_Max_default};
 
 static altstring_methods_t altstring_default_methods = {.UnserializeEX = altrep_UnserializeEX_default,
                                                         .Unserialize = altrep_Unserialize_default,
@@ -799,11 +867,17 @@ DEFINE_METHOD_SETTER(altinteger, Elt)
 DEFINE_METHOD_SETTER(altinteger, Get_region)
 DEFINE_METHOD_SETTER(altinteger, Is_sorted)
 DEFINE_METHOD_SETTER(altinteger, No_NA)
+DEFINE_METHOD_SETTER(altinteger, Sum)
+DEFINE_METHOD_SETTER(altinteger, Min)
+DEFINE_METHOD_SETTER(altinteger, Max)
 
 DEFINE_METHOD_SETTER(altreal, Elt)
 DEFINE_METHOD_SETTER(altreal, Get_region)
 DEFINE_METHOD_SETTER(altreal, Is_sorted)
 DEFINE_METHOD_SETTER(altreal, No_NA)
+DEFINE_METHOD_SETTER(altreal, Sum)
+DEFINE_METHOD_SETTER(altreal, Min)
+DEFINE_METHOD_SETTER(altreal, Max)
 
 DEFINE_METHOD_SETTER(altstring, Elt)
 DEFINE_METHOD_SETTER(altstring, Set_elt)
@@ -941,7 +1015,7 @@ static void *compact_intseq_Dataptr(SEXP x, Rboolean writeable)
 {
     if (COMPACT_SEQ_EXPANDED(x) == R_NilValue)
     {
-        /* no need to re-run if expended data exists */
+        /* no need to re-run if expanded data exists */
         PROTECT(x);
         SEXP info = COMPACT_SEQ_INFO(x);
         int n = COMPACT_INTSEQ_INFO_LENGTH(info);
@@ -1042,6 +1116,29 @@ static int compact_intseq_No_NA(SEXP x)
     return TRUE;
 }
 
+/* XXX this also appears in summary.c. move to header file?*/
+#define R_INT_MIN (1 + INT_MIN)
+
+static SEXP compact_intseq_Sum(SEXP x, Rboolean narm)
+{
+#ifdef COMPACT_INTSEQ_MUTABLE
+    /* If the vector has been expanded it may have been modified. */
+    if (COMPACT_SEQ_EXPANDED(x) != R_NilValue)
+        return NULL;
+#endif
+    double tmp;
+    SEXP info = COMPACT_SEQ_INFO(x);
+    R_xlen_t size = COMPACT_INTSEQ_INFO_LENGTH(info);
+    R_xlen_t n1 = COMPACT_INTSEQ_INFO_FIRST(info);
+    int inc = COMPACT_INTSEQ_INFO_INCR(info);
+    tmp = (size / 2.0) * (n1 + n1 + inc * (size - 1));
+    if (tmp > INT_MAX || tmp < R_INT_MIN)
+        /**** check for overflow of exact integer range? */
+        return ScalarReal(tmp);
+    else
+        return ScalarInteger((int)tmp);
+}
+
 /*
  * Class Objects and Method Tables
  */
@@ -1070,6 +1167,7 @@ static void InitCompactIntegerClass()
     R_set_altinteger_Get_region_method(cls, compact_intseq_Get_region);
     R_set_altinteger_Is_sorted_method(cls, compact_intseq_Is_sorted);
     R_set_altinteger_No_NA_method(cls, compact_intseq_No_NA);
+    R_set_altinteger_Sum_method(cls, compact_intseq_Sum);
 }
 
 /*
@@ -1261,6 +1359,20 @@ static int compact_realseq_No_NA(SEXP x)
     return TRUE;
 }
 
+static SEXP compact_realseq_Sum(SEXP x, Rboolean narm)
+{
+#ifdef COMPACT_INTSEQ_MUTABLE
+    /* If the vector has been expanded it may have been modified. */
+    if (COMPACT_SEQ_EXPANDED(x) != R_NilValue)
+        return NULL;
+#endif
+    SEXP info = COMPACT_SEQ_INFO(x);
+    double size = COMPACT_REALSEQ_INFO_LENGTH(info);
+    double n1 = COMPACT_REALSEQ_INFO_FIRST(info);
+    double inc = COMPACT_REALSEQ_INFO_INCR(info);
+    return ScalarReal((size / 2.0) * (n1 + n1 + inc * (size - 1)));
+}
+
 /*
  * Class Objects and Method Tables
  */
@@ -1288,6 +1400,7 @@ static void InitCompactRealClass()
     R_set_altreal_Get_region_method(cls, compact_realseq_Get_region);
     R_set_altreal_Is_sorted_method(cls, compact_realseq_Is_sorted);
     R_set_altreal_No_NA_method(cls, compact_realseq_No_NA);
+    R_set_altreal_Sum_method(cls, compact_realseq_Sum);
 }
 
 /*
