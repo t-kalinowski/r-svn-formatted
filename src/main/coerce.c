@@ -1409,6 +1409,13 @@ SEXP coerceVector(SEXP v, SEXPTYPE type)
             ans = coerceToRaw(v);
             break;
         case STRSXP:
+            if (ATTRIB(v) == R_NilValue)
+                switch (TYPEOF(v))
+                {
+                case INTSXP:
+                case REALSXP:
+                    return R_deferred_coerceToString(v, NULL);
+                }
             ans = coerceToString(v);
             break;
         case EXPRSXP:
