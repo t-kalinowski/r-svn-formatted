@@ -1663,7 +1663,7 @@ SEXP palette2(SEXP val)
     if (n)
     {
         if (TYPEOF(val) != INTSXP)
-            error("requires INTSXP argment");
+            error("requires INTSXP argument");
         if (n > MAX_PALETTE_SIZE)
             error(_("maximum number of colors is %d"), MAX_PALETTE_SIZE);
         for (int i = 0; i < n; i++)
