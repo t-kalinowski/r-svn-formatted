@@ -2,7 +2,7 @@
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 2002-2017  The R Foundation
- *  Copyright (C) 1999-2017  The R Core Team.
+ *  Copyright (C) 1999-2018  The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -247,7 +247,6 @@ attribute_hidden SEXP R_LookupMethod(SEXP method, SEXP rho, SEXP callrho, SEXP d
 {
     SEXP val, top = R_NilValue; /* -Wall */
     static SEXP s_S3MethodsTable = NULL;
-    static int lookup_registry_after_topenv = -1;
     static int lookup_baseenv_after_globalenv = -1;
     char *lookup;
 
@@ -268,11 +267,6 @@ attribute_hidden SEXP R_LookupMethod(SEXP method, SEXP rho, SEXP callrho, SEXP d
             error(_("bad generic definition environment"));
     }
 
-    if (lookup_registry_after_topenv == -1)
-    {
-        lookup = getenv("_R_S3_METHOD_LOOKUP_REGISTRY_AFTER_TOPENV_");
-        lookup_registry_after_topenv = ((lookup != NULL) && StringFalse(lookup)) ? 0 : 1;
-    }
     if (lookup_baseenv_after_globalenv == -1)
     {
         lookup = getenv("_R_S3_METHOD_LOOKUP_BASEENV_AFTER_GLOBALENV_");
@@ -280,22 +274,14 @@ attribute_hidden SEXP R_LookupMethod(SEXP method, SEXP rho, SEXP callrho, SEXP d
     }
 
     /* This evaluates promises */
-    if (lookup_registry_after_topenv)
+    PROTECT(top = topenv(R_NilValue, callrho));
+    val = findFunInEnvRange(method, callrho, top);
+    if (val != R_UnboundValue)
     {
-        PROTECT(top = topenv(R_NilValue, callrho));
-        val = findFunInEnvRange(method, callrho, top);
-        if (val != R_UnboundValue)
-        {
-            UNPROTECT(1);
-            return val;
-        }
+        UNPROTECT(1);
+        return val;
     }
-    else
-    {
-        val = findVar1(method, callrho, FUNSXP, TRUE);
-        if (isFunction(val))
-            return val;
-    }
+
     /* We assume here that no one registered a non-function */
     if (!s_S3MethodsTable)
         s_S3MethodsTable = install(".__S3MethodsTable__.");
@@ -315,29 +301,20 @@ attribute_hidden SEXP R_LookupMethod(SEXP method, SEXP rho, SEXP callrho, SEXP d
             val = eval(val, rho);
             UNPROTECT(1);
         }
-        if (lookup_registry_after_topenv)
+        if (val != R_UnboundValue)
         {
-            if (val != R_UnboundValue)
-            {
-                UNPROTECT(1);
-                return val;
-            }
-        }
-        else
+            UNPROTECT(1);
             return val;
+        }
     }
 
-    if (lookup_registry_after_topenv)
-    {
-        if (lookup_baseenv_after_globalenv)
-            val = findFunWithBaseEnvAfterGlobalEnv(method, ENCLOS(top));
-        else
-            val = findFunInEnvRange(method, ENCLOS(top), R_EmptyEnv);
-        UNPROTECT(1);
-        return val;
-    }
+    if (lookup_baseenv_after_globalenv)
+        val = findFunWithBaseEnvAfterGlobalEnv(method, ENCLOS(top));
+    else
+        val = findFunInEnvRange(method, ENCLOS(top), R_EmptyEnv);
+    UNPROTECT(1);
 
-    return R_UnboundValue;
+    return val;
 }
 
 #ifdef UNUSED
