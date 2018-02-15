@@ -1473,6 +1473,8 @@ void R_RunWeakRefFinalizer(SEXP w)
         SET_READY_TO_FINALIZE(w); /* insures removal from list on next gc */
     PROTECT(key);
     PROTECT(fun);
+    int oldintrsusp = R_interrupts_suspended;
+    R_interrupts_suspended = TRUE;
     if (isCFinalizer(fun))
     {
         /* Must be a C finalizer. */
@@ -1486,6 +1488,7 @@ void R_RunWeakRefFinalizer(SEXP w)
         eval(e, R_GlobalEnv);
         UNPROTECT(1);
     }
+    R_interrupts_suspended = oldintrsusp;
     UNPROTECT(2);
 }
 
