@@ -2249,12 +2249,15 @@ SEXP R_tryCatch(SEXP (*body)(void *), void *bdata, SEXP conds, SEXP (*handler)(S
                           .finally = finally != NULL ? finally : default_tryCatch_finally,
                           .fdata = fdata};
 
+    if (conds == NULL)
+        conds = allocVector(STRSXP, 0);
+    PROTECT(conds);
     SEXP fin = finally != NULL ? R_TrueValue : R_FalseValue;
     SEXP tcdptr = R_MakeExternalPtr(&tcd, R_NilValue, R_NilValue);
     SEXP expr = lang4(trycatch_callback, tcdptr, conds, fin);
     PROTECT(expr);
     SEXP val = eval(expr, R_GlobalEnv);
-    UNPROTECT(1); /* expr */
+    UNPROTECT(2); /* conds, expr */
     return val;
 }
 
