@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1997-2017 The R Core Team
+ *  Copyright (C) 1997-2018 The R Core Team
  *  Copyright (C) 1995-1996 Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -663,8 +663,6 @@ static DllInfo *R_RegisterDLL(HINSTANCE handle, const char *path)
     }
     else
         return NULL;
-
-    return (info);
 }
 
 static int addDLL(char *dpath, char *DLLname, HINSTANCE handle)
