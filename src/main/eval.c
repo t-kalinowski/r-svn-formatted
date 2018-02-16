@@ -7183,7 +7183,14 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             {
                 SEXP value;
                 if (ftype == BUILTINSXP)
-                    value = bcEval(code, rho, TRUE);
+                {
+                    if (TYPEOF(code) == BCODESXP)
+                        value = bcEval(code, rho, TRUE);
+                    else
+                        /* uncommon but possible, the compiler may decide not to compile
+                           an argument expression */
+                        value = eval(code, rho);
+                }
                 else
                     value = mkPROMISE(code, rho);
                 PUSHCALLARG(value);
