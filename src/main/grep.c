@@ -1894,7 +1894,7 @@ static char *pcre_string_adj(char *target, const char *orig, const char *repl, i
                             wc[j] = towctrans(wc[j], tr);
                         nb = (int)wcstoutf8(NULL, wc, INT_MAX);
                         wcstoutf8(xi, wc, nb);
-                        for (j = 0; j < nb; j++)
+                        for (j = 0; j < nb - 1; j++)
                             *t++ = *xi++;
                     }
                 }
