@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998-2017   The R Core Team.
+ *  Copyright (C) 1998-2018   The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -996,6 +996,7 @@ SEXP readtablehead(SEXP args)
     if (isString(quotes))
     {
         const char *sc = translateChar(STRING_ELT(quotes, 0));
+        /* FIXME: will leak memory at long jump */
         if (strlen(sc))
             data.quoteset = strdup(sc);
         else
@@ -1045,6 +1046,7 @@ SEXP readtablehead(SEXP args)
             data.con->seek(data.con, data.con->seek(data.con, -1, 1, 1), 1, 1);
     }
 
+    /* FIXME: will leak memory at long jump */
     buf = (char *)malloc(buf_size);
     if (!buf)
         error(_("cannot allocate buffer in 'readTableHead'"));
@@ -1061,13 +1063,16 @@ SEXP readtablehead(SEXP args)
         /* want to interpret comments here, not in scanchar */
         while ((c = scanchar(TRUE, &data)) != R_EOF)
         {
-            if (nbuf >= buf_size - 1)
+            if (nbuf >= buf_size - 3)
             {
                 buf_size *= 2;
+                /* FIXME: will leak memory at long jump */
                 char *tmp = (char *)realloc(buf, buf_size);
                 if (!tmp)
                 {
                     free(buf);
+                    if (data.quoteset[0])
+                        free(data.quoteset);
                     error(_("cannot allocate buffer in 'readTableHead'"));
                 }
                 else
@@ -1080,10 +1085,16 @@ SEXP readtablehead(SEXP args)
                 if (data.sepchar == 0 && c == '\\')
                 {
                     /* all escapes should be passed through */
+                    /* fillBuffer would not copy a backslash preceding quote */
                     buf[nbuf++] = (char)c;
                     c = scanchar(TRUE, &data);
                     if (c == R_EOF)
+                    {
+                        free(buf);
+                        if (data.quoteset[0])
+                            free(data.quoteset);
                         error(_("\\ followed by EOF"));
+                    }
                     buf[nbuf++] = (char)c;
                     continue;
                 }
@@ -1104,11 +1115,12 @@ SEXP readtablehead(SEXP args)
                     }
                 }
             }
-            else if (!skip && firstnonwhite && strchr(data.quoteset, c))
+            else if (!skip && (firstnonwhite || data.sepchar != 0) && strchr(data.quoteset, c))
                 quote = c;
-            else if (Rspace(c) || c == data.sepchar)
+            else if (!skip && data.sepchar == 0 && Rspace(c))
+                /* firstnonwhite stays true within quoted section */
                 firstnonwhite = TRUE;
-            else
+            else if (c != ' ' && c != '\t')
                 firstnonwhite = FALSE;
             /* A line is empty only if it contains nothing before
                EOL, EOF or a comment char.
@@ -1156,7 +1168,12 @@ no_more_lines:
             warning(_("incomplete final line found by readTableHeader on '%s'"), data.con->description);
         }
         else
+        {
+            free(buf);
+            if (data.quoteset[0])
+                free(data.quoteset);
             error(_("incomplete final line found by readTableHeader on '%s'"), data.con->description);
+        }
     }
     free(buf);
     PROTECT(ans2 = allocVector(STRSXP, nread));
