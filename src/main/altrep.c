@@ -1211,7 +1211,7 @@ static SEXP new_compact_intseq(R_xlen_t n, int n1, int inc)
  * Methods
  */
 
-#define COMPACT_REALSEQ_INFO_LENGTH(info) REAL0(info)[0]
+#define COMPACT_REALSEQ_INFO_LENGTH(info) ((R_xlen_t)REAL0(info)[0])
 #define COMPACT_REALSEQ_INFO_FIRST(info) REAL0(info)[1]
 #define COMPACT_REALSEQ_INFO_INCR(info) REAL0(info)[2]
 
@@ -1223,8 +1223,8 @@ static SEXP compact_realseq_Serialized_state(SEXP x)
 static SEXP compact_realseq_Unserialize(SEXP class, SEXP state)
 {
     double inc = COMPACT_REALSEQ_INFO_INCR(state);
-    R_xlen_t len = (R_xlen_t)REAL_ELT(state, 0);
-    double n1 = REAL_ELT(state, 1);
+    R_xlen_t len = COMPACT_REALSEQ_INFO_LENGTH(state);
+    double n1 = COMPACT_REALSEQ_INFO_FIRST(state);
 
     if (inc == 1)
         return new_compact_realseq(len, n1, 1);
@@ -1268,7 +1268,7 @@ static void *compact_realseq_Dataptr(SEXP x, Rboolean writeable)
     {
         PROTECT(x);
         SEXP info = COMPACT_SEQ_INFO(x);
-        double n = COMPACT_REALSEQ_INFO_LENGTH(info);
+        R_xlen_t n = COMPACT_REALSEQ_INFO_LENGTH(info);
         double n1 = COMPACT_REALSEQ_INFO_FIRST(info);
         double inc = COMPACT_REALSEQ_INFO_INCR(info);
 
@@ -1322,7 +1322,7 @@ static R_xlen_t compact_realseq_Get_region(SEXP sx, R_xlen_t i, R_xlen_t n, doub
     CHECK_NOT_EXPANDED(sx);
 
     SEXP info = COMPACT_SEQ_INFO(sx);
-    R_xlen_t size = (R_xlen_t)COMPACT_REALSEQ_INFO_LENGTH(info);
+    R_xlen_t size = COMPACT_REALSEQ_INFO_LENGTH(info);
     double n1 = COMPACT_REALSEQ_INFO_FIRST(info);
     double inc = COMPACT_REALSEQ_INFO_INCR(info);
 
@@ -1372,7 +1372,7 @@ static SEXP compact_realseq_Sum(SEXP x, Rboolean narm)
         return NULL;
 #endif
     SEXP info = COMPACT_SEQ_INFO(x);
-    double size = COMPACT_REALSEQ_INFO_LENGTH(info);
+    double size = (double)COMPACT_REALSEQ_INFO_LENGTH(info);
     double n1 = COMPACT_REALSEQ_INFO_FIRST(info);
     double inc = COMPACT_REALSEQ_INFO_INCR(info);
     return ScalarReal((size / 2.0) * (n1 + n1 + inc * (size - 1)));
