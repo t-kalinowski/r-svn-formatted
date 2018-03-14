@@ -3794,10 +3794,18 @@ R_xlen_t(TRUELENGTH)(SEXP x)
 {
     return TRUELENGTH(CHK2(x));
 }
+
 void(SETLENGTH)(SEXP x, R_xlen_t v)
 {
+    if (ALTREP(x))
+        error("SETLENGTH() cannot be applied to an ALTVEC object.");
+    if (!isVector(x))
+        error(_("SETLENGTH() can only be applied to a standard vector, "
+                "not a '%s'"),
+              type2char(TYPEOF(x)));
     SET_STDVEC_LENGTH(CHK2(x), v);
 }
+
 void(SET_TRUELENGTH)(SEXP x, R_xlen_t v)
 {
     SET_TRUELENGTH(CHK2(x), v);
