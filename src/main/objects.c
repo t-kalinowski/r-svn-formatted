@@ -294,7 +294,9 @@ attribute_hidden SEXP R_LookupMethod(SEXP method, SEXP rho, SEXP callrho, SEXP d
     }
     if (TYPEOF(table) == ENVSXP)
     {
+        PROTECT(table);
         val = findVarInFrame3(table, method, TRUE);
+        UNPROTECT(1);
         if (TYPEOF(val) == PROMSXP)
         {
             PROTECT(val);
