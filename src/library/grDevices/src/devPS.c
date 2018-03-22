@@ -1766,7 +1766,13 @@ static const char *fontMetricsFileName(const char *family, int faceIndex, const 
 
 static const char *getFontType(const char *family, const char *fontdbname)
 {
-    return CHAR(STRING_ELT(getAttrib(getFont(family, fontdbname), R_ClassSymbol), 0));
+    const char *result = "";
+    SEXP font = getFont(family, fontdbname);
+    if (!isNull(font))
+    {
+        result = CHAR(STRING_ELT(getAttrib(font, R_ClassSymbol), 0));
+    }
+    return result;
 }
 
 static Rboolean isType1Font(const char *family, const char *fontdbname, type1fontfamily defaultFont)
