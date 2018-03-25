@@ -287,7 +287,7 @@ SEXP setAttrib(SEXP vec, SEXP name, SEXP val)
         return tspgets(vec, val);
     else if (name == R_CommentSymbol)
         return commentgets(vec, val);
-    else if (name == R_RowNamesSymbol)
+    else if (name == R_RowNamesSymbol) // "row.names" -> care for data frames
         return row_names_gets(vec, val);
     else
         return installAttrib(vec, name, val);
