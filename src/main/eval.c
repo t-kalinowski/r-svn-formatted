@@ -1859,6 +1859,10 @@ static R_INLINE SEXP R_execClosure(SEXP call, SEXP newrho, SEXP sysparent, SEXP 
         Rprintf("exiting from: ");
         PrintCall(call, rho);
     }
+
+    /* clear R_ReturnedValue to allow GC to reclaim old value */
+    R_ReturnedValue = R_NilValue;
+
     return cntxt.returnValue;
 }
 
