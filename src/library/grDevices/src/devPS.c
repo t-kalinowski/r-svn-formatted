@@ -1766,7 +1766,7 @@ static const char *fontMetricsFileName(const char *family, int faceIndex, const 
 
 static const char *getFontType(const char *family, const char *fontdbname)
 {
-    const char *result = "";
+    const char *result = NULL;
     SEXP font = getFont(family, fontdbname);
     if (!isNull(font))
     {
@@ -1792,7 +1792,13 @@ static Rboolean isType1Font(const char *family, const char *fontdbname, type1fon
             return FALSE;
     }
     else
-        return !strcmp(getFontType(family, fontdbname), "Type1Font");
+    {
+        const char *fontType = getFontType(family, fontdbname);
+        if (fontType)
+            return !strcmp(fontType, "Type1Font");
+        else
+            return FALSE;
+    }
 }
 
 static Rboolean isCIDFont(const char *family, const char *fontdbname, cidfontfamily defaultCIDFont)
@@ -1812,7 +1818,13 @@ static Rboolean isCIDFont(const char *family, const char *fontdbname, cidfontfam
             return FALSE;
     }
     else
-        return !strcmp(getFontType(family, fontdbname), "CIDFont");
+    {
+        const char *fontType = getFontType(family, fontdbname);
+        if (fontType)
+            return !strcmp(fontType, "CIDFont");
+        else
+            return FALSE;
+    }
 }
 
 /*
