@@ -194,7 +194,7 @@ SEXP attribute_hidden do_onexit(SEXP call, SEXP op, SEXP args, SEXP rho)
                 if (after)
                 {
                     SEXP codelist = PROTECT(CONS(code, R_NilValue));
-                    ctxt->conexit = listAppend(duplicate(oldcode), codelist);
+                    ctxt->conexit = listAppend(shallow_duplicate(oldcode), codelist);
                     UNPROTECT(1);
                 }
                 else
