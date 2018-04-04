@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  file dounzip.c
- *  first part Copyright (C) 2002-2017  The R Core Team
+ *  first part Copyright (C) 2002-2018  The R Core Team
  *  second part Copyright (C) 1998-2010 Gilles Vollant
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -184,6 +184,8 @@ static int extract_one(unzFile uf, const char *const dest, const char *const fil
         if (!overwrite && R_FileExists(outname))
         {
             warning(_(" not overwriting file '%s"), outname);
+            unzCloseCurrentFile(uf);
+            return err;
         }
         fout = R_fopen(outname, "wb");
         int serrno = errno;
