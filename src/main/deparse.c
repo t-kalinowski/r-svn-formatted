@@ -675,6 +675,8 @@ static Rboolean needsparens(PPinfo mainop, SEXP arg, unsigned int left)
     return FALSE;
 }
 
+// unused:
+#ifdef _NEVER_
 // does the character() vector x contain `NA_character_` ?
 static Rboolean anyNA_chr(SEXP x)
 {
@@ -689,6 +691,26 @@ static Rboolean anyNA_chr(SEXP x)
     }
     return FALSE;
 }
+#endif
+
+// does the character() vector x contain one `NA_character_` or is all "" ?
+static Rboolean anyNA_or_all0_chr(SEXP x)
+{
+    if (TYPEOF(x) == STRSXP)
+    {
+        R_xlen_t i, n = xlength(x);
+        Rboolean all_0 = TRUE;
+        for (i = 0; i < n; i++)
+        {
+            if (STRING_ELT(x, i) == NA_STRING)
+                return TRUE;
+            else if (all_0 && *CHAR(STRING_ELT(x, i))) /* length test */
+                all_0 = FALSE;
+        }
+        return all_0;
+    }
+    return FALSE;
+}
 
 typedef enum
 {
@@ -698,6 +720,28 @@ typedef enum
     STRUC_ATTR, // use structure(*, <attr> = *, ..) for non-names only
     STRUC_NMS_A // use structure(*, <attr> = *, ..)  for names, too
 } attr_type;
+
+#ifdef DEBUG_DEPARSE
+static const char *attrT2char(attr_type typ)
+{
+    switch (typ)
+    {
+    case UNKNOWN:
+        return "UNKNOWN";
+    case SIMPLE:
+        return "SIMPLE";
+    case OK_NAMES:
+        return "OK_NAMES";
+    case STRUC_ATTR:
+        return "STRUC_ATTR";
+    case STRUC_NMS_A:
+        return "STRUC_NMS_A";
+    default:
+        return "_unknown_ attr_type -- should *NOT* happen!";
+    }
+}
+#define ChTF(_logic_) (_logic_ ? "TRUE" : "FALSE")
+#endif
 
 /* Exact semantic of NICE_NAMES and SHOWATTRIBUTES i.e. "niceNames" and "showAttributes"
 
@@ -712,7 +756,7 @@ C|  depCtrl   | attr1() result
 C|  depCtrl   : what should   deparse(*, control = depCtrl)   do ?
 -| -----------+-----------------------------------------------------------------------------
 1|  NN &&  SA : all attributes(but srcref); names "NICE"ly (<nam> = <val>) if valid [no NA]
-2| !NN &&  SA : all attributes( "    "   ) shown via structure(..) incl. names but no _nice_ names
+2| !NN &&  SA : all attributes( "    "   ) use structure(..) incl names but no _nice_ names
 3|  NN && !SA : no attributes but names, names nicely even when "wrong" (i.e. NA in names(.))
 4| !NN && !SA : no attributes shown, not even names
 
@@ -724,17 +768,21 @@ static attr_type attr1(SEXP s, LocalParseData *d)
     SEXP a = ATTRIB(s), nm = getAttrib(s, R_NamesSymbol);
     attr_type attr = UNKNOWN;
     Rboolean nice_names = d->opts & NICE_NAMES, show_attr = d->opts & SHOWATTRIBUTES, has_names = !isNull(nm), ok_names;
+#ifdef DEBUG_DEPARSE
+    REprintf("  attr1(): has_names = %s", ChTF(has_names));
+#endif
     if (has_names)
     {
-        // ok  only if there's no  NA_character_ in names(.):
-        ok_names = nice_names && !anyNA_chr(nm);
+        // ok only if there's no  NA_character_ and no "" in names(.):
+        ok_names = nice_names && !anyNA_or_all0_chr(nm);
 #ifdef DEBUG_DEPARSE
-        REprintf("has_names=TRUE, ok_names = %s", ok_names ? "TRUE" : "FALSE");
+        REprintf(", ok_names = %s", ChTF(ok_names));
 #endif
         if (!ok_names)
             attr = show_attr ? STRUC_NMS_A :
                              /* nice_names */ OK_NAMES; // even when not ok
     }
+
     while (attr == UNKNOWN && !isNull(a))
     {
         if (has_names && TAG(a) == R_NamesSymbol)
@@ -754,18 +802,14 @@ static attr_type attr1(SEXP s, LocalParseData *d)
 
     if (attr >= STRUC_ATTR)
     {
-#ifdef DEBUG_DEPARSE
-        REprintf(" attr1() giving %s\n", (attr == STRUC_ATTR) ? "STRUC_ATTR" : "STRUC_NMS_A");
-#endif
         print2buff("structure(", d);
     }
     else if (has_names)
     { // attr <= OK_NAMES
-#ifdef DEBUG_DEPARSE
-        // REprintf(" before return (%s)\n", has_names ? "OK_NAMES" : "SIMPLE");
-        REprintf("before returning attr1() = ", (attr == OK_NAMES ? "OK_NAMES" : "SIMPLE"));
-#endif
     }
+#ifdef DEBUG_DEPARSE
+    REprintf(", return()ing %s\n", attrT2char(attr));
+#endif
     return attr;
 }
 
@@ -1543,7 +1587,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
             if (doquote)
                 print2buff(")", d);
         }
-        break; // case LANGSXP --------------------------------------------------
+        break; // end{case LANGSXP} ---------------------------------------------
     case STRSXP:
     case LGLSXP:
     case INTSXP:
@@ -1665,6 +1709,7 @@ static void deparse2buf_name(SEXP nv, int i, LocalParseData *d)
 // deparse atomic vectors :
 static void vector2buff(SEXP vector, LocalParseData *d)
 {
+    // Known here:  TYPEOF(vector)  is one of the 6 atomic *SXPs
     const char *strp;
     char *buff = 0, hex[64]; // 64 is more than enough
     int i, d_opts_in = d->opts, tlen = length(vector), quote = isString(vector) ? '"' : 0;
@@ -1686,28 +1731,32 @@ static void vector2buff(SEXP vector, LocalParseData *d)
     }
 
     SEXP nv = R_NilValue;
-    Rboolean do_names = (d_opts_in & SHOW_ATTR_OR_NMS); // iff TRUE use '<tag_i> = <comp_i>'
+    Rboolean do_names = d_opts_in & SHOW_ATTR_OR_NMS; // iff TRUE use '<tag_i> = <comp_i>'
     if (do_names)
     {
         nv = getAttrib(vector, R_NamesSymbol); // only "do names" if have names:
         if (isNull(nv))
             do_names = FALSE;
     }
-    Rboolean need_c = (tlen > 1 || !isNull(nv)), // (?) only TRUE iff SHOW_ATTR_OR_NMS
-        STR_names = do_names && (intSeq || tlen == 0);
+    Rboolean STR_names,    // if true, use structure(.,*) for names even if(nice_names)
+        need_c = tlen > 1; // (?) only TRUE iff SHOW_ATTR_OR_NMS
+    STR_names = do_names && (intSeq || tlen == 0);
+#ifdef DEBUG_DEPARSE
+    REprintf("vector2buff(v): length(v) = %d; initial (do|STR)_names) = (%s,%s)\n", tlen, ChTF(do_names),
+             ChTF(STR_names));
+#endif
     if (STR_names) // use structure(.,*) for names even if(nice_names)
         d->opts &= ~NICE_NAMES;
     attr_type attr = (d_opts_in & SHOW_ATTR_OR_NMS) ? attr1(vector, d) : SIMPLE;
-    do_names = (attr == OK_NAMES || attr == STRUC_ATTR);
+    if (do_names)
+        do_names = (attr == OK_NAMES || attr == STRUC_ATTR);
+    if (!need_c)
+        need_c = do_names; // c(a = *) but not c(1)
+#ifdef DEBUG_DEPARSE
+    REprintf(" -> final (do|STR)_names) = (%s,%s), attr = %s\n", ChTF(do_names), ChTF(STR_names), attrT2char(attr));
+#endif
     if (tlen == 0)
     {
-#ifdef DEBUG_DEPARSE
-        REprintf("vector2buff(<tlen = 0>): (do_names, STR_names) = (%s,%s), attr = %s\n", STR_names ? "TRUE" : "FALSE",
-                 do_names ? "TRUE" : "FALSE",
-                 attr == STRUC_NMS_A
-                     ? "STRUC_NMS_A"
-                     : (attr == STRUC_ATTR ? "STRUC_ATTR" : (attr == OK_NAMES ? "OK_NAMES" : "SIMPLE")));
-#endif
         switch (TYPEOF(vector))
         {
         case LGLSXP:
@@ -1760,8 +1809,8 @@ static void vector2buff(SEXP vector, LocalParseData *d)
                 }
             if ((d->opts & KEEPINTEGER && (d->opts & S_COMPAT)))
             {
-                surround = TRUE;
                 print2buff("as.integer(", d);
+                surround = TRUE;
             }
             allNA = allNA && !(d->opts & S_COMPAT);
             if (need_c)
@@ -1807,8 +1856,8 @@ static void vector2buff(SEXP vector, LocalParseData *d)
                 }
             if (allNA && (d->opts & S_COMPAT))
             {
-                surround = TRUE;
                 print2buff("as.double(", d);
+                surround = TRUE;
             }
         }
         else if ((d->opts & KEEPNA) && TYPEOF(vector) == CPLXSXP)
@@ -1824,8 +1873,8 @@ static void vector2buff(SEXP vector, LocalParseData *d)
             }
             if (allNA && (d->opts & S_COMPAT))
             {
-                surround = TRUE;
                 print2buff("as.complex(", d);
+                surround = TRUE;
             }
         }
         else if ((d->opts & KEEPNA) && TYPEOF(vector) == STRSXP)
@@ -1838,14 +1887,14 @@ static void vector2buff(SEXP vector, LocalParseData *d)
                 }
             if (allNA && (d->opts & S_COMPAT))
             {
-                surround = TRUE;
                 print2buff("as.character(", d);
+                surround = TRUE;
             }
         }
         else if (TYPEOF(vector) == RAWSXP)
         {
-            surround = TRUE;
             print2buff("as.raw(", d);
+            surround = TRUE;
         }
         if (need_c)
             print2buff("c(", d);
