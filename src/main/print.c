@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2000-2017	The R Core Team.
+ *  Copyright (C) 2000-2018	The R Core Team.
  *  Copyright (C) 1995-1998	Robert Gentleman and Ross Ihaka.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -749,7 +749,7 @@ static void PrintSpecial(SEXP s)
     {
         SEXP t;
         PROTECT(s2);
-        t = deparse1(s2, 0, DEFAULTDEPARSE);
+        t = deparse1m(s2, 0, DEFAULTDEPARSE);   // or deparse1() ?
         Rprintf("%s ", CHAR(STRING_ELT(t, 0))); /* translated */
         Rprintf(".Primitive(\"%s\")\n", PRIMNAME(s));
         UNPROTECT(1);
@@ -801,9 +801,9 @@ void attribute_hidden PrintValueRec(SEXP s, SEXP env)
     case NILSXP:
         Rprintf("NULL\n");
         break;
-    case SYMSXP: /* Use deparse here to handle backtick quotification
-                  * of "weird names" */
-        t = deparse1(s, 0, SIMPLEDEPARSE);
+    case SYMSXP:                                 /* Use deparse here to handle backtick quotification
+                                                  * of "weird names" */
+        t = deparse1(s, 0, SIMPLEDEPARSE);       // TODO ? rather deparse1m()
         Rprintf("%s\n", CHAR(STRING_ELT(t, 0))); /* translated */
         break;
     case SPECIALSXP:
