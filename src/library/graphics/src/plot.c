@@ -838,7 +838,7 @@ SEXP C_axis(SEXP args)
 {
     /* axis(side, at, labels, tick, line, pos,
             outer, font, lty, lwd, lwd.ticks, col, col.ticks,
-        hadj, padj, ...)
+        hadj, padj, gap.axis, ...)
     */
     pGEDevDesc dd = GEcurrentDevice();
 
@@ -847,7 +847,7 @@ SEXP C_axis(SEXP args)
     /* the correct arity, but it doesn't hurt to be defensive. */
 
     args = CDR(args);
-    if (length(args) < 15)
+    if (length(args) < 16)
         error(_("too few arguments"));
     GCheckState(dd);
 
@@ -860,6 +860,7 @@ SEXP C_axis(SEXP args)
     int side = asInteger(CAR(args));
     if (side < 1 || side > 4)
         error(_("invalid axis number %d"), side);
+    Rboolean x_axis = (side == 1 || side == 3);
     args = CDR(args);
 
     /* Required argument: "at" */
@@ -962,6 +963,12 @@ SEXP C_axis(SEXP args)
     int npadj = length(padj);
     if (npadj <= 0)
         error(_("zero-length '%s' specified"), "padj");
+    args = CDR(args);
+
+    /* Optional argument: "gap.axis" */
+    if (length(CAR(args)) != 1)
+        error(_("'gap.axis' must be of length one"));
+    double gap = asReal(CAR(args));
 
     /* Now we process all the remaining inline par values:
        we need to do it now as x/yaxp are retrieved next.
@@ -975,16 +982,27 @@ SEXP C_axis(SEXP args)
     gpptr(dd)->yaxp[1] = dpptr(dd)->yaxp[1];
     gpptr(dd)->yaxp[2] = dpptr(dd)->yaxp[2];
     ProcessInlinePars(args, dd);
+    /* Notably, the axis-labels-only relevant
+        R's par()     C code below
+       -----------    -------------------
+       "font.axis" => gpptr(dd)->fontaxis
+       "cex.axis"  => gpptr(dd)->cexaxis
+       "col.axis"  => gpptr(dd)->colaxis
+    */
+
+    Rboolean perpendicular =
+        x_axis ? (gpptr(dd)->las == 2 || gpptr(dd)->las == 3) : (gpptr(dd)->las == 1 || gpptr(dd)->las == 2);
+    if (ISNAN(gap)) // default
+        gap = perpendicular ? 0.25 : 1.0;
+    else if (!R_FINITE(gap))
+        error(_("'gap.axis' must be NA or a finite number"));
 
     /* Retrieve relevant "par" values. */
-
     double axp[3], usr[2];
     Rboolean logflag = FALSE;
     int nint = 0;
-    switch (side)
+    if (x_axis)
     {
-    case 1:
-    case 3:
         axp[0] = gpptr(dd)->xaxp[0];
         axp[1] = gpptr(dd)->xaxp[1];
         axp[2] = gpptr(dd)->xaxp[2];
@@ -992,9 +1010,9 @@ SEXP C_axis(SEXP args)
         usr[1] = dpptr(dd)->usr[1];
         logflag = dpptr(dd)->xlog;
         nint = dpptr(dd)->lab[0];
-        break;
-    case 2:
-    case 4:
+    }
+    else
+    { // y axis
         axp[0] = gpptr(dd)->yaxp[0];
         axp[1] = gpptr(dd)->yaxp[1];
         axp[2] = gpptr(dd)->yaxp[2];
@@ -1002,7 +1020,6 @@ SEXP C_axis(SEXP args)
         usr[1] = dpptr(dd)->usr[3];
         logflag = dpptr(dd)->ylog;
         nint = dpptr(dd)->lab[1];
-        break;
     }
 
     /* Deferred processing */
@@ -1045,6 +1062,9 @@ SEXP C_axis(SEXP args)
         }
         if (length(at) != length(lab))
             error(_("'at' and 'labels' lengths differ, %d != %d"), length(at), length(lab));
+
+        gpptr(dd)->font = (font == NA_INTEGER) ? gpptr(dd)->fontaxis : font;
+        gpptr(dd)->cex = gpptr(dd)->cexbase * gpptr(dd)->cexaxis;
     }
     PROTECT(lab);
 
@@ -1068,14 +1088,15 @@ SEXP C_axis(SEXP args)
 
     /* Ok, all systems are "GO".  Let's get to it. */
 #ifdef DEBUG_axis
-    REprintf("C_axis(side=%d): n=%d finite 'at' locations = (%g <= .. <= %g):\n", side, n, REAL(at)[0],
-             REAL(at)[n - 1]);
+    REprintf("C_axis(side=%d): n=%d finite 'at' locations = (%g <= .. <= %g);\n"
+             "       x_ax=%s, las=%d, perpendicular=%s, gap = %g,\n",
+             side, n, REAL(at)[0], REAL(at)[n - 1], x_axis ? "TRUE" : "FALSE", gpptr(dd)->las,
+             perpendicular ? "TRUE" : "FALSE", gap);
 #endif
     /* At this point we know the value of "xaxt" and "yaxt",
      * so we test to see whether the relevant one is "n".
      * If it is, we just bail out at this point. */
-    if ((n == 0) || ((side == 1 || side == 3) && gpptr(dd)->xaxt == 'n') ||
-        ((side == 2 || side == 4) && gpptr(dd)->yaxt == 'n'))
+    if ((n == 0) || (x_axis && gpptr(dd)->xaxt == 'n') || (!x_axis && gpptr(dd)->yaxt == 'n'))
     {
         GRestorePars(dd);
         UNPROTECT(4);
@@ -1084,16 +1105,12 @@ SEXP C_axis(SEXP args)
 
     gpptr(dd)->lty = lty;
     gpptr(dd)->lwd = lwd;
-    gpptr(dd)->font = (font == NA_INTEGER) ? gpptr(dd)->fontaxis : font;
-    gpptr(dd)->cex = gpptr(dd)->cexbase * gpptr(dd)->cexaxis;
 
     double low, high, limits[2];
     /* Draw the axis */
     GMode(1, dd);
-    switch (side)
-    {
-    case 1: //--- x-axis -- horizontal ==========================================
-    case 3: {
+    if (x_axis)
+    { //--- x-axis -- horizontal ======================================
         /* First set the clipping limits */
         getxlimits(limits, dd);
         /* Now override par("xpd") and force clipping to device region. */
@@ -1177,11 +1194,11 @@ SEXP C_axis(SEXP args)
 
         if (dolabels)
         { // Tickmark labels. ------------------------------------
-            Rboolean perpendicular = gpptr(dd)->las == 2 || gpptr(dd)->las == 3;
-            double axis_lab, // FIXME gap: x|y distance depending on perpendicular
-                gap = GStrWidth("m", CE_ANY, NFC, dd), tlast = -1.0;
+            double axis_lab, tlast = -1.0;
+            gap *= (perpendicular ? GConvertXUnits(GStrHeight("m", CE_ANY, DEVICE, dd), DEVICE, NFC, dd)
+                                  : GStrWidth("m", CE_ANY, NFC, dd));
 #ifdef DEBUG_axis
-            REprintf(" gap=%g%s\n", gap, perpendicular ? ", perpendicular=TRUE" : "");
+            REprintf(" gap=%g\n", gap);
 #endif
             gpptr(dd)->col = gpptr(dd)->colaxis;
             gpptr(dd)->adj = R_FINITE(hadj) ? hadj : (perpendicular ? ((side == 1) ? 1 : 0) : 0.5);
@@ -1221,7 +1238,6 @@ SEXP C_axis(SEXP args)
                     continue;
                 double padjval = REAL(padj)[i % npadj];
                 padjval = ComputePAdjValue(padjval, side, gpptr(dd)->las);
-                double temp = GConvertX(x, USER, NFC, dd);
                 /* Clip tick labels to user coordinates. */
                 if (low < x && x < high)
                 {
@@ -1236,15 +1252,16 @@ SEXP C_axis(SEXP args)
                         {
                             const char *ss = CHAR(label);
                             double // NFC coord
-                                labw = GStrWidth(ss, getCharCE(label), NFC, dd),
+                                temp = GConvertX(x, USER, NFC, dd),
+                                labw = (perpendicular ? GConvertXUnits(GStrHeight(ss, getCharCE(label), DEVICE, dd),
+                                                                       DEVICE, NFC, dd)
+                                                      : GStrWidth(ss, getCharCE(label), NFC, dd)),
                                 tnew = temp - 0.5 * labw;
-                            /* TODO: Check room for perpendicular labels. */
 #ifdef DEBUG_axis
-                            REprintf("tnew-tlast== %g-%g %s gap=%g\n", tnew, tlast, (tnew - tlast >= gap) ? ">=" : "<",
-                                     gap);
+                            REprintf("tnew-tlast = %9g-%9g=%9g %2s gap\n", tnew, tlast, tnew - tlast,
+                                     (tnew - tlast >= gap) ? ">=" : "<");
 #endif
-                            if (perpendicular || // <<- always draw perpendicular labels
-                                tnew - tlast >= gap)
+                            if (tnew - tlast >= gap)
                             {
                                 GMtext(ss, getCharCE(label), side, axis_lab, 0, x, gpptr(dd)->las, padjval, dd);
                                 tlast = temp + 0.5 * labw; // == tnew + labw
@@ -1254,10 +1271,9 @@ SEXP C_axis(SEXP args)
                 }
             }
         } // if(dolabels)
-        break;
     }
-    case 2: //--- y-axis -- vertical ============================================
-    case 4: {
+    else
+    { //--- y-axis -- vertical =============================================
         /* First set the clipping limits */
         getylimits(limits, dd);
         /* Now override par("xpd") and force clipping to device region. */
@@ -1340,11 +1356,11 @@ SEXP C_axis(SEXP args)
         }
         if (dolabels)
         { // Tickmark labels. ------------------------------------
-            Rboolean perpendicular = gpptr(dd)->las == 1 || gpptr(dd)->las == 2;
-            double axis_lab, // FIXME gap: x|y distance depending on perpendicular
-                gap = GConvertYUnits(GStrWidth("m", CE_ANY, DEVICE, dd), DEVICE, NFC, dd), tlast = -1.0;
+            double axis_lab, tlast = -1.0;
+            gap *= (perpendicular ? GStrHeight("m", CE_ANY, NFC, dd)
+                                  : GConvertYUnits(GStrWidth("m", CE_ANY, DEVICE, dd), DEVICE, NFC, dd));
 #ifdef DEBUG_axis
-            REprintf(" gap=%g%s\n", gap, perpendicular ? ", perpendicular=TRUE" : "");
+            REprintf(" gap=%g\n", gap);
 #endif
             gpptr(dd)->col = gpptr(dd)->colaxis;
             gpptr(dd)->adj = R_FINITE(hadj) ? hadj : (perpendicular ? ((side == 2) ? 1 : 0) : 0.5);
@@ -1384,7 +1400,6 @@ SEXP C_axis(SEXP args)
                     continue;
                 double padjval = REAL(padj)[i % npadj];
                 padjval = ComputePAdjValue(padjval, side, gpptr(dd)->las);
-                double temp = GConvertY(y, USER, NFC, dd);
                 /* Clip tick labels to user coordinates. */
                 if (low < y && y < high)
                 {
@@ -1399,15 +1414,16 @@ SEXP C_axis(SEXP args)
                         {
                             const char *ss = CHAR(label);
                             double // NFC coord
-                                labw = GConvertYUnits(GStrWidth(ss, getCharCE(label), DEVICE, dd), DEVICE, NFC, dd),
+                                temp = GConvertY(y, USER, NFC, dd),
+                                labw = (perpendicular ? GStrHeight(ss, getCharCE(label), NFC, dd)
+                                                      : GConvertYUnits(GStrWidth(ss, getCharCE(label), DEVICE, dd),
+                                                                       DEVICE, NFC, dd)),
                                 tnew = temp - 0.5 * labw;
-                            /* TODO: Check room for perpendicular labels. */
 #ifdef DEBUG_axis
-                            REprintf("tnew-tlast== %g-%g %s gap=%g\n", tnew, tlast, (tnew - tlast >= gap) ? ">=" : "<",
-                                     gap);
+                            REprintf("tnew-tlast = %9g-%9g=%9g %2s gap\n", tnew, tlast, tnew - tlast,
+                                     (tnew - tlast >= gap) ? ">=" : "<");
 #endif
-                            if (perpendicular || // <<- always draw perpendicular labels
-                                tnew - tlast >= gap)
+                            if (tnew - tlast >= gap)
                             {
                                 GMtext(ss, getCharCE(label), side, axis_lab, 0, y, gpptr(dd)->las, padjval, dd);
                                 tlast = temp + 0.5 * labw; // == tnew + labw
@@ -1417,9 +1433,7 @@ SEXP C_axis(SEXP args)
                 }
             }
         } // if(dolabels)
-        break;
-    } // side case 2, 4
-    } /* end  switch(side, ..) */
+    }     // else (y - axis)
     GMode(0, dd);
     GRestorePars(dd);
     UNPROTECT(4); /* lab, at, lab, padj again */
