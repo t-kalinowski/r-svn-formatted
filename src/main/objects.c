@@ -424,7 +424,7 @@ static SEXP dispatchMethod(SEXP op, SEXP sxp, SEXP dotClass, RCNTXT *cptr, SEXP 
         SET_RSTEP(sxp, 1);
     }
 
-    SEXP newcall = PROTECT(duplicate(cptr->call));
+    SEXP newcall = PROTECT(shallow_duplicate(cptr->call));
     SETCAR(newcall, method);
     R_GlobalContext->callflag = CTXT_GENERIC;
     SEXP matchedarg = PROTECT(cptr->promargs); /* ? is this PROTECT needed ? */
