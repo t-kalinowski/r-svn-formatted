@@ -1158,9 +1158,9 @@ int setupui(void)
     setlocale(LC_CTYPE, ""); /* necessary in case next fails to set
                 a valid locale */
     if ((p = getenv("LC_ALL")))
-        strcpy(Rlocale, p);
+        strncpy(Rlocale, p, sizeof(Rlocale) - 1);
     if ((p = getenv("LC_CTYPE")))
-        strcpy(Rlocale, p);
+        strncpy(Rlocale, p, sizeof(Rlocale) - 1);
     if (strcmp(Rlocale, "C") == 0)
         strcpy(Rlocale, "en");
     setlocale(LC_CTYPE, Rlocale);
