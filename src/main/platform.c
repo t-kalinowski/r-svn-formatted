@@ -1913,7 +1913,9 @@ SEXP attribute_hidden do_setlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
         if ((p = setlocale(LC_CTYPE, l)))
         {
             setlocale(LC_COLLATE, l);
-            resetICUcollator();
+            /* disable the collator when setting to C to take
+               precedence over R_ICU_LOCALE */
+            resetICUcollator(!strcmp(l, "C"));
             setlocale(LC_MONETARY, l);
             setlocale(LC_TIME, l);
             dt_invalidate_locale();
@@ -1922,11 +1924,15 @@ SEXP attribute_hidden do_setlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         break;
     }
-    case 2:
+    case 2: {
+        const char *l = CHAR(STRING_ELT(locale, 0));
         cat = LC_COLLATE;
-        p = setlocale(cat, CHAR(STRING_ELT(locale, 0)));
-        resetICUcollator();
+        p = setlocale(cat, l);
+        /* disable the collator when setting to C to take
+           precedence over R_ICU_LOCALE */
+        resetICUcollator(!strcmp(l, "C"));
         break;
+    }
     case 3:
         cat = LC_CTYPE;
         p = setlocale(cat, CHAR(STRING_ELT(locale, 0)));
