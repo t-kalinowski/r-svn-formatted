@@ -117,8 +117,8 @@ static Rboolean BM_Open(pDevDesc dd, pX11Desc xd, int width, int height)
 #ifdef HAVE_CAIRO_SVG
     else if (xd->type == SVG)
     {
-        snprintf(buf, PATH_MAX, xd->filename, xd->npages + 1);
-        xd->cs = cairo_svg_surface_create(R_ExpandFileName(buf), (double)xd->windowWidth, (double)xd->windowHeight);
+        snprintf(buf, PATH_MAX, R_CAIRO_FN(xd), xd->npages + 1);
+        xd->cs = cairo_svg_surface_create(buf, (double)xd->windowWidth, (double)xd->windowHeight);
         res = cairo_surface_status(xd->cs);
         if (res != CAIRO_STATUS_SUCCESS)
         {
@@ -141,8 +141,8 @@ static Rboolean BM_Open(pDevDesc dd, pX11Desc xd, int width, int height)
 #ifdef HAVE_CAIRO_PDF
     else if (xd->type == PDF)
     {
-        snprintf(buf, PATH_MAX, xd->filename, xd->npages + 1);
-        xd->cs = cairo_pdf_surface_create(R_ExpandFileName(buf), (double)xd->windowWidth, (double)xd->windowHeight);
+        snprintf(buf, PATH_MAX, R_CAIRO_FN(xd), xd->npages + 1);
+        xd->cs = cairo_pdf_surface_create(buf, (double)xd->windowWidth, (double)xd->windowHeight);
         res = cairo_surface_status(xd->cs);
         if (res != CAIRO_STATUS_SUCCESS)
         {
@@ -163,8 +163,8 @@ static Rboolean BM_Open(pDevDesc dd, pX11Desc xd, int width, int height)
 #ifdef HAVE_CAIRO_PS
     else if (xd->type == PS)
     {
-        snprintf(buf, PATH_MAX, xd->filename, xd->npages + 1);
-        xd->cs = cairo_ps_surface_create(R_ExpandFileName(buf), (double)xd->windowWidth, (double)xd->windowHeight);
+        snprintf(buf, PATH_MAX, R_CAIRO_FN(xd), xd->npages + 1);
+        xd->cs = cairo_ps_surface_create(buf, (double)xd->windowWidth, (double)xd->windowHeight);
         res = cairo_surface_status(xd->cs);
         if (res != CAIRO_STATUS_SUCCESS)
         {
@@ -206,7 +206,7 @@ static void BM_Close_bitmap(pX11Desc xd)
     if (xd->type == PNGdirect)
     {
         char buf[PATH_MAX];
-        snprintf(buf, PATH_MAX, xd->filename, xd->npages);
+        snprintf(buf, PATH_MAX, R_CAIRO_FN(xd), xd->npages);
         cairo_surface_write_to_png(xd->cs, buf);
         return;
     }
@@ -229,7 +229,8 @@ static void BM_Close_bitmap(pX11Desc xd)
     {
         char buf[PATH_MAX];
         snprintf(buf, PATH_MAX, xd->filename, xd->npages);
-        R_SaveAsTIFF(xi, xd->windowWidth, xd->windowHeight, Cbitgp, 0, R_ExpandFileName(buf), xd->res_dpi, xd->quality);
+        /* filename in native encoding on Windows */
+        R_SaveAsTIFF(xi, xd->windowWidth, xd->windowHeight, Cbitgp, 0, buf, xd->res_dpi, xd->quality);
     }
 }
 
@@ -250,7 +251,8 @@ static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
                 fclose(xd->fp);
         }
         snprintf(buf, PATH_MAX, xd->filename, xd->npages);
-        xd->fp = R_fopen(R_ExpandFileName(buf), "wb");
+        /* filename in native encoding on Windows */
+        xd->fp = R_fopen(buf, "wb");
         if (!xd->fp)
             error(_("could not open file '%s'"), buf);
     }
@@ -273,9 +275,8 @@ static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
             {
                 cairo_surface_destroy(xd->cs);
                 cairo_destroy(xd->cc);
-                snprintf(buf, PATH_MAX, xd->filename, xd->npages);
-                xd->cs =
-                    cairo_svg_surface_create(R_ExpandFileName(buf), (double)xd->windowWidth, (double)xd->windowHeight);
+                snprintf(buf, PATH_MAX, R_CAIRO_FN(xd), xd->npages);
+                xd->cs = cairo_svg_surface_create(buf, (double)xd->windowWidth, (double)xd->windowHeight);
                 res = cairo_surface_status(xd->cs);
                 if (res != CAIRO_STATUS_SUCCESS)
                 {
@@ -305,9 +306,8 @@ static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
             {
                 cairo_surface_destroy(xd->cs);
                 cairo_destroy(xd->cc);
-                snprintf(buf, PATH_MAX, xd->filename, xd->npages);
-                xd->cs =
-                    cairo_pdf_surface_create(R_ExpandFileName(buf), (double)xd->windowWidth, (double)xd->windowHeight);
+                snprintf(buf, PATH_MAX, R_CAIRO_FN(xd), xd->npages);
+                xd->cs = cairo_pdf_surface_create(buf, (double)xd->windowWidth, (double)xd->windowHeight);
                 res = cairo_surface_status(xd->cs);
                 if (res != CAIRO_STATUS_SUCCESS)
                 {
@@ -335,9 +335,8 @@ static void BM_NewPage(const pGEcontext gc, pDevDesc dd)
             {
                 cairo_surface_destroy(xd->cs);
                 cairo_destroy(xd->cc);
-                snprintf(buf, PATH_MAX, xd->filename, xd->npages);
-                xd->cs =
-                    cairo_ps_surface_create(R_ExpandFileName(buf), (double)xd->windowWidth, (double)xd->windowHeight);
+                snprintf(buf, PATH_MAX, R_CAIRO_FN(xd), xd->npages);
+                xd->cs = cairo_ps_surface_create(buf, (double)xd->windowWidth, (double)xd->windowHeight);
                 res = cairo_surface_status(xd->cs);
                 if (res != CAIRO_STATUS_SUCCESS)
                 {
@@ -397,8 +396,8 @@ static void BM_Close(pDevDesc dd)
     free(xd);
 }
 
-static Rboolean BMDeviceDriver(pDevDesc dd, int kind, const char *filename, int quality, int width, int height, int ps,
-                               int bg, int res, int antialias, const char *family, double dpi)
+static Rboolean BMDeviceDriver(pDevDesc dd, int kind, SEXP filename, int quality, int width, int height, int ps, int bg,
+                               int res, int antialias, const char *family, double dpi)
 {
     pX11Desc xd;
     int res0 = (res > 0) ? res : 72;
@@ -407,8 +406,12 @@ static Rboolean BMDeviceDriver(pDevDesc dd, int kind, const char *filename, int 
     /* allocate new device description */
     if (!(xd = (pX11Desc)calloc(1, sizeof(X11Desc))))
         return FALSE;
-    strncpy(xd->filename, filename, PATH_MAX);
+    strncpy(xd->filename, R_ExpandFileName(translateChar(filename)), PATH_MAX);
     xd->filename[PATH_MAX - 1] = '\0';
+#ifdef R_CAIRO_UTF8_FILENAMES
+    strncpy(xd->filenameUTF8, R_ExpandFileNameUTF8(translateCharUTF8(filename)), PATH_MAX);
+    xd->filenameUTF8[PATH_MAX - 1] = '\0';
+#endif
     xd->quality = quality;
     xd->windowWidth = width;
     xd->windowHeight = height;
@@ -549,15 +552,16 @@ SEXP in_Cairo(SEXP args)
 {
     pGEDevDesc gdd;
     SEXP sc;
-    const char *filename, *family;
+    const char *family;
     int type, quality, width, height, pointsize, bgcolor, res, antialias;
     double dpi;
+    SEXP filename;
     const void *vmax = vmaxget();
 
     args = CDR(args); /* skip entry point name */
     if (!isString(CAR(args)) || LENGTH(CAR(args)) < 1)
         error(_("invalid '%s' argument"), "filename");
-    filename = translateChar(STRING_ELT(CAR(args), 0));
+    filename = STRING_ELT(CAR(args), 0);
     args = CDR(args);
     type = asInteger(CAR(args));
     if (type == NA_INTEGER || type <= 0)
@@ -613,7 +617,9 @@ SEXP in_Cairo(SEXP args)
             error(_("unable to start device '%s'"), devtable[type].name);
         }
         gdd = GEcreateDevDesc(dev);
-        GEaddDevice2f(gdd, devtable[type].name, filename);
+        pX11Desc xd = (pX11Desc)dev->deviceSpecific;
+        /* filename in native encoding on Windows */
+        GEaddDevice2f(gdd, devtable[type].name, xd->filename);
     }
     END_SUSPEND_INTERRUPTS;
 
