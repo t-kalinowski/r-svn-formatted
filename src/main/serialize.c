@@ -1098,8 +1098,19 @@ static void WriteItem(SEXP s, SEXP ref_table, R_outpstream_t stream)
     int i;
     SEXP t;
 
-    if (R_compile_pkgs && TYPEOF(s) == CLOSXP && TYPEOF(BODY(s)) != BCODESXP && !R_disable_bytecode)
+    if (R_compile_pkgs && TYPEOF(s) == CLOSXP && TYPEOF(BODY(s)) != BCODESXP && !R_disable_bytecode &&
+        (!IS_S4_OBJECT(s) || (!inherits(s, "refMethodDef") && !inherits(s, "defaultBindingFunction"))))
     {
+
+        /* Do not compile reference class methods in their generators, because
+           the byte-code is dropped as soon as the method is installed into a
+           new environment. This is a performance optimization but it also
+           prevents byte-compiler warnings about no visible binding for super
+           assignment to a class field.
+
+           Do not compile default binding functions, because the byte-code is
+           dropped as fields are set in constructors (just an optimization).
+        */
 
         SEXP new_s;
         R_compile_pkgs = FALSE;
