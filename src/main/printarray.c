@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996	Robert Gentleman and Ross Ihaka
- *  Copyright (C) 2000--2016	The R Core Team
+ *  Copyright (C) 2000--2018	The R Core Team
  *  Copyright (C) 2001--2012	The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -228,9 +228,9 @@ static void printLogicalMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP
     _PRINT_INIT_rl_rn;
     const int *x = LOGICAL_RO(sx) + offset;
 
-    _COMPUTE_W_(formatLogical(&x[j * r], (R_xlen_t)r, &w[j]));
+    _COMPUTE_W_(formatLogical(&x[j * (R_xlen_t)r], (R_xlen_t)r, &w[j]));
 
-    _PRINT_MATRIX_(, STD_ColumnLabels, Rprintf("%s", EncodeLogical(x[i + j * r], w[j])));
+    _PRINT_MATRIX_(, STD_ColumnLabels, Rprintf("%s", EncodeLogical(x[i + j * (R_xlen_t)r], w[j])));
 }
 
 static void printIntegerMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP rl, SEXP cl, const char *rn,
@@ -239,9 +239,9 @@ static void printIntegerMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP
     _PRINT_INIT_rl_rn;
     const int *x = INTEGER_RO(sx) + offset;
 
-    _COMPUTE_W_(formatInteger(&x[j * r], (R_xlen_t)r, &w[j]));
+    _COMPUTE_W_(formatInteger(&x[j * (R_xlen_t)r], (R_xlen_t)r, &w[j]));
 
-    _PRINT_MATRIX_(, STD_ColumnLabels, Rprintf("%s", EncodeInteger(x[i + j * r], w[j])));
+    _PRINT_MATRIX_(, STD_ColumnLabels, Rprintf("%s", EncodeInteger(x[i + j * (R_xlen_t)r], w[j])));
 }
 
 static void printRealMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP rl, SEXP cl, const char *rn,
@@ -251,9 +251,9 @@ static void printRealMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP rl
     const double *x = REAL_RO(sx) + offset;
     int *d = (int *)R_alloc(c, sizeof(int)), *e = (int *)R_alloc(c, sizeof(int));
 
-    _COMPUTE_W_(formatReal(&x[j * r], (R_xlen_t)r, &w[j], &d[j], &e[j], 0));
+    _COMPUTE_W_(formatReal(&x[j * (R_xlen_t)r], (R_xlen_t)r, &w[j], &d[j], &e[j], 0));
 
-    _PRINT_MATRIX_(, STD_ColumnLabels, Rprintf("%s", EncodeReal0(x[i + j * r], w[j], d[j], e[j], OutDec)));
+    _PRINT_MATRIX_(, STD_ColumnLabels, Rprintf("%s", EncodeReal0(x[i + j * (R_xlen_t)r], w[j], d[j], e[j], OutDec)));
 }
 
 static void printComplexMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP rl, SEXP cl, const char *rn,
@@ -266,16 +266,18 @@ static void printComplexMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP
         *ei = (int *)R_alloc(c, sizeof(int)), *wi = (int *)R_alloc(c, sizeof(int));
 
     /* Determine the column widths */
-    _COMPUTE_W_(formatComplex(&x[j * r], (R_xlen_t)r, &wr[j], &dr[j], &er[j], &wi[j], &di[j], &ei[j], 0);
+    _COMPUTE_W_(formatComplex(&x[j * (R_xlen_t)r], (R_xlen_t)r, &wr[j], &dr[j], &er[j], &wi[j], &di[j], &ei[j], 0);
                 w[j] = wr[j] + wi[j] + 2);
 
-    _PRINT_MATRIX_(
-        , STD_ColumnLabels,
-        if (ISNA(x[i + j * r].r) || ISNA(x[i + j * r].i)) Rprintf("%s", EncodeReal0(NA_REAL, w[j], 0, 0, OutDec));
-        else
-        /* Note that the label printing may modify w[j], so wr[j] is not
-           necessarily still valid, and we use w[j] - wi[j] - 2  */
-        Rprintf("%s", EncodeComplex(x[i + j * r], w[j] - wi[j] - 2, dr[j], er[j], wi[j], di[j], ei[j], OutDec)))
+    _PRINT_MATRIX_(, STD_ColumnLabels,
+                   if (ISNA(x[i + j * (R_xlen_t)r].r) || ISNA(x[i + j * (R_xlen_t)r].i))
+
+                       Rprintf("%s", EncodeReal0(NA_REAL, w[j], 0, 0, OutDec));
+                   else
+                   /* Note that the label printing may modify w[j], so wr[j] is not
+                      necessarily still valid, and we use w[j] - wi[j] - 2  */
+                   Rprintf("%s", EncodeComplex(x[i + j * (R_xlen_t)r], w[j] - wi[j] - 2, dr[j], er[j], wi[j], di[j],
+                                               ei[j], OutDec)))
 }
 
 static void printStringMatrix(SEXP sx, int offset, int r_pr, int r, int c, int quote, int right, SEXP rl, SEXP cl,
@@ -284,7 +286,7 @@ static void printStringMatrix(SEXP sx, int offset, int r_pr, int r, int c, int q
     _PRINT_INIT_rl_rn;
     const SEXP *x = STRING_PTR_RO(sx) + offset;
 
-    _COMPUTE_W2_(formatString(&x[j * r], (R_xlen_t)r, &w[j], quote), );
+    _COMPUTE_W2_(formatString(&x[j * (R_xlen_t)r], (R_xlen_t)r, &w[j], quote), );
 
     _PRINT_MATRIX_(
         +R_print.gap,
@@ -297,7 +299,7 @@ static void printStringMatrix(SEXP sx, int offset, int r_pr, int r, int c, int q
                 LeftMatrixColumnLabel(cl, j, w[j]);
         },
         /* ENCODE_I = */
-        Rprintf("%*s%s", R_print.gap, "", EncodeString(x[i + j * r], w[j], quote, right)));
+        Rprintf("%*s%s", R_print.gap, "", EncodeString(x[i + j * (R_xlen_t)r], w[j], quote, right)));
 }
 
 static void printRawMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP rl, SEXP cl, const char *rn,
@@ -306,9 +308,9 @@ static void printRawMatrix(SEXP sx, int offset, int r_pr, int r, int c, SEXP rl,
     _PRINT_INIT_rl_rn;
     const Rbyte *x = RAW_RO(sx) + offset;
 
-    _COMPUTE_W_(formatRaw(&x[j * r], (R_xlen_t)r, &w[j]))
+    _COMPUTE_W_(formatRaw(&x[j * (R_xlen_t)r], (R_xlen_t)r, &w[j]))
 
-    _PRINT_MATRIX_(, STD_ColumnLabels, Rprintf("%*s%s", w[j] - 2, "", EncodeRaw(x[i + j * r], "")));
+    _PRINT_MATRIX_(, STD_ColumnLabels, Rprintf("%*s%s", w[j] - 2, "", EncodeRaw(x[i + j * (R_xlen_t)r], "")));
 }
 
 /* rm and cn are found by GetMatrixDimnames so in native encoding */
