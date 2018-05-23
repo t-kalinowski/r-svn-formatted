@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 1998-2018   The R Core Team.
+ *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -65,6 +65,8 @@
  *	"paper.size"		./devPS.c
 
  *	"timeout"		./connections.c
+
+ *      "deparse.max.lines"     ./deparse.c (& PrintCall() in ./eval.c, ./main.c
 
  *	"check.bounds"
  *	"error"
