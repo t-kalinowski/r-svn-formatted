@@ -4563,10 +4563,6 @@ SEXP attribute_hidden do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!con->canread)
             error(_("cannot read from this connection"));
     }
-    if (!isRaw && con->text && (con->buff || con->nPushBack >= 0 || con->inconv))
-
-        /* could be turned into runtime error */
-        warning(_("text connection used with %s(), results may be incorrect"), "readBin");
     if (!strcmp(what, "character"))
     {
         SEXP onechar;
@@ -4908,10 +4904,6 @@ SEXP attribute_hidden do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!con->canwrite)
             error(_("cannot write to this connection"));
     }
-
-    if (!isRaw && con->text && con->outconv)
-        /* could be turned into runtime error */
-        warning(_("text connection used with %s(), results may be incorrect"), "writeBin");
 
     if (TYPEOF(object) == STRSXP)
     {
