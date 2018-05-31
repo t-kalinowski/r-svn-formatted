@@ -27,8 +27,7 @@
  *  PrintValue, R_PV are similar to auto-printing.
  *
  *  do_printdefault
- *	-> PrintDefaults
- *	-> CustomPrintValue
+ *	    -> PrintObject (if S4 dispatch needed)
  *	    -> PrintValueRec
  *		-> __ITSELF__  (recursion)
  *		-> PrintGenericVector	-> PrintValueRec  (recursion)
@@ -77,6 +76,7 @@ R_print_par_t R_print;
 static void printAttributes(SEXP, SEXP, Rboolean);
 static void PrintSpecial(SEXP);
 static void PrintLanguageEtc(SEXP, Rboolean, Rboolean);
+static void PrintObject(SEXP, SEXP);
 
 #define TAGBUFLEN 256
 #define TAGBUFLEN0 TAGBUFLEN + 6
@@ -237,7 +237,6 @@ SEXP attribute_hidden do_printdefault(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, naprint;
     int tryS4;
-    Rboolean callShow = FALSE;
 
     checkArity(op, args);
     PrintDefaults();
@@ -302,48 +301,91 @@ SEXP attribute_hidden do_printdefault(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (tryS4 == NA_LOGICAL)
         error(_("invalid 'tryS4' internal argument"));
 
+    tagbuf[0] = '\0';
     if (tryS4 && IS_S4_OBJECT(x) && isMethodsDispatchOn())
-        callShow = TRUE;
-
-    if (callShow)
-    {
-        /* we need to get show from the methods namespace if it is
-           not visible on the search path. */
-        SEXP call, showS;
-        showS = findVar(install("show"), rho);
-        if (showS == R_UnboundValue)
-        {
-            SEXP methodsNS = R_FindNamespace(mkString("methods"));
-            if (methodsNS == R_UnboundValue)
-                error("missing methods namespace: this should not happen");
-            PROTECT(methodsNS);
-            showS = findVarInFrame3(methodsNS, install("show"), TRUE);
-            UNPROTECT(1);
-            if (showS == R_UnboundValue)
-                error("missing show() in methods namespace: this should not happen");
-        }
-        PROTECT(call = lang2(showS, x));
-        eval(call, rho);
-        UNPROTECT(1);
-    }
+        PrintObject(x, rho);
     else
-    {
-        CustomPrintValue(x, rho);
-    }
+        PrintValueRec(x, rho);
 
     PrintDefaults(); /* reset, as na.print etc may have been set */
     return x;
 } /* do_printdefault */
 
-/* FIXME : We need a general mechanism for "rendering" symbols. */
-/* It should make sure that it quotes when there are special */
-/* characters and also take care of ansi escapes properly. */
+/*
+  NOTE: The S3/S4 versions do not save and restore state like
+    PrintObject() does.
+*/
+static void PrintObjectS4(SEXP s, SEXP env)
+{
+    /*
+      Note that can assume there is a loaded "methods"
+      namespace.  It is tempting to cache the value of show in
+      the namespace, but the latter could be unloaded and
+      reloaded in a session.
+    */
+    SEXP methodsNS = PROTECT(R_FindNamespace(mkString("methods")));
+    if (methodsNS == R_UnboundValue)
+        error("missing methods namespace: this should not happen");
+
+    SEXP fun = findVarInFrame3(methodsNS, install("show"), TRUE);
+    if (fun == R_UnboundValue)
+        error("missing show() in methods namespace: this should not happen");
+
+    SEXP call = PROTECT(lang2(fun, s));
+
+    eval(call, env);
+    UNPROTECT(2);
+}
+
+static void PrintObjectS3(SEXP s, SEXP env)
+{
+    /*
+      Bind value to a variable in a local environment, similar to
+      a local({ x <- <value>; print(x) }) call. This avoids
+      problems in previous approaches with value duplication and
+      evaluating the value, which might be a call object.
+    */
+    SEXP xsym = install("x");
+    SEXP mask = PROTECT(NewEnvironment(R_NilValue, R_NilValue, env));
+    defineVar(xsym, s, mask);
+
+    SEXP fun = findVar(install("print"), R_BaseNamespace);
+    SEXP call = PROTECT(lang2(fun, xsym));
+
+    eval(call, mask);
+
+    defineVar(xsym, R_NilValue, mask); /* To eliminate reference to s */
+    UNPROTECT(2);
+}
+
+static void PrintObject(SEXP s, SEXP env)
+{
+    /* Save the tagbuffer to restore indexing tags after evaluation
+       because calling into base::print() resets the buffer */
+    char save[TAGBUFLEN0];
+    strcpy(save, tagbuf);
+
+    if (isMethodsDispatchOn() && IS_S4_OBJECT(s))
+        PrintObjectS4(s, env);
+    else
+        PrintObjectS3(s, env);
+
+    strcpy(tagbuf, save);
+}
+
+static void PrintDispatch(SEXP s, SEXP env)
+{
+    if (isObject(s))
+        PrintObject(s, env);
+    else
+        PrintValueRec(s, env);
+}
 
 static void PrintGenericVector(SEXP s, SEXP env)
 {
     int i, taglen, ns, w, d, e, wr, dr, er, wi, di, ei;
-    SEXP dims, t, names, newcall, tmp;
-    char pbuf[115], *ptag, save[TAGBUFLEN0];
+    SEXP dims, t, names, tmp;
+    char pbuf[115], *ptag;
 
     ns = length(s);
     if ((dims = getAttrib(s, R_DimSymbol)) != R_NilValue && length(dims) > 1)
@@ -466,16 +508,13 @@ static void PrintGenericVector(SEXP s, SEXP env)
             printArray(t, dims, 0, Rprt_adj_left, names);
             UNPROTECT(1);
         }
-        UNPROTECT(2);
+        UNPROTECT(1);
     }
     else
     { // no dim()
         PROTECT(names = getAttrib(s, R_NamesSymbol));
         taglen = (int)strlen(tagbuf);
         ptag = tagbuf + taglen;
-        PROTECT(newcall = allocList(2));
-        SETCAR(newcall, install("print"));
-        SET_TYPEOF(newcall, LANGSXP);
 
         if (ns > 0)
         {
@@ -521,25 +560,7 @@ static void PrintGenericVector(SEXP s, SEXP env)
                         sprintf(ptag, "[[%d]]", i + 1);
                 }
                 Rprintf("%s\n", tagbuf);
-                if (isObject(VECTOR_ELT(s, i)))
-                {
-                    SEXP x = VECTOR_ELT(s, i);
-                    int nprot = 0;
-                    if (TYPEOF(x) == LANGSXP)
-                    {
-                        // quote(x)  to not accidentally evaluate it with newcall() below:
-                        x = PROTECT(lang2(R_Primitive("quote"), x));
-                        nprot++;
-                    }
-                    /* need to preserve tagbuf */
-                    strcpy(save, tagbuf);
-                    SETCADR(newcall, x);
-                    eval(newcall, env);
-                    strcpy(tagbuf, save);
-                    UNPROTECT(nprot);
-                }
-                else
-                    PrintValueRec(VECTOR_ELT(s, i), env);
+                PrintDispatch(VECTOR_ELT(s, i), env);
                 *ptag = '\0';
             }
             Rprintf("\n");
@@ -568,7 +589,7 @@ static void PrintGenericVector(SEXP s, SEXP env)
             if (className)
             {
                 Rprintf("An object of class \"%s\"\n", className);
-                UNPROTECT(2); /* newcall, names */
+                UNPROTECT(1); /* names */
                 printAttributes(s, env, TRUE);
                 vmaxset(vmax);
                 return;
@@ -581,7 +602,7 @@ static void PrintGenericVector(SEXP s, SEXP env)
             }
             vmaxset(vmax);
         }
-        UNPROTECT(2); /* newcall, names */
+        UNPROTECT(1); /* names */
     }
     printAttributes(s, env, FALSE);
 } // PrintGenericVector
@@ -591,7 +612,7 @@ static void PrintGenericVector(SEXP s, SEXP env)
 static void printList(SEXP s, SEXP env)
 {
     int i, taglen;
-    SEXP dims, dimnames, t, newcall;
+    SEXP dims, dimnames, t;
     char pbuf[101], *ptag;
     const char *rn, *cn;
 
@@ -666,9 +687,6 @@ static void printList(SEXP s, SEXP env)
         i = 1;
         taglen = (int)strlen(tagbuf);
         ptag = tagbuf + taglen;
-        PROTECT(newcall = allocList(2));
-        SETCAR(newcall, install("print"));
-        SET_TYPEOF(newcall, LANGSXP);
         while (TYPEOF(s) == LISTSXP)
         {
             if (i > 1)
@@ -702,23 +720,11 @@ static void printList(SEXP s, SEXP env)
                 else
                     sprintf(ptag, "[[%d]]", i);
             }
+
             Rprintf("%s\n", tagbuf);
-            if (isObject(CAR(s)))
-            {
-                SEXP x = CAR(s);
-                int nprot = 0;
-                if (TYPEOF(x) == LANGSXP)
-                {
-                    x = PROTECT(lang2(R_Primitive("quote"), x));
-                    nprot++;
-                }
-                SETCADR(newcall, x);
-                eval(newcall, env);
-                UNPROTECT(nprot);
-            }
-            else
-                PrintValueRec(CAR(s), env);
+            PrintDispatch(CAR(s), env);
             *ptag = '\0';
+
             s = CDR(s);
             i++;
         }
@@ -728,7 +734,6 @@ static void printList(SEXP s, SEXP env)
             PrintValueRec(s, env);
         }
         Rprintf("\n");
-        UNPROTECT(1);
     }
     printAttributes(s, env, FALSE);
 }
@@ -1002,23 +1007,7 @@ static void printAttributes(SEXP s, SEXP env, Rboolean useSlots)
             }
             if (isMethodsDispatchOn() && IS_S4_OBJECT(CAR(a)))
             {
-                SEXP s, showS;
-
-                showS = findVar(install("show"), env);
-                if (showS == R_UnboundValue)
-                {
-                    SEXP methodsNS = R_FindNamespace(mkString("methods"));
-                    if (methodsNS == R_UnboundValue)
-                        error("missing methods namespace: this should not happen");
-                    PROTECT(methodsNS);
-                    showS = findVarInFrame3(methodsNS, install("show"), TRUE);
-                    UNPROTECT(1);
-                    if (showS == R_UnboundValue)
-                        error("missing show() in methods namespace: this should not happen");
-                }
-                PROTECT(s = lang2(showS, CAR(a)));
-                eval(s, env);
-                UNPROTECT(1);
+                PrintObject(CAR(a), env);
             }
             else if (isObject(CAR(a)))
             {
@@ -1037,24 +1026,24 @@ static void printAttributes(SEXP s, SEXP env, Rboolean useSlots)
                     na_width_noquote = R_print.na_width_noquote;
                 Rprt_adj right = R_print.right;
 
-                SEXP x = CAR(a);
-                int nprot = 0;
-                if (TYPEOF(x) == LANGSXP)
-                {
-                    x = PROTECT(lang2(R_Primitive("quote"), x));
-                    nprot++;
-                }
+                /* Prevent evaluation of calls, see PrintObject() */
+                SEXP xsym = install("x");
+                SEXP mask = PROTECT(NewEnvironment(R_NilValue, R_NilValue, env));
+                defineVar(xsym, CAR(a), mask);
+
                 PROTECT(t = s = allocList(3));
-                nprot++;
                 SET_TYPEOF(s, LANGSXP);
                 SETCAR(t, install("print"));
                 t = CDR(t);
-                SETCAR(t, x);
+                SETCAR(t, xsym);
                 t = CDR(t);
                 SETCAR(t, ScalarInteger(digits));
                 SET_TAG(t, install("digits"));
-                eval(s, env);
-                UNPROTECT(nprot);
+
+                eval(s, mask);
+                defineVar(xsym, R_NilValue, mask); /* To eliminate reference to s */
+                UNPROTECT(2);
+
                 R_print.quote = quote;
                 R_print.right = right;
                 R_print.digits = digits;
@@ -1082,48 +1071,15 @@ void attribute_hidden PrintValueEnv(SEXP s, SEXP env)
     PrintDefaults();
     tagbuf[0] = '\0';
     PROTECT(s);
-    if (isObject(s) || isFunction(s))
-    {
-        /*
-          The intention here is to call show() on S4 objects, otherwise
-          print(), so S4 methods for show() have precedence over those for
-          print() to conform with the "green book", p. 332
-        */
-        SEXP call, prinfun;
-        SEXP xsym = install("x");
-        if (isMethodsDispatchOn() && IS_S4_OBJECT(s))
-        {
-            /*
-              Note that can assume there is a loaded "methods"
-              namespace.  It is tempting to cache the value of show in
-              the namespace, but the latter could be unloaded and
-              reloaded in a session.
-            */
-            SEXP methodsNS = R_FindNamespace(mkString("methods"));
-            if (methodsNS == R_UnboundValue)
-                error("missing methods namespace: this should not happen");
-            PROTECT(methodsNS);
-            prinfun = findVarInFrame3(methodsNS, install("show"), TRUE);
-            UNPROTECT(1);
-            if (prinfun == R_UnboundValue)
-                error("missing show() in methods namespace: this should not happen");
-        }
-        else /* S3 */
-            prinfun = findVar(install("print"), R_BaseNamespace);
 
-        /* Bind value to a variable in a local environment, similar to
-           a local({ x <- <value>; print(x) }) call. This avoids
-           problems in previous approaches with value duplication and
-           evaluating the value, which might be a call object. */
-        PROTECT(call = lang2(prinfun, xsym));
-        PROTECT(env = NewEnvironment(R_NilValue, R_NilValue, env));
-        defineVar(xsym, s, env);
-        eval(call, env);
-        defineVar(xsym, R_NilValue, env); /* to eliminate reference to s */
-        UNPROTECT(2);
-    }
+    /* FIXME: Functions are printed via base::print() in order to allow
+       user-defined print.function() methods. This is covered by unit
+       tests but is this needed? Why make an exception for that type? */
+    if (isFunction(s))
+        PrintObject(s, env);
     else
-        PrintValueRec(s, env);
+        PrintDispatch(s, env);
+
     UNPROTECT(1);
 }
 
