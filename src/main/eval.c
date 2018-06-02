@@ -1563,7 +1563,11 @@ static void PrintCall(SEXP call, SEXP rho)
     int old_bl = R_BrowseLines, blines = asInteger(GetOption1(install("deparse.max.lines")));
     if (blines != NA_INTEGER && blines > 0)
         R_BrowseLines = blines;
-    PrintValueRec(call, rho);
+
+    R_PrintData pars;
+    PrintInit(&pars, rho);
+    PrintValueRec(call, &pars);
+
     R_BrowseLines = old_bl;
 }
 
