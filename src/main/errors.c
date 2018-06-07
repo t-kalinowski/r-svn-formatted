@@ -1794,7 +1794,7 @@ static void vsignalError(SEXP call, const char *format, va_list ap)
             else
             {
                 /* if we are in the process of handling a C stack
-                   overflow, treat all calling handlers ar failed */
+                   overflow, treat all calling handlers as failed */
                 if (R_OldCStackLimit)
                     break;
                 SEXP hooksym, hcall, qcall;
