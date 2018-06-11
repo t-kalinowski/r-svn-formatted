@@ -311,7 +311,7 @@ static SEXP do_one(SEXP X, SEXP FUN, SEXP classes, SEXP deflt, Rboolean replace,
     /* if X is a list, recurse.  Otherwise if it matches classes call f */
     if (X == R_NilValue || isVectorList(X))
     {
-        R_xlen_t n = length(X);
+        R_xlen_t n = xlength(X);
         if (replace)
         {
             PROTECT(ans = shallow_duplicate(X));
