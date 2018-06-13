@@ -3022,7 +3022,7 @@ static SEXP R_serialize(SEXP object, SEXP icon, SEXP ascii, SEXP Sversion, SEXP 
     else
     {
         Rconnection con = getConnection(asInteger(icon));
-        R_InitConnOutPStream(&out, con, type, 0, hook, fun);
+        R_InitConnOutPStream(&out, con, type, version, hook, fun);
         R_Serialize(object, &out);
         return R_NilValue;
     }
