@@ -818,6 +818,10 @@ void R_SetWin32(Rstart Rp)
     {
         process_site_Renviron();
         process_user_Renviron();
+
+        /* allow for R_MAX_[VN]SIZE and R_[VN]SIZE in user/site Renviron */
+        R_SizeFromEnv(Rp);
+        R_SetParams(Rp);
     }
     Rwin_fpset(); /* in extra.c */
 }
