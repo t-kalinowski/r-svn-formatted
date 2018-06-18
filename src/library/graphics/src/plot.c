@@ -3733,8 +3733,10 @@ SEXP C_identify(SEXP call, SEXP op, SEXP args, SEXP rho)
             gpptr(dd)->family[7] = (char)INTEGER(vfont)[0];                                                            \
             gpptr(dd)->font = INTEGER(vfont)[1];                                                                       \
         }                                                                                                              \
-        else                                                                                                           \
+        else if (INTEGER(font)[0] != NA_INTEGER)                                                                       \
+        {                                                                                                              \
             gpptr(dd)->font = INTEGER(font)[0];                                                                        \
+        }                                                                                                              \
                                                                                                                        \
         n = LENGTH(str);                                                                                               \
         PROTECT(ans = allocVector(REALSXP, n));                                                                        \
