@@ -3,7 +3,7 @@
  *  file console.c
  *  Copyright (C) 1998--2003  Guido Masarotto and Brian Ripley
  *  Copyright (C) 2004-8      The R Foundation
- *  Copyright (C) 2004-2017   The R Core Team
+ *  Copyright (C) 2004-2018   The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -281,6 +281,7 @@ static size_t enctowcs(wchar_t *wc, char *s, int n)
     {
         *pb = '\0';
         nc += mbstowcs(wc, s, n);
+        *pb = UTF8in[0]; /* preserve input string, needed in consolewrites */
         pb += 3;
         pe = pb;
         while (*pe && !((pe = strchr(pe, UTF8out[0])) && *(pe + 1) == UTF8out[1] && *(pe + 2) == UTF8out[2]))
@@ -291,6 +292,7 @@ static size_t enctowcs(wchar_t *wc, char *s, int n)
         *pe = '\0';
         /* convert string starting at pb from UTF-8 */
         nc += Rf_utf8towcs(wc + nc, pb, (pe - pb));
+        *pe = UTF8out[0]; /* preserve input string, needed in consolewrites */
         pe += 3;
         nc += enctowcs(wc + nc, pe, n - nc);
     }
