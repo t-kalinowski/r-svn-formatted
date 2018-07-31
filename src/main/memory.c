@@ -480,6 +480,43 @@ void attribute_hidden R_SetPPSize(R_size_t size)
     R_PPStackSize = (int)size;
 }
 
+SEXP attribute_hidden do_maxVSize(SEXP call, SEXP op, SEXP args, SEXP rho)
+{
+    const double MB = 1048576.0;
+    double newval = asReal(CAR(args));
+
+    if (newval > 0)
+    {
+        if (newval == R_PosInf)
+            R_MaxVSize = R_SIZE_T_MAX;
+        else
+            R_SetMaxVSize((R_size_t)(newval * MB));
+    }
+
+    if (R_MaxVSize == R_SIZE_T_MAX)
+        return ScalarReal(R_PosInf);
+    else
+        return ScalarReal(R_GetMaxVSize() / MB);
+}
+
+SEXP attribute_hidden do_maxNSize(SEXP call, SEXP op, SEXP args, SEXP rho)
+{
+    double newval = asReal(CAR(args));
+
+    if (newval > 0)
+    {
+        if (newval == R_PosInf)
+            R_MaxNSize = R_SIZE_T_MAX;
+        else
+            R_SetMaxNSize((R_size_t)newval);
+    }
+
+    if (R_MaxNSize == R_SIZE_T_MAX)
+        return ScalarReal(R_PosInf);
+    else
+        return ScalarReal(R_GetMaxNSize());
+}
+
 /* Miscellaneous Globals. */
 
 static SEXP R_VStack = NULL;       /* R_alloc stack pointer */
