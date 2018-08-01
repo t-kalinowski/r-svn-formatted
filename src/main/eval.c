@@ -182,6 +182,8 @@ static void lineprof(char *buf, SEXP srcref)
 }
 
 #if !defined(Win32) && defined(HAVE_PTHREAD)
+// <signal.h> is needed for pthread_kill on most platforms (and by POSIX
+//  but apparently not FreeBSD): it is included above.
 #include <pthread.h>
 static pthread_t R_profiled_thread;
 #endif
