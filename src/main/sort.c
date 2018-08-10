@@ -435,7 +435,7 @@ Rboolean fastpass_sortcheck(SEXP x, int wanted)
         return FALSE;
 
     int sorted = UNKNOWN_SORTEDNESS;
-    Rboolean noNA, done = FALSE;
+    Rboolean noNA = FALSE, done = FALSE;
 
     switch (TYPEOF(x))
     {
@@ -475,19 +475,22 @@ Rboolean fastpass_sortcheck(SEXP x, int wanted)
     if (!done && TYPEOF(x) == INTSXP && wanted > 0 && !ALTREP(x))
     {
         R_xlen_t len = XLENGTH(x);
-        int *px = INTEGER(x);
-        int last = px[0];
-        done = TRUE;
-        for (R_xlen_t i = 0; i < len; i++)
+        if (len > 0)
         {
-            int next = px[i];
-            if (next < last || next == NA_INTEGER)
+            int *px = INTEGER(x);
+            int last = px[0];
+            if (last != NA_INTEGER)
             {
-                done = FALSE;
-                break;
+                for (R_xlen_t i = 1; i < len; i++)
+                {
+                    int next = px[i];
+                    if (next < last || next == NA_INTEGER)
+                        return FALSE;
+                    else
+                        last = next;
+                }
+                return TRUE;
             }
-            else
-                last = next;
         }
     }
 
