@@ -570,6 +570,9 @@ typedef struct cat_info
     Rboolean wasopen;
     int changedcon;
     Rconnection con;
+#ifdef Win32
+    Rboolean saveWinUTF8out;
+#endif
 } cat_info;
 
 static void cat_cleanup(void *data)
@@ -586,7 +589,7 @@ static void cat_cleanup(void *data)
     if (!wasopen && con->isopen)
         con->close(con);
 #ifdef Win32
-    WinUTF8out = FALSE;
+    WinUTF8out = pci->saveWinUTF8out;
 #endif
 }
 
@@ -661,6 +664,7 @@ SEXP attribute_hidden do_cat(SEXP call, SEXP op, SEXP args, SEXP rho)
     /* will open new connection if required, and check for writeable */
 #ifdef Win32
     /* do this after re-sinking output */
+    ci.saveWinUTF8out = WinUTF8out;
     WinCheckUTF8();
 #endif
 
