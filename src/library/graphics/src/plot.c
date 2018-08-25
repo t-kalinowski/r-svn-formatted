@@ -525,10 +525,6 @@ SEXP C_plot_new(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP C_plot_window(SEXP args)
 {
     SEXP xlim, ylim, logarg;
-    double asp, xmin, xmax, ymin, ymax;
-    Rboolean logscale;
-    const char *p;
-    pGEDevDesc dd = GEcurrentDevice();
 
     args = CDR(args);
     if (length(args) < 3)
@@ -544,11 +540,12 @@ SEXP C_plot_window(SEXP args)
         error(_("invalid '%s' value"), "ylim");
     args = CDR(args);
 
-    logscale = FALSE;
     logarg = CAR(args);
     if (!isString(logarg))
         error(_("\"log=\" specification must be character"));
-    p = CHAR(STRING_ELT(logarg, 0));
+    Rboolean logscale = FALSE;
+    pGEDevDesc dd = GEcurrentDevice();
+    const char *p = CHAR(STRING_ELT(logarg, 0));
     while (*p)
     {
         switch (*p)
@@ -566,7 +563,7 @@ SEXP C_plot_window(SEXP args)
     }
     args = CDR(args);
 
-    asp = (logscale) ? NA_REAL : asReal(CAR(args));
+    double asp = (logscale) ? NA_REAL : asReal(CAR(args));
     ;
     args = CDR(args);
 
@@ -574,6 +571,7 @@ SEXP C_plot_window(SEXP args)
     GSavePars(dd);
     ProcessInlinePars(args, dd);
 
+    double xmin, xmax, ymin, ymax;
     if (isInteger(xlim))
     {
         if (INTEGER(xlim)[0] == NA_INTEGER || INTEGER(xlim)[1] == NA_INTEGER)
