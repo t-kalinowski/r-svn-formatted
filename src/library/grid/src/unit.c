@@ -160,8 +160,11 @@ int unitLength(SEXP u)
 {
     int result = 0;
     if (isUnitList(u))
+    {
         result = LENGTH(u);
+    }
     else if (isUnitArithmetic(u))
+    {
         if (fOp(u))
         {
             if (timesOp(u))
@@ -180,10 +183,19 @@ int unitLength(SEXP u)
                 result = (n1 > n2) ? n1 : n2;
             }
         }
-        else            /* must be "min" or "max" or "sum" */
+        else
+        {               /* must be "min" or "max" or "sum" */
             result = 1; /* unitLength(arg1(u)); */
-    else                /* Must be a unit object */
+        }
+    }
+    else if (inherits(u, "unit"))
+    { /* a "plain" unit object */
         result = LENGTH(u);
+    }
+    else
+    {
+        error(_("object is not a unit, unit.list, or unitArithmetic object"));
+    }
     return result;
 }
 
