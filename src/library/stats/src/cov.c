@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1995-2017	The R Core Team
+ *  Copyright (C) 1995-2018	The R Core Team
  *  Copyright (C) 2003		The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -717,7 +717,7 @@ static SEXP corcov(SEXP x, SEXP y, SEXP na_method, SEXP skendall, Rboolean cor)
     /* Arg.1: x */
     if (isNull(x)) /* never allowed */
         error(_("'x' is NULL"));
-#ifdef _R_in_2017_
+#if 1
     if (isFactor(x))
         error(_("'x' is a factor"));
 #else
@@ -746,7 +746,7 @@ static SEXP corcov(SEXP x, SEXP y, SEXP na_method, SEXP skendall, Rboolean cor)
     }
     else
     {
-#ifdef _R_in_2017_
+#if 1
         if (isFactor(y))
             error(_("'y' is a factor"));
 #else
