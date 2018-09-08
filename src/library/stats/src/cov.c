@@ -714,19 +714,27 @@ static SEXP corcov(SEXP x, SEXP y, SEXP na_method, SEXP skendall, Rboolean cor)
     Rboolean ansmat, kendall, pair, na_fail, everything, sd_0, empty_err;
     int i, method, n, ncx, ncy, nprotect = 2;
 
-    /* Arg.1: x */
-    if (isNull(x)) /* never allowed */
-        error(_("'x' is NULL"));
-#if 1
-    if (isFactor(x))
-        error(_("'x' is a factor"));
+#define DEFUNCT_VAR_FACTOR
+#ifdef DEFUNCT_VAR_FACTOR
+#define VAR_FACTOR_MSG                                                                                                 \
+    "Calling var(x) on a factor x is defunct.\n  Use something like 'all(duplicated(x)[-1L])' to test for a constant " \
+    "vector."
 #else
 #define VAR_FACTOR_MSG                                                                                                 \
     "Calling var(x) on a factor x is deprecated and will become an error.\n  Use something like "                      \
     "'all(duplicated(x)[-1L])' to test for a constant vector."
+#endif
+
+    /* Arg.1: x */
+    if (isNull(x)) /* never allowed */
+        error(_("'x' is NULL"));
     if (isFactor(x))
+#ifdef DEFUNCT_VAR_FACTOR
+        error(_(VAR_FACTOR_MSG));
+#else
         warning(_(VAR_FACTOR_MSG));
 #endif
+
     /* length check of x -- only if(empty_err) --> below */
     x = PROTECT(coerceVector(x, REALSXP));
     if ((ansmat = isMatrix(x)))
@@ -746,11 +754,10 @@ static SEXP corcov(SEXP x, SEXP y, SEXP na_method, SEXP skendall, Rboolean cor)
     }
     else
     {
-#if 1
         if (isFactor(y))
-            error(_("'y' is a factor"));
+#ifdef DEFUNCT_VAR_FACTOR
+            error(_(VAR_FACTOR_MSG));
 #else
-        if (isFactor(y))
             warning(_(VAR_FACTOR_MSG));
 #endif
         y = PROTECT(coerceVector(y, REALSXP));
