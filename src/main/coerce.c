@@ -1289,12 +1289,10 @@ static SEXP coerceSymbol(SEXP v, SEXPTYPE type)
 
 SEXP coerceVector(SEXP v, SEXPTYPE type)
 {
-    SEXP op, vp, ans = R_NilValue; /* -Wall */
-    int i, n;
-
     if (TYPEOF(v) == type)
         return v;
 
+    SEXP ans = R_NilValue; /* -Wall */
     if (ALTREP(v))
     {
         ans = ALTREP_COERCE(v, type);
@@ -1327,7 +1325,7 @@ SEXP coerceVector(SEXP v, SEXPTYPE type)
     case LISTSXP:
         ans = coercePairList(v, type);
         break;
-    case LANGSXP:
+    case LANGSXP: {
         if (type != STRSXP)
         {
             ans = coercePairList(v, type);
@@ -1337,7 +1335,7 @@ SEXP coerceVector(SEXP v, SEXPTYPE type)
         /* This is mostly copied from coercePairList, but we need to
          * special-case the first element so as not to get operators
          * put in backticks. */
-        n = length(v);
+        int n = length(v);
         PROTECT(ans = allocVector(type, n));
         if (n == 0)
         {
@@ -1345,8 +1343,8 @@ SEXP coerceVector(SEXP v, SEXPTYPE type)
             UNPROTECT(1);
             break;
         }
-        i = 0;
-        op = CAR(v);
+        int i = 0;
+        SEXP op = CAR(v);
         /* The case of practical relevance is "lhs ~ rhs", which
          * people tend to split using as.character(), modify, and
          * paste() back together. However, we might as well
@@ -1361,7 +1359,7 @@ SEXP coerceVector(SEXP v, SEXPTYPE type)
         /* The distinction between strings and other elements was
          * here "always", but is really dubious since it makes x <- a
          * and x <- "a" come out identical. Won't fix just now. */
-        for (vp = v; vp != R_NilValue; vp = CDR(vp), i++)
+        for (SEXP vp = v; vp != R_NilValue; vp = CDR(vp), i++)
         {
             if (isString(CAR(vp)) && length(CAR(vp)) == 1)
                 SET_STRING_ELT(ans, i, STRING_ELT(CAR(vp), 0));
@@ -1370,6 +1368,7 @@ SEXP coerceVector(SEXP v, SEXPTYPE type)
         }
         UNPROTECT(1);
         break;
+    }
     case VECSXP:
     case EXPRSXP:
         ans = coerceVectorList(v, type);
@@ -1818,15 +1817,35 @@ SEXP attribute_hidden do_ascall(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-/* int, not Rboolean, for NA_LOGICAL : */
-int asLogical(SEXP x)
+/* return int, not Rboolean, for NA_LOGICAL : */
+int asLogical2(SEXP x, int warn_level, SEXP call)
 {
+#define W_E_(ERRFUN) ERRFUN(_("'length(x) = %d > 1' in coercion to '%s'"), XLENGTH(x), "logical(1)")
+#define W_E_C(ERRFUN) ERRFUN(call, _("'length(x) = %d > 1' in coercion to '%s'"), XLENGTH(x), "logical(1)")
+
     int warn = 0;
 
     if (isVectorAtomic(x))
     {
         if (XLENGTH(x) < 1)
             return NA_LOGICAL;
+        if (warn_level && XLENGTH(x) > 1)
+        {
+            if (isNull(call))
+            {
+                if (warn_level == 1)
+                    W_E_(warning);
+                else
+                    W_E_(error);
+            }
+            else
+            { // assume call *is* a call
+                if (warn_level == 1)
+                    W_E_C(warningcall);
+                else
+                    W_E_C(errorcall);
+            }
+        }
         switch (TYPEOF(x))
         {
         case LGLSXP:
@@ -1850,6 +1869,10 @@ int asLogical(SEXP x)
         return LogicalFromString(x, &warn);
     }
     return NA_LOGICAL;
+}
+int asLogical(SEXP x)
+{
+    return asLogical2(x, /* warn_level = */ 0, NILSXP);
 }
 
 int asInteger(SEXP x)
@@ -2777,7 +2800,7 @@ SEXP attribute_hidden do_docall(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 #ifdef __maybe_in_the_future__
     if (!isNull(args) && !isVectorList(args))
-        error(_("'args' must be a list or expression"));
+        error(_("'%s' must be a list or expression"), "args");
 #else
     if (!isNull(args) && !isNewList(args))
         error(_("'%s' must be a list"), "args");
@@ -3069,22 +3092,14 @@ static SEXP R_set_class(SEXP obj, SEXP value, SEXP call)
     }
     else if (length(value) == 0)
     {
-        UNPROTECT(nProtect);
-        nProtect = 0;
         error(_("invalid replacement object to be a class string"));
     }
     else
     {
-        const char *valueString;
-        int whichType;
-
-        SEXP cur_class;
-        SEXPTYPE valueType;
-        valueString = CHAR(asChar(value)); /* ASCII */
-        whichType = class2type(valueString);
-        valueType = (whichType == -1) ? (SEXPTYPE)-1 : classTable[whichType].sexp;
-        PROTECT(cur_class = R_data_class(obj, FALSE));
-        nProtect++;
+        const char *valueString = CHAR(asChar(value)); /* ASCII */
+        int whichType = class2type(valueString);
+        SEXPTYPE valueType = (whichType == -1) ? (SEXPTYPE)-1 : classTable[whichType].sexp;
+        // SEXP cur_class = PROTECT(R_data_class(obj, FALSE)); nProtect++;
         /*  assigning type as a class deletes an explicit class attribute. */
         if (valueType != (SEXPTYPE)-1)
         {
