@@ -484,6 +484,16 @@ static double yLinetoDev(double y, pGEDevDesc dd)
     return yNDCtoDev(y * gpptr(dd)->yNDCPerLine, dd);
 }
 
+static double xChartoDev(double x, pGEDevDesc dd)
+{
+    return xNDCtoDev(x * gpptr(dd)->cex * gpptr(dd)->xNDCPerChar, dd);
+}
+
+static double yChartoDev(double y, pGEDevDesc dd)
+{
+    return yNDCtoDev(y * gpptr(dd)->cex * gpptr(dd)->yNDCPerChar, dd);
+}
+
 static double xNICtoDev(double x, pGEDevDesc dd)
 {
     return gpptr(dd)->inner2dev.ax + x * gpptr(dd)->inner2dev.bx;
@@ -651,6 +661,16 @@ static double xDevtoLine(double x, pGEDevDesc dd)
 static double yDevtoLine(double y, pGEDevDesc dd)
 {
     return yDevtoNDC(y, dd) / gpptr(dd)->yNDCPerLine;
+}
+
+static double xDevtoChar(double x, pGEDevDesc dd)
+{
+    return xDevtoNDC(x, dd) / (gpptr(dd)->cex * gpptr(dd)->xNDCPerChar);
+}
+
+static double yDevtoChar(double y, pGEDevDesc dd)
+{
+    return yDevtoNDC(y, dd) / (gpptr(dd)->cex * gpptr(dd)->yNDCPerChar);
 }
 
 static double xDevtoNIC(double x, pGEDevDesc dd)
@@ -896,6 +916,9 @@ void GConvert(double *x, double *y, GUnit from, GUnit to, pGEDevDesc dd)
         *x = xDevtoLine(devx, dd);
         *y = yDevtoLine(devy, dd);
         break;
+    case CHARS:
+        *x = xDevtoChar(devx, dd);
+        *y = yDevtoChar(devy, dd);
     case NIC:
         *x = xDevtoNIC(devx, dd);
         *y = yDevtoNIC(devy, dd);
@@ -966,6 +989,9 @@ double GConvertX(double x, GUnit from, GUnit to, pGEDevDesc dd)
     case LINES:
         devx = xLinetoDev(x, dd);
         break;
+    case CHARS:
+        devx = xChartoDev(x, dd);
+        break;
     case OMA1:
         devx = xOMA1toDev(x, dd);
         break;
@@ -1012,6 +1038,9 @@ double GConvertX(double x, GUnit from, GUnit to, pGEDevDesc dd)
         break;
     case LINES:
         x = xDevtoLine(devx, dd);
+        break;
+    case CHARS:
+        x = xDevtoChar(devx, dd);
         break;
     case NIC:
         x = xDevtoNIC(devx, dd);
@@ -1064,6 +1093,9 @@ double GConvertY(double y, GUnit from, GUnit to, pGEDevDesc dd)
     case LINES:
         devy = yLinetoDev(y, dd);
         break;
+    case CHARS:
+        devy = yChartoDev(y, dd);
+        break;
     case OMA1:
         devy = yOMA1toDev(y, dd);
         break;
@@ -1110,6 +1142,9 @@ double GConvertY(double y, GUnit from, GUnit to, pGEDevDesc dd)
         break;
     case LINES:
         y = yDevtoLine(devy, dd);
+        break;
+    case CHARS:
+        y = yDevtoChar(devy, dd);
         break;
     case NIC:
         y = yDevtoNIC(devy, dd);
