@@ -1,8 +1,8 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
+ *  Copyright (C) 1997--2018  The R Core Team
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2015  The R Core Team
- *  Copyright (C) 2003--2008  The R Foundation
+ *  Copyright (C) 2003--2018  The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -586,7 +586,7 @@ SEXP attribute_hidden do_sample(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (replace || k < 2)
             {
                 for (int i = 0; i < k; i++)
-                    iy[i] = (int)(R_unif_index(dn) + 1);
+                    iy[i] = (int)(R_unif_index(n) + 1);
             }
             else
             {
