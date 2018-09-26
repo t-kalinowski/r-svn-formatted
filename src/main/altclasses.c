@@ -1693,7 +1693,7 @@ SEXP attribute_hidden do_wrap_meta(SEXP call, SEXP op, SEXP args, SEXP env)
     case STRSXP:
         break;
     default:
-        error("only INTSXP, REALSXP, STRSXP vectors suppoted for now");
+        return x;
     }
 
 #ifndef WRAPATTRIB
