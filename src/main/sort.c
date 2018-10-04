@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998-2014   The R Core Team
+ *  Copyright (C) 1998-2018   The R Core Team
  *  Copyright (C) 2004        The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -265,7 +265,7 @@ SEXP attribute_hidden do_isunsorted(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 /* SHELLsort -- corrected from R. Sedgewick `Algorithms in C'
  *		(version of BDR's lqs():*/
-#define sort_body                                                                                                      \
+#define sort_body(TYPE_CMP, TYPE_PROT, TYPE_UNPROT)                                                                    \
     Rboolean nalast = TRUE;                                                                                            \
     int i, j, h;                                                                                                       \
                                                                                                                        \
@@ -274,7 +274,7 @@ SEXP attribute_hidden do_isunsorted(SEXP call, SEXP op, SEXP args, SEXP rho)
     for (; h > 0; h /= 3)                                                                                              \
         for (i = h; i < n; i++)                                                                                        \
         {                                                                                                              \
-            v = x[i];                                                                                                  \
+            v = TYPE_PROT(x[i]);                                                                                       \
             j = i;                                                                                                     \
             while (j >= h && TYPE_CMP(x[j - h], v, nalast) > 0)                                                        \
             {                                                                                                          \
@@ -282,39 +282,32 @@ SEXP attribute_hidden do_isunsorted(SEXP call, SEXP op, SEXP args, SEXP rho)
                 j -= h;                                                                                                \
             }                                                                                                          \
             x[j] = v;                                                                                                  \
+            TYPE_UNPROT;                                                                                               \
         }
 
 void R_isort(int *x, int n)
 {
     int v;
-#define TYPE_CMP icmp
-    sort_body
-#undef TYPE_CMP
+    sort_body(icmp, , )
 }
 
 void R_rsort(double *x, int n)
 {
     double v;
-#define TYPE_CMP rcmp
-    sort_body
-#undef TYPE_CMP
+    sort_body(rcmp, , )
 }
 
 void R_csort(Rcomplex *x, int n)
 {
     Rcomplex v;
-#define TYPE_CMP ccmp
-    sort_body
-#undef TYPE_CMP
+    sort_body(ccmp, , )
 }
 
 /* used in platform.c */
 void attribute_hidden ssort(SEXP *x, int n)
 {
     SEXP v;
-#define TYPE_CMP scmp
-    sort_body
-#undef TYPE_CMP
+    sort_body(scmp, PROTECT, UNPROTECT(1))
 }
 
 void rsort_with_index(double *x, int *indx, int n)
@@ -640,6 +633,7 @@ static void ssort2(SEXP *x, R_xlen_t n, Rboolean decreasing)
         {
             v = x[i];
             j = i;
+            PROTECT(v);
             if (decreasing)
                 while (j >= h && scmp(x[j - h], v, TRUE) < 0)
                 {
@@ -653,6 +647,7 @@ static void ssort2(SEXP *x, R_xlen_t n, Rboolean decreasing)
                     j -= h;
                 }
             x[j] = v;
+            UNPROTECT(1); /* v */
         }
 }
 
