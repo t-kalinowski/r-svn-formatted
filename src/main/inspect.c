@@ -343,6 +343,14 @@ static void inspect_tree(int pre, SEXP v, int deep, int pvec)
             SEXP lc = v;
             while (lc != R_NilValue)
             {
+                if (TYPEOF(lc) != LISTSXP)
+                {
+                    /* a dotted pair */
+                    pp(pre + 2);
+                    Rprintf(".\n");
+                    inspect_tree(pre + 2, lc, deep - 1, pvec);
+                    break;
+                }
                 if (TAG(lc) && TAG(lc) != R_NilValue)
                 {
                     pp(pre + 2);
