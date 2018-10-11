@@ -2221,6 +2221,7 @@ static void badIfCond(SEXP s, SEXP call, SEXP rho)
         int olderr = R_ErrorCon;
         R_ErrorCon = 2;
         REprintf(" ----------- FAILURE REPORT -------------- \n");
+        REprintf(" --- failure: the condition has length > 1 ---\n");
         REprintf(" --- srcref --- \n");
         SrcrefPrompt("", R_getCurrentSrcref());
         REprintf("\n");
