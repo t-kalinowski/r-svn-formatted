@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 2001-2015   The R Core Team
+ *  Copyright (C) 2001-2018   The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -193,11 +193,21 @@ void NORET parseError(SEXP call, int linenum)
     UNPROTECT(1);
 }
 
-static void con_cleanup(void *data)
+typedef struct parse_info
 {
-    Rconnection con = data;
-    if (con->isopen)
+    Rconnection con;
+    Rboolean old_latin1;
+    Rboolean old_utf8;
+} parse_cleanup_info;
+
+static void parse_cleanup(void *data)
+{
+    parse_cleanup_info *pci = (parse_cleanup_info *)data;
+    Rconnection con = pci->con;
+    if (con && con->isopen)
         con->close(con);
+    known_to_be_latin1 = pci->old_latin1;
+    known_to_be_utf8 = pci->old_utf8;
 }
 
 /* "do_parse" - the user interface input/output to files.
@@ -211,11 +221,16 @@ SEXP attribute_hidden do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP text, prompt, s, source;
     Rconnection con;
-    Rboolean wasopen, old_latin1 = known_to_be_latin1, old_utf8 = known_to_be_utf8, allKnown = TRUE;
+    Rboolean wasopen, allKnown = TRUE;
     int ifile, num, i;
     const char *encoding;
     ParseStatus status;
     RCNTXT cntxt;
+    parse_cleanup_info pci;
+
+    pci.con = NULL;
+    pci.old_latin1 = known_to_be_latin1;
+    pci.old_utf8 = known_to_be_utf8;
 
     checkArity(op, args);
     if (!inherits(CAR(args), "connection"))
@@ -244,6 +259,13 @@ SEXP attribute_hidden do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isString(CAR(args)) || LENGTH(CAR(args)) != 1)
         error(_("invalid '%s' value"), "encoding");
     encoding = CHAR(STRING_ELT(CAR(args), 0)); /* ASCII */
+
+    /* set up context to recover known_to_be_* and to close connection on
+       error if opened by do_parse */
+    begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_BaseEnv, R_BaseEnv, R_NilValue, R_NilValue);
+    cntxt.cend = &parse_cleanup;
+    cntxt.cenddata = &pci;
+
     known_to_be_latin1 = known_to_be_utf8 = FALSE;
     /* allow 'encoding' to override declaration on 'text'. */
     if (streql(encoding, "latin1"))
@@ -283,8 +305,8 @@ SEXP attribute_hidden do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
             }
         if (allKnown)
         {
-            known_to_be_latin1 = old_latin1;
-            known_to_be_utf8 = old_utf8;
+            known_to_be_latin1 = pci.old_latin1;
+            known_to_be_utf8 = pci.old_utf8;
         }
         if (num == NA_INTEGER)
             num = -1;
@@ -300,10 +322,7 @@ SEXP attribute_hidden do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             if (!con->open(con))
                 error(_("cannot open the connection"));
-            /* Set up a context which will close the connection on error */
-            begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_BaseEnv, R_BaseEnv, R_NilValue, R_NilValue);
-            cntxt.cend = &con_cleanup;
-            cntxt.cenddata = con;
+            pci.con = con; /* close the connection on error */
         }
         if (!con->canread)
             error(_("cannot read from this connection"));
@@ -311,7 +330,7 @@ SEXP attribute_hidden do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!wasopen)
         {
             PROTECT(s);
-            endcontext(&cntxt);
+            pci.con = NULL;
             con->close(con);
             UNPROTECT(1);
         }
@@ -326,8 +345,10 @@ SEXP attribute_hidden do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
         if (status != PARSE_OK)
             parseError(call, R_ParseError);
     }
-    UNPROTECT(2);
-    known_to_be_latin1 = old_latin1;
-    known_to_be_utf8 = old_utf8;
+    known_to_be_latin1 = pci.old_latin1;
+    known_to_be_utf8 = pci.old_utf8;
+    PROTECT(s);
+    endcontext(&cntxt);
+    UNPROTECT(3);
     return s;
 }
