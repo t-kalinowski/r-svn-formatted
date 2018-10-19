@@ -23,7 +23,7 @@
 
    Derived from multicore version 0.1-8 by Simon Urbanek
 */
-//#define MC_DEBUG
+/* #define MC_DEBUG */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h> /* for affinity function checks and sigaction */
@@ -854,8 +854,8 @@ SEXP mc_select_children(SEXP sTimeout, SEXP sWhich)
             if (which)
             { /* check for the FD only if it's on the list */
                 unsigned int k = 0;
-                int found = 0;
                 while (k < wlen)
+                {
                     if (which[k++] == ci->pid)
                     {
                         FD_SET(ci->pfd, &fs);
@@ -865,12 +865,9 @@ SEXP mc_select_children(SEXP sTimeout, SEXP sWhich)
                         Dprintf("select_children: added child %d (%d)\n", ci->pid, ci->pfd);
 #endif
                         wcount++;
-                        found = 1;
                         break;
                     }
-                if (!found)
-                    /* FIXME: probably should be an error */
-                    warning(_("cannot wait for child %d as it does not exist"), ci->pid);
+                }
             }
             else
             {
@@ -884,6 +881,34 @@ SEXP mc_select_children(SEXP sTimeout, SEXP sWhich)
             }
         }
         ci = ci->next;
+    }
+
+    if (which && wcount < wlen)
+    {
+        /* children specified multiple times or not found */
+        for (unsigned int k = 0; k < wlen; k++)
+        {
+            ci = children;
+            int found = 0;
+            while (ci)
+            {
+                if (!ci->detached && ci->ppid == ppid && ci->pid == which[k] && FD_ISSET(ci->pfd, &fs))
+                {
+
+                    found = 1;
+                    break;
+                }
+                ci = ci->next;
+            }
+            if (!found)
+            {
+#ifdef MC_DEBUG
+                Dprintf("select_children: cannot wait for child %d (idx %d) as it does not exist\n", which[k], k);
+#endif
+                /* FIXME: probably should be an error */
+                warning(_("cannot wait for child %d as it does not exist"), which[k]);
+            }
+        }
     }
 
 #ifdef MC_DEBUG
