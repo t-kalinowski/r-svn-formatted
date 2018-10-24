@@ -1758,6 +1758,10 @@ static SEXP wrap_meta(SEXP x, int srt, int no_na)
         return x;
     }
 
+    /* avoid wrappers of wrappers, at least in some cases */
+    if (is_wrapper(x) && srt == 0 && no_na == 0)
+        return shallow_duplicate(x);
+
 #ifndef WRAPATTRIB
     if (ATTRIB(x) != R_NilValue)
         /* For objects without references we could move the attributes
