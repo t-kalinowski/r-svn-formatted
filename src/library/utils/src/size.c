@@ -54,6 +54,7 @@ static R_size_t objectsize(SEXP s)
     case LANGSXP:
     case BCODESXP:
     case DOTSXP:
+        R_CheckStack();
         for (Rboolean done = FALSE; !done;)
         {
             cnt += objectsize(TAG(s));
@@ -77,6 +78,7 @@ static R_size_t objectsize(SEXP s)
         cnt += objectsize(s);
         break;
     case CLOSXP:
+        R_CheckStack();
         cnt += objectsize(FORMALS(s));
         cnt += objectsize(BODY(s));
         /* no charge for the environment */
@@ -105,6 +107,7 @@ static R_size_t objectsize(SEXP s)
         isVec = TRUE;
         break;
     case STRSXP:
+        R_CheckStack();
         vcnt = PTR2VEC(xlength(s));
         PROTECT(dup = Rf_csduplicated(s));
         for (R_xlen_t i = 0; i < xlength(s); i++)
@@ -123,12 +126,14 @@ static R_size_t objectsize(SEXP s)
     case EXPRSXP:
     case WEAKREFSXP:
         /* Generic Vector Objects */
+        R_CheckStack();
         vcnt = PTR2VEC(xlength(s));
         for (R_xlen_t i = 0; i < xlength(s); i++)
             cnt += objectsize(VECTOR_ELT(s, i));
         isVec = TRUE;
         break;
     case EXTPTRSXP:
+        R_CheckStack();
         cnt += sizeof(void *); /* the actual pointer */
         cnt += objectsize(EXTPTR_PROT(s));
         cnt += objectsize(EXTPTR_TAG(s));
@@ -139,6 +144,7 @@ static R_size_t objectsize(SEXP s)
         break;
     case S4SXP:
         /* Has TAG and ATRIB but no CAR nor CDR */
+        R_CheckStack();
         cnt += objectsize(TAG(s));
         break;
     default:
