@@ -1883,11 +1883,11 @@ static R_INLINE int is_wrapper(SEXP x)
         case LGLSXP:
             return R_altrep_inherits(x, wrap_logical_class);
         case REALSXP:
-            R_altrep_inherits(x, wrap_real_class);
+            return R_altrep_inherits(x, wrap_real_class);
         case CPLXSXP:
-            R_altrep_inherits(x, wrap_complex_class);
+            return R_altrep_inherits(x, wrap_complex_class);
         case RAWSXP:
-            R_altrep_inherits(x, wrap_raw_class);
+            return R_altrep_inherits(x, wrap_raw_class);
         default:
             return FALSE;
         }
@@ -1901,6 +1901,9 @@ static SEXP wrap_meta(SEXP x, int srt, int no_na)
     {
     case INTSXP:
     case REALSXP:
+    case LGLSXP:
+    case CPLXSXP:
+    case RAWSXP:
     case STRSXP:
         break;
     default:
@@ -1908,7 +1911,7 @@ static SEXP wrap_meta(SEXP x, int srt, int no_na)
     }
 
     /* avoid wrappers of wrappers, at least in some cases */
-    if (is_wrapper(x) && srt == 0 && no_na == 0)
+    if (is_wrapper(x) && srt == UNKNOWN_SORTEDNESS && no_na == FALSE)
         return shallow_duplicate(x);
 
 #ifndef WRAPATTRIB
@@ -1945,7 +1948,7 @@ SEXP attribute_hidden do_wrap_meta(SEXP call, SEXP op, SEXP args, SEXP env)
 
 SEXP R_tryWrap(SEXP x)
 {
-    return wrap_meta(x, 0, 0);
+    return wrap_meta(x, UNKNOWN_SORTEDNESS, FALSE);
 }
 
 SEXP attribute_hidden do_tryWrap(SEXP call, SEXP op, SEXP args, SEXP env)
