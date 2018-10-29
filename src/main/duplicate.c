@@ -640,7 +640,7 @@ static SEXP duplicate_attr(SEXP x, Rboolean deep)
         if (deep)
         {
             PROTECT(val);
-            /* the spine has been duplicated; we could just to the values */
+            /* the spine has been duplicated; we could just do the values */
             SET_ATTRIB(val, duplicate(ATTRIB(val)));
             UNPROTECT(1); /* val */
         }
