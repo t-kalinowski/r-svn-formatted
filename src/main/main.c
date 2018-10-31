@@ -1718,7 +1718,7 @@ Rboolean R_taskCallbackRoutine(SEXP expr, SEXP value, Rboolean succeeded, Rboole
     SETCAR(e, VECTOR_ELT(f, 0));
     cur = CDR(e);
     SETCAR(cur, tmp = allocVector(LANGSXP, 2));
-    SETCAR(tmp, R_QuoteSymbol);
+    SETCAR(tmp, lang3(R_DoubleColonSymbol, R_BaseSymbol, R_QuoteSymbol));
     SETCAR(CDR(tmp), expr);
     cur = CDR(cur);
     SETCAR(cur, value);
