@@ -470,7 +470,7 @@ SEXP attribute_hidden do_drop(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (shorten)
         {
             if (MAYBE_REFERENCED(x))
-                x = duplicate(x);
+                x = R_duplicate_attr(x);
             x = DropDims(x);
         }
     }

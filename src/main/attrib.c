@@ -971,7 +971,7 @@ SEXP attribute_hidden do_namesgets(SEXP call, SEXP op, SEXP args, SEXP env)
         return CAR(args);
     PROTECT(args = ans);
     if (MAYBE_SHARED(CAR(args)))
-        SETCAR(args, shallow_duplicate(CAR(args)));
+        SETCAR(args, R_shallow_duplicate_attr(CAR(args)));
     if (TYPEOF(CAR(args)) == S4SXP)
     {
         const char *klass = CHAR(STRING_ELT(R_data_class(CAR(args), FALSE), 0));
@@ -1109,7 +1109,7 @@ SEXP attribute_hidden do_dimnamesgets(SEXP call, SEXP op, SEXP args, SEXP env)
         return (ans);
     PROTECT(args = ans);
     if (MAYBE_SHARED(CAR(args)))
-        SETCAR(args, shallow_duplicate(CAR(args)));
+        SETCAR(args, R_shallow_duplicate_attr(CAR(args)));
     setAttrib(CAR(args), R_DimNamesSymbol, CADR(args));
     UNPROTECT(1);
     SETTER_CLEAR_NAMED(CAR(args));
@@ -1444,7 +1444,7 @@ SEXP attribute_hidden do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
            setting any attributes as an error later on would leave
            'obj' changed */
         if (MAYBE_SHARED(object) || (MAYBE_REFERENCED(object) && nattrs))
-            object = shallow_duplicate(object);
+            object = R_shallow_duplicate_attr(object);
         PROTECT(object);
     }
 
