@@ -2126,6 +2126,7 @@ SEXP attribute_hidden do_interruptsSuspended(SEXP call, SEXP op, SEXP args, SEXP
 void attribute_hidden R_BadValueInRCode(SEXP value, SEXP call, SEXP rho, const char *rawmsg, const char *errmsg,
                                         const char *warnmsg, const char *varname, Rboolean warnByDefault)
 {
+    int nprotect = 0;
     char *check = getenv(varname);
     const void *vmax = vmaxget();
     Rboolean err = check && StringTrue(check);
@@ -2150,11 +2151,19 @@ void attribute_hidden R_BadValueInRCode(SEXP value, SEXP call, SEXP rho, const c
         Rboolean ignore = FALSE;
 
         SEXP spkg = R_NilValue;
-        for (; spkg == R_NilValue && rho != R_EmptyEnv; rho = ENCLOS(rho))
+        for (; rho != R_EmptyEnv; rho = ENCLOS(rho))
             if (R_IsPackageEnv(rho))
-                spkg = R_PackageEnvName(rho);
+            {
+                PROTECT(spkg = R_PackageEnvName(rho));
+                nprotect++;
+                break;
+            }
             else if (R_IsNamespaceEnv(rho))
-                spkg = R_NamespaceEnvSpec(rho);
+            {
+                PROTECT(spkg = R_NamespaceEnvSpec(rho));
+                nprotect++;
+                break;
+            }
         if (spkg != R_NilValue)
             pkgname = translateChar(STRING_ELT(spkg, 0));
 
@@ -2260,6 +2269,7 @@ void attribute_hidden R_BadValueInRCode(SEXP value, SEXP call, SEXP rho, const c
     else if (warn || warnByDefault)
         warningcall(call, warnmsg);
     vmaxset(vmax);
+    UNPROTECT(nprotect);
 }
 
 /* These functions are to be used in error messages, and available for others to use in the API

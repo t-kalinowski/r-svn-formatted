@@ -99,7 +99,8 @@ SEXP attribute_hidden do_vapply(SEXP call, SEXP op, SEXP args, SEXP rho)
     PROTECT(value = eval(CADDR(args), rho));
     if (!isVector(value))
         error(_("'FUN.VALUE' must be a vector"));
-    useNames = asLogical(eval(CADDDR(args), rho));
+    useNames = asLogical(PROTECT(eval(CADDDR(args), rho)));
+    UNPROTECT(1);
     if (useNames == NA_LOGICAL)
         error(_("invalid '%s' value"), "USE.NAMES");
 

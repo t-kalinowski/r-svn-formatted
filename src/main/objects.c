@@ -250,6 +250,7 @@ attribute_hidden SEXP R_LookupMethod(SEXP method, SEXP rho, SEXP callrho, SEXP d
     static int lookup_baseenv_after_globalenv = -1;
     static int lookup_report_search_path_uses = -1;
     char *lookup;
+    PROTECT_INDEX validx;
 
     if (TYPEOF(callrho) != ENVSXP)
     {
@@ -285,10 +286,11 @@ attribute_hidden SEXP R_LookupMethod(SEXP method, SEXP rho, SEXP callrho, SEXP d
     val = findFunInEnvRange(method, callrho, top);
     if (val != R_UnboundValue)
     {
-        UNPROTECT(1);
+        UNPROTECT(1); /* top */
         return val;
     }
 
+    PROTECT_WITH_INDEX(val, &validx);
     /* We assume here that no one registered a non-function */
     if (!s_S3MethodsTable)
         s_S3MethodsTable = install(".__S3MethodsTable__.");
@@ -297,22 +299,18 @@ attribute_hidden SEXP R_LookupMethod(SEXP method, SEXP rho, SEXP callrho, SEXP d
     {
         PROTECT(table);
         table = eval(table, R_BaseEnv);
-        UNPROTECT(1);
+        UNPROTECT(1); /* table */
     }
     if (TYPEOF(table) == ENVSXP)
     {
         PROTECT(table);
-        val = findVarInFrame3(table, method, TRUE);
-        UNPROTECT(1);
+        REPROTECT(val = findVarInFrame3(table, method, TRUE), validx);
+        UNPROTECT(1); /* table */
         if (TYPEOF(val) == PROMSXP)
-        {
-            PROTECT(val);
-            val = eval(val, rho);
-            UNPROTECT(1);
-        }
+            REPROTECT(val = eval(val, rho), validx);
         if (val != R_UnboundValue)
         {
-            UNPROTECT(1);
+            UNPROTECT(2); /* top, val */
             return val;
         }
     }
@@ -323,15 +321,15 @@ attribute_hidden SEXP R_LookupMethod(SEXP method, SEXP rho, SEXP callrho, SEXP d
             top = R_BaseEnv;
         else
             top = ENCLOS(top);
-        val = findFunWithBaseEnvAfterGlobalEnv(method, top);
+        REPROTECT(val = findFunWithBaseEnvAfterGlobalEnv(method, top), validx);
     }
     else if (lookup_report_search_path_uses)
     {
         if (top != R_GlobalEnv)
-            val = findFunInEnvRange(method, ENCLOS(top), R_GlobalEnv);
+            REPROTECT(val = findFunInEnvRange(method, ENCLOS(top), R_GlobalEnv), validx);
         if (val == R_UnboundValue)
         {
-            val = findFunInEnvRange(method, ENCLOS(R_GlobalEnv), R_EmptyEnv);
+            REPROTECT(val = findFunInEnvRange(method, ENCLOS(R_GlobalEnv), R_EmptyEnv), validx);
             if ((val != R_UnboundValue) && (ENCLOS(val) != R_BaseNamespace) && (ENCLOS(val) != R_BaseEnv))
             {
                 /* Note that we do not really know where on the search
@@ -341,9 +339,9 @@ attribute_hidden SEXP R_LookupMethod(SEXP method, SEXP rho, SEXP callrho, SEXP d
         }
     }
     else
-        val = findFunInEnvRange(method, ENCLOS(top), R_EmptyEnv);
-    UNPROTECT(1);
+        REPROTECT(val = findFunInEnvRange(method, ENCLOS(top), R_EmptyEnv), validx);
 
+    UNPROTECT(2); /* top, val */
     return val;
 }
 
@@ -1791,11 +1789,12 @@ Rboolean R_isVirtualClass(SEXP class_def, SEXP env)
     if (!isVCl_sym)
         isVCl_sym = install("isVirtualClass");
     SEXP call = PROTECT(lang2(isVCl_sym, class_def));
-    SEXP e = eval(call, env);
-    UNPROTECT(1);
+    SEXP e = PROTECT(eval(call, env));
     // return(LOGICAL(e)[0]);
     // more cautious:
-    return (asLogical(e) == TRUE);
+    Rboolean ans = (asLogical(e) == TRUE);
+    UNPROTECT(2); /* call, e */
+    return ans;
 }
 
 Rboolean R_extends(SEXP class1, SEXP class2, SEXP env)
@@ -1806,11 +1805,12 @@ Rboolean R_extends(SEXP class1, SEXP class2, SEXP env)
     if (!extends_sym)
         extends_sym = install("extends");
     SEXP call = PROTECT(lang3(extends_sym, class1, class2));
-    SEXP e = eval(call, env);
-    UNPROTECT(1);
+    SEXP e = PROTECT(eval(call, env));
     // return(LOGICAL(e)[0]);
     // more cautious:
-    return (asLogical(e) == TRUE);
+    Rboolean ans = (asLogical(e) == TRUE);
+    UNPROTECT(2); /* call, e */
+    return ans;
 }
 
 /* in Rinternals.h */
