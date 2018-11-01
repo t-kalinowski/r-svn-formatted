@@ -2126,6 +2126,10 @@ SEXP attribute_hidden do_interruptsSuspended(SEXP call, SEXP op, SEXP args, SEXP
 void attribute_hidden R_BadValueInRCode(SEXP value, SEXP call, SEXP rho, const char *rawmsg, const char *errmsg,
                                         const char *warnmsg, const char *varname, Rboolean warnByDefault)
 {
+    /* disable GC so that use of this temporary checking code does not
+       introduce new PROTECT errors e.g. in asLogical() use */
+    int enabled = R_GCEnabled;
+    R_GCEnabled = FALSE;
     int nprotect = 0;
     char *check = getenv(varname);
     const void *vmax = vmaxget();
@@ -2270,6 +2274,7 @@ void attribute_hidden R_BadValueInRCode(SEXP value, SEXP call, SEXP rho, const c
         warningcall(call, warnmsg);
     vmaxset(vmax);
     UNPROTECT(nprotect);
+    R_GCEnabled = enabled;
 }
 
 /* These functions are to be used in error messages, and available for others to use in the API
