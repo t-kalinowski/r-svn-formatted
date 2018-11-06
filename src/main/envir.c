@@ -122,7 +122,11 @@
         if (BINDING_IS_LOCKED(__b__))                                                                                  \
             error(_("cannot change value of locked binding for '%s'"), CHAR(PRINTNAME(TAG(__b__))));                   \
         if (IS_ACTIVE_BINDING(__b__))                                                                                  \
+        {                                                                                                              \
+            PROTECT(__val__);                                                                                          \
             setActiveValue(CAR(__b__), __val__);                                                                       \
+            UNPROTECT(1);                                                                                              \
+        }                                                                                                              \
         else                                                                                                           \
             SETCAR(__b__, __val__);                                                                                    \
     } while (0)
@@ -135,7 +139,11 @@
         if (BINDING_IS_LOCKED(__sym__))                                                                                \
             error(_("cannot change value of locked binding for '%s'"), CHAR(PRINTNAME(__sym__)));                      \
         if (IS_ACTIVE_BINDING(__sym__))                                                                                \
+        {                                                                                                              \
+            PROTECT(__val__);                                                                                          \
             setActiveValue(SYMVALUE(__sym__), __val__);                                                                \
+            UNPROTECT(1);                                                                                              \
+        }                                                                                                              \
         else                                                                                                           \
             SET_SYMVALUE(__sym__, __val__);                                                                            \
     } while (0)
