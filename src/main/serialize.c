@@ -2116,7 +2116,7 @@ static SEXP ReadItem(SEXP ref_table, R_inpstream_t stream)
                 for (R_xlen_t ix = 0; ix < len; ix++)
                 {
                     char word[128];
-                    int i;
+                    unsigned int i; // unsigned to avoid compiler warnings
                     InWord(stream, word, sizeof(word));
                     if (sscanf(word, "%2x", &i) != 1)
                         error(_("read error"));
