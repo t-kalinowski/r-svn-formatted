@@ -60,7 +60,7 @@ extern "C"
 
 /* Many small functions are included from ../include/Rinlinedfuns.h */
 
-int nrows(SEXP s)
+int nrows(SEXP s) // ~== NROW(.)  in R
 {
     SEXP t;
     if (isVector(s) || isList(s))
@@ -79,7 +79,7 @@ int nrows(SEXP s)
     return -1;
 }
 
-int ncols(SEXP s)
+int ncols(SEXP s) // ~== NCOL(.)  in R
 {
     SEXP t;
     if (isVector(s) || isList(s))

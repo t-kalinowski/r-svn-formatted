@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1995, 1996, 2017  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2016  The R Core Team
+ *  Copyright (C) 1997--2018  The R Core Team
+ *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -982,15 +982,12 @@ static SEXP match_transform(SEXP s, SEXP env)
 // workhorse of R's match() and hence also  " ix %in% itable "
 SEXP match5(SEXP itable, SEXP ix, int nmatch, SEXP incomp, SEXP env)
 {
-    SEXP ans, x, table;
-    SEXPTYPE type;
-    HashData data;
-
     R_xlen_t n = xlength(ix);
-
     /* handle zero length arguments */
     if (n == 0)
         return allocVector(INTSXP, 0);
+
+    SEXP ans;
     if (length(itable) == 0)
     {
         ans = allocVector(INTSXP, n);
@@ -1001,12 +998,13 @@ SEXP match5(SEXP itable, SEXP ix, int nmatch, SEXP incomp, SEXP env)
     }
 
     int nprot = 0;
-    PROTECT(x = match_transform(ix, env));
+    SEXP x = PROTECT(match_transform(ix, env));
     nprot++;
-    PROTECT(table = match_transform(itable, env));
+    SEXP table = PROTECT(match_transform(itable, env));
     nprot++;
     /* or should we use PROTECT_WITH_INDEX and REPROTECT below ? */
 
+    SEXPTYPE type;
     /* Coerce to a common type; type == NILSXP is ok here.
      * Note that above we coerce factors and "POSIXlt", only to character.
      * Hence, coerce to character or to `higher' type
@@ -1114,7 +1112,7 @@ SEXP match5(SEXP itable, SEXP ix, int nmatch, SEXP incomp, SEXP env)
     }
     else
     { // regular case
-
+        HashData data;
         if (incomp)
         {
             PROTECT(incomp = coerceVector(incomp, type));
