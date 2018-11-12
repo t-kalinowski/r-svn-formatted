@@ -649,6 +649,8 @@ static void OutFormat(R_outpstream_t stream)
     case R_pstream_asciihex_format:
         stream->OutBytes(stream, "A\n", 2);
         break;
+    /* on deserialization, asciihex_format is treated exactly the same
+       way as ascii_format; the distinction is handled inside scanf %lg */
     case R_pstream_binary_format:
         stream->OutBytes(stream, "B\n", 2);
         break;
@@ -671,7 +673,7 @@ static void InFormat(R_inpstream_t stream)
     {
     case 'A':
         type = R_pstream_ascii_format;
-        break;
+        break; /* also for asciihex */
     case 'B':
         type = R_pstream_binary_format;
         break;
