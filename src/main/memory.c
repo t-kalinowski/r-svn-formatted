@@ -3252,7 +3252,7 @@ void attribute_hidden R_check_thread(const char *s)
         main_thread = pthread_self();
         main_thread_inited = TRUE;
     }
-    if (main_thread != pthread_self())
+    if (!pthread_equal(main_thread, pthread_self()))
     {
         char buf[1024];
         size_t bsize = sizeof buf;
