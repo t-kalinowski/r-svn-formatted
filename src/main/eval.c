@@ -6187,7 +6187,7 @@ static R_INLINE void VECSUBASSIGN_PTR(R_bcstack_t *sx, R_bcstack_t *srhs, R_bcst
 
     if (MAYBE_SHARED(vec))
     {
-        vec = duplicate(vec);
+        vec = shallow_duplicate(vec);
         SETSTACK_PTR(sx, vec);
     }
 
@@ -6229,7 +6229,7 @@ static R_INLINE void MATSUBASSIGN_PTR(R_bcstack_t *sx, R_bcstack_t *srhs, R_bcst
 
     if (MAYBE_SHARED(mat))
     {
-        mat = duplicate(mat);
+        mat = shallow_duplicate(mat);
         SETSTACK_PTR(sx, mat);
     }
 
@@ -6284,7 +6284,7 @@ static R_INLINE void SUBASSIGN_N_PTR(R_bcstack_t *sx, int rank, R_bcstack_t *srh
 
     if (MAYBE_SHARED(x))
     {
-        x = duplicate(x);
+        x = shallow_duplicate(x);
         SETSTACK_PTR(sx, x);
     }
 
