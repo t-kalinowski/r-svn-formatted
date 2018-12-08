@@ -3680,7 +3680,9 @@ attribute_hidden int DispatchOrEval(SEXP call, SEXP op, const char *generic, SEX
             *ans = evalArgs(args, rho, dropmissing, call, 0);
         else
         {
+            INCREMENT_LINKS(x);
             PROTECT(*ans = CONS_NR(x, evalArgs(CDR(args), rho, dropmissing, call, 1)));
+            DECREMENT_LINKS(x);
             SET_TAG(*ans, CreateTag(TAG(args)));
             UNPROTECT(1);
         }
@@ -7488,8 +7490,8 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         OP(DFLTSUBSET, 0) : DO_DFLTDISPATCH(do_subset_dflt, R_SubsetSym);
         OP(STARTSUBASSIGN, 2) : DO_START_ASSIGN_DISPATCH("[<-");
         OP(DFLTSUBASSIGN, 0) : DO_DFLT_ASSIGN_DISPATCH(do_subassign_dflt, R_SubassignSym);
-        OP(STARTC, 2) : DO_STARTDISPATCH("c");
-        OP(DFLTC, 0) : DO_DFLTDISPATCH(do_c_dflt, R_CSym);
+        OP(STARTC, 2) : DO_STARTDISPATCH("c");             /* no longe used */
+        OP(DFLTC, 0) : DO_DFLTDISPATCH(do_c_dflt, R_CSym); /* no longe used */
         OP(STARTSUBSET2, 2) : DO_STARTDISPATCH("[[");
         OP(DFLTSUBSET2, 0) : DO_DFLTDISPATCH(do_subset2_dflt, R_Subset2Sym);
         OP(STARTSUBASSIGN2, 2) : DO_START_ASSIGN_DISPATCH("[[<-");
