@@ -3916,7 +3916,7 @@ attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP a
 }
 
 /* start of bytecode section */
-static int R_bcVersion = 10;
+static int R_bcVersion = 11;
 static int R_bcMinVersion = 9;
 
 static SEXP R_AddSym = NULL;
@@ -4123,6 +4123,9 @@ enum
     SEQALONG_OP,
     SEQLEN_OP,
     BASEGUARD_OP,
+    INCLNK_OP,
+    DECLNK_OP,
+    DECLNK_N_OP,
     OPCOUNT
 };
 
@@ -6726,21 +6729,6 @@ Rboolean attribute_hidden R_BCVersionOK(SEXP s)
     return version < 2 || (version >= R_bcMinVersion && version <= R_bcVersion);
 }
 
-static R_INLINE Rboolean FIND_ON_STACK(SEXP x, R_bcstack_t *base, int skip)
-{
-    /* Check whether the value is on the stack before modifying.  If
-       'skip' is true the top value on the stack is ignored. LT */
-    R_bcstack_t *checktop = skip ? R_BCNodeStackTop - 1 : R_BCNodeStackTop;
-    for (R_bcstack_t *p = base; p < checktop; p++)
-    {
-        if (p->tag == RAWMEM_TAG)
-            p += p->u.ival;
-        else if (p->u.sxpval == x && p->tag == 0)
-            return TRUE;
-    }
-    return FALSE;
-}
-
 static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
 {
     SEXP retvalue = R_NilValue, constants;
@@ -6804,7 +6792,6 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
     R_BCpc = &currentpc;
     R_binding_cache_t vcache = NULL;
     Rboolean smallcache = TRUE;
-    R_bcstack_t *vcache_top = NULL;
 #ifdef USE_BINDING_CACHE
     if (useCache)
     {
@@ -6819,7 +6806,6 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
 #ifdef CACHE_ON_STACK
         /* initialize binding cache on the stack */
         vcache = R_BCNodeStackTop;
-        vcache_top = vcache + n;
         if (R_BCNodeStackTop + n > R_BCNodeStackEnd)
             nodeStackOverflow();
         while (n > 0)
@@ -6832,7 +6818,6 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         /* allocate binding cache and protect on stack */
         vcache = allocVector(VECSXP, n);
         BCNPUSH(vcache);
-        vcache_top = R_BCNodeStackTop;
 #endif
     }
 #endif
@@ -7128,8 +7113,6 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                        probably worth it for avoiding checking and
                        branching. LT */
                     int tag = s->tag;
-                    if (R_BCNodeStackTop - vcache_top > MAX_ON_STACK_CHECK || FIND_ON_STACK(x, vcache_top, TRUE))
-                        tag = 0;
 
                     switch (tag)
                     {
@@ -7146,6 +7129,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 }
             }
 #endif
+
             SEXP value = GETSTACK(-1);
             INCREMENT_NAMED(value);
             if (!SET_BINDING_VALUE(loc, value))
@@ -7469,9 +7453,6 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
 #endif
             )
                 value = EnsureLocal(symbol, rho);
-
-            if (MAYBE_REFERENCED(value) && FIND_ON_STACK(value, vcache_top, FALSE))
-                value = shallow_duplicate(value);
 
             BCNPUSH(value);
             BCNDUP2ND();
@@ -7835,10 +7816,8 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
     (IS_STACKVAL_BOXED(idx) && MAYBE_REFERENCED(GETSTACK_SXPVAL_PTR(R_BCNodeStackTop + (idx))))
 #define STACKVAL_MAYBE_SHARED(idx)                                                                                     \
     (IS_STACKVAL_BOXED(idx) && MAYBE_SHARED(GETSTACK_SXPVAL_PTR(R_BCNodeStackTop + (idx))))
-#define STACKVAL_IS_ON_STACK(idx) FIND_ON_STACK(GETSTACK_SXPVAL(idx), vcache_top, TRUE)
 
-            if (STACKVAL_MAYBE_REFERENCED(-1) &&
-                (STACKVAL_MAYBE_SHARED(-1) || STACKVAL_MAYBE_SHARED(-3) || STACKVAL_IS_ON_STACK(-1)))
+            if (STACKVAL_MAYBE_REFERENCED(-1) && (STACKVAL_MAYBE_SHARED(-1) || STACKVAL_MAYBE_SHARED(-3)))
                 GETSTACK_SXPVAL_PTR(&tmp) = shallow_duplicate(GETSTACK_SXPVAL_PTR(&tmp));
 
             R_BCNodeStackTop[-1] = R_BCNodeStackTop[-2];
@@ -7949,6 +7928,12 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         OP(SEQLEN, 1) : DO_SEQ_LEN();
         NEXT();
         OP(BASEGUARD, 2) : DO_BASEGUARD();
+        NEXT();
+        OP(INCLNK, 0) : if (R_BCNodeStackTop[-1].tag == 0) INCREMENT_LINKS(R_BCNodeStackTop[-1].u.sxpval);
+        NEXT();
+        OP(DECLNK, 0) : DECLNK_STACK_PTR(R_BCNodeStackTop - 2);
+        NEXT();
+        OP(DECLNK_N, 1) : for (int n = GETOP(), i = 0; i < n; i++) DECLNK_STACK_PTR(R_BCNodeStackTop - 2 - i);
         NEXT();
         LASTOP;
     }
