@@ -4459,6 +4459,13 @@ static R_INLINE int bcStackScalarRealEx(R_bcstack_t *s, scalar_value_t *px, SEXP
         Relop2(opval, opsym);                                                                                          \
     } while (0)
 
+/* not actually optimized yet; ignore op, opval for now */
+#define FastLogic2(op, opval, opsym)                                                                                   \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        Builtin2(do_logic, opsym, rho);                                                                                \
+    } while (0)
+
 static R_INLINE SEXP getPrimitive(SEXP symbol, SEXPTYPE type)
 {
     SEXP value = SYMVALUE(symbol);
@@ -5803,32 +5810,38 @@ static int current_opcode = NO_CURRENT_OPCODE;
 static int opcode_counts[OPCOUNT];
 #endif
 
-#define BC_COUNT_DELTA 1023
-
+static void bc_check_sigint()
+{
+    R_CheckUserInterrupt();
 #ifndef IMMEDIATE_FINALIZERS
-/* finalizers are run here since this should only be called at
-   points where running arbitrary code should be safe */
-#define BC_CHECK_SIGINT()                                                                                              \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if (++evalcount > BC_COUNT_DELTA)                                                                              \
-        {                                                                                                              \
-            R_CheckUserInterrupt();                                                                                    \
-            R_RunPendingFinalizers();                                                                                  \
-            evalcount = 0;                                                                                             \
-        }                                                                                                              \
-    } while (0)
-#else
-#define BC_CHECK_SIGINT()                                                                                              \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if (++evalcount > BC_COUNT_DELTA)                                                                              \
-        {                                                                                                              \
-            R_CheckUserInterrupt();                                                                                    \
-            evalcount = 0;                                                                                             \
-        }                                                                                                              \
-    } while (0)
+    /* finalizers are run here since this should only be called at
+       points where running arbitrary code should be safe */
+    R_RunPendingFinalizers();
 #endif
+}
+
+#define BC_COUNT_DELTA 1023
+#define BC_CHECK_SIGINT()                                                                                              \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (++evalcount > BC_COUNT_DELTA)                                                                              \
+        {                                                                                                              \
+            bc_check_sigint();                                                                                         \
+            evalcount = 0;                                                                                             \
+        }                                                                                                              \
+    } while (0)
+
+/* use loop index for faster check */
+#define BC_LOOP_COUNT_MASK 1023
+#define BC_CHECK_SIGINT_LOOP(i)                                                                                        \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if ((i & BC_LOOP_COUNT_MASK) == 0)                                                                             \
+        {                                                                                                              \
+            bc_check_sigint();                                                                                         \
+            evalcount = 0;                                                                                             \
+        }                                                                                                              \
+    } while (0)
 
 static R_INLINE R_xlen_t bcStackIndex(R_bcstack_t *s)
 {
@@ -6964,6 +6977,8 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             int n = loopinfo[1];
             if (i < n)
             {
+                BC_CHECK_SIGINT_LOOP(i);
+                pc = codebase + label;
                 Rboolean iscompact = FALSE;
                 SEXP seq = getForLoopSeq(-4, &iscompact);
                 SEXP cell = GETSTACK(-3);
@@ -7020,8 +7035,6 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 }
                 if (CAR(cell) == R_UnboundValue || !SET_BINDING_VALUE(cell, value))
                     defineVar(BINDING_SYMBOL(cell), value, rho);
-                BC_CHECK_SIGINT();
-                pc = codebase + label;
             }
             NEXT();
         }
@@ -7421,8 +7434,8 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         OP(LE, 1) : FastRelop2(<=, LEOP, R_LeSym);
         OP(GE, 1) : FastRelop2(>=, GEOP, R_GeSym);
         OP(GT, 1) : FastRelop2(>, GTOP, R_GtSym);
-        OP(AND, 1) : Builtin2(do_logic, R_AndSym, rho);
-        OP(OR, 1) : Builtin2(do_logic, R_OrSym, rho);
+        OP(AND, 1) : FastLogic2(&, ANDOP, R_AndSym);
+        OP(OR, 1) : FastLogic2(|, OROP, R_OrSym);
         OP(NOT, 1) : Builtin1(do_logic, R_NotSym, rho);
         OP(DOTSERR, 0) : error(_("'...' used in an incorrect context"));
         OP(STARTASSIGN, 1) :
