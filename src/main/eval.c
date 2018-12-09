@@ -4433,6 +4433,13 @@ static R_INLINE int bcStackScalarRealEx(R_bcstack_t *s, scalar_value_t *px, SEXP
         NEXT();                                                                                                        \
     } while (0)
 
+#define DECLNK_STACK_PTR(s)                                                                                            \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if ((s)->tag == 0)                                                                                             \
+            DECREMENT_LINKS((s)->u.sxpval);                                                                            \
+    } while (0)
+
 #define FastRelop2(op, opval, opsym)                                                                                   \
     do                                                                                                                 \
     {                                                                                                                  \
@@ -5755,8 +5762,10 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
                 SETSTACK(-1, value);                                                                                   \
                 BC_CHECK_SIGINT();                                                                                     \
                 pc = codebase + label;                                                                                 \
+                NEXT();                                                                                                \
             }                                                                                                          \
         }                                                                                                              \
+        INCREMENT_LINKS(value);                                                                                        \
         NEXT();                                                                                                        \
     } while (0)
 
@@ -5783,8 +5792,10 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
                 SETSTACK(-1, value);                                                                                   \
                 BC_CHECK_SIGINT();                                                                                     \
                 pc = codebase + label;                                                                                 \
+                NEXT();                                                                                                \
             }                                                                                                          \
         }                                                                                                              \
+        INCREMENT_LINKS(lhs);                                                                                          \
         NEXT();                                                                                                        \
     } while (0)
 
@@ -5943,6 +5954,7 @@ static R_INLINE SEXP mkVector1(SEXP s)
 static R_INLINE void VECSUBSET_PTR(R_bcstack_t *sx, R_bcstack_t *si, R_bcstack_t *sv, SEXP rho, SEXP consts,
                                    int callidx, Rboolean subset2)
 {
+    DECLNK_STACK_PTR(sx);
     SEXP idx, args, value;
     SEXP vec = GETSTACK_PTR(sx);
     R_xlen_t i = bcStackIndex(si) - 1;
@@ -6024,6 +6036,7 @@ static R_INLINE R_xlen_t colMajorStackIndex(SEXP dim, int rank, R_bcstack_t *si)
 static R_INLINE void MATSUBSET_PTR(R_bcstack_t *sx, R_bcstack_t *si, R_bcstack_t *sj, R_bcstack_t *sv, SEXP rho,
                                    SEXP consts, int callidx, Rboolean subset2)
 {
+    DECLNK_STACK_PTR(sx);
     SEXP idx, jdx, args, value;
     SEXP mat = GETSTACK_PTR(sx);
 
@@ -6091,6 +6104,7 @@ static R_INLINE SEXP getStackArgsList(int n, R_bcstack_t *start)
 static R_INLINE void SUBSET_N_PTR(R_bcstack_t *sx, int rank, R_bcstack_t *si, R_bcstack_t *sv, SEXP rho, SEXP consts,
                                   int callidx, Rboolean subset2)
 {
+    DECLNK_STACK_PTR(sx);
     SEXP args, value;
     SEXP x = GETSTACK_PTR(sx);
 
@@ -6195,6 +6209,7 @@ static R_INLINE Rboolean setElementFromScalar(SEXP vec, R_xlen_t i, int typev, s
 static R_INLINE void VECSUBASSIGN_PTR(R_bcstack_t *sx, R_bcstack_t *srhs, R_bcstack_t *si, R_bcstack_t *sv, SEXP rho,
                                       SEXP consts, int callidx, Rboolean subassign2)
 {
+    DECLNK_STACK_PTR(sx);
     SEXP idx, args, value;
     SEXP vec = GETSTACK_PTR(sx);
 
@@ -6237,6 +6252,7 @@ static R_INLINE void VECSUBASSIGN_PTR(R_bcstack_t *sx, R_bcstack_t *srhs, R_bcst
 static R_INLINE void MATSUBASSIGN_PTR(R_bcstack_t *sx, R_bcstack_t *srhs, R_bcstack_t *si, R_bcstack_t *sj,
                                       R_bcstack_t *sv, SEXP rho, SEXP consts, int callidx, Rboolean subassign2)
 {
+    DECLNK_STACK_PTR(sx);
     SEXP dim, idx, jdx, args, value;
     SEXP mat = GETSTACK_PTR(sx);
 
@@ -6292,6 +6308,7 @@ static R_INLINE void MATSUBASSIGN_PTR(R_bcstack_t *sx, R_bcstack_t *srhs, R_bcst
 static R_INLINE void SUBASSIGN_N_PTR(R_bcstack_t *sx, int rank, R_bcstack_t *srhs, R_bcstack_t *si, R_bcstack_t *sv,
                                      SEXP rho, SEXP consts, int callidx, Rboolean subassign2)
 {
+    DECLNK_STACK_PTR(sx);
     SEXP dim, args, value;
     SEXP x = GETSTACK_PTR(sx);
 
