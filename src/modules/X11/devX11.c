@@ -2364,7 +2364,7 @@ static void X11_Raster(unsigned int *raster, int w, int h, double x, double y, d
         imageWidth = (int)-(width - .5);
         x = x - imageWidth * cos(angle);
         if (angle != 0)
-            y = y - imageWidth * sin(angle);
+            y = y + imageWidth * sin(angle);
         invertX = 1;
     }
     else
@@ -2380,6 +2380,15 @@ static void X11_Raster(unsigned int *raster, int w, int h, double x, double y, d
     else
     {
         R_GE_rasterScale(raster, w, h, rasterImage, imageWidth, imageHeight);
+    }
+
+    if (invertX || invertY)
+    {
+        unsigned int *flippedRaster;
+
+        flippedRaster = (unsigned int *)R_alloc(imageWidth * imageHeight, sizeof(unsigned int));
+        flipRaster(rasterImage, imageWidth, imageHeight, invertX, invertY, flippedRaster);
+        rasterImage = flippedRaster;
     }
 
     if (rot != 0)
@@ -2407,15 +2416,6 @@ static void X11_Raster(unsigned int *raster, int w, int h, double x, double y, d
         rasterImage = rotatedRaster;
         imageWidth = newW;
         imageHeight = newH;
-    }
-
-    if (invertX || invertY)
-    {
-        unsigned int *flippedRaster;
-
-        flippedRaster = (unsigned int *)R_alloc(imageWidth * imageHeight, sizeof(unsigned int));
-        flipRaster(rasterImage, imageWidth, imageHeight, invertX, invertY, flippedRaster);
-        rasterImage = flippedRaster;
     }
 
     image = XCreateImage(display, visual, depth, ZPixmap, 0, /* offset */
