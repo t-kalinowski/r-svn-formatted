@@ -90,12 +90,12 @@ SEXP Rdownload(SEXP args)
     }
 }
 
-Rconnection attribute_hidden R_newurl(const char *description, const char *const mode, int type)
+Rconnection attribute_hidden R_newurl(const char *description, const char *const mode, SEXP headers, int type)
 {
     if (!initialized)
         internet_Init();
     if (initialized > 0)
-        return (*ptr->newurl)(description, mode, type);
+        return (*ptr->newurl)(description, mode, headers, type);
     else
     {
         error(_("internet routines cannot be loaded"));
@@ -121,7 +121,7 @@ void *R_HTTPOpen(const char *url)
     if (!initialized)
         internet_Init();
     if (initialized > 0)
-        return (*ptr->HTTPOpen)(url, NULL, 0);
+        return (*ptr->HTTPOpen)(url, NULL, NULL, 0);
     else
     {
         error(_("internet routines cannot be loaded"));
@@ -369,12 +369,12 @@ SEXP attribute_hidden do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho)
     }
 }
 
-Rconnection attribute_hidden R_newCurlUrl(const char *description, const char *const mode, int type)
+Rconnection attribute_hidden R_newCurlUrl(const char *description, const char *const mode, SEXP headers, int type)
 {
     if (!initialized)
         internet_Init();
     if (initialized > 0)
-        return (*ptr->newcurlurl)(description, mode, type);
+        return (*ptr->newcurlurl)(description, mode, headers, type);
     else
     {
         error(_("internet routines cannot be loaded"));

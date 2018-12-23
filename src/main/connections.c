@@ -5913,14 +5913,14 @@ SEXP attribute_hidden do_sumconnection(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
 
 // in internet module: 'type' is unused
-extern Rconnection R_newCurlUrl(const char *description, const char *const mode, int type);
+extern Rconnection R_newCurlUrl(const char *description, const char *const mode, SEXP headers, int type);
 
-/* op = 0: .Internal( url(description, open, blocking, encoding, method))
+/* op = 0: .Internal( url(description, open, blocking, encoding, method, headers))
    op = 1: .Internal(file(description, open, blocking, encoding, method, raw))
 */
 SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP scmd, sopen, ans, class, enc;
+    SEXP scmd, sopen, ans, class, enc, headers = R_NilValue, headers_flat = R_NilValue;
     char *class2 = "url";
     const char *url, *open;
     int ncon, block, raw = 0, defmeth,
@@ -6015,6 +6015,17 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
             error(_("invalid '%s' argument"), "raw");
     }
 
+    // --------- headers, for url() only
+    if (PRIMVAL(op) == 0)
+    {
+        SEXP lheaders = CAD4R(CDR(args));
+        if (!isNull(lheaders))
+        {
+            headers = VECTOR_ELT(lheaders, 0);
+            headers_flat = VECTOR_ELT(lheaders, 1);
+        }
+    }
+
     if (!meth)
     {
         if (strncmp(url, "ftps://", 7) == 0)
@@ -6066,14 +6077,14 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
         if (meth)
         {
 #ifdef HAVE_LIBCURL
-            con = R_newCurlUrl(url, strlen(open) ? open : "r", 0);
+            con = R_newCurlUrl(url, strlen(open) ? open : "r", headers, 0);
 #else
             error("url(method = \"libcurl\") is not supported on this platform");
 #endif
         }
         else
         {
-            con = R_newurl(url, strlen(open) ? open : "r", winmeth);
+            con = R_newurl(url, strlen(open) ? open : "r", headers_flat, winmeth);
             ((Rurlconn)con->private)->type = type;
         }
     }

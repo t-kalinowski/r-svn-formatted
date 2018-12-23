@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2000-2016   The R Core Team.
+ *  Copyright (C) 2000-2018   The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@
 #include <errno.h>
 #include <R_ext/Print.h>
 
-static void *in_R_HTTPOpen(const char *url, const char *headers, const int cacheOK);
+static void *in_R_HTTPOpen(const char *url, const char *agent, const char *headers, int cacheOK);
 static int in_R_HTTPRead(void *ctx, char *dest, int len);
 static void in_R_HTTPClose(void *ctx);
 
@@ -43,16 +43,16 @@ static void in_R_FTPClose(void *ctx);
 SEXP in_do_curlVersion(SEXP call, SEXP op, SEXP args, SEXP rho);
 SEXP in_do_curlGetHeaders(SEXP call, SEXP op, SEXP args, SEXP rho);
 SEXP in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho);
-Rconnection in_newCurlUrl(const char *description, const char *const mode, int type);
+Rconnection in_newCurlUrl(const char *description, const char *const mode, SEXP headers, int type);
 
 #ifdef Win32
-static void *in_R_HTTPOpen2(const char *url, const char *headers, const int cacheOK);
+static void *in_R_HTTPOpen2(const char *url, const char *agent, const char *headers, int cacheOK);
 static int in_R_HTTPRead2(void *ctx, char *dest, int len);
 static void in_R_HTTPClose2(void *ctx);
 static void *in_R_FTPOpen2(const char *url);
 
-#define Ri_HTTPOpen(url, headers, cacheOK)                                                                             \
-    (meth ? in_R_HTTPOpen2(url, headers, cacheOK) : in_R_HTTPOpen(url, headers, cacheOK));
+#define Ri_HTTPOpen(url, agent, headers, cacheOK)                                                                      \
+    (meth ? in_R_HTTPOpen2(url, agent, headers, cacheOK) : in_R_HTTPOpen(url, agent, headers, cacheOK));
 
 #define Ri_HTTPRead(ctx, dest, len) (meth ? in_R_HTTPRead2(ctx, dest, len) : in_R_HTTPRead(ctx, dest, len))
 
@@ -117,19 +117,20 @@ static Rboolean url_open(Rconnection con)
         return FALSE;
 #endif
     case HTTPsh: {
-        SEXP sheaders, agentFun;
-        const char *headers;
+        SEXP sagent, agentFun;
+        const char *agent;
         SEXP s_makeUserAgent = install("makeUserAgent");
         agentFun = PROTECT(lang1(s_makeUserAgent)); // defaults to ,TRUE
         SEXP utilsNS = PROTECT(R_FindNamespace(mkString("utils")));
-        sheaders = eval(agentFun, utilsNS);
+        struct urlconn *uc = con->private;
+        sagent = eval(agentFun, utilsNS);
         UNPROTECT(1); /* utilsNS */
-        PROTECT(sheaders);
-        if (TYPEOF(sheaders) == NILSXP)
-            headers = NULL;
+        PROTECT(sagent);
+        if (TYPEOF(sagent) == NILSXP)
+            agent = NULL;
         else
-            headers = CHAR(STRING_ELT(sheaders, 0));
-        ctxt = in_R_HTTPOpen(url, headers, 0);
+            agent = CHAR(STRING_ELT(sagent, 0));
+        ctxt = in_R_HTTPOpen(url, agent, uc->headers, 0);
         UNPROTECT(2);
         if (ctxt == NULL)
         {
@@ -173,14 +174,17 @@ static Rboolean url_open(Rconnection con)
 static void url_close(Rconnection con)
 {
     UrlScheme type = ((Rurlconn)(con->private))->type;
+    struct urlconn *uc = con->private;
     switch (type)
     {
     case HTTPsh:
     case HTTPSsh:
-        in_R_HTTPClose(((Rurlconn)(con->private))->ctxt);
+        if (uc && uc->headers)
+            free(uc->headers);
+        in_R_HTTPClose(uc->ctxt);
         break;
     case FTPsh:
-        in_R_FTPClose(((Rurlconn)(con->private))->ctxt);
+        in_R_FTPClose(uc->ctxt);
         break;
     default:
         break;
@@ -248,16 +252,17 @@ static Rboolean url_open2(Rconnection con)
     {
     case HTTPSsh:
     case HTTPsh: {
-        SEXP sheaders, agentFun;
-        const char *headers;
+        SEXP sagent, agentFun;
+        const char *agent;
         SEXP s_makeUserAgent = install("makeUserAgent");
+        struct urlconn *uc = con->private;
         agentFun = PROTECT(lang2(s_makeUserAgent, ScalarLogical(0)));
-        sheaders = PROTECT(eval(agentFun, R_FindNamespace(mkString("utils"))));
-        if (TYPEOF(sheaders) == NILSXP)
-            headers = NULL;
+        sagent = PROTECT(eval(agentFun, R_FindNamespace(mkString("utils"))));
+        if (TYPEOF(sagent) == NILSXP)
+            agent = NULL;
         else
-            headers = CHAR(STRING_ELT(sheaders, 0));
-        ctxt = in_R_HTTPOpen2(url, headers, 0);
+            agent = CHAR(STRING_ELT(sagent, 0));
+        ctxt = in_R_HTTPOpen2(url, agent, uc->headers, 0);
         UNPROTECT(2);
         if (ctxt == NULL)
         {
@@ -354,10 +359,9 @@ static size_t url_read2(void *ptr, size_t size, size_t nitems, Rconnection con)
 }
 #endif
 
-static Rconnection in_R_newurl(const char *description, const char *const mode, int type)
+static Rconnection in_R_newurl(const char *description, const char *const mode, SEXP headers, int type)
 {
     Rconnection new;
-
     new = (Rconnection)malloc(sizeof(struct Rconn));
     if (!new)
         error(_("allocation of url connection failed"));
@@ -397,7 +401,7 @@ static Rconnection in_R_newurl(const char *description, const char *const mode, 
         strcpy(new->class, "url");
     }
     new->fgetc = &dummy_fgetc;
-    new->private = (void *)malloc(sizeof(struct urlconn));
+    struct urlconn *uc = new->private = (void *)malloc(sizeof(struct urlconn));
     if (!new->private)
     {
         free(new->description);
@@ -405,6 +409,20 @@ static Rconnection in_R_newurl(const char *description, const char *const mode, 
         free(new);
         error(_("allocation of url connection failed"));
         /* for Solaris 12.5 */ new = NULL;
+    }
+    uc->headers = NULL;
+    if (!isNull(headers))
+    {
+        uc->headers = strdup(CHAR(STRING_ELT(headers, 0)));
+        if (!uc->headers)
+        {
+            free(new->description);
+            free(new->class);
+            free(new->private);
+            free(new);
+            error(_("allocation of url connection failed"));
+            /* for Solaris 12.5 */ new = NULL;
+        }
     }
 
     IDquiet = TRUE;
@@ -472,7 +490,7 @@ static void doneprogressbar(void *data)
 #define IBUFSIZE 4096
 static SEXP in_do_download(SEXP args)
 {
-    SEXP scmd, sfile, smode;
+    SEXP scmd, sfile, smode, sheaders;
     const char *url, *file, *mode;
     int quiet, status = 0, cacheOK;
 #ifdef Win32
@@ -504,9 +522,13 @@ static SEXP in_do_download(SEXP args)
         error(_("invalid '%s' argument"), "mode");
     mode = CHAR(STRING_ELT(smode, 0));
     cacheOK = asLogical(CAR(args));
+    args = CDR(args);
     if (cacheOK == NA_LOGICAL)
         error(_("invalid '%s' argument"), "cacheOK");
     Rboolean file_URL = (strncmp(url, "file://", 7) == 0);
+    sheaders = CAR(args);
+    if (TYPEOF(sheaders) != NILSXP && !isString(sheaders))
+        error(_("invalid '%s' argument"), "headers");
 #ifdef Win32
     int meth = asLogical(CADR(args));
     if (meth == NA_LOGICAL)
@@ -582,7 +604,7 @@ static SEXP in_do_download(SEXP args)
         R_Busy(1);
         if (!quiet)
             REprintf(_("trying URL '%s'\n"), url);
-        SEXP agentFun, sheaders;
+        SEXP agentFun, sagent;
 #ifdef Win32
         R_FlushConsole();
         if (meth)
@@ -593,11 +615,13 @@ static SEXP in_do_download(SEXP args)
         agentFun = PROTECT(lang1(install("makeUserAgent")));
 #endif
         SEXP utilsNS = PROTECT(R_FindNamespace(mkString("utils")));
-        sheaders = eval(agentFun, utilsNS);
+        sagent = eval(agentFun, utilsNS);
         UNPROTECT(1); /* utilsNS */
-        PROTECT(sheaders);
-        const char *headers = (TYPEOF(sheaders) == NILSXP) ? NULL : CHAR(STRING_ELT(sheaders, 0));
-        ctxt = Ri_HTTPOpen(url, headers, cacheOK);
+        PROTECT(sagent);
+        const char *cagent = (TYPEOF(sagent) == NILSXP) ? NULL : CHAR(STRING_ELT(sagent, 0));
+        /* TODO: flatten headers */
+        const char *cheaders = (TYPEOF(sheaders) == NILSXP) ? NULL : CHAR(STRING_ELT(sheaders, 0));
+        ctxt = Ri_HTTPOpen(url, cagent, cheaders, cacheOK);
         UNPROTECT(2);
         if (ctxt == NULL)
             status = 1;
@@ -850,19 +874,36 @@ static SEXP in_do_download(SEXP args)
     return ScalarInteger(status);
 }
 
-void *in_R_HTTPOpen(const char *url, const char *headers, const int cacheOK)
+void *in_R_HTTPOpen(const char *url, const char *agent, const char *headers, int cacheOK)
 {
     inetconn *con;
     void *ctxt;
     int timeout = asInteger(GetOption1(install("timeout")));
     DLsize_t len = -1;
     char *type = NULL;
+    char *fullheaders = NULL;
 
     if (timeout == NA_INTEGER || timeout <= 0)
         timeout = 60;
 
     RxmlNanoHTTPTimeout(timeout);
-    ctxt = RxmlNanoHTTPOpen(url, NULL, headers, cacheOK);
+
+    if (agent || headers)
+    {
+        fullheaders = malloc((agent ? strlen(agent) : 0) + (headers ? strlen(headers) : 0) + 1);
+        if (!fullheaders)
+            error(_("could not allocate memory for http headers"));
+        fullheaders[0] = '\0';
+        if (agent)
+            strcat(fullheaders, agent);
+        if (headers)
+            strcat(fullheaders, headers);
+    }
+
+    ctxt = RxmlNanoHTTPOpen(url, NULL, fullheaders, cacheOK);
+    if (fullheaders)
+        free(fullheaders);
+
     if (ctxt != NULL)
     {
         int rc = RxmlNanoHTTPReturnCode(ctxt);
@@ -982,7 +1023,7 @@ typedef struct wictxt
     HINTERNET session;
 } wIctxt, *WIctxt;
 
-static void *in_R_HTTPOpen2(const char *url, const char *headers, const int cacheOK)
+static void *in_R_HTTPOpen2(const char *url, const char *agent, const char *headers, int cacheOK)
 {
     WIctxt wictxt;
     DWORD status = 0, len = 0, d1 = 4, d2 = 0, d3 = 100;
@@ -991,7 +1032,7 @@ static void *in_R_HTTPOpen2(const char *url, const char *headers, const int cach
     wictxt = (WIctxt)malloc(sizeof(wIctxt));
     wictxt->length = -1;
     wictxt->type = NULL;
-    wictxt->hand = InternetOpen(headers, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
+    wictxt->hand = InternetOpen(agent, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
     if (!wictxt->hand)
     {
         free(wictxt);
@@ -1003,7 +1044,7 @@ static void *in_R_HTTPOpen2(const char *url, const char *headers, const int cach
     DWORD flags = INTERNET_FLAG_KEEP_CONNECTION | INTERNET_FLAG_NO_CACHE_WRITE;
     if (!cacheOK)
         flags |= INTERNET_FLAG_PRAGMA_NOCACHE;
-    wictxt->session = InternetOpenUrl(wictxt->hand, url, NULL, 0, flags, 0);
+    wictxt->session = InternetOpenUrl(wictxt->hand, url, headers, headers ? -1 : 0, flags, 0);
     if (!wictxt->session)
     {
         DWORD err1 = GetLastError(), err2, blen = 101;
