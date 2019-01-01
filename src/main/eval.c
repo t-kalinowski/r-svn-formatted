@@ -4164,7 +4164,7 @@ static SEXP seq_int(int n1, int n2)
 #ifdef COMPACT_INTSEQ
 #define INTSEQSXP 9999
 #endif
-#define CACHE_SCALARS
+//#define CACHE_SCALARS
 static R_INLINE SEXP GETSTACK_PTR_TAG(R_bcstack_t *s)
 {
     /* no error checking since only called with tag != 0 */
@@ -4348,11 +4348,6 @@ static R_INLINE SEXP GETSTACK_PTR_TAG(R_bcstack_t *s)
     } while (0)
 #endif
 
-typedef union {
-    double dval;
-    int ival;
-} scalar_value_t;
-
 /* bcStackScalar() checks whether the object in the specified stack
    location is a simple real, integer, or logical scalar (i.e. length
    one and no attributes.  If so, the type is returned as the function
@@ -4360,70 +4355,56 @@ typedef union {
    second argument; if not, then zero is returned as the function
    value. The boxed value can be returned through a pointer argument
    if it is suitable for re-use. */
-static R_INLINE int bcStackScalarEx(R_bcstack_t *s, scalar_value_t *v, SEXP *pv)
+static R_INLINE R_bcstack_t *bcStackScalar(R_bcstack_t *s, R_bcstack_t *v)
 {
-#ifdef TYPED_STACK
-    int tag = s->tag;
+    switch (s->tag)
+    {
+    case REALSXP:
+    case INTSXP:
+    case LGLSXP:
+        return s;
+    }
 
-    if (tag)
-        switch (tag)
-        {
-        case REALSXP:
-            v->dval = s->u.dval;
-            return tag;
-        case INTSXP:
-            v->ival = s->u.ival;
-            return tag;
-        case LGLSXP:
-            v->ival = s->u.ival;
-            return tag;
-        }
-#endif
     SEXP x = GETSTACK_SXPVAL_PTR(s);
     if (IS_SIMPLE_SCALAR(x, REALSXP))
     {
-#ifndef NO_SAVE_ALLOC
-        if (pv && NO_REFERENCES(x))
-            *pv = x;
-#endif
-        v->dval = SCALAR_DVAL(x);
-        return REALSXP;
+        v->tag = REALSXP;
+        v->u.dval = SCALAR_DVAL(x);
+        return v;
     }
     else if (IS_SIMPLE_SCALAR(x, INTSXP))
     {
-#ifndef NO_SAVE_ALLOC
-        if (pv && NO_REFERENCES(x))
-            *pv = x;
-#endif
-        v->ival = SCALAR_IVAL(x);
-        return INTSXP;
+        v->tag = INTSXP;
+        v->u.ival = SCALAR_IVAL(x);
+        return v;
     }
     else if (IS_SIMPLE_SCALAR(x, LGLSXP))
     {
-        v->ival = SCALAR_LVAL(x);
-        return LGLSXP;
+        v->tag = LGLSXP;
+        v->u.ival = SCALAR_LVAL(x);
+        return v;
     }
     else
-        return 0;
+    {
+        v->tag = 0;
+        v->u.sxpval = NULL;
+        return v;
+    }
 }
-
-#define bcStackScalar(s, v) bcStackScalarEx(s, v, NULL)
 
 #define INTEGER_TO_LOGICAL(x) ((x) == NA_INTEGER ? NA_LOGICAL : (x) ? TRUE : FALSE)
 #define INTEGER_TO_REAL(x) ((x) == NA_INTEGER ? NA_REAL : (x))
 #define LOGICAL_TO_REAL(x) ((x) == NA_LOGICAL ? NA_REAL : (x))
 
-static R_INLINE int bcStackScalarRealEx(R_bcstack_t *s, scalar_value_t *px, SEXP *pv)
+static R_INLINE R_bcstack_t *bcStackScalarReal(R_bcstack_t *s, R_bcstack_t *v)
 {
-    int typex = bcStackScalarEx(s, px, pv);
-    if (typex == INTSXP)
+    v = bcStackScalar(s, v);
+    if (v->tag == INTSXP)
     {
-        typex = REALSXP;
-        px->dval = INTEGER_TO_REAL(px->ival);
-        if (pv)
-            *pv = NULL;
+        v->tag = REALSXP;
+        v->u.dval = INTEGER_TO_REAL(v->u.ival);
     }
-    return typex;
+    return v;
 }
 
 #define DO_FAST_RELOP2(op, a, b)                                                                                       \
@@ -4436,6 +4417,13 @@ static R_INLINE int bcStackScalarRealEx(R_bcstack_t *s, scalar_value_t *px, SEXP
         NEXT();                                                                                                        \
     } while (0)
 
+#define INCLNK_STACK_PTR(s)                                                                                            \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if ((s)->tag == 0)                                                                                             \
+            INCREMENT_LINKS((s)->u.sxpval);                                                                            \
+    } while (0)
+
 #define DECLNK_STACK_PTR(s)                                                                                            \
     do                                                                                                                 \
     {                                                                                                                  \
@@ -4446,24 +4434,23 @@ static R_INLINE int bcStackScalarRealEx(R_bcstack_t *s, scalar_value_t *px, SEXP
 #define FastRelop2(op, opval, opsym)                                                                                   \
     do                                                                                                                 \
     {                                                                                                                  \
-        scalar_value_t vx;                                                                                             \
-        scalar_value_t vy;                                                                                             \
-        int typex = bcStackScalar(R_BCNodeStackTop - 2, &vx);                                                          \
-        int typey = bcStackScalar(R_BCNodeStackTop - 1, &vy);                                                          \
-        if (typex == REALSXP && !ISNAN(vx.dval))                                                                       \
+        R_bcstack_t vvx, vvy;                                                                                          \
+        R_bcstack_t *vx = bcStackScalar(R_BCNodeStackTop - 2, &vvx);                                                   \
+        R_bcstack_t *vy = bcStackScalar(R_BCNodeStackTop - 1, &vvy);                                                   \
+        if (vx->tag == REALSXP && !ISNAN(vx->u.dval))                                                                  \
         {                                                                                                              \
-            if (typey == REALSXP && !ISNAN(vy.dval))                                                                   \
-                DO_FAST_RELOP2(op, vx.dval, vy.dval);                                                                  \
-            else if (typey == INTSXP && vy.ival != NA_INTEGER)                                                         \
-                DO_FAST_RELOP2(op, vx.dval, vy.ival);                                                                  \
+            if (vy->tag == REALSXP && !ISNAN(vy->u.dval))                                                              \
+                DO_FAST_RELOP2(op, vx->u.dval, vy->u.dval);                                                            \
+            else if (vy->tag == INTSXP && vy->u.ival != NA_INTEGER)                                                    \
+                DO_FAST_RELOP2(op, vx->u.dval, vy->u.ival);                                                            \
         }                                                                                                              \
-        else if (typex == INTSXP && vx.ival != NA_INTEGER)                                                             \
+        else if (vx->tag == INTSXP && vx->u.ival != NA_INTEGER)                                                        \
         {                                                                                                              \
-            if (typey == REALSXP && !ISNAN(vy.dval))                                                                   \
-                DO_FAST_RELOP2(op, vx.ival, vy.dval);                                                                  \
-            else if (typey == INTSXP && vy.ival != NA_INTEGER)                                                         \
+            if (vy->tag == REALSXP && !ISNAN(vy->u.dval))                                                              \
+                DO_FAST_RELOP2(op, vx->u.ival, vy->u.dval);                                                            \
+            else if (vy->tag == INTSXP && vy->u.ival != NA_INTEGER)                                                    \
             {                                                                                                          \
-                DO_FAST_RELOP2(op, vx.ival, vy.ival);                                                                  \
+                DO_FAST_RELOP2(op, vx->u.ival, vy->u.ival);                                                            \
             }                                                                                                          \
         }                                                                                                              \
         Relop2(opval, opsym);                                                                                          \
@@ -4608,38 +4595,36 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
 #define FastMath1(fun, sym)                                                                                            \
     do                                                                                                                 \
     {                                                                                                                  \
-        scalar_value_t vx;                                                                                             \
-        SEXP sa = NULL;                                                                                                \
-        int typex = bcStackScalarEx(R_BCNodeStackTop - 1, &vx, &sa);                                                   \
-        if (typex == REALSXP)                                                                                          \
+        R_bcstack_t vvx;                                                                                               \
+        R_bcstack_t *vx = bcStackScalar(R_BCNodeStackTop - 1, &vvx);                                                   \
+        if (vx->tag == REALSXP)                                                                                        \
         {                                                                                                              \
-            double dval = fun(vx.dval);                                                                                \
+            double dval = fun(vx->u.dval);                                                                             \
             if (CMP_ISNAN(dval))                                                                                       \
             {                                                                                                          \
                 SEXP call = VECTOR_ELT(constants, GETOP());                                                            \
-                if (ISNAN(vx.dval))                                                                                    \
-                    dval = vx.dval;                                                                                    \
+                if (ISNAN(vx->u.dval))                                                                                 \
+                    dval = vx->u.dval;                                                                                 \
                 else                                                                                                   \
                     warningcall(call, R_MSG_NA);                                                                       \
             }                                                                                                          \
             else                                                                                                       \
                 SKIP_OP();                                                                                             \
-            SETSTACK_REAL_EX(-1, dval, sa);                                                                            \
+            SETSTACK_REAL(-1, dval);                                                                                   \
             R_Visible = TRUE;                                                                                          \
             NEXT();                                                                                                    \
         }                                                                                                              \
-        else if (typex == INTSXP && vx.ival != NA_INTEGER)                                                             \
+        else if (vx->tag == INTSXP && vx->u.ival != NA_INTEGER)                                                        \
         {                                                                                                              \
             SKIP_OP();                                                                                                 \
-            SETSTACK_REAL_EX(-1, fun(vx.ival), NULL);                                                                  \
+            SETSTACK_REAL(-1, fun(vx->u.ival));                                                                        \
             R_Visible = TRUE;                                                                                          \
             NEXT();                                                                                                    \
         }                                                                                                              \
         Builtin1(do_math1, sym, rho);                                                                                  \
     } while (0)
 
-#ifdef NO_SAVE_ALLOC
-#define DO_FAST_BINOP(fun, a, b, v)                                                                                    \
+#define DO_FAST_BINOP(fun, a, b)                                                                                       \
     do                                                                                                                 \
     {                                                                                                                  \
         SKIP_OP();                                                                                                     \
@@ -4649,7 +4634,7 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
         NEXT();                                                                                                        \
     } while (0)
 
-#define DO_FAST_BINOP_INT(fun, a, b, v)                                                                                \
+#define DO_FAST_BINOP_INT(fun, a, b)                                                                                   \
     do                                                                                                                 \
     {                                                                                                                  \
         double dval = fun((double)(a), (double)(b));                                                                   \
@@ -4662,54 +4647,23 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
             NEXT();                                                                                                    \
         }                                                                                                              \
     } while (0)
-#else
-/* these reuse one of the two values on the top of the stack if it is
-   of the right type and has no references. It is known that both of
-   these will have length one and have no attributes. */
-#define DO_FAST_BINOP(fun, a, b, ans)                                                                                  \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        SKIP_OP();                                                                                                     \
-        double dval = fun(a, b);                                                                                       \
-        SETSTACK_REAL_EX(-2, dval, ans);                                                                               \
-        R_BCNodeStackTop--;                                                                                            \
-        R_Visible = TRUE;                                                                                              \
-        NEXT();                                                                                                        \
-    } while (0)
-
-#define DO_FAST_BINOP_INT(fun, a, b, ans)                                                                              \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        double dval = fun((double)(a), (double)(b));                                                                   \
-        if (dval <= INT_MAX && dval >= INT_MIN + 1)                                                                    \
-        {                                                                                                              \
-            int val = (int)dval;                                                                                       \
-            SKIP_OP();                                                                                                 \
-            SETSTACK_INTEGER_EX(-2, val, ans);                                                                         \
-            R_BCNodeStackTop--;                                                                                        \
-            R_Visible = TRUE;                                                                                          \
-            NEXT();                                                                                                    \
-        }                                                                                                              \
-    } while (0)
-#endif
 
 #define FastUnary(op, opsym)                                                                                           \
     do                                                                                                                 \
     {                                                                                                                  \
-        scalar_value_t vx;                                                                                             \
-        SEXP sa = NULL;                                                                                                \
-        int typex = bcStackScalarEx(R_BCNodeStackTop - 1, &vx, &sa);                                                   \
-        if (typex == REALSXP)                                                                                          \
+        R_bcstack_t vvx;                                                                                               \
+        R_bcstack_t *vx = bcStackScalar(R_BCNodeStackTop - 1, &vvx);                                                   \
+        if (vx->tag == REALSXP)                                                                                        \
         {                                                                                                              \
             SKIP_OP();                                                                                                 \
-            SETSTACK_REAL_EX(-1, op vx.dval, sa);                                                                      \
+            SETSTACK_REAL(-1, op vx->u.dval);                                                                          \
             R_Visible = TRUE;                                                                                          \
             NEXT();                                                                                                    \
         }                                                                                                              \
-        else if (typex == INTSXP && vx.ival != NA_INTEGER)                                                             \
+        else if (vx->tag == INTSXP && vx->u.ival != NA_INTEGER)                                                        \
         {                                                                                                              \
             SKIP_OP();                                                                                                 \
-            SETSTACK_INTEGER_EX(-1, op vx.ival, sa);                                                                   \
+            SETSTACK_INTEGER(-1, op vx->u.ival);                                                                       \
             R_Visible = TRUE;                                                                                          \
             NEXT();                                                                                                    \
         }                                                                                                              \
@@ -4719,29 +4673,28 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
 #define FastBinary(op, opval, opsym)                                                                                   \
     do                                                                                                                 \
     {                                                                                                                  \
-        scalar_value_t vx;                                                                                             \
-        scalar_value_t vy;                                                                                             \
-        SEXP sa = NULL;                                                                                                \
-        SEXP sb = NULL;                                                                                                \
-        int typex = bcStackScalarEx(R_BCNodeStackTop - 2, &vx, &sa);                                                   \
-        int typey = bcStackScalarEx(R_BCNodeStackTop - 1, &vy, &sb);                                                   \
-        if (typex == REALSXP)                                                                                          \
+        R_bcstack_t vvx, vvy;                                                                                          \
+        R_bcstack_t *vx = bcStackScalar(R_BCNodeStackTop - 2, &vvx);                                                   \
+        R_bcstack_t *vy = bcStackScalar(R_BCNodeStackTop - 1, &vvy);                                                   \
+        if (vx->tag == REALSXP)                                                                                        \
         {                                                                                                              \
-            if (typey == REALSXP)                                                                                      \
-                DO_FAST_BINOP(op, vx.dval, vy.dval, sa ? sa : sb);                                                     \
-            else if (typey == INTSXP && vy.ival != NA_INTEGER)                                                         \
-                DO_FAST_BINOP(op, vx.dval, vy.ival, sa);                                                               \
+            if (vy->tag == REALSXP)                                                                                    \
+                DO_FAST_BINOP(op, vx->u.dval, vy->u.dval);                                                             \
+            else if (vy->tag == INTSXP && vy->u.ival != NA_INTEGER)                                                    \
+                DO_FAST_BINOP(op, vx->u.dval, vy->u.ival);                                                             \
         }                                                                                                              \
-        else if (typex == INTSXP && vx.ival != NA_INTEGER)                                                             \
+        else if (vx->tag == INTSXP && vx->u.ival != NA_INTEGER)                                                        \
         {                                                                                                              \
-            if (typey == REALSXP)                                                                                      \
-                DO_FAST_BINOP(op, vx.ival, vy.dval, sb);                                                               \
-            else if (typey == INTSXP && vy.ival != NA_INTEGER)                                                         \
+            int ix = vx->u.ival;                                                                                       \
+            if (vy->tag == REALSXP)                                                                                    \
+                DO_FAST_BINOP(op, ix, vy->u.dval);                                                                     \
+            else if (vy->tag == INTSXP && vy->u.ival != NA_INTEGER)                                                    \
             {                                                                                                          \
+                int iy = vy->u.ival;                                                                                   \
                 if (opval == DIVOP || opval == POWOP)                                                                  \
-                    DO_FAST_BINOP(op, (double)vx.ival, (double)vy.ival, NULL);                                         \
+                    DO_FAST_BINOP(op, (double)ix, (double)iy);                                                         \
                 else                                                                                                   \
-                    DO_FAST_BINOP_INT(op, vx.ival, vy.ival, sa ? sa : sb);                                             \
+                    DO_FAST_BINOP_INT(op, ix, iy);                                                                     \
             }                                                                                                          \
         }                                                                                                              \
         Arith2(opval, opsym);                                                                                          \
@@ -4768,23 +4721,22 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
 #define DO_LOG()                                                                                                       \
     do                                                                                                                 \
     {                                                                                                                  \
-        scalar_value_t vx;                                                                                             \
-        SEXP sa = NULL;                                                                                                \
-        int typex = bcStackScalarRealEx(R_BCNodeStackTop - 1, &vx, &sa);                                               \
-        if (typex == REALSXP)                                                                                          \
+        R_bcstack_t vvx;                                                                                               \
+        R_bcstack_t *vx = bcStackScalarReal(R_BCNodeStackTop - 1, &vvx);                                               \
+        if (vx->tag == REALSXP)                                                                                        \
         {                                                                                                              \
-            double dval = R_log(vx.dval);                                                                              \
+            double dval = R_log(vx->u.dval);                                                                           \
             if (CMP_ISNAN(dval))                                                                                       \
             {                                                                                                          \
                 SEXP call = VECTOR_ELT(constants, GETOP());                                                            \
-                if (ISNAN(vx.dval))                                                                                    \
-                    dval = vx.dval;                                                                                    \
+                if (ISNAN(vx->u.dval))                                                                                 \
+                    dval = vx->u.dval;                                                                                 \
                 else                                                                                                   \
                     warningcall(call, R_MSG_NA);                                                                       \
             }                                                                                                          \
             else                                                                                                       \
                 SKIP_OP();                                                                                             \
-            SETSTACK_REAL_EX(-1, dval, sa);                                                                            \
+            SETSTACK_REAL(-1, dval);                                                                                   \
             R_Visible = TRUE;                                                                                          \
             NEXT();                                                                                                    \
         }                                                                                                              \
@@ -4800,28 +4752,26 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y, SEXP rh
 #define DO_LOGBASE()                                                                                                   \
     do                                                                                                                 \
     {                                                                                                                  \
-        scalar_value_t vx, vy;                                                                                         \
-        SEXP sa = NULL;                                                                                                \
-        SEXP sb = NULL;                                                                                                \
-        int typex = bcStackScalarRealEx(R_BCNodeStackTop - 2, &vx, &sa);                                               \
-        int typey = bcStackScalarRealEx(R_BCNodeStackTop - 1, &vy, &sb);                                               \
-        if (typex == REALSXP && typey == REALSXP)                                                                      \
+        R_bcstack_t vvx, vvy;                                                                                          \
+        R_bcstack_t *vx = bcStackScalarReal(R_BCNodeStackTop - 2, &vvx);                                               \
+        R_bcstack_t *vy = bcStackScalarReal(R_BCNodeStackTop - 1, &vvy);                                               \
+        if (vx->tag == REALSXP && vy->tag == REALSXP)                                                                  \
         {                                                                                                              \
-            double dval = logbase(vx.dval, vy.dval);                                                                   \
+            double dval = logbase(vx->u.dval, vy->u.dval);                                                             \
             if (ISNAN(dval))                                                                                           \
             {                                                                                                          \
                 SEXP call = VECTOR_ELT(constants, GETOP());                                                            \
-                if (ISNAN(vx.dval))                                                                                    \
-                    dval = vx.dval;                                                                                    \
-                else if (ISNAN(vy.dval))                                                                               \
-                    dval = vy.dval;                                                                                    \
+                if (ISNAN(vx->u.dval))                                                                                 \
+                    dval = vx->u.dval;                                                                                 \
+                else if (ISNAN(vy->u.dval))                                                                            \
+                    dval = vy->u.dval;                                                                                 \
                 else                                                                                                   \
                     warningcall(call, R_MSG_NA);                                                                       \
             }                                                                                                          \
             else                                                                                                       \
                 SKIP_OP();                                                                                             \
             R_BCNodeStackTop--;                                                                                        \
-            SETSTACK_REAL_EX(-1, dval, sa);                                                                            \
+            SETSTACK_REAL(-1, dval);                                                                                   \
             R_Visible = TRUE;                                                                                          \
             NEXT();                                                                                                    \
         }                                                                                                              \
@@ -4878,20 +4828,19 @@ static R_INLINE double (*getMath1Fun(int i, SEXP call))(double)
     {                                                                                                                  \
         SEXP call = VECTOR_ELT(constants, GETOP());                                                                    \
         double (*fun)(double) = getMath1Fun(GETOP(), call);                                                            \
-        scalar_value_t vx;                                                                                             \
-        SEXP sa = NULL;                                                                                                \
-        int typex = bcStackScalarRealEx(R_BCNodeStackTop - 1, &vx, &sa);                                               \
-        if (typex == REALSXP)                                                                                          \
+        R_bcstack_t vvx;                                                                                               \
+        R_bcstack_t *vx = bcStackScalarReal(R_BCNodeStackTop - 1, &vvx);                                               \
+        if (vx->tag == REALSXP)                                                                                        \
         {                                                                                                              \
-            double dval = fun(vx.dval);                                                                                \
+            double dval = fun(vx->u.dval);                                                                             \
             if (ISNAN(dval))                                                                                           \
             {                                                                                                          \
-                if (ISNAN(vx.dval))                                                                                    \
-                    dval = vx.dval;                                                                                    \
+                if (ISNAN(vx->u.dval))                                                                                 \
+                    dval = vx->u.dval;                                                                                 \
                 else                                                                                                   \
                     warningcall(call, R_MSG_NA);                                                                       \
             }                                                                                                          \
-            SETSTACK_REAL_EX(-1, dval, sa);                                                                            \
+            SETSTACK_REAL(-1, dval);                                                                                   \
             R_Visible = TRUE;                                                                                          \
             NEXT();                                                                                                    \
         }                                                                                                              \
@@ -4944,14 +4893,13 @@ static R_INLINE double (*getMath1Fun(int i, SEXP call))(double)
 #define DO_COLON()                                                                                                     \
     do                                                                                                                 \
     {                                                                                                                  \
-        scalar_value_t vx;                                                                                             \
-        scalar_value_t vy;                                                                                             \
-        int typex = bcStackScalarRealEx(R_BCNodeStackTop - 2, &vx, NULL);                                              \
-        int typey = bcStackScalarRealEx(R_BCNodeStackTop - 1, &vy, NULL);                                              \
-        if (typex == REALSXP && typey == REALSXP)                                                                      \
+        R_bcstack_t vvx, vvy;                                                                                          \
+        R_bcstack_t *vx = bcStackScalarReal(R_BCNodeStackTop - 2, &vvx);                                               \
+        R_bcstack_t *vy = bcStackScalarReal(R_BCNodeStackTop - 1, &vvy);                                               \
+        if (vx->tag == REALSXP && vy->tag == REALSXP)                                                                  \
         {                                                                                                              \
-            double rn1 = vx.dval;                                                                                      \
-            double rn2 = vy.dval;                                                                                      \
+            double rn1 = vx->u.dval;                                                                                   \
+            double rn2 = vy->u.dval;                                                                                   \
             if (R_FINITE(rn1) && R_FINITE(rn2) && INT_MIN <= rn1 && INT_MAX >= rn1 && INT_MIN <= rn2 &&                \
                 INT_MAX >= rn2 && rn1 == (int)rn1 && rn2 == (int)rn2)                                                  \
             {                                                                                                          \
@@ -4986,11 +4934,11 @@ static R_INLINE double (*getMath1Fun(int i, SEXP call))(double)
 #define DO_SEQ_LEN()                                                                                                   \
     do                                                                                                                 \
     {                                                                                                                  \
-        scalar_value_t vx;                                                                                             \
-        int typex = bcStackScalarRealEx(R_BCNodeStackTop - 1, &vx, NULL);                                              \
-        if (typex == REALSXP)                                                                                          \
+        R_bcstack_t vvx;                                                                                               \
+        R_bcstack_t *vx = bcStackScalarReal(R_BCNodeStackTop - 1, &vvx);                                               \
+        if (vx->tag == REALSXP)                                                                                        \
         {                                                                                                              \
-            double rlen = vx.dval;                                                                                     \
+            double rlen = vx->u.dval;                                                                                  \
             if (1 <= rlen && INT_MAX >= rlen && rlen == (int)rlen)                                                     \
             {                                                                                                          \
                 SKIP_OP(); /* skip 'call' index */                                                                     \
@@ -5930,32 +5878,32 @@ static R_INLINE SEXP mkVector1(SEXP s)
         switch (TYPEOF(vec))                                                                                           \
         {                                                                                                              \
         case REALSXP:                                                                                                  \
-            if (XLENGTH(vec) <= i)                                                                                     \
+            if (i < 0 || XLENGTH(vec) <= i)                                                                            \
                 break;                                                                                                 \
             SETSTACK_REAL_PTR(sv, REAL_ELT(vec, i));                                                                   \
             return;                                                                                                    \
         case INTSXP:                                                                                                   \
-            if (XLENGTH(vec) <= i)                                                                                     \
+            if (i < 0 || XLENGTH(vec) <= i)                                                                            \
                 break;                                                                                                 \
             SETSTACK_INTEGER_PTR(sv, INTEGER_ELT(vec, i));                                                             \
             return;                                                                                                    \
         case LGLSXP:                                                                                                   \
-            if (XLENGTH(vec) <= i)                                                                                     \
+            if (i < 0 || XLENGTH(vec) <= i)                                                                            \
                 break;                                                                                                 \
             SETSTACK_LOGICAL_PTR(sv, LOGICAL_ELT(vec, i));                                                             \
             return;                                                                                                    \
         case CPLXSXP:                                                                                                  \
-            if (XLENGTH(vec) <= i)                                                                                     \
+            if (i < 0 || XLENGTH(vec) <= i)                                                                            \
                 break;                                                                                                 \
             SETSTACK_PTR(sv, ScalarComplex(COMPLEX_ELT(vec, i)));                                                      \
             return;                                                                                                    \
         case RAWSXP:                                                                                                   \
-            if (XLENGTH(vec) <= i)                                                                                     \
+            if (i < 0 || XLENGTH(vec) <= i)                                                                            \
                 break;                                                                                                 \
             SETSTACK_PTR(sv, ScalarRaw(RAW(vec)[i]));                                                                  \
             return;                                                                                                    \
         case VECSXP:                                                                                                   \
-            if (XLENGTH(vec) <= i)                                                                                     \
+            if (i < 0 || XLENGTH(vec) <= i)                                                                            \
                 break;                                                                                                 \
             SEXP elt = VECTOR_ELT(vec, i);                                                                             \
             RAISE_NAMED(elt, NAMED(vec));                                                                              \
@@ -5970,18 +5918,15 @@ static R_INLINE SEXP mkVector1(SEXP s)
 #define FAST_VECELT_OK(vec)                                                                                            \
     (ATTRIB(vec) == R_NilValue || (TAG(ATTRIB(vec)) == R_DimSymbol && CDR(ATTRIB(vec)) == R_NilValue))
 
-static R_INLINE void VECSUBSET_PTR(R_bcstack_t *sx, R_bcstack_t *si, R_bcstack_t *sv, SEXP rho, SEXP consts,
-                                   int callidx, Rboolean subset2)
+static R_INLINE void VECSUBSET_PTR(SEXP vec, R_bcstack_t *si, R_bcstack_t *sv, SEXP rho, SEXP consts, int callidx,
+                                   Rboolean subset2)
 {
-    DECLNK_STACK_PTR(sx);
-    SEXP idx, args, value;
-    SEXP vec = GETSTACK_PTR(sx);
     R_xlen_t i = bcStackIndex(si) - 1;
-
-    if (i >= 0 && (subset2 || FAST_VECELT_OK(vec)))
+    if ((subset2 || FAST_VECELT_OK(vec)))
         DO_FAST_VECELT(sv, vec, i, subset2);
 
     /* fall through to the standard default handler */
+    SEXP idx, args, value;
     idx = GETSTACK_PTR(si);
     args = CONS_NR(idx, R_NilValue);
     args = CONS_NR(vec, args);
@@ -5999,10 +5944,14 @@ static R_INLINE void VECSUBSET_PTR(R_bcstack_t *sx, R_bcstack_t *si, R_bcstack_t
     do                                                                                                                 \
     {                                                                                                                  \
         int callidx = GETOP();                                                                                         \
-        VECSUBSET_PTR(R_BCNodeStackTop - 2, R_BCNodeStackTop - 1, R_BCNodeStackTop - 2, rho, constants, callidx,       \
-                      sub2);                                                                                           \
+        R_bcstack_t *sx = R_BCNodeStackTop - 2;                                                                        \
+        R_bcstack_t *si = R_BCNodeStackTop - 1;                                                                        \
+        DECLNK_STACK_PTR(sx);                                                                                          \
+        SEXP vec = GETSTACK_PTR(sx);                                                                                   \
+        VECSUBSET_PTR(vec, si, sx, rho, constants, callidx, sub2);                                                     \
         R_BCNodeStackTop--;                                                                                            \
         R_Visible = TRUE;                                                                                              \
+        NEXT();                                                                                                        \
     } while (0)
 
 static R_INLINE SEXP getMatrixDim(SEXP mat)
@@ -6160,41 +6109,44 @@ static R_INLINE void SUBSET_N_PTR(R_bcstack_t *sx, int rank, R_bcstack_t *si, R_
         R_Visible = TRUE;                                                                                              \
     } while (0)
 
-static R_INLINE Rboolean setElementFromScalar(SEXP vec, R_xlen_t i, int typev, scalar_value_t *v)
+static R_INLINE Rboolean setElementFromScalar(SEXP vec, R_xlen_t i, R_bcstack_t *srhs)
 {
     if (i < 0)
         return FALSE;
+
+    R_bcstack_t vv;
+    R_bcstack_t *v = bcStackScalar(srhs, &vv);
 
     if (TYPEOF(vec) == REALSXP)
     {
         if (XLENGTH(vec) <= i)
             return FALSE;
-        switch (typev)
+        switch (v->tag)
         {
         case REALSXP:
-            REAL(vec)[i] = v->dval;
+            REAL(vec)[i] = v->u.dval;
             return TRUE;
         case INTSXP:
-            REAL(vec)[i] = INTEGER_TO_REAL(v->ival);
+            REAL(vec)[i] = INTEGER_TO_REAL(v->u.ival);
             return TRUE;
         case LGLSXP:
-            REAL(vec)[i] = LOGICAL_TO_REAL(v->ival);
+            REAL(vec)[i] = LOGICAL_TO_REAL(v->u.ival);
             return TRUE;
         }
     }
-    else if (typev == TYPEOF(vec))
+    else if (v->tag == TYPEOF(vec))
     {
-        switch (typev)
+        switch (v->tag)
         {
         case INTSXP:
             if (XLENGTH(vec) <= i)
                 return FALSE;
-            INTEGER(vec)[i] = v->ival;
+            INTEGER(vec)[i] = v->u.ival;
             return TRUE;
         case LGLSXP:
             if (XLENGTH(vec) <= i)
                 return FALSE;
-            LOGICAL(vec)[i] = INTEGER_TO_LOGICAL(v->ival);
+            LOGICAL(vec)[i] = INTEGER_TO_LOGICAL(v->u.ival);
             return TRUE;
         }
     }
@@ -6204,9 +6156,7 @@ static R_INLINE Rboolean setElementFromScalar(SEXP vec, R_xlen_t i, int typev, s
 #define DO_FAST_SETVECELT(sv, srhs, vec, i, subset2)                                                                   \
     do                                                                                                                 \
     {                                                                                                                  \
-        scalar_value_t v;                                                                                              \
-        int typev = bcStackScalar(srhs, &v);                                                                           \
-        if (setElementFromScalar(vec, i, typev, &v))                                                                   \
+        if (setElementFromScalar(vec, i, srhs))                                                                        \
         {                                                                                                              \
             SETSTACK_PTR(sv, vec);                                                                                     \
             SETTER_CLEAR_NAMED(vec);                                                                                   \
@@ -6225,18 +6175,10 @@ static R_INLINE Rboolean setElementFromScalar(SEXP vec, R_xlen_t i, int typev, s
         }                                                                                                              \
     } while (0)
 
-static R_INLINE void VECSUBASSIGN_PTR(R_bcstack_t *sx, R_bcstack_t *srhs, R_bcstack_t *si, R_bcstack_t *sv, SEXP rho,
+static R_INLINE void VECSUBASSIGN_PTR(SEXP vec, R_bcstack_t *srhs, R_bcstack_t *si, R_bcstack_t *sv, SEXP rho,
                                       SEXP consts, int callidx, Rboolean subassign2)
 {
-    DECLNK_STACK_PTR(sx);
     SEXP idx, args, value;
-    SEXP vec = GETSTACK_PTR(sx);
-
-    if (MAYBE_SHARED(vec))
-    {
-        vec = shallow_duplicate(vec);
-        SETSTACK_PTR(sx, vec);
-    }
 
     R_xlen_t i = bcStackIndex(si) - 1;
     if (i >= 0)
@@ -6263,9 +6205,19 @@ static R_INLINE void VECSUBASSIGN_PTR(R_bcstack_t *sx, R_bcstack_t *srhs, R_bcst
     do                                                                                                                 \
     {                                                                                                                  \
         int callidx = GETOP();                                                                                         \
-        VECSUBASSIGN_PTR(R_BCNodeStackTop - 3, R_BCNodeStackTop - 2, R_BCNodeStackTop - 1, R_BCNodeStackTop - 3, rho,  \
-                         constants, callidx, sub2);                                                                    \
+        R_bcstack_t *sx = R_BCNodeStackTop - 3;                                                                        \
+        R_bcstack_t *srhs = R_BCNodeStackTop - 2;                                                                      \
+        R_bcstack_t *si = R_BCNodeStackTop - 1;                                                                        \
+        DECLNK_STACK_PTR(sx);                                                                                          \
+        SEXP vec = GETSTACK_PTR(sx);                                                                                   \
+        if (MAYBE_SHARED(vec))                                                                                         \
+        {                                                                                                              \
+            vec = shallow_duplicate(vec);                                                                              \
+            SETSTACK_PTR(sx, vec);                                                                                     \
+        }                                                                                                              \
+        VECSUBASSIGN_PTR(vec, srhs, si, sx, rho, constants, callidx, sub2);                                            \
         R_BCNodeStackTop -= 2;                                                                                         \
+        NEXT();                                                                                                        \
     } while (0)
 
 static R_INLINE void MATSUBASSIGN_PTR(R_bcstack_t *sx, R_bcstack_t *srhs, R_bcstack_t *si, R_bcstack_t *sj,
@@ -6374,6 +6326,8 @@ static R_INLINE void SUBASSIGN_N_PTR(R_bcstack_t *sx, int rank, R_bcstack_t *srh
 #define FIXUP_SCALAR_LOGICAL(rho, callidx, arg, op, warn_level)                                                        \
     do                                                                                                                 \
     {                                                                                                                  \
+        if (R_BCNodeStackTop[-1].tag == LGLSXP)                                                                        \
+            break;                                                                                                     \
         SEXP val = GETSTACK(-1);                                                                                       \
         if (IS_SIMPLE_SCALAR(val, LGLSXP))                                                                             \
             SETSTACK(-1, ScalarLogical(SCALAR_LVAL(val)));                                                             \
@@ -7152,7 +7106,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 SEXP symbol = VECTOR_ELT(constants, sidx);
                 loc = GET_BINDING_CELL_CACHE(symbol, rho, vcache, sidx);
             }
-#ifdef TYPED_STACK
+
             R_bcstack_t *s = R_BCNodeStackTop - 1;
             int tag = s->tag;
             SEXP x = CAR(loc); /* fast, but assumes binding is a CONS */
@@ -7175,7 +7129,6 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                     SET_SCALAR_LVAL(x, s->u.ival);
                     NEXT();
                 }
-#endif
 
             SEXP value = GETSTACK(-1);
             INCREMENT_NAMED(value);
@@ -7486,6 +7439,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         OP(OR, 1) : FastLogic2(|, OROP, R_OrSym);
         OP(NOT, 1) :
         {
+            R_Visible = TRUE;
             R_bcstack_t *s = R_BCNodeStackTop - 1;
             if (s->tag == LGLSXP)
             {
@@ -7637,11 +7591,9 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         OP(ISOBJECT, 0) : DO_ISTEST(OBJECT);
         OP(ISNUMERIC, 0) : DO_ISTEST(isNumericOnly);
         OP(VECSUBSET, 1) : DO_VECSUBSET(rho, FALSE);
-        NEXT();
         OP(MATSUBSET, 1) : DO_MATSUBSET(rho, FALSE);
         NEXT();
         OP(VECSUBASSIGN, 1) : DO_VECSUBASSIGN(rho, FALSE);
-        NEXT();
         OP(MATSUBASSIGN, 1) : DO_MATSUBASSIGN(rho, FALSE);
         NEXT();
         OP(AND1ST, 2) :
@@ -7953,11 +7905,9 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         OP(STARTSUBSET_N, 2) : DO_STARTDISPATCH_N("[");
         OP(STARTSUBASSIGN_N, 2) : DO_START_ASSIGN_DISPATCH_N("[<-");
         OP(VECSUBSET2, 1) : DO_VECSUBSET(rho, TRUE);
-        NEXT();
         OP(MATSUBSET2, 1) : DO_MATSUBSET(rho, TRUE);
         NEXT();
         OP(VECSUBASSIGN2, 1) : DO_VECSUBASSIGN(rho, TRUE);
-        NEXT();
         OP(MATSUBASSIGN2, 1) : DO_MATSUBASSIGN(rho, TRUE);
         NEXT();
         OP(STARTSUBSET2_N, 2) : DO_STARTDISPATCH_N("[[");
@@ -7986,7 +7936,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         NEXT();
         OP(BASEGUARD, 2) : DO_BASEGUARD();
         NEXT();
-        OP(INCLNK, 0) : if (R_BCNodeStackTop[-1].tag == 0) INCREMENT_LINKS(R_BCNodeStackTop[-1].u.sxpval);
+        OP(INCLNK, 0) : INCLNK_STACK_PTR(R_BCNodeStackTop - 1);
         NEXT();
         OP(DECLNK, 0) : DECLNK_STACK_PTR(R_BCNodeStackTop - 2);
         NEXT();
