@@ -5260,19 +5260,50 @@ static R_INLINE SEXP FORCE_PROMISE(SEXP value, SEXP symbol, SEXP rho, Rboolean k
     return value;
 }
 
-static R_INLINE SEXP FIND_VAR_NO_CACHE(SEXP symbol, SEXP rho, SEXP cell)
+static R_INLINE void INCLNK_stack(R_bcstack_t *base, R_bcstack_t *top)
 {
-    SEXP value;
+    for (R_bcstack_t *p = base; p < top; p++)
+    {
+        if (p->tag == RAWMEM_TAG)
+            p += p->u.ival;
+        else if (p->tag == 0)
+            INCREMENT_LINKS(p->u.sxpval);
+    }
+}
+
+static R_INLINE void DECLNK_stack(R_bcstack_t *base, R_bcstack_t *top)
+{
+    for (R_bcstack_t *p = base; p < top; p++)
+    {
+        if (p->tag == RAWMEM_TAG)
+            p += p->u.ival;
+        else if (p->tag == 0)
+            DECREMENT_LINKS(p->u.sxpval);
+    }
+}
+
+static R_INLINE SEXP FIND_VAR_NO_CACHE(SEXP symbol, SEXP rho, SEXP cell, R_bcstack_t *stack_base)
+{
+    R_varloc_t loc;
     /* only need to search the current frame again if
        binding was special or frame is a base frame */
     if (cell != R_NilValue || rho == R_BaseEnv || rho == R_BaseNamespace)
-        value = findVar(symbol, rho);
+        loc = R_findVarLoc(symbol, rho);
     else
-        value = findVar(symbol, ENCLOS(rho));
-    return value;
+        loc = R_findVarLoc(symbol, ENCLOS(rho));
+    if (loc.cell && IS_ACTIVE_BINDING(loc.cell))
+    {
+        INCLNK_stack(stack_base, R_BCNodeStackTop);
+        SEXP value = R_GetVarLocValue(loc);
+        DECLNK_stack(stack_base, R_BCNodeStackTop);
+        return value;
+    }
+    else
+        return R_GetVarLocValue(loc);
 }
 
-static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmiss, R_binding_cache_t vcache, int sidx)
+static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmiss, R_binding_cache_t vcache, int sidx,
+                            R_bcstack_t *stack_base)
 {
     SEXP value;
     if (dd)
@@ -5282,7 +5313,7 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
         SEXP cell = GET_BINDING_CELL_CACHE(symbol, rho, vcache, sidx);
         value = BINDING_VALUE(cell);
         if (value == R_UnboundValue)
-            value = FIND_VAR_NO_CACHE(symbol, rho, cell);
+            value = FIND_VAR_NO_CACHE(symbol, rho, cell, stack_base);
     }
     else
         value = findVar(symbol, rho);
@@ -5293,9 +5324,17 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
         MAYBE_MISSING_ARGUMENT_ERROR(symbol, keepmiss);
     else if (TYPEOF(value) == PROMSXP)
     {
-        PROTECT(value);
-        value = FORCE_PROMISE(value, symbol, rho, keepmiss);
-        UNPROTECT(1);
+        SEXP pv = PRVALUE(value);
+        if (pv == R_UnboundValue)
+        {
+            PROTECT(value);
+            INCLNK_stack(stack_base, R_BCNodeStackTop);
+            value = FORCE_PROMISE(value, symbol, rho, keepmiss);
+            DECLNK_stack(stack_base, R_BCNodeStackTop);
+            UNPROTECT(1);
+        }
+        else
+            value = pv;
     }
     else
         ENSURE_NAMED(value); /* should not really be needed - LT */
@@ -5364,7 +5403,7 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
             }                                                                                                          \
         }                                                                                                              \
         SEXP symbol = VECTOR_ELT(constants, sidx);                                                                     \
-        BCNPUSH(getvar(symbol, rho, dd, keepmiss, vcache, sidx));                                                      \
+        BCNPUSH(getvar(symbol, rho, dd, keepmiss, vcache, sidx, stack_base));                                          \
         NEXT();                                                                                                        \
     } while (0)
 #else
@@ -5374,7 +5413,7 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
         int sidx = GETOP();                                                                                            \
         SEXP symbol = VECTOR_ELT(constants, sidx);                                                                     \
         R_Visible = TRUE;                                                                                              \
-        BCNPUSH(getvar(symbol, rho, dd, keepmiss, vcache, sidx));                                                      \
+        BCNPUSH(getvar(symbol, rho, dd, keepmiss, vcache, sidx, stack_base));                                          \
         NEXT();                                                                                                        \
     } while (0)
 #endif
@@ -6703,6 +6742,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
     else
         smallcache = FALSE;
 #endif
+    R_bcstack_t *stack_base = R_BCNodeStackTop;
 
     BEGIN_MACHINE
     {
@@ -7558,7 +7598,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         {
             SEXP symbol = VECTOR_ELT(constants, GETOP());
             SEXP value = GETSTACK(-1);
-            BCNPUSH(getvar(symbol, ENCLOS(rho), FALSE, FALSE, NULL, 0));
+            BCNPUSH(getvar(symbol, ENCLOS(rho), FALSE, FALSE, NULL, 0, stack_base));
             BCNPUSH(value);
             /* top three stack entries are now RHS value, LHS value, RHS value */
             FIXUP_RHS_NAMED(value);
