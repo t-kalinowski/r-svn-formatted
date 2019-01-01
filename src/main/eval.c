@@ -5009,13 +5009,6 @@ static void NORET nodeStackOverflow()
     error(_("node stack overflow"));
 }
 
-#ifdef BC_INT_STACK
-static void NORET intStackOverflow()
-{
-    error(_("integer stack overflow"));
-}
-#endif
-
 #ifdef TYPED_STACK
 
 /* Allocate consecutive space of nelems node stack elements */
@@ -6661,9 +6654,6 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
     void *oldbcpc = R_BCpc;
     BCODE *currentpc = NULL;
 
-#ifdef BC_INT_STACK
-    IStackval *olditop = R_BCIntStackTop;
-#endif
 #ifdef BC_PROFILING
     int old_current_opcode = current_opcode;
 #endif
@@ -7885,9 +7875,6 @@ done:
     R_BCpc = oldbcpc;
     R_Srcref = oldsrcref;
     R_BCNodeStackTop = oldntop;
-#ifdef BC_INT_STACK
-    R_BCIntStackTop = olditop;
-#endif
 #ifdef BC_PROFILING
     current_opcode = old_current_opcode;
 #endif
