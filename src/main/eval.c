@@ -5334,7 +5334,10 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
             UNPROTECT(1);
         }
         else
+        {
+            ENSURE_NAMEDMAX(pv);
             value = pv;
+        }
     }
     else
         ENSURE_NAMED(value); /* should not really be needed - LT */
