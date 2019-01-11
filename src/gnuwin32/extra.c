@@ -3,7 +3,7 @@
  *  file extra.c
  *  Copyright (C) 1998--2003  Guido Masarotto and Brian Ripley
  *  Copyright (C) 2004	      The R Foundation
- *  Copyright (C) 2005--2018  The R Core Team
+ *  Copyright (C) 2005--2019  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -496,7 +496,13 @@ SEXP do_normalizepath(SEXP call, SEXP op, SEXP args, SEXP rho)
         el = STRING_ELT(paths, i);
         result = el;
         if (el == NA_STRING)
+        {
             result = NA_STRING;
+            if (mustWork == 1)
+                errorcall(call, "path[%d]=NA", i + 1);
+            else if (mustWork == NA_LOGICAL)
+                warningcall(call, "path[%d]=NA", i + 1);
+        }
         else if (getCharCE(el) == CE_UTF8)
         {
             if ((res = GetFullPathNameW(filenameToWchar(el, FALSE), 32768, wtmp, &wtmp2)) && res <= 32768)

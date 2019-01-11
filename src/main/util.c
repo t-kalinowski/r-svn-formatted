@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2018  The R Core Team
+ *  Copyright (C) 1997--2019  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1048,6 +1048,10 @@ SEXP attribute_hidden do_normalizepath(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (elp == NA_STRING)
         {
             SET_STRING_ELT(ans, i, NA_STRING);
+            if (mustWork == 1)
+                error("path[%d]=NA", i + 1);
+            else if (mustWork == NA_LOGICAL)
+                warning("path[%d]=NA", i + 1);
             continue;
         }
         path = translateChar(elp);
@@ -1074,6 +1078,10 @@ SEXP attribute_hidden do_normalizepath(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (elp == NA_STRING)
         {
             SET_STRING_ELT(ans, i, NA_STRING);
+            if (mustWork == 1)
+                error("path[%d]=NA", i + 1);
+            else if (mustWork == NA_LOGICAL)
+                warning("path[%d]=NA", i + 1);
             continue;
         }
         path = translateChar(elp);
