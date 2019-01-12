@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
+ *  Copyright (C) 1997--2019  The R Core Team
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2018  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Pulic License as published by
@@ -1839,20 +1839,14 @@ SEXP attribute_hidden do_strtrim(SEXP call, SEXP op, SEXP args, SEXP env)
 
 static int strtoi(SEXP s, int base)
 {
-    long int res;
-    char *endp;
+    if (s == NA_STRING || CHAR(s)[0] == '\0')
+        return (NA_INTEGER);
 
     /* strtol might return extreme values on error */
     errno = 0;
-
-    if (s == NA_STRING)
-        return (NA_INTEGER);
-    res = strtol(CHAR(s), &endp, base); /* ASCII */
-    if (errno || *endp != '\0')
-        res = NA_INTEGER;
-    if (res > INT_MAX || res < INT_MIN)
-        res = NA_INTEGER;
-    return (int)res;
+    char *endp;
+    long int res = strtol(CHAR(s), &endp, base); /* ASCII */
+    return (errno || *endp != '\0' || res > INT_MAX || res < INT_MIN) ? NA_INTEGER : (int)res;
 }
 
 SEXP attribute_hidden do_strtoi(SEXP call, SEXP op, SEXP args, SEXP env)
