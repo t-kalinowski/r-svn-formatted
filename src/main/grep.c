@@ -2858,16 +2858,17 @@ static SEXP gregexpr_perl(const char *pattern, const char *string, pcre *re_pcre
     SEXP capturebuf, capturelenbuf;
     SEXP matchbuf, matchlenbuf; /* buffers for storing multiple matches */
     int bufsize = 1024;         /* starting size for buffers */
+    int slen = (int)strlen(string);
     PROTECT_INDEX cb, clb, mb, mlb;
 
     PROTECT_WITH_INDEX(capturebuf = allocVector(INTSXP, bufsize * capture_count), &cb);
     PROTECT_WITH_INDEX(capturelenbuf = allocVector(INTSXP, bufsize * capture_count), &clb);
     PROTECT_WITH_INDEX(matchbuf = allocVector(INTSXP, bufsize), &mb);
     PROTECT_WITH_INDEX(matchlenbuf = allocVector(INTSXP, bufsize), &mlb);
+
     while (!foundAll)
     {
-        int rc, slen = (int)strlen(string);
-        rc = pcre_exec(re_pcre, re_pe, string, slen, start, 0, ovector, ovector_size);
+        int rc = pcre_exec(re_pcre, re_pe, string, slen, start, 0, ovector, ovector_size);
         pcre_exec_error(rc, n);
         if (rc >= 0)
         {
