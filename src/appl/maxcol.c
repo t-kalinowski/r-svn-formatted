@@ -1,8 +1,8 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
 
+ *  Copyright (C) 2007-2019  The R Core Team
  *  Copyright (C) 1994-9 W. N. Venables and B. D. Ripley
- *  Copyright (C) 2007-2017  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ void R_max_col(double *matrix, int *nr, int *nc, int *maxes, int *ties_meth)
     {
         /* first check row for any NAs and find the largest abs(entry) */
         large = 0.0;
-        isna = FALSE;
+        isna = TRUE;
         for (c = 0; c < *nc; c++)
         {
             a = matrix[r + c * n_r];
@@ -58,6 +58,8 @@ void R_max_col(double *matrix, int *nr, int *nc, int *maxes, int *ties_meth)
                 isna = TRUE;
                 break;
             }
+            else if (isna)
+                isna = FALSE;
             if (!R_FINITE(a))
                 continue;
             if (do_rand)
