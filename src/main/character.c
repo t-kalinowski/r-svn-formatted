@@ -333,7 +333,7 @@ static void substr(const char *str, int len, int ienc, int sa, int so, R_xlen_t 
         *rfrom = str;
         for (; i < so && str < end; i++)
             str += utf8clen(*str);
-        *rlen = str - *rfrom;
+        *rlen = (int)(str - *rfrom);
     }
     else if (!isascii && ienc != CE_LATIN1 && ienc != CE_BYTES && mbcslocale)
     {
@@ -346,7 +346,7 @@ static void substr(const char *str, int len, int ienc, int sa, int so, R_xlen_t 
         for (; i < so && str < end; i++)
             /* throws error on invalid multi-byte string */
             str += (int)Mbrtowc(NULL, str, MB_CUR_MAX, &mb_st);
-        *rlen = str - *rfrom;
+        *rlen = (int)(str - *rfrom);
     }
     else
     {
@@ -396,7 +396,7 @@ SEXP attribute_hidden do_substr(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             cetype_t ienc = getCharCE(el);
             const char *ss = CHAR(el);
-            size_t slen = LENGTH(el);
+            int slen = LENGTH(el);
             if (start < 1)
                 start = 1;
             if (start > stop)
