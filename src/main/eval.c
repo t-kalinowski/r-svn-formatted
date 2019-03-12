@@ -5359,16 +5359,9 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
     {                                                                                                                  \
         int sidx = GETOP();                                                                                            \
         R_Visible = TRUE;                                                                                              \
-        if (!dd)                                                                                                       \
+        if (!dd && smallcache)                                                                                         \
         {                                                                                                              \
-            SEXP cell;                                                                                                 \
-            if (smallcache)                                                                                            \
-                cell = GET_SMALLCACHE_BINDING_CELL(vcache, sidx);                                                      \
-            else                                                                                                       \
-            {                                                                                                          \
-                SEXP symbol = VECTOR_ELT(constants, sidx);                                                             \
-                cell = GET_BINDING_CELL_CACHE(symbol, rho, vcache, sidx);                                              \
-            }                                                                                                          \
+            SEXP cell = GET_SMALLCACHE_BINDING_CELL(vcache, sidx);                                                     \
             SEXP value = CAR(cell);                                                                                    \
             int type = TYPEOF(value);                                                                                  \
             /* extract value of forced promises */                                                                     \
