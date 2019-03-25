@@ -1384,20 +1384,15 @@ SEXP attribute_hidden do_which(SEXP call, SEXP op, SEXP args, SEXP rho)
  */
 SEXP attribute_hidden do_pmin(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP a, x, ans;
-    int narm;
-    R_xlen_t i, n, len, i1;
-    SEXPTYPE type, anstype;
-
-    narm = asLogical(CAR(args));
+    int narm = asLogical(CAR(args));
     if (narm == NA_LOGICAL)
         error(_("invalid '%s' value"), "na.rm");
     args = CDR(args);
-    x = CAR(args);
     if (args == R_NilValue)
         error(_("no arguments"));
+    SEXP x = CAR(args);
 
-    anstype = TYPEOF(x);
+    SEXPTYPE anstype = TYPEOF(x);
     switch (anstype)
     {
     case NILSXP:
@@ -1409,15 +1404,16 @@ SEXP attribute_hidden do_pmin(SEXP call, SEXP op, SEXP args, SEXP rho)
     default:
         error(_("invalid input type"));
     }
-    a = CDR(args);
+    SEXP a = CDR(args);
     if (a == R_NilValue)
         return x; /* one input */
 
-    len = xlength(x); /* not LENGTH, as NULL is allowed */
+    R_xlen_t n, len = xlength(x), /* not LENGTH, as NULL is allowed */
+        i, i1;
     for (; a != R_NilValue; a = CDR(a))
     {
         x = CAR(a);
-        type = TYPEOF(x);
+        SEXPTYPE type = TYPEOF(x);
         switch (type)
         {
         case NILSXP:
@@ -1447,7 +1443,7 @@ SEXP attribute_hidden do_pmin(SEXP call, SEXP op, SEXP args, SEXP rho)
     /* Check for fractional recycling (added in 2.14.0) */
     for (a = args; a != R_NilValue; a = CDR(a))
     {
-        n = length(CAR(a));
+        n = xlength(CAR(a));
         if (len % n)
         {
             warning(_("an argument will be fractionally recycled"));
@@ -1455,7 +1451,7 @@ SEXP attribute_hidden do_pmin(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
     }
 
-    PROTECT(ans = allocVector(anstype, len));
+    SEXP ans = PROTECT(allocVector(anstype, len));
     switch (anstype)
     {
     case INTSXP: {
