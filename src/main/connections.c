@@ -332,7 +332,7 @@ static double buff_seek(Rconnection con, double where, int origin, int rw)
     { /* current */
         if (where < unread_len)
         {
-            con->buff_pos += where;
+            con->buff_pos += (size_t)where;
             return con->seek(con, NA_REAL, origin, rw);
         }
         else
