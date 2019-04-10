@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1997--2018  The R Core Team
+ *  Copyright (C) 1997--2019  The R Core Team
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -1022,11 +1022,6 @@ SEXP match5(SEXP itable, SEXP ix, int nmatch, SEXP incomp, SEXP env)
     if (XLENGTH(x) == 1 && !incomp)
     {
         int val = nmatch;
-        /* FIXME:
-       The code for the special case uses LENGTH(table),
-       the code for the regular case uses length(table):
-       These should use the same.
-        */
         int ntable = LENGTH(table);
         switch (type)
         {
@@ -1125,7 +1120,7 @@ SEXP match5(SEXP itable, SEXP ix, int nmatch, SEXP incomp, SEXP env)
             Rboolean useBytes = FALSE;
             Rboolean useUTF8 = FALSE;
             Rboolean useCache = TRUE;
-            for (R_xlen_t i = 0; i < length(x); i++)
+            for (R_xlen_t i = 0; i < xlength(x); i++)
             {
                 SEXP s = STRING_ELT(x, i);
                 if (IS_BYTES(s))
@@ -1146,7 +1141,7 @@ SEXP match5(SEXP itable, SEXP ix, int nmatch, SEXP incomp, SEXP env)
             }
             if (!useBytes || useCache)
             {
-                for (int i = 0; i < length(table); i++)
+                for (int i = 0; i < LENGTH(table); i++)
                 {
                     SEXP s = STRING_ELT(table, i);
                     if (IS_BYTES(s))
