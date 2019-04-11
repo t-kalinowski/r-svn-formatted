@@ -794,6 +794,12 @@ Rboolean R_ToplevelExec(void (*fun)(void *), void *data)
     return result;
 }
 
+/* Return the current environment. */
+SEXP R_GetCurrentEnv()
+{
+    return R_GlobalContext->sysparent;
+}
+
 /*
   This is a simple interface for evaluating R expressions
   from C with a guarantee that one will return to the
