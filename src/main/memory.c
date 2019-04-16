@@ -3350,13 +3350,13 @@ again:
                   " at memory.c:%d",
                   first_bad_sexp_type_sexp, sexptype2char(first_bad_sexp_type_old_type), first_bad_sexp_type_line);
         else
-            error("GC encountered a node (%p) with an unknown SEXP type: %s"
+            error("GC encountered a node (%p) with an unknown SEXP type: %d"
                   " at memory.c:%d",
-                  first_bad_sexp_type_sexp, sexptype2char(first_bad_sexp_type), first_bad_sexp_type_line);
+                  first_bad_sexp_type_sexp, first_bad_sexp_type, first_bad_sexp_type_line);
 #else
-        error("GC encountered a node (%p) with an unknown SEXP type: %s"
+        error("GC encountered a node (%p) with an unknown SEXP type: %d"
               " at memory.c:%d",
-              first_bad_sexp_type_sexp, sexptype2char(first_bad_sexp_type), first_bad_sexp_type_line);
+              first_bad_sexp_type_sexp, first_bad_sexp_type, first_bad_sexp_type_line);
 #endif
     }
 
