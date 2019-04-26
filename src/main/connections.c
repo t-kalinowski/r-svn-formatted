@@ -6940,7 +6940,7 @@ static void init_filters(void)
     */
 }
 
-attribute_hidden SEXP R_compress3(SEXP in, Rboolean *err)
+attribute_hidden SEXP R_compress3(SEXP in)
 {
     const void *vmax = vmaxget();
     unsigned int inlen, outlen;
