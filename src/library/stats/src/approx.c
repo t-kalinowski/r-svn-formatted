@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1997--2017   The R Core Team
+ *  Copyright (C) 1997--2019   The R Core Team
  *  Copyright (C) 1995, 1996   Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -54,6 +54,7 @@ typedef struct
     double f1;
     double f2;
     int kind;
+    int na_rm;
 } appr_meth;
 
 static double approx1(double v, double *x, double *y, R_xlen_t n, appr_meth *Meth)
@@ -105,7 +106,7 @@ static double approx1(double v, double *x, double *y, R_xlen_t n, appr_meth *Met
 } /* approx1() */
 
 /* Testing done only once - in a separate function */
-static void R_approxtest(double *x, double *y, R_xlen_t nxy, int method, double f)
+static void R_approxtest(double *x, double *y, R_xlen_t nxy, int method, double f, int na_rm)
 {
     switch (method)
     {
@@ -120,15 +121,24 @@ static void R_approxtest(double *x, double *y, R_xlen_t nxy, int method, double 
         break;
     }
     /* check interpolation method */
-    for (R_xlen_t i = 0; i < nxy; i++)
-        if (ISNAN(x[i]) || ISNAN(y[i]))
-            error(_("approx(): attempted to interpolate NA values"));
+    if (na_rm)
+    { // (x,y) should not have any NA's anymore
+        for (R_xlen_t i = 0; i < nxy; i++)
+            if (ISNAN(x[i]) || ISNAN(y[i]))
+                error(_("approx(): attempted to interpolate NA values"));
+    }
+    else
+    { // na.rm = FALSE ==> at least y may contain NA's
+        for (R_xlen_t i = 0; i < nxy; i++)
+            if (ISNAN(x[i]))
+                error(_("approx(x,y, .., na.rm=FALSE): NA values in x are not allowed"));
+    }
 }
 
 /* R Frontend for Linear and Constant Interpolation, no testing */
 
 static void R_approxfun(double *x, double *y, R_xlen_t nxy, double *xout, double *yout, R_xlen_t nout, int method,
-                        double yleft, double yright, double f)
+                        double yleft, double yright, double f, int na_rm)
 {
     appr_meth M = {0.0, 0.0, 0.0, 0.0, 0}; /* -Wall */
 
@@ -137,6 +147,7 @@ static void R_approxfun(double *x, double *y, R_xlen_t nxy, double *xout, double
     M.kind = method;
     M.ylow = yleft;
     M.yhigh = yright;
+    M.na_rm = na_rm;
 #ifdef DEBUG_approx
     REprintf("R_approxfun(x,y, nxy = %.0f, .., nout = %.0f, method = %d, ...)", (double)nxy, (double)nout, Meth->kind);
 #endif
@@ -146,22 +157,21 @@ static void R_approxfun(double *x, double *y, R_xlen_t nxy, double *xout, double
 
 #include <Rinternals.h>
 #include "statsR.h"
-SEXP ApproxTest(SEXP x, SEXP y, SEXP method, SEXP sf)
+SEXP ApproxTest(SEXP x, SEXP y, SEXP method, SEXP f, SEXP na_rm)
 {
     R_xlen_t nx = XLENGTH(x);
-    int m = asInteger(method);
-    double f = asReal(sf);
-    R_approxtest(REAL(x), REAL(y), nx, m, f);
+    R_approxtest(REAL(x), REAL(y), nx, asInteger(method), asReal(f), asLogical(na_rm));
+    // if no error was signalled,
     return R_NilValue;
 }
 
-SEXP Approx(SEXP x, SEXP y, SEXP v, SEXP method, SEXP yleft, SEXP yright, SEXP sf)
+SEXP Approx(SEXP x, SEXP y, SEXP v, SEXP method, SEXP yleft, SEXP yright, SEXP f, SEXP na_rm)
 {
     SEXP xout = PROTECT(coerceVector(v, REALSXP));
     R_xlen_t nx = XLENGTH(x), nout = XLENGTH(xout);
     SEXP yout = PROTECT(allocVector(REALSXP, nout));
     R_approxfun(REAL(x), REAL(y), nx, REAL(xout), REAL(yout), nout, asInteger(method), asReal(yleft), asReal(yright),
-                asReal(sf));
+                asReal(f), asLogical(na_rm));
     UNPROTECT(2);
     return yout;
 }
