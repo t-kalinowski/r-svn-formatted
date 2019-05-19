@@ -49,9 +49,13 @@ static void R_wfixslash(wchar_t *s);
 extern "C"
 {
 #endif
-    void F77_SYMBOL(rwarnc)(char *msg, int *nchar);
-    void NORET F77_SYMBOL(rexitc)(char *msg, int *nchar);
-
+#if defined FC_LEN_T
+    void F77_SYMBOL(rwarnc)(char *msg, int *nchar, FC_LEN_T msg_len);
+    void NORET F77_SYMBOL(rexitc)(char *msg, int *nchar, FC_LEN_T msg_len);
+#else
+void F77_SYMBOL(rwarnc)(char *msg, int *nchar);
+void NORET F77_SYMBOL(rexitc)(char *msg, int *nchar);
+#endif
 #ifdef __cplusplus
 }
 #endif
@@ -1768,7 +1772,11 @@ void R_fixbackslash(char *s)
 }
 #endif
 
+#if defined FC_LEN_T
+void NORET F77_SYMBOL(rexitc)(char *msg, int *nchar, FC_LEN_T c1)
+#else
 void NORET F77_SYMBOL(rexitc)(char *msg, int *nchar)
+#endif
 {
     int nc = *nchar;
     char buf[256];
@@ -1782,7 +1790,11 @@ void NORET F77_SYMBOL(rexitc)(char *msg, int *nchar)
     error("%s", buf);
 }
 
+#if defined FC_LEN_T
+void F77_SYMBOL(rwarnc)(char *msg, int *nchar, FC_LEN_T c1)
+#else
 void F77_SYMBOL(rwarnc)(char *msg, int *nchar)
+#endif
 {
     int nc = *nchar;
     char buf[256];
