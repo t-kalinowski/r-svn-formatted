@@ -1128,24 +1128,17 @@ void attribute_hidden CustomPrintValue(SEXP s, SEXP env)
 
 /* xxxpr are mostly for S compatibility (as mentioned in V&R).
    The Fortran interfaces are in xxxpr.f and call these.
+    They are always called with *nchar >= 0.
  */
 
 attribute_hidden
 #ifdef FC_LEN_T
-    void F77_NAME(dblep0)(const char *label, int *nchar, double *data, int *ndata, FC_LEN_T label_len)
+    void F77_NAME(dblep0)(const char *label, int *nchar, double *data, int *ndata, const FC_LEN_T label_len)
 #else
     void F77_NAME(dblep0)(const char *label, int *nchar, double *data, int *ndata)
 #endif
 {
-    int k, nc = *nchar;
-
-#ifdef FC_LEN_T
-    if (nc < 0)
-        nc = (int)label_len;
-#else
-    if (nc < 0)
-        nc = (int)strlen(label);
-#endif
+    int nc = *nchar;
     if (nc > 255)
     {
         warning(_("invalid character length in 'dblepr'"));
@@ -1153,7 +1146,7 @@ attribute_hidden
     }
     else if (nc > 0)
     {
-        for (k = 0; k < nc; k++)
+        for (int k = 0; k < nc; k++)
             Rprintf("%c", label[k]);
         Rprintf("\n");
     }
@@ -1163,20 +1156,13 @@ attribute_hidden
 
 attribute_hidden
 #ifdef FC_LEN_T
-    void F77_NAME(intpr0)(const char *label, int *nchar, int *data, int *ndata, FC_LEN_T label_len)
+    void F77_NAME(intpr0)(const char *label, int *nchar, int *data, int *ndata, const FC_LEN_T label_len)
 #else
     void F77_NAME(intpr0)(const char *label, int *nchar, int *data, int *ndata)
 #endif
 {
-    int k, nc = *nchar;
+    int nc = *nchar;
 
-#ifdef FC_LEN_T
-    if (nc < 0)
-        nc = (int)label_len;
-#else
-    if (nc < 0)
-        nc = (int)strlen(label);
-#endif
     if (nc > 255)
     {
         warning(_("invalid character length in 'intpr'"));
@@ -1184,7 +1170,7 @@ attribute_hidden
     }
     else if (nc > 0)
     {
-        for (k = 0; k < nc; k++)
+        for (int k = 0; k < nc; k++)
             Rprintf("%c", label[k]);
         Rprintf("\n");
     }
@@ -1194,21 +1180,14 @@ attribute_hidden
 
 attribute_hidden
 #ifdef FC_LEN_T
-    void F77_NAME(realp0)(const char *label, int *nchar, float *data, int *ndata, FC_LEN_T label_len)
+    void F77_NAME(realp0)(const char *label, int *nchar, float *data, int *ndata, const FC_LEN_T label_len)
 #else
     void F77_NAME(realp0)(const char *label, int *nchar, float *data, int *ndata)
 #endif
 {
-    int k, nc = *nchar, nd = *ndata;
+    int nc = *nchar, nd = *ndata;
     double *ddata;
 
-#ifdef FC_LEN_T
-    if (nc < 0)
-        nc = (int)label_len;
-#else
-    if (nc < 0)
-        nc = (int)strlen(label);
-#endif
     if (nc > 255)
     {
         warning(_("invalid character length in 'realpr'"));
@@ -1216,7 +1195,7 @@ attribute_hidden
     }
     else if (nc > 0)
     {
-        for (k = 0; k < nc; k++)
+        for (int k = 0; k < nc; k++)
             Rprintf("%c", label[k]);
         Rprintf("\n");
     }
@@ -1225,7 +1204,7 @@ attribute_hidden
         ddata = (double *)malloc(nd * sizeof(double));
         if (!ddata)
             error(_("memory allocation error in 'realpr'"));
-        for (k = 0; k < nd; k++)
+        for (int k = 0; k < nd; k++)
             ddata[k] = (double)data[k];
         printRealVector(ddata, nd, 1);
         free(ddata);
@@ -1235,7 +1214,7 @@ attribute_hidden
 /* Fortran-callable error routine for lapack */
 
 #ifdef FC_LEN_T
-void NORET F77_NAME(xerbla)(const char *srname, int *info, FC_LEN_T srname_len)
+void NORET F77_NAME(xerbla)(const char *srname, int *info, const FC_LEN_T srname_len)
 #else
 void NORET F77_NAME(xerbla)(const char *srname, int *info)
 #endif
@@ -1243,8 +1222,12 @@ void NORET F77_NAME(xerbla)(const char *srname, int *info)
     /* srname is not null-terminated.  It should be 6 characters. */
     char buf[7];
 #ifdef FC_LEN_T
-    strncpy(buf, srname, srname_len);
-    buf[srname_len] = '\0';
+    /* Is this safe?  It is if xerbla is called from Fortran compiled
+       with the compiler used to build R, but what about alternative
+       BLAS/LAPACK? */
+    int len = (srname_len > 6) ? (int)srname_len : 6;
+    strncpy(buf, srname, len);
+    buf[len] = '\0';
 #else
     strncpy(buf, srname, 6);
     buf[6] = '\0';
