@@ -1136,6 +1136,10 @@ void attribute_hidden CustomPrintValue(SEXP s, SEXP env)
     They are always called with *nchar >= 0.
  */
 
+#ifdef FC_LEN_T
+#include <stddef.h>
+#endif
+
 attribute_hidden
 #ifdef FC_LEN_T
     void F77_NAME(dblep0)(const char *label, int *nchar, double *data, int *ndata, const FC_LEN_T label_len)

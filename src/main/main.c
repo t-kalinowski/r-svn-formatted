@@ -1791,6 +1791,7 @@ SEXP R_addTaskCallback(SEXP f, SEXP data, SEXP useData, SEXP name)
 /* this is here solely to pull in xxxpr.o */
 #include <R_ext/RS.h>
 #if defined FC_LEN_T
+#include <stddef.h>
 void F77_SYMBOL(rwarnc)(char *msg, int *nchar, FC_LEN_T msg_len);
 void attribute_hidden dummy54321(void)
 {
