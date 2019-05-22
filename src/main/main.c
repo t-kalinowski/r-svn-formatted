@@ -1805,17 +1805,4 @@ void attribute_hidden dummy54321(void)
     F77_CALL(rwarnc)("dummy", &nc);
 }
 #endif
-
-/* Used in unix/system.c, avoid inlining by using an extern there. */
-uintptr_t dummy_ii(void)
-{
-    int ii;
-
-    /* This is intended to return a local address. We could just return
-       (uintptr_t) &ii, but doing it indirectly through ii_addr avoids
-       a compiler warning (-Wno-return-local-addr would do as well).
-    */
-    volatile uintptr_t ii_addr = (uintptr_t)&ii;
-    return ii_addr;
-}
 #endif
