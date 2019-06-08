@@ -5116,6 +5116,8 @@ typedef int BCODE;
 #define BCCODE(e) INTEGER(BCODE_CODE(e))
 #endif
 
+#define BNDCELL_UNBOUND(v) (CAR(v) == R_UnboundValue)
+
 static R_INLINE SEXP BINDING_VALUE(SEXP loc)
 {
     if (loc != R_NilValue && !IS_ACTIVE_BINDING(loc))
@@ -5211,14 +5213,14 @@ static R_INLINE SEXP GET_BINDING_CELL_CACHE(SEXP symbol, SEXP rho, R_binding_cac
        binding cell or R_NilValue.  TAG(R_NilValue) is R_NilValue, and
        that will not equal symbol. So a separate test for cell !=
        R_NilValue is not needed. */
-    if (TAG(cell) == symbol && CAR(cell) != R_UnboundValue)
+    if (TAG(cell) == symbol && !BNDCELL_UNBOUND(cell))
         return cell;
     else
     {
         SEXP ncell = GET_BINDING_CELL(symbol, rho);
         if (ncell != R_NilValue)
             SET_CACHED_BINDING(vcache, idx, ncell);
-        else if (cell != R_NilValue && CAR(cell) == R_UnboundValue)
+        else if (cell != R_NilValue && BNDCELL_UNBOUND(cell))
             SET_CACHED_BINDING(vcache, idx, R_NilValue);
         return ncell;
     }
@@ -5654,7 +5656,6 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
     do                                                                                                                 \
     {                                                                                                                  \
         int callidx = GETOP();                                                                                         \
-        int label = GETOP();                                                                                           \
         SEXP value = GETSTACK(-1);                                                                                     \
         if (isObject(value))                                                                                           \
         {                                                                                                              \
@@ -5663,10 +5664,12 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
             {                                                                                                          \
                 SETSTACK(-1, value);                                                                                   \
                 BC_CHECK_SIGINT();                                                                                     \
+                int label = GETOP();                                                                                   \
                 pc = codebase + label;                                                                                 \
                 NEXT();                                                                                                \
             }                                                                                                          \
         }                                                                                                              \
+        SKIP_OP();                                                                                                     \
         INCREMENT_LINKS(value);                                                                                        \
         NEXT();                                                                                                        \
     } while (0)
