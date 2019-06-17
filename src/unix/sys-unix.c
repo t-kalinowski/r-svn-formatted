@@ -154,7 +154,7 @@ extern Rboolean UsingReadline;
 
 const char *R_ExpandFileName(const char *s)
 {
-#ifdef HAVE_LIBREADLINE
+#if defined(HAVE_LIBREADLINE) && defined(HAVE_TILDE_EXPAND_WORD)
     if (UsingReadline)
     {
         const char *c = R_ExpandFileName_readline(s, newFileName);
