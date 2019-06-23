@@ -28,12 +28,20 @@
  *
  * Exports
  *	formatString
+ *	formatStringS
  *	formatLogical
+ *	formatLogicalS
  *	formatInteger
+ *	formatIntegerS
  *	formatReal
+ *	formatRealS
  *	formatComplex
+ *	formatComplexS
  *
  * These  formatFOO() functions determine the proper width, digits, etc.
+ *
+ * formatFOOS() functions behave identically to formatFOO
+ * except that they accept a SEXP rather than a data pointer
  */
 
 #ifdef HAVE_CONFIG_H
@@ -44,9 +52,15 @@
 #include <float.h> /* for DBL_EPSILON */
 #include <Rmath.h>
 #include <Print.h>
+#include <R_ext/Itermacros.h> /* for ITERATE_BY_REGION */
 
 /* this is just for conformity with other types */
 attribute_hidden void formatRaw(const Rbyte *x, R_xlen_t n, int *fieldwidth)
+{
+    *fieldwidth = 2;
+}
+
+attribute_hidden void formatRawS(SEXP x, R_xlen_t n, int *fieldwidth)
 {
     *fieldwidth = 2;
 }
@@ -64,6 +78,27 @@ attribute_hidden void formatString(const SEXP *x, R_xlen_t n, int *fieldwidth, i
         }
         else
             l = Rstrlen(x[i], quote) + (quote ? 2 : 0);
+        if (l > xmax)
+            xmax = l;
+    }
+    *fieldwidth = xmax;
+}
+
+/* currently there is no STRING_GET_REGION */
+
+attribute_hidden void formatStringS(SEXP x, R_xlen_t n, int *fieldwidth, int quote)
+{
+    int xmax = 0;
+    int l;
+
+    for (R_xlen_t i = 0; i < n; i++)
+    {
+        if (STRING_ELT(x, i) == NA_STRING)
+        {
+            l = quote ? R_print.na_width : R_print.na_width_noquote;
+        }
+        else
+            l = Rstrlen(STRING_ELT(x, i), quote) + (quote ? 2 : 0);
         if (l > xmax)
             xmax = l;
     }
@@ -93,6 +128,46 @@ void formatLogical(const int *x, R_xlen_t n, int *fieldwidth)
     }
 }
 
+void formatLogicalS(SEXP x, R_xlen_t n, int *fieldwidth)
+{
+    *fieldwidth = 1;
+    int tmpfieldwidth = 1;
+
+    ITERATE_BY_REGION(x, px, idx, nb, int, LOGICAL, {
+        formatLogical(px, nb, &tmpfieldwidth);
+        if (tmpfieldwidth > *fieldwidth)
+            *fieldwidth = tmpfieldwidth;
+        if (*fieldwidth == 5)
+            break; /* break iteration loop */
+    });
+    return;
+}
+
+/* needed in 2 places so rolled out into macro
+   to avoid divergence
+*/
+#define FORMATINT_RETLOGIC                                                                                             \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (naflag)                                                                                                    \
+            *fieldwidth = R_print.na_width;                                                                            \
+        else                                                                                                           \
+            *fieldwidth = 1;                                                                                           \
+                                                                                                                       \
+        if (xmin < 0)                                                                                                  \
+        {                                                                                                              \
+            l = IndexWidth(-xmin) + 1; /* +1 for sign */                                                               \
+            if (l > *fieldwidth)                                                                                       \
+                *fieldwidth = l;                                                                                       \
+        }                                                                                                              \
+        if (xmax > 0)                                                                                                  \
+        {                                                                                                              \
+            l = IndexWidth(xmax);                                                                                      \
+            if (l > *fieldwidth)                                                                                       \
+                *fieldwidth = l;                                                                                       \
+        }                                                                                                              \
+    } while (0)
+
 void formatInteger(const int *x, R_xlen_t n, int *fieldwidth)
 {
     int xmin = INT_MAX, xmax = INT_MIN, naflag = 0;
@@ -110,23 +185,68 @@ void formatInteger(const int *x, R_xlen_t n, int *fieldwidth)
                 xmax = x[i];
         }
     }
+    FORMATINT_RETLOGIC;
+}
 
-    if (naflag)
-        *fieldwidth = R_print.na_width;
-    else
-        *fieldwidth = 1;
+void formatIntegerS(SEXP x, R_xlen_t n, int *fieldwidth)
+{
 
-    if (xmin < 0)
+    int xmin = INT_MAX, xmax = INT_MIN, naflag = 0, sorted;
+    SEXP tmpmin = NULL, tmpmax = NULL;
+    /*
+       min and max should be VERY cheap when sortedness
+       is known, so better to call them both than loop
+       through whole vector even once
+
+       Shouldn't need to check for ALTREPness here
+       because KNOWN_SORTED(sorted) will never be
+       true for non-ALTREPs or "exploded" ALTREPs
+    */
+    sorted = INTEGER_IS_SORTED(x);
+    if (KNOWN_SORTED(sorted))
     {
-        l = IndexWidth(-xmin) + 1; /* +1 for sign */
-        if (l > *fieldwidth)
-            *fieldwidth = l;
+        tmpmin = ALTINTEGER_MIN(x, TRUE);
+        tmpmax = ALTINTEGER_MAX(x, TRUE);
+        naflag = KNOWN_NA_1ST(sorted) ? INTEGER_ELT(x, 0) == NA_INTEGER : INTEGER_ELT(x, XLENGTH(x)) == NA_INTEGER;
     }
-    if (xmax > 0)
+
+    /*
+       If we don't have min/max methods or they need to punt
+       for some reason we will get NULL.
+
+       The data are integers, so the only reason we would not
+       get INTSXP answers is if we got Inf/-Inf because
+       everything was NA.
+
+       In both of the above cases we will
+       do things the hard way below
+    */
+    if (tmpmin != NULL && tmpmax != NULL && TYPEOF(tmpmin) == INTSXP && TYPEOF(tmpmax) == INTSXP)
     {
-        l = IndexWidth(xmax);
-        if (l > *fieldwidth)
-            *fieldwidth = l;
+        int l; /* only needed here so defined locally */
+        xmin = INTEGER_ELT(tmpmin, 0);
+        xmax = INTEGER_ELT(tmpmax, 0);
+        /* naflag set above */
+
+        /* this is identical logic to what formatInteger
+           does */
+        FORMATINT_RETLOGIC;
+    }
+    else
+    {
+        /*
+           no fastpass so just format using formatInteger
+           by region. No need for FORMATINT_RETLOGIC
+           here because it happens inside all the
+           formatInteger calls.
+        */
+        int tmpfw = 1;
+        *fieldwidth = 1;
+        ITERATE_BY_REGION(x, px, idx, nb, int, INTEGER, {
+            formatInteger(px, nb, &tmpfw);
+            if (tmpfw > *fieldwidth)
+                *fieldwidth = tmpfw;
+        });
     }
 }
 
@@ -450,6 +570,29 @@ void formatReal(const double *x, R_xlen_t n, int *w, int *d, int *e, int nsmall)
         *w = 4;
 }
 
+void formatRealS(SEXP x, R_xlen_t n, int *w, int *d, int *e, int nsmall)
+{
+    /*
+     *  iterate by region and just take the most extreme
+     *  values across all the regions for final w, d, and e
+     */
+    int tmpw, tmpd, tmpe;
+
+    *w = 0;
+    *d = 0;
+    *e = 0;
+
+    ITERATE_BY_REGION(x, px, idx, nb, double, REAL, {
+        formatReal(px, nb, &tmpw, &tmpd, &tmpe, nsmall);
+        if (tmpw > *w)
+            *w = tmpw;
+        if (!*d && tmpd)
+            *d = tmpd;
+        if (tmpe > *e)
+            *e = tmpe;
+    });
+}
+
 #ifdef formatComplex_USING_signif
 /*   From complex.c. */
 void z_prec_r(Rcomplex *r, const Rcomplex *x, double digits);
@@ -697,4 +840,32 @@ void formatComplex(const Rcomplex *x, R_xlen_t n, int *wr, int *dr, int *er, // 
 
     if (naflag && *wr + *wi + 2 < R_print.na_width)
         *wr += (R_print.na_width - (*wr + *wi + 2));
+}
+
+void formatComplexS(SEXP x, R_xlen_t n, int *wr, int *dr, int *er, int *wi, int *di, int *ei, int nsmall)
+{
+    /* format.info() for  x[1..n] for both Re & Im */
+    int tmpwr, tmpdr, tmper, tmpwi, tmpdi, tmpei;
+
+    *wr = 0;
+    *wi = 0;
+    *dr = 0;
+    *di = 0;
+    *er = 0;
+    *ei = 0;
+    ITERATE_BY_REGION(x, px, idx, nb, Rcomplex, COMPLEX, {
+        formatComplex(px, nb, &tmpwr, &tmpdr, &tmper, &tmpwi, &tmpdi, &tmpei, nsmall);
+        if (tmpwr > *wr)
+            *wr = tmpwr;
+        if (tmpdr && !*dr)
+            *dr = tmpdr;
+        if (tmper > *er)
+            *er = tmper;
+        if (tmpwi > *wi)
+            *wi = tmpwi;
+        if (tmpdi && !*di)
+            *di = tmpdi;
+        if (tmpei > *ei)
+            *ei = tmpei;
+    });
 }
