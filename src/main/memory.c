@@ -1683,7 +1683,7 @@ SEXP attribute_hidden do_regFinaliz(SEXP call, SEXP op, SEXP args, SEXP rho)
         }                                                                                                              \
     } while (0)
 
-static void RunGenCollect(R_size_t size_needed)
+static int RunGenCollect(R_size_t size_needed)
 {
     int i, gen, gens_collected;
     RCNTXT *ctxt;
@@ -2044,17 +2044,7 @@ again:
         SortNodes();
 #endif
 
-    if (R_check_constants > 2 || (R_check_constants > 1 && gens_collected == NUM_OLD_GENERATIONS))
-        R_checkConstants(TRUE);
-
-    if (gc_reporting)
-    {
-        REprintf("Garbage collection %d = %d", gc_count, gen_gc_counts[0]);
-        for (i = 0; i < NUM_OLD_GENERATIONS; i++)
-            REprintf("+%d", gen_gc_counts[i + 1]);
-        REprintf(" (level %d) ... ", gens_collected);
-        DEBUG_GC_SUMMARY(gens_collected == NUM_OLD_GENERATIONS);
-    }
+    return gens_collected;
 }
 
 /* public interface for controlling GC torture settings */
@@ -3282,6 +3272,7 @@ static void R_gc_internal(R_size_t size_needed)
 #endif
     SEXP first_bad_sexp_type_sexp = NULL;
     int first_bad_sexp_type_line = 0;
+    int i, gens_collected = 0;
 
 #ifdef IMMEDIATE_FINALIZERS
     Rboolean first = TRUE;
@@ -3297,11 +3288,23 @@ again:
     {
         R_in_gc = TRUE;
         gc_start_timing();
-        RunGenCollect(size_needed);
+        gens_collected = RunGenCollect(size_needed);
         gc_end_timing();
         R_in_gc = FALSE;
     }
     END_SUSPEND_INTERRUPTS;
+
+    if (R_check_constants > 2 || (R_check_constants > 1 && gens_collected == NUM_OLD_GENERATIONS))
+        R_checkConstants(TRUE);
+
+    if (gc_reporting)
+    {
+        REprintf("Garbage collection %d = %d", gc_count, gen_gc_counts[0]);
+        for (i = 0; i < NUM_OLD_GENERATIONS; i++)
+            REprintf("+%d", gen_gc_counts[i + 1]);
+        REprintf(" (level %d) ... ", gens_collected);
+        DEBUG_GC_SUMMARY(gens_collected == NUM_OLD_GENERATIONS);
+    }
 
     if (bad_sexp_type_seen != 0 && first_bad_sexp_type == 0)
     {
@@ -3376,7 +3379,6 @@ again:
         LOGICAL(R_LogicalNAValue)[0] = NA_LOGICAL;
         error("internal logical NA value has been modified");
     }
-    /* compiler constants are checked in RunGenCollect */
 }
 
 SEXP attribute_hidden do_memoryprofile(SEXP call, SEXP op, SEXP args, SEXP env)
