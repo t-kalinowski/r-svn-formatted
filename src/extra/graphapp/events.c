@@ -355,7 +355,7 @@ static void handle_focus(object obj, int gained_focus)
 {
     if (gained_focus)
     {
-        obj->state |= Focus;
+        obj->state |= GA_Focus;
         if (obj->caretwidth < 0)
         {
             setcaret(obj, 0, 0, -obj->caretwidth, obj->caretheight);
@@ -364,7 +364,7 @@ static void handle_focus(object obj, int gained_focus)
     }
     else
     {
-        obj->state &= ~Focus;
+        obj->state &= ~GA_Focus;
         if (obj->caretwidth > 0)
         {
             setcaret(obj, 0, 0, -obj->caretwidth, obj->caretheight);
@@ -987,7 +987,7 @@ long WINAPI app_control_procedure(HWND hwnd, UINT message, WPARAM wParam, LPARAM
 #if USE_NATIVE_TOGGLES
             if (isenabled(obj))
             {
-                obj->state &= ~Enabled;
+                obj->state &= ~GA_Enabled;
                 prevent_activation = 1;
             }
 #endif
@@ -1018,7 +1018,7 @@ long WINAPI app_control_procedure(HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
     /* Re-activate the control if necessary. */
     if (prevent_activation)
-        obj->state |= Enabled;
+        obj->state |= GA_Enabled;
     return result;
 }
 
