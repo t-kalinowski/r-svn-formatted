@@ -1,8 +1,8 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1995--2002 Martin Maechler <maechler@stat.math.ethz.ch>
+ *  Copyright (C) 2012-2019  The R Core Team
  *  Copyright (C) 2003       The R Foundation
- *  Copyright (C) 2012-2016  The R Core Team
+ *  Copyright (C) 1995-2002  Martin Maechler <maechler@stat.math.ethz.ch>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,12 +21,26 @@
 
 #include "modreg.h"
 
-#include "Trunmed.c"
+// Large value, to replace { NaN | NA } values with for NA_BIG_alternate_* :
+static double BIG_dbl = 8.888888888e307;
+//          1 3 5 7 9, // ~ < 2^1023 [such that +/- 2*BIG_dbl is still normalized]
 
-static void Srunmed(double *y, double *smo, R_xlen_t n, int bw, int end_rule, int debug)
+enum
+{
+    NA_BIG_alternate_P = 1,
+    NA_BIG_alternate_M,
+    NA_OMIT,
+    NA_FAIL
+};
+// == 1,2,..., defined by order in formals(runmed)$na.action -->  ../R/runmed.R
+
+#include "Trunmed.c"
+//        ---------
+
+static void Srunmed(const double *y, double *smo, R_xlen_t n, int bw, int end_rule, int print_level)
 {
     /*
-     *  Computes "Running Median" smoother with medians of 'band'
+     *  Computes "Running Median" smoother ("Stuetzle" algorithm) with medians of 'band'
 
      *  Input:
      *	y(n)	- responses in order of increasing predictor values
@@ -104,7 +118,7 @@ static void Srunmed(double *y, double *smo, R_xlen_t n, int bw, int end_rule, in
     band2++; /* = bw / 2 + 1*/
     ;
 
-    if (debug)
+    if (print_level >= 1)
         REprintf("(bw,b2)= (%d,%d)\n", bw, band2);
 
     /* Big	FOR Loop: RUNNING median, update the median 'rmed'
@@ -115,7 +129,7 @@ static void Srunmed(double *y, double *smo, R_xlen_t n, int bw, int end_rule, in
         yin = y[last];
         yout = y[first - 1];
 
-        if (debug)
+        if (print_level >= 2)
             REprintf(" is=%d, y(in/out)= %10g, %10g", ismo, yin, yout);
 
         rnew = rmed; /* New median = old one   in all the simple cases --*/
@@ -127,7 +141,7 @@ static void Srunmed(double *y, double *smo, R_xlen_t n, int bw, int end_rule, in
                 kminus = 0;
                 if (yout > rmed)
                 { /*	--- yin < rmed < yout --- */
-                    if (debug)
+                    if (print_level >= 2)
                         REprintf(": yin < rmed < yout ");
                     rnew = yin; /* was -rinf */
                     for (i = first; i <= last; ++i)
@@ -145,7 +159,7 @@ static void Srunmed(double *y, double *smo, R_xlen_t n, int bw, int end_rule, in
                 }
                 else
                 { /*		--- yin < rmed = yout --- */
-                    if (debug)
+                    if (print_level >= 2)
                         REprintf(": yin < rmed == yout ");
                     rse = rts = yin; /* was -rinf */
                     for (i = first; i <= last; ++i)
@@ -166,7 +180,7 @@ static void Srunmed(double *y, double *smo, R_xlen_t n, int bw, int end_rule, in
                         }
                     }
                     rnew = (kminus == band2) ? rts : rse;
-                    if (debug)
+                    if (print_level >= 2)
                         REprintf("k- : %d,", kminus);
                 }
             } /* else: both  yin, yout < rmed -- nothing to do .... */
@@ -178,7 +192,7 @@ static void Srunmed(double *y, double *smo, R_xlen_t n, int bw, int end_rule, in
                 kplus = 0;
                 if (yout < rmed)
                 { /* -- yout < rmed < yin --- */
-                    if (debug)
+                    if (print_level >= 2)
                         REprintf(": yout < rmed < yin ");
                     rnew = yin; /* was rinf */
                     for (i = first; i <= last; ++i)
@@ -196,7 +210,7 @@ static void Srunmed(double *y, double *smo, R_xlen_t n, int bw, int end_rule, in
                 }
                 else
                 { /* -- yout = rmed < yin --- */
-                    if (debug)
+                    if (print_level >= 2)
                         REprintf(": yout == rmed < yin ");
                     rbe = rtb = yin; /* was rinf */
                     for (i = first; i <= last; ++i)
@@ -217,12 +231,12 @@ static void Srunmed(double *y, double *smo, R_xlen_t n, int bw, int end_rule, in
                         }
                     }
                     rnew = (kplus == band2) ? rtb : rbe;
-                    if (debug)
+                    if (print_level >= 2)
                         REprintf("k+ : %d,", kplus);
                 }
             } /* else: both  yin, yout > rmed --> nothing to do */
         }     /* else: yin == rmed -- nothing to do .... */
-        if (debug)
+        if (print_level >= 2)
             REprintf("=> %12g, %12g\n", rmed, rnew);
         rmed = rnew;
         smo[ismo] = rmed;
@@ -240,25 +254,105 @@ static void Srunmed(double *y, double *smo, R_xlen_t n, int bw, int end_rule, in
     }
 } /* Srunmed */
 
-SEXP runmed(SEXP x, SEXP stype, SEXP sk, SEXP end, SEXP print_level)
+// anyNA() like [ see ../../../main/coerce.c ]
+static R_xlen_t R_firstNA_dbl(const double x[], R_xlen_t n)
 {
-    if (TYPEOF(x) != REALSXP)
+    for (R_xlen_t k = 0; k < n; k++)
+        if (ISNAN(x[k]))
+            return k + 1; // 1-index
+    return 0;             // no NaN|NA found
+}
+
+// .Call()ed from ../R/runmed.R
+SEXP runmed(SEXP sx, SEXP stype, SEXP sk, SEXP end, SEXP naAct, SEXP printLev)
+{
+    if (TYPEOF(sx) != REALSXP)
         error("numeric 'x' required");
-    R_xlen_t n = XLENGTH(x);
-    int type = asInteger(stype), k = asInteger(sk), iend = asInteger(end), pl = asInteger(print_level);
-    SEXP ans = PROTECT(allocVector(REALSXP, n));
+    double *x = REAL(sx), *xx;
+    R_xlen_t n = XLENGTH(sx);
+    int type = asInteger(stype), k = asInteger(sk), end_rule = asInteger(end), na_action = asInteger(naAct),
+        print_level = asInteger(printLev);
+    R_xlen_t firstNA = R_firstNA_dbl(x, n), nn = n;
+    if (print_level)
+        Rprintf("firstNA = %d%s.\n", firstNA, (firstNA == 0) ? " <=> *no* NA/NaN" : "");
+    if (firstNA)
+    { // anyNA(x)
+        Rboolean NA_pos = TRUE;
+        switch (na_action)
+        {
+        case NA_BIG_alternate_M:
+            NA_pos = FALSE; // <<-- "M"inus: *not* positive
+                            // no break; --> continue
+        case NA_BIG_alternate_P: {
+            xx = (double *)R_alloc(n, sizeof(double));
+            for (R_xlen_t i = 0; i < n; i++)
+            {
+                if (ISNAN(x[i]))
+                {
+                    // replace NaN with +/- BIG (< Inf!), switching sign every time:
+                    xx[i] = (NA_pos ? BIG_dbl : -BIG_dbl);
+                    NA_pos = !NA_pos; // switch
+                }
+                else
+                    xx[i] = x[i];
+            }
+            break;
+        }
+        case NA_OMIT: {
+            R_xlen_t i1 = firstNA - 1; // firstNA is "1-index"
+            // xx <- x[!is.na(x)] :
+            xx = (double *)R_alloc(n - 1, sizeof(double)); // too much if sum(is.na(.)) > 1
+            if (i1 > 1)
+                Memcpy(xx, x, i1 - 1);
+            for (R_xlen_t i = i1, ix = i; i < n; i++)
+            {                    //  i-ix == n-nn  {identity}
+                if (ISNAN(x[i])) // drop NA/NaN and shift all to the left by 1 :
+                    nn--;        // nn + (i-ix) == n
+                else
+                    xx[ix++] = x[i];
+            } // --> now  xx[1:nn] == x[!is.na(x)]
+            break;
+        }
+        case NA_FAIL:
+            error(_("runmed(x, .., na.action=\"na.fail\"): have NAs starting at x[%ld]"), firstNA);
+        default:
+            error(_("runmed(): invalid 'na.action'"));
+        }
+    }
+    else
+    { // no NAs: xx just points to x; wont be modified
+        xx = x;
+    }
+
+    SEXP ans = PROTECT(allocVector(REALSXP, nn));
+
     if (type == 1)
     {
-        if (IS_LONG_VEC(x))
+        if (IS_LONG_VEC(sx))
             error("long vectors are not supported for algorithm = \"Turlach\"");
-        int *i1 = (int *)R_alloc(k + 1, sizeof(int)), *i2 = (int *)R_alloc(2 * k + 1, sizeof(int));
-        double *d1 = (double *)R_alloc(2 * k + 1, sizeof(double));
-        Trunmed(n, k, REAL(x), REAL(ans), i1, i2, d1, iend, pl);
+        Trunmed(xx, REAL(ans), nn, k, end_rule, print_level);
     }
     else
     {
-        Srunmed(REAL(x), REAL(ans), n, k, iend, pl > 0);
+        Srunmed(xx, REAL(ans), nn, k, end_rule, print_level);
     }
+    if (firstNA)
+        switch (na_action)
+        {
+        case NA_BIG_alternate_P:
+        case NA_BIG_alternate_M: { // revert the +-BIG replacements
+            double *median = REAL(ans);
+            for (R_xlen_t i = firstNA - 1; i < n; i++)
+                if (ISNAN(x[i]) && !ISNAN(median[i]) && fabs(median[i]) == BIG_dbl)
+                    median[i] = x[i];
+            break;
+        }
+        case NA_OMIT: // nothing
+            break;
+        default:
+            error(_("na_action logic error (%d), please report!"), na_action);
+        }
+
     UNPROTECT(1);
     return ans;
 }
