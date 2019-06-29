@@ -430,7 +430,7 @@ void F77_SUB(ehg183a)(char *s, int *nc, int *i, int *n, int *inc)
 #endif
 {
     int nnc = *nc;
-    char mess[nnc + 1], num[20];
+    char mess[4000], num[20];
     strncpy(mess, s, nnc);
     mess[nnc] = '\0';
     for (int j = 0; j < *n; j++)
@@ -449,7 +449,7 @@ void F77_SUB(ehg184a)(char *s, int *nc, double *x, int *n, int *inc)
 #endif
 {
     int nnc = *nc;
-    char mess[nnc + 1], num[30];
+    char mess[4000], num[30];
     strncpy(mess, s, nnc);
     mess[nnc] = '\0';
     for (int j = 0; j < *n; j++)
