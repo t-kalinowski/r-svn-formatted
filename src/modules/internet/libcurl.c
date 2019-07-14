@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2015-2018 The R Core Team
+ *  Copyright (C) 2015-2019 The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -857,6 +857,10 @@ SEXP attribute_hidden in_do_curlDownload(SEXP call, SEXP op, SEXP args, SEXP rho
    chunk above it.  For safety, the buffer is expandable but this
    should not be exercised.
 
+   It seems that expanding was being done by a couple of packages and
+   gave a use-after-free error with libcurl 7.64.0.  So initial size
+   increased to 16x.
+
    An alternative design would be for consumeData to return what is
    available and reset current.  Then rcvData would only be called on
    a completely empty buffer.
@@ -1104,7 +1108,7 @@ Rconnection in_newCurlUrl(const char *description, const char *const mode, SEXP 
         /* for Solaris 12.5 */ new = NULL;
     }
     RCurlconn ctxt = (RCurlconn) new->private;
-    ctxt->bufsize = 2 * CURL_MAX_WRITE_SIZE;
+    ctxt->bufsize = 16 * CURL_MAX_WRITE_SIZE;
     ctxt->buf = malloc(ctxt->bufsize);
     if (!ctxt->buf)
     {
