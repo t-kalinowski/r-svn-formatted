@@ -721,7 +721,7 @@ static SEXP GetSrcLoc(SEXP srcref)
     return result;
 }
 
-static char errbuf[BUFSIZE];
+static char errbuf[BUFSIZE + 1]; /* add 1 to leave room for a null byte */
 
 #define ERRBUFCAT(txt) Rstrncat(errbuf, txt, BUFSIZE - strlen(errbuf))
 
