@@ -120,11 +120,11 @@ static void printLogicalVectorS(SEXP x, R_xlen_t n, int indx)
     int w, labwidth = 0, width;
     R_xlen_t i;
     DO_first_lab;
-    formatLogicalS(x, XLENGTH(x), &w);
+    formatLogicalS(x, n, &w);
     w += R_print.gap;
 
-    ITERATE_BY_REGION(
-        x, px, idx, nb, int, LOGICAL, for (R_xlen_t j = 0; j < nb; j++) {
+    ITERATE_BY_REGION_PARTIAL(
+        x, px, idx, nb, int, LOGICAL, 0, n, for (R_xlen_t j = 0; j < nb; j++) {
             i = idx + j; /* for Do_newline */
             NUMVECTOR_TIGHTLOOP(EncodeLogical(px[j], w));
         });
@@ -151,11 +151,11 @@ attribute_hidden void printIntegerVectorS(SEXP x, R_xlen_t n, int indx)
     int w, labwidth = 0, width;
     R_xlen_t i;
     DO_first_lab;
-    formatIntegerS(x, XLENGTH(x), &w);
+    formatIntegerS(x, n, &w);
     w += R_print.gap;
 
-    ITERATE_BY_REGION(
-        x, px, idx, nb, int, INTEGER, for (R_xlen_t j = 0; j < nb; j++) {
+    ITERATE_BY_REGION_PARTIAL(
+        x, px, idx, nb, int, INTEGER, 0, n, for (R_xlen_t j = 0; j < nb; j++) {
             i = idx + j; /* for macros */
             NUMVECTOR_TIGHTLOOP(EncodeInteger(px[j], w));
         });
@@ -188,8 +188,8 @@ attribute_hidden void printRealVectorS(SEXP x, R_xlen_t n, int indx)
     formatRealS(x, n, &w, &d, &e, 0);
     w += R_print.gap;
 
-    ITERATE_BY_REGION(
-        x, px, idx, nb, double, REAL, for (R_xlen_t j = 0; j < nb; j++) {
+    ITERATE_BY_REGION_PARTIAL(
+        x, px, idx, nb, double, REAL, 0, n, for (R_xlen_t j = 0; j < nb; j++) {
             i = idx + j; /* for macros */
             NUMVECTOR_TIGHTLOOP(EncodeReal0(px[j], w, d, e, OutDec));
         });
@@ -226,8 +226,8 @@ attribute_hidden void printComplexVectorS(SEXP x, R_xlen_t n, int indx)
     w = wr + wi + 2; /* +2 for "+" and "i" */
     w += R_print.gap;
 
-    ITERATE_BY_REGION(
-        x, px, idx, nb, Rcomplex, COMPLEX, for (R_xlen_t j = 0; j < nb; j++) {
+    ITERATE_BY_REGION_PARTIAL(
+        x, px, idx, nb, Rcomplex, COMPLEX, 0, n, for (R_xlen_t j = 0; j < nb; j++) {
             i = idx + j; /* for macros */
             NUMVECTOR_TIGHTLOOP(CMPLX_ISNA(px[j]) ? EncodeReal0(NA_REAL, w, 0, 0, OutDec)
                                                   : EncodeComplex(px[j], wr + R_print.gap, dr, er, wi, di, ei, OutDec));
@@ -306,8 +306,8 @@ static void printRawVectorS(SEXP x, R_xlen_t n, int indx)
     formatRawS(x, n, &w);
     w += R_print.gap;
 
-    ITERATE_BY_REGION(
-        x, px, idx, nb, Rbyte, RAW, for (R_xlen_t j = 0; j < nb; j++) {
+    ITERATE_BY_REGION_PARTIAL(
+        x, px, idx, nb, Rbyte, RAW, 0, n, for (R_xlen_t j = 0; j < nb; j++) {
             i = idx + j; /* for macros */
             RAWVECTOR_TIGHTLOOP(px, j);
         });
