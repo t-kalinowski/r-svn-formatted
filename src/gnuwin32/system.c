@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2018  The R Core Team
+ *  Copyright (C) 1997--2019  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1011,6 +1011,15 @@ int cmdlineoptions(int ac, char **av)
             Rp->R_Interactive = TRUE;
             Rp->ReadConsole = ThreadedReadConsole;
             InThreadReadConsole = CharReadConsole;
+        }
+        else if (R_is_redirection_tty(0) && R_is_redirection_tty(1))
+        {
+            /* FIXME: support readline to allow line editing
+                      support Ctrl-C */
+            Rp->R_Interactive = TRUE;
+            Rp->ReadConsole = ThreadedReadConsole;
+            InThreadReadConsole = FileReadConsole;
+            setvbuf(stdout, NULL, _IONBF, 0);
         }
         else
         {
