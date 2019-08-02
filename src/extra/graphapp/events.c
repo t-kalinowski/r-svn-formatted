@@ -649,7 +649,7 @@ static long handle_message(HWND hwnd, UINT message, WPARAM wParam, LONG lParam, 
 
     case WM_IME_COMPOSITION: /* DBCS Only */
         if (lParam & GCS_RESULTSTR)
-        { /* is fixed multibyte string */
+        { /* is fixed multiGAbyte string */
             HIMC himc = ImmGetContext(hwnd);
             wchar_t buf[80];
             wchar_t *p;
@@ -658,7 +658,7 @@ static long handle_message(HWND hwnd, UINT message, WPARAM wParam, LONG lParam, 
 
             if (obj->flags & UseUnicode)
             {
-                /* len is byte */
+                /* len is GAbyte */
                 len = ImmGetCompositionStringW(himc, GCS_RESULTSTR, NULL, 0);
                 if (NULL == (p = (len > sizeof(buf) - 1) ? calloc(len, sizeof(char)) : buf))
                 {
