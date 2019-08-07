@@ -498,7 +498,7 @@ SEXP attribute_hidden do_format(SEXP call, SEXP op, SEXP args, SEXP env)
         if (tmp == NA_LOGICAL)
             sci = NA_INTEGER;
         else
-            sci = tmp > 0 ? -100 : 100;
+            sci = tmp > 0 ? -99 : 310;
     }
     else if (isNumeric(CAR(args)))
     {
