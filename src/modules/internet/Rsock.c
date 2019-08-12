@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
 
- *  Copyright (C) 1998-2017   The R Core Team
+ *  Copyright (C) 1998-2019   The R Core Team
  *  Copyright (C) 1996, 1997  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -187,6 +187,8 @@ void in_Rsockwrite(int *sockp, char **buf, int *start, int *end, int *len)
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
+
+struct hostent *R_gethostbyname(const char *name);
 
 #ifndef Win32
 #define closesocket(s) close(s)
@@ -466,7 +468,7 @@ int R_SockConnect(int port, char *host, int timeout)
     }
 #endif
 
-    if (!(hp = gethostbyname(host)))
+    if (!(hp = R_gethostbyname(host)))
         CLOSE_N_RETURN(-1);
 
     memcpy((char *)&server.sin_addr, hp->h_addr_list[0], hp->h_length);
@@ -631,4 +633,16 @@ ssize_t R_SockWrite(int sockp, const void *buf, size_t len, int timeout)
         }
     } while (/* ! blocking && */ len > 0);
     return out;
+}
+
+struct hostent *R_gethostbyname(const char *name)
+{
+    struct hostent *ans = gethostbyname(name);
+
+    /* hard-code IPv4 address for localhost to be robust against
+       misconfigured systems */
+
+    if (ans == NULL && !strcmp(name, "localhost"))
+        ans = gethostbyname("127.0.0.1");
+    return ans;
 }
