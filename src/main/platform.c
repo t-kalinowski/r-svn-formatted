@@ -375,17 +375,17 @@ SEXP attribute_hidden do_fileshow(SEXP call, SEXP op, SEXP args, SEXP rho)
 #ifdef Win32
             f[i] = acopy_string(reEnc(CHAR(el), getCharCE(el), CE_UTF8, 1));
 #else
-            f[i] = acopy_string(translateChar(el));
+            f[i] = acopy_string(translateCharFP(el));
 #endif
         else
             error(_("invalid filename specification"));
         if (STRING_ELT(hd, i) != NA_STRING)
-            h[i] = acopy_string(translateChar(STRING_ELT(hd, i)));
+            h[i] = acopy_string(translateCharFP(STRING_ELT(hd, i)));
         else
             error(_("invalid '%s' argument"), "headers");
     }
     if (isValidStringF(tl))
-        t = acopy_string(translateChar(STRING_ELT(tl, 0)));
+        t = acopy_string(translateCharFP(STRING_ELT(tl, 0)));
     else
         t = "";
     if (isValidStringF(pg))
@@ -535,6 +535,7 @@ SEXP attribute_hidden do_filecreate(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         else if (show)
         {
+            // translateChar will translate the file, using escapes
             warning(_("cannot create file '%s', reason '%s'"), translateChar(STRING_ELT(fn, i)), strerror(errno));
         }
     }
@@ -561,7 +562,7 @@ SEXP attribute_hidden do_fileremove(SEXP call, SEXP op, SEXP args, SEXP rho)
 #ifdef Win32
                 (_wremove(filenameToWchar(STRING_ELT(f, i), TRUE)) == 0);
 #else
-                (remove(R_ExpandFileName(translateChar(STRING_ELT(f, i)))) == 0);
+                (remove(R_ExpandFileName(translateCharFP(STRING_ELT(f, i)))) == 0);
 #endif
             if (!LOGICAL(ans)[i])
                 warning(_("cannot remove file '%s', reason '%s'"), translateChar(STRING_ELT(f, i)), strerror(errno));
@@ -641,20 +642,22 @@ SEXP attribute_hidden do_filesymlink(SEXP call, SEXP op, SEXP args, SEXP rho)
 #else
             char from[PATH_MAX], to[PATH_MAX];
             const char *p;
-            p = R_ExpandFileName(translateChar(STRING_ELT(f1, i % n1)));
+            p = R_ExpandFileName(translateCharFP(STRING_ELT(f1, i % n1)));
             if (strlen(p) >= PATH_MAX - 1)
             {
                 LOGICAL(ans)[i] = 0;
                 continue;
             }
             strcpy(from, p);
-            p = R_ExpandFileName(translateChar(STRING_ELT(f2, i % n2)));
+
+            p = R_ExpandFileName(translateCharFP(STRING_ELT(f2, i % n2)));
             if (strlen(p) >= PATH_MAX - 1)
             {
                 LOGICAL(ans)[i] = 0;
                 continue;
             }
             strcpy(to, p);
+
             /* Rprintf("linking %s to %s\n", from, to); */
             LOGICAL(ans)[i] = symlink(from, to) == 0;
             if (!LOGICAL(ans)[i])
@@ -715,20 +718,22 @@ SEXP attribute_hidden do_filelink(SEXP call, SEXP op, SEXP args, SEXP rho)
 #else
             char from[PATH_MAX], to[PATH_MAX];
             const char *p;
-            p = R_ExpandFileName(translateChar(STRING_ELT(f1, i % n1)));
+            p = R_ExpandFileName(translateCharFP(STRING_ELT(f1, i % n1)));
             if (strlen(p) >= PATH_MAX - 1)
             {
                 LOGICAL(ans)[i] = 0;
                 continue;
             }
             strcpy(from, p);
-            p = R_ExpandFileName(translateChar(STRING_ELT(f2, i % n2)));
+
+            p = R_ExpandFileName(translateCharFP(STRING_ELT(f2, i % n2)));
             if (strlen(p) >= PATH_MAX - 1)
             {
                 LOGICAL(ans)[i] = 0;
                 continue;
             }
             strcpy(to, p);
+
             LOGICAL(ans)[i] = link(from, to) == 0;
             if (!LOGICAL(ans)[i])
             {
@@ -798,11 +803,11 @@ SEXP attribute_hidden do_filerename(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
         LOGICAL(ans)[i] = (res == 0);
 #else
-        p = R_ExpandFileName(translateChar(STRING_ELT(f1, i)));
+        p = R_ExpandFileName(translateCharFP(STRING_ELT(f1, i)));
         if (strlen(p) >= PATH_MAX - 1)
             error(_("expanded 'from' name too long"));
         strncpy(from, p, PATH_MAX - 1);
-        p = R_ExpandFileName(translateChar(STRING_ELT(f2, i)));
+        p = R_ExpandFileName(translateCharFP(STRING_ELT(f2, i)));
         if (strlen(p) >= PATH_MAX - 1)
             error(_("expanded 'to' name too long"));
         strncpy(to, p, PATH_MAX - 1);
@@ -920,7 +925,7 @@ SEXP attribute_hidden do_fileinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
                 *p = 0;
         }
 #else
-        const char *efn = R_ExpandFileName(translateChar(STRING_ELT(fn, i)));
+        const char *efn = R_ExpandFileName(translateCharFP(STRING_ELT(fn, i)));
 #endif
         if (STRING_ELT(fn, i) != NA_STRING &&
 #ifdef Win32
@@ -1109,7 +1114,7 @@ SEXP attribute_hidden do_direxists(SEXP call, SEXP op, SEXP args, SEXP rho)
                 *p = 0;
         }
 #else
-        const char *efn = R_ExpandFileName(translateChar(STRING_ELT(fn, i)));
+        const char *efn = R_ExpandFileName(translateCharFP(STRING_ELT(fn, i)));
 #endif
         if (STRING_ELT(fn, i) != NA_STRING &&
 #ifdef Win32
@@ -1307,7 +1312,7 @@ SEXP attribute_hidden do_listfiles(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         if (STRING_ELT(d, i) == NA_STRING)
             continue;
-        const char *dnp = R_ExpandFileName(translateChar(STRING_ELT(d, i)));
+        const char *dnp = R_ExpandFileName(translateCharFP(STRING_ELT(d, i)));
         list_files(dnp, fullnames ? dnp : NULL, &count, &ans, allfiles, recursive, pattern ? &reg : NULL, &countmax,
                    idx, idirs, /* allowdots = */ !nodots);
     }
@@ -1413,7 +1418,7 @@ SEXP attribute_hidden do_listdirs(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         if (STRING_ELT(d, i) == NA_STRING)
             continue;
-        dnp = R_ExpandFileName(translateChar(STRING_ELT(d, i)));
+        dnp = R_ExpandFileName(translateCharFP(STRING_ELT(d, i)));
         list_dirs(dnp, "", fullnames, &count, &ans, &countmax, idx, recursive);
     }
     REPROTECT(ans = lengthgets(ans, count), idx);
@@ -1461,7 +1466,7 @@ SEXP attribute_hidden do_fileexists(SEXP call, SEXP op, SEXP args, SEXP rho)
             else
                 LOGICAL(ans)[i] = R_WFileExists(filenameToWchar(STRING_ELT(file, i), TRUE));
 #else
-            LOGICAL(ans)[i] = R_FileExists(translateChar(STRING_ELT(file, i)));
+            LOGICAL(ans)[i] = R_FileExists(translateCharFP(STRING_ELT(file, i)));
 #endif
         }
         else
@@ -1527,7 +1532,7 @@ SEXP attribute_hidden do_fileaccess(SEXP call, SEXP op, SEXP args, SEXP rho)
 #ifdef Win32
                 winAccessW(filenameToWchar(STRING_ELT(fn, i), TRUE), modemask);
 #else
-                access(R_ExpandFileName(translateChar(STRING_ELT(fn, i))), modemask);
+                access(R_ExpandFileName(translateCharFP(STRING_ELT(fn, i))), modemask);
 #endif
         }
         else
@@ -2081,11 +2086,11 @@ SEXP attribute_hidden do_pathexpand(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (tmp != NA_STRING)
         {
 #ifndef Win32
-            tmp = markKnown(R_ExpandFileName(translateChar(tmp)), tmp);
+            tmp = markKnown(R_ExpandFileName(translateCharFP(tmp)), tmp);
 #else
             /* Windows can have files and home directories that aren't representable in the native encoding (e.g.
                latin1), so we need to translate everything to UTF8.  */
-            tmp = mkCharCE(R_ExpandFileNameUTF8(translateCharUTF8(tmp)), CE_UTF8);
+            tmp = mkCharCE(R_ExpandFileNameUTF8(trCharUTF8(tmp)), CE_UTF8);
 #endif
         }
         SET_STRING_ELT(ans, i, tmp);
@@ -2339,7 +2344,7 @@ SEXP attribute_hidden do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
     mode = asInteger(CADDDR(args));
     if (mode == NA_LOGICAL)
         mode = 0777;
-    strcpy(dir, R_ExpandFileName(translateChar(STRING_ELT(path, 0))));
+    strcpy(dir, R_ExpandFileName(translateCharFP(STRING_ELT(path, 0))));
     /* remove trailing slashes */
     p = dir + strlen(dir) - 1;
     while (*p == '/' && strlen(dir) > 1)
@@ -2954,7 +2959,7 @@ SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
         dates = asLogical(CAR(args));
         if (dates == NA_LOGICAL)
             error(_("invalid '%s' argument"), "copy.dates");
-        const char *q = R_ExpandFileName(translateChar(STRING_ELT(to, 0)));
+        const char *q = R_ExpandFileName(translateCharFP(STRING_ELT(to, 0)));
         if (strlen(q) > PATH_MAX - 2) // allow for '/' and terminator
             error(_("invalid '%s' argument"), "to");
         strncpy(dir, q, PATH_MAX);
@@ -2965,7 +2970,7 @@ SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
         {
             if (STRING_ELT(fn, i) != NA_STRING)
             {
-                strncpy(from, R_ExpandFileName(translateChar(STRING_ELT(fn, i))), PATH_MAX - 1);
+                strncpy(from, R_ExpandFileName(translateCharFP(STRING_ELT(fn, i))), PATH_MAX - 1);
                 from[PATH_MAX - 1] = '\0';
                 size_t ll = strlen(from);
                 if (ll)
@@ -3077,7 +3082,7 @@ SEXP attribute_hidden do_syschmod(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef Win32
             res = _wchmod(filenameToWchar(STRING_ELT(paths, i), TRUE), mode);
 #else
-            res = chmod(R_ExpandFileName(translateChar(STRING_ELT(paths, i))), mode);
+            res = chmod(R_ExpandFileName(translateCharFP(STRING_ELT(paths, i))), mode);
 #endif
         }
         else
@@ -3147,7 +3152,7 @@ SEXP attribute_hidden do_readlink(SEXP call, SEXP op, SEXP args, SEXP env)
     for (int i = 0; i < n; i++)
     {
         memset(buf, 0, PATH_MAX + 1);
-        ssize_t res = readlink(R_ExpandFileName(translateChar(STRING_ELT(paths, i))), buf, PATH_MAX);
+        ssize_t res = readlink(R_ExpandFileName(translateCharFP(STRING_ELT(paths, i))), buf, PATH_MAX);
         if (res == PATH_MAX)
         {
             SET_STRING_ELT(ans, i, mkChar(buf));
@@ -3243,7 +3248,7 @@ SEXP attribute_hidden do_setFileTime(SEXP call, SEXP op, SEXP args, SEXP rho)
     vmax = vmaxget();
     for (R_xlen_t i = 0; i < n; i++)
     {
-        fn = translateChar(STRING_ELT(paths, i));
+        fn = translateCharFP(STRING_ELT(paths, i));
         ftime = REAL(times)[i % m];
 #ifdef Win32
         res = winSetFileTime(fn, ftime);
@@ -3269,7 +3274,7 @@ SEXP attribute_hidden do_setFileTime(SEXP call, SEXP op, SEXP args, SEXP rho)
 #endif
         LOGICAL(ans)[i] = (res == 0) ? FALSE : TRUE;
         fn = NULL;
-        vmaxset(vmax); // throws away result of translateChar
+        vmaxset(vmax); // throws away result of translateCharFP
     }
     UNPROTECT(2); /* times, ans */
     return ans;

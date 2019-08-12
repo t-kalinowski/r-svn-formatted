@@ -329,6 +329,8 @@ SEXP attribute_hidden do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
   Encoding support added for R 3.7.0.  One would normally expect file
   paths (and their components) to be in the session encoding, but on
   Windows there is some support for Unicode paths encoded (inside R) in UTF-8.
+
+  This should not do translations with escapes.
  */
 SEXP attribute_hidden do_filepath(SEXP call, SEXP op, SEXP args, SEXP env)
 {
@@ -383,6 +385,16 @@ SEXP attribute_hidden do_filepath(SEXP call, SEXP op, SEXP args, SEXP env)
     if (nzero || maxlen == 0)
         return allocVector(STRSXP, 0);
 
+    for (int j = 0; j < nx; j++)
+    {
+        int k = LENGTH(VECTOR_ELT(x, j));
+        for (int i = 0; i < k; i++)
+        {
+            SEXP cs = STRING_ELT(VECTOR_ELT(x, j), i);
+            if (IS_BYTES(cs))
+                error(_("strings with \"bytes\" encoding are not allowed"));
+        }
+    }
     SEXP ans = PROTECT(allocVector(STRSXP, maxlen));
 
     for (int i = 0; i < maxlen; i++)
@@ -415,9 +427,9 @@ SEXP attribute_hidden do_filepath(SEXP call, SEXP op, SEXP args, SEXP env)
             int k = LENGTH(VECTOR_ELT(x, j));
             SEXP cs = STRING_ELT(VECTOR_ELT(x, j), i % k);
             if (use_UTF8)
-                pwidth += (int)strlen(translateCharUTF8(cs));
+                pwidth += (int)strlen(trCharUTF8(cs));
             else
-                pwidth += (int)strlen(translateChar(cs));
+                pwidth += (int)strlen(translateCharFP(cs));
         }
         pwidth += (nx - 1) * sepw;
         char *buf = R_AllocStringBuffer(pwidth, &cbuff);
@@ -429,9 +441,9 @@ SEXP attribute_hidden do_filepath(SEXP call, SEXP op, SEXP args, SEXP env)
             SEXP cs = STRING_ELT(VECTOR_ELT(x, j), i % k);
             const char *s;
             if (use_UTF8)
-                s = translateCharUTF8(cs);
+                s = trCharUTF8(cs);
             else
-                s = translateChar(cs);
+                s = translateCharFP(cs);
             strcpy(buf, s);
             buf += strlen(s);
             if (j != nx - 1 && sepw != 0)
