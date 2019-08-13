@@ -1118,7 +1118,9 @@ SEXP installTrChar(SEXP x)
         return installNoTrChar(x);
 
     R_StringBuffer cbuff = {NULL, 0, MAXELTSIZE};
-    translateToNative(CHAR(x), &cbuff, t, 1);
+    // For back-compatibility this allows installing
+    // symbols with escapes.
+    translateToNative(CHAR(x), &cbuff, t, 0);
 
     SEXP Sans = install(cbuff.data);
     R_FreeStringBuffer(&cbuff);
