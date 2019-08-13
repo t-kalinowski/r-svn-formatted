@@ -1095,7 +1095,7 @@ const char *translateChar(SEXP x)
 }
 
 /* Variant which must work, used for file paths */
-const char *translateCharFP(SEXP x)
+attribute_hidden const char *translateCharFP(SEXP x)
 {
     if (TYPEOF(x) != CHARSXP)
         error(_("'%s' must be called on a CHARSXP, but got '%s'"), "translateChar", type2char(TYPEOF(x)));
@@ -1230,7 +1230,7 @@ next_char:
 }
 
 /* Variant which does not return escaped string */
-const char *trCharUTF8(SEXP x)
+attribute_hidden const char *trCharUTF8(SEXP x)
 {
     void *obj;
     const char *inbuf, *ans = CHAR(x);
