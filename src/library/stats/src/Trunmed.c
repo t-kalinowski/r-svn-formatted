@@ -374,7 +374,7 @@ static void runmedint(R_xlen_t n, int k, int k2, const double *data, double *med
         median[k2] = window[k];
     }
     R_xlen_t every_i;
-    if (print_level == 2)
+    if (print_level >= 2)
         every_i = (n > 100) ? n / 10 : 10;
 
     outnext = 0;
