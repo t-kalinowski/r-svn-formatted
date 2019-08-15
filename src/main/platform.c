@@ -925,9 +925,10 @@ SEXP attribute_hidden do_fileinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
                 *p = 0;
         }
 #else
-        const char *efn = R_ExpandFileName(translateCharFP(STRING_ELT(fn, i)));
+        const char *p = translateCharFP2(STRING_ELT(fn, i));
+        const char *efn = p ? R_ExpandFileName(p) : p;
 #endif
-        if (STRING_ELT(fn, i) != NA_STRING &&
+        if (p && STRING_ELT(fn, i) != NA_STRING &&
 #ifdef Win32
             _wstati64(wfn, &sb)
 #else
@@ -1113,22 +1114,23 @@ SEXP attribute_hidden do_direxists(SEXP call, SEXP op, SEXP args, SEXP rho)
             if (len > 1 && (*p == L'/' || *p == L'\\') && *(p - 1) != L':')
                 *p = 0;
         }
-#else
-        const char *efn = R_ExpandFileName(translateCharFP(STRING_ELT(fn, i)));
-#endif
-        if (STRING_ELT(fn, i) != NA_STRING &&
-#ifdef Win32
-            _wstati64(wfn, &sb)
-#else
-            /* Target not link */
-            stat(efn, &sb)
-#endif
-                == 0)
+        if (STRING_ELT(fn, i) != NA_STRING && _wstati64(wfn, &sb) == 0)
         {
             LOGICAL(ans)[i] = (sb.st_mode & S_IFDIR) > 0;
         }
         else
             LOGICAL(ans)[i] = 0;
+#else
+        const char *p = translateCharFP2(STRING_ELT(fn, i));
+        if (p && STRING_ELT(fn, i) != NA_STRING &&
+            /* Target not link */
+            stat(R_ExpandFileName(p), &sb) == 0)
+        {
+            LOGICAL(ans)[i] = (sb.st_mode & S_IFDIR) > 0;
+        }
+        else
+            LOGICAL(ans)[i] = 0;
+#endif
     }
     // copy names?
     UNPROTECT(1);
@@ -1466,7 +1468,9 @@ SEXP attribute_hidden do_fileexists(SEXP call, SEXP op, SEXP args, SEXP rho)
             else
                 LOGICAL(ans)[i] = R_WFileExists(filenameToWchar(STRING_ELT(file, i), TRUE));
 #else
-            LOGICAL(ans)[i] = R_FileExists(translateCharFP(STRING_ELT(file, i)));
+            // returns NULL if not translatable
+            const char *p = translateCharFP2(STRING_ELT(file, i));
+            LOGICAL(ans)[i] = p && R_FileExists(p);
 #endif
         }
         else
@@ -1527,12 +1531,11 @@ SEXP attribute_hidden do_fileaccess(SEXP call, SEXP op, SEXP args, SEXP rho)
     for (i = 0; i < n; i++)
         if (STRING_ELT(fn, i) != NA_STRING)
         {
-            INTEGER(ans)
-            [i] =
 #ifdef Win32
-                winAccessW(filenameToWchar(STRING_ELT(fn, i), TRUE), modemask);
+            INTEGER(ans)[i] = winAccessW(filenameToWchar(STRING_ELT(fn, i), TRUE), modemask);
 #else
-                access(R_ExpandFileName(translateCharFP(STRING_ELT(fn, i))), modemask);
+            const char *p = translateCharFP2(STRING_ELT(fn, i));
+            INTEGER(ans)[i] = p ? access(R_ExpandFileName(p), modemask) : -1;
 #endif
         }
         else
@@ -2083,16 +2086,18 @@ SEXP attribute_hidden do_pathexpand(SEXP call, SEXP op, SEXP args, SEXP rho)
     for (i = 0; i < n; i++)
     {
         SEXP tmp = STRING_ELT(fn, i);
-        if (tmp != NA_STRING)
-        {
 #ifndef Win32
-            tmp = markKnown(R_ExpandFileName(translateCharFP(tmp)), tmp);
+        const char *p = translateCharFP2(tmp);
+        if (p && tmp != NA_STRING)
+            tmp = markKnown(R_ExpandFileName(p), tmp);
 #else
-            /* Windows can have files and home directories that aren't representable in the native encoding (e.g.
-               latin1), so we need to translate everything to UTF8.  */
+        /* Windows can have files and home directories that aren't representable
+           in the native encoding (e.g. latin1), so we need to translate
+           everything to UTF8.
+        */
+        if (tmp != NA_STRING)
             tmp = mkCharCE(R_ExpandFileNameUTF8(trCharUTF8(tmp)), CE_UTF8);
 #endif
-        }
         SET_STRING_ELT(ans, i, tmp);
     }
     UNPROTECT(1);
@@ -3151,17 +3156,23 @@ SEXP attribute_hidden do_readlink(SEXP call, SEXP op, SEXP args, SEXP env)
     char buf[PATH_MAX + 1];
     for (int i = 0; i < n; i++)
     {
-        memset(buf, 0, PATH_MAX + 1);
-        ssize_t res = readlink(R_ExpandFileName(translateCharFP(STRING_ELT(paths, i))), buf, PATH_MAX);
-        if (res == PATH_MAX)
+        const char *p = translateCharFP2(STRING_ELT(paths, i));
+        if (p)
         {
-            SET_STRING_ELT(ans, i, mkChar(buf));
-            warning("possible truncation of value for element %d", i + 1);
+            memset(buf, 0, PATH_MAX + 1);
+            ssize_t res = readlink(R_ExpandFileName(p), buf, PATH_MAX);
+            if (res == PATH_MAX)
+            {
+                SET_STRING_ELT(ans, i, mkChar(buf));
+                warning("possible truncation of value for element %d", i + 1);
+            }
+            else if (res >= 0)
+                SET_STRING_ELT(ans, i, mkChar(buf));
+            else if (errno == EINVAL)
+                SET_STRING_ELT(ans, i, mkChar(""));
+            else
+                SET_STRING_ELT(ans, i, NA_STRING);
         }
-        else if (res >= 0)
-            SET_STRING_ELT(ans, i, mkChar(buf));
-        else if (errno == EINVAL)
-            SET_STRING_ELT(ans, i, mkChar(""));
         else
             SET_STRING_ELT(ans, i, NA_STRING);
     }
