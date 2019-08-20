@@ -648,7 +648,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         int mark, toRaw;
         const char *from, *to;
-        Rboolean isLatin1 = FALSE, isUTF8 = FALSE;
+        Rboolean isLatin1 = FALSE, isUTF8 = FALSE, fromUTF8 = FALSE;
 
         args = CDR(args);
         if (!isString(CAR(args)) || length(CAR(args)) != 1)
@@ -676,6 +676,8 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
         /* some iconv's allow "UTF8", but libiconv does not */
         if (streql(from, "UTF8") || streql(from, "utf8"))
             from = "UTF-8";
+        if (streql(from, "UTF-8") || (streql(from, "") && known_to_be_utf8))
+            fromUTF8 = TRUE;
         if (streql(to, "UTF8") || streql(to, "utf8"))
             to = "UTF-8";
         /* Should we do something about marked CHARSXPs in 'from = ""'? */
@@ -759,8 +761,8 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
             /* Then convert input  */
             res = Riconv(obj, &inbuf, &inb, &outbuf, &outb);
             *outbuf = '\0';
-            /* other possible error conditions are incomplete
-               and invalid multibyte chars */
+            /* other possible error conditions are
+               incomplete and invalid multibyte chars */
             if (res == -1 && errno == E2BIG)
             {
                 R_AllocStringBuffer(2 * cbuff.bufsize, &cbuff);
@@ -769,7 +771,45 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
             else if (res == -1 && sub && (errno == EILSEQ || errno == EINVAL))
             {
                 /* it seems this gets thrown for non-convertible input too */
-                if (strcmp(sub, "byte") == 0)
+                if (fromUTF8 && streql(sub, "Unicode"))
+                {
+                    if (outb < 13)
+                    {
+                        R_AllocStringBuffer(2 * cbuff.bufsize, &cbuff);
+                        goto top_of_loop;
+                    }
+                    wchar_t wc;
+                    size_t clen = utf8toucs(&wc, inbuf);
+                    if (clen > 0 && inb >= clen)
+                    {
+                        Rwchar_t ucs;
+                        if (IS_HIGH_SURROGATE(wc))
+                            ucs = utf8toucs32(wc, inbuf);
+                        else
+                            ucs = (Rwchar_t)wc;
+                        inbuf += clen;
+                        inb -= clen;
+                        if (ucs < 65536)
+                        {
+                            // gcc 7 objects to this with unsigned int
+                            snprintf(outbuf, 9, "<U+%04X>", (unsigned short)ucs);
+                            outbuf += 8;
+                            outb -= 8;
+                        }
+                        else
+                        {
+                            /* Rwchar_t is unsigned int on Windows,
+                               otherwise wchar_t (usually int).
+                               In any case Unicode points <= 0x10FFFF
+                            */
+                            snprintf(outbuf, 13, "<U+%08X>", (unsigned int)ucs);
+                            outbuf += 12;
+                            outb -= 12;
+                        }
+                    }
+                    goto next_char;
+                }
+                else if (strcmp(sub, "byte") == 0)
                 {
                     if (outb < 5)
                     {
@@ -782,15 +822,15 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
                 else
                 {
-                    size_t j;
-                    if (outb < strlen(sub))
+                    size_t sub_len = strlen(sub);
+                    if (outb < sub_len)
                     {
                         R_AllocStringBuffer(2 * cbuff.bufsize, &cbuff);
                         goto top_of_loop;
                     }
-                    memcpy(outbuf, sub, j = strlen(sub));
-                    outbuf += j;
-                    outb -= j;
+                    memcpy(outbuf, sub, sub_len);
+                    outbuf += sub_len;
+                    outb -= sub_len;
                 }
                 inbuf++;
                 inb--;
@@ -1017,12 +1057,11 @@ next_char:
         {
             /* if starting in UTF-8, use \uxxxx */
             /* This must be the first byte */
-            size_t clen;
             wchar_t wc;
-            Rwchar_t ucs;
-            clen = utf8toucs(&wc, inbuf);
+            size_t clen = utf8toucs(&wc, inbuf);
             if (clen > 0 && inb >= clen)
             {
+                Rwchar_t ucs;
                 if (IS_HIGH_SURROGATE(wc))
                     ucs = utf8toucs32(wc, inbuf);
                 else
