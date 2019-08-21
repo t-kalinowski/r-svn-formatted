@@ -1137,8 +1137,8 @@ const char *translateChar(SEXP x)
     return p;
 }
 
-/* Variant which must work, used for file paths */
-attribute_hidden const char *translateCharFP(SEXP x)
+/* Variant which must work, used for file paths, including devices */
+const char *translateCharFP(SEXP x)
 {
     if (TYPEOF(x) != CHARSXP)
         error(_("'%s' must be called on a CHARSXP, but got '%s'"), "translateChar", type2char(TYPEOF(x)));
