@@ -1315,7 +1315,10 @@ SEXP attribute_hidden do_listfiles(SEXP call, SEXP op, SEXP args, SEXP rho)
     {
         if (STRING_ELT(d, i) == NA_STRING)
             continue;
-        const char *dnp = R_ExpandFileName(translateCharFP(STRING_ELT(d, i)));
+        const char *p = translateCharFP2(STRING_ELT(d, i));
+        if (!p)
+            continue;
+        const char *dnp = R_ExpandFileName(p);
         list_files(dnp, fullnames ? dnp : NULL, &count, &ans, allfiles, recursive, pattern ? &reg : NULL, &countmax,
                    idx, idirs, /* allowdots = */ !nodots);
     }
@@ -1395,33 +1398,34 @@ static void list_dirs(const char *dnp, const char *nm, Rboolean full, int *count
 
 SEXP attribute_hidden do_listdirs(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    PROTECT_INDEX idx;
-    SEXP d, ans;
-    int fullnames, count, i, recursive;
-    const char *dnp;
     int countmax = 128;
 
     checkArity(op, args);
-    d = CAR(args);
+    SEXP d = CAR(args);
     args = CDR(args);
     if (!isString(d))
         error(_("invalid '%s' argument"), "directory");
-    fullnames = asLogical(CAR(args));
+    int fullnames = asLogical(CAR(args));
     args = CDR(args);
     if (fullnames == NA_LOGICAL)
         error(_("invalid '%s' argument"), "full.names");
-    recursive = asLogical(CAR(args));
+    int recursive = asLogical(CAR(args));
     args = CDR(args);
     if (recursive == NA_LOGICAL)
         error(_("invalid '%s' argument"), "recursive");
 
+    PROTECT_INDEX idx;
+    SEXP ans;
     PROTECT_WITH_INDEX(ans = allocVector(STRSXP, countmax), &idx);
-    count = 0;
-    for (i = 0; i < LENGTH(d); i++)
+    int count = 0;
+    for (int i = 0; i < LENGTH(d); i++)
     {
         if (STRING_ELT(d, i) == NA_STRING)
             continue;
-        dnp = R_ExpandFileName(translateCharFP(STRING_ELT(d, i)));
+        const char *p = translateCharFP2(STRING_ELT(d, i));
+        if (!p)
+            continue;
+        const char *dnp = R_ExpandFileName(p);
         list_dirs(dnp, "", fullnames, &count, &ans, &countmax, idx, recursive);
     }
     REPROTECT(ans = lengthgets(ans, count), idx);
