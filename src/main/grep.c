@@ -326,7 +326,6 @@ static void R_pcre2_prepare(const char *pattern, SEXP subject, Rboolean use_UTF8
         int rc = pcre2_jit_compile(*re, 0);
         if (rc)
         {
-            fprintf(stderr, "rc is %d\n", rc);
             char buf[256];
             pcre2_get_error_message(rc, (PCRE2_UCHAR *)buf, sizeof(buf));
             warning(_("PCRE JIT compilation error\n\t'%s'"), buf);
