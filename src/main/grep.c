@@ -231,6 +231,15 @@ static const char *to_native(const char *str, Rboolean use_UTF8)
     return use_UTF8 ? reEnc(str, CE_UTF8, CE_NATIVE, 1) : str;
 }
 
+#ifdef HAVE_PCRE2
+#if PCRE2_MAJOR < 10 || (PCRE2_MAJOR == 10 && PCRE2_MINOR < 30)
+#define R_PCRE_LIMIT_RECURSION
+#endif
+#else
+#define R_PCRE_LIMIT_RECURSION
+#endif
+
+#ifdef R_PCRE_LIMIT_RECURSION
 static Rboolean use_recursion_limit(SEXP subject)
 {
     Rboolean use_limit = FALSE;
@@ -296,6 +305,7 @@ static long R_pcre_max_recursions()
     ans = (R_CStackLimit - stack_used) / recursion_size;
     return (long)((ans <= LONG_MAX) ? ans : -1L);
 }
+#endif
 
 #ifdef HAVE_PCRE2
 static void R_pcre2_prepare(const char *pattern, SEXP subject, Rboolean use_UTF8, Rboolean caseless, pcre2_code **re,
@@ -335,7 +345,7 @@ static void R_pcre2_prepare(const char *pattern, SEXP subject, Rboolean use_UTF8
         if (!rc)
             setup_jit(*mcontext);
     }
-#if PCRE2_MAJOR < 10 || (PCRE2_MAJOR == 10 && PCRE2_MINOR < 30)
+#ifdef R_PCRE_LIMIT_RECURSION
     else if (use_recursion_limit(subject))
         pcre2_set_recursion_limit(*mcontext, (uint32_t)R_pcre_max_recursions());
 
@@ -375,7 +385,6 @@ static void R_pcre_prepare(const char *pattern, SEXP subject, Rboolean use_UTF8,
     int erroffset;
     const char *errorptr;
     int options = 0;
-    Rboolean use_limit = FALSE;
     R_xlen_t len = XLENGTH(subject);
     Rboolean pcre_st = always_study || (R_PCRE_study == -2 ? FALSE : len >= R_PCRE_study);
 
