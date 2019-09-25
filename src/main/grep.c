@@ -1291,6 +1291,12 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
                 setAttrib(ans, R_NamesSymbol, duplicate(nmold));
             UNPROTECT(2); /* ans, nmold */
         }
+        else if (PRIMVAL(op))
+        { // grepl case
+            ans = allocVector(LGLSXP, n);
+            for (i = 0; i < n; i++)
+                LOGICAL(ans)[i] = NA_LOGICAL;
+        }
         else
         {
             ans = allocVector(INTSXP, n);
@@ -1440,10 +1446,10 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
                 int rc = pcre_exec(re_pcre, re_pe, s, (int)strlen(s), 0, 0, ov, 0);
 #endif
                 if (rc >= 0)
-                    INTEGER(ind)[i] = 1;
+                    LOGICAL(ind)[i] = 1;
                 else
                 {
-                    INTEGER(ind)[i] = 0;
+                    LOGICAL(ind)[i] = 0;
                     R_pcre_exec_error(rc, i);
                 }
             }
