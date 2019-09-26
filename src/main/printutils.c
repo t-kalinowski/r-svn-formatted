@@ -92,7 +92,7 @@ attribute_hidden R_size_t R_Decode2Long(char *p, int *ierr)
     // NOTE: currently, positive *ierr are not differentiated in the callers:
     if (p[0] == 'G')
     {
-        if ((Giga * (double)v) > R_SIZE_T_MAX)
+        if ((Giga * (double)v) > (double)R_SIZE_T_MAX)
         {
             *ierr = 4;
             return (v);
@@ -101,7 +101,7 @@ attribute_hidden R_size_t R_Decode2Long(char *p, int *ierr)
     }
     else if (p[0] == 'M')
     {
-        if ((Mega * (double)v) > R_SIZE_T_MAX)
+        if ((Mega * (double)v) > (double)R_SIZE_T_MAX)
         {
             *ierr = 1;
             return (v);
@@ -110,7 +110,7 @@ attribute_hidden R_size_t R_Decode2Long(char *p, int *ierr)
     }
     else if (p[0] == 'K')
     {
-        if ((1024 * (double)v) > R_SIZE_T_MAX)
+        if ((1024 * (double)v) > (double)R_SIZE_T_MAX)
         {
             *ierr = 2;
             return (v);
@@ -119,7 +119,7 @@ attribute_hidden R_size_t R_Decode2Long(char *p, int *ierr)
     }
     else if (p[0] == 'k')
     {
-        if ((1000 * (double)v) > R_SIZE_T_MAX)
+        if ((1000 * (double)v) > (double)R_SIZE_T_MAX)
         {
             *ierr = 3;
             return (v);
@@ -740,7 +740,7 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
 
        +2 allows for quotes, +6 for UTF_8 escapes.
      */
-    if (5. * cnt + 8 > SIZE_MAX)
+    if (5. * cnt + 8 > (double)SIZE_MAX)
         error(_("too large string (nchar=%d) => 5*nchar + 8 > SIZE_MAX"));
     size_t q_len = 5 * (size_t)cnt + 8;
     if (q_len < w)

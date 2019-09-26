@@ -938,7 +938,7 @@ SEXP attribute_hidden do_summary(SEXP call, SEXP op, SEXP args, SEXP env)
                                 zcum.r = s;
                                 DbgP2(" int_1 switch: zcum.r = s = %g\n", s);
                             }
-                            else if (s < -LONG_INT_MAX || LONG_INT_MAX < s)
+                            else if (s < -(double)LONG_INT_MAX || (double)LONG_INT_MAX < s)
                             {
                                 use_isum = FALSE;
                                 ans_type = REALSXP;

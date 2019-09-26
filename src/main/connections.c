@@ -1253,7 +1253,7 @@ static size_t fifo_read(void *ptr, size_t size, size_t nitems, Rconnection con)
     Rfifoconn this = con->private;
 
     /* uses 'size_t' for len */
-    if ((double)size * (double)nitems > SSIZE_MAX)
+    if ((double)size * (double)nitems > (double)SSIZE_MAX)
         error(_("too large a block specified"));
     return read(this->fd, ptr, size * nitems) / size;
 }
@@ -1263,7 +1263,7 @@ static size_t fifo_write(const void *ptr, size_t size, size_t nitems, Rconnectio
     Rfifoconn this = con->private;
 
     /* uses 'size_t' for len */
-    if ((double)size * (double)nitems > SSIZE_MAX)
+    if ((double)size * (double)nitems > (double)SSIZE_MAX)
         error(_("too large a block specified"));
     return write(this->fd, ptr, size * nitems) / size;
 }
@@ -3306,7 +3306,7 @@ static void text_init(Rconnection con, SEXP text, int type)
                    type == 1 ? translateChar(STRING_ELT(text, i))
                              : ((type == 3) ? translateCharUTF8(STRING_ELT(text, i)) : CHAR(STRING_ELT(text, i)))) +
                1;
-    if (dnc >= SIZE_MAX)
+    if (dnc >= (double)SIZE_MAX)
         error(_("too many characters for text connection"));
     else
         nchars = (size_t)dnc;
