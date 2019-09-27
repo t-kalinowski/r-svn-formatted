@@ -948,7 +948,7 @@ int attribute_hidden Rstd_ReadConsole(const char *prompt, unsigned char *buf, in
     {
         size_t ll;
         int err = 0;
-        if (!R_Slave)
+        if (!R_NoEcho)
         {
             fputs(prompt, stdout);
             fflush(stdout); /* make sure prompt is output */
@@ -998,7 +998,7 @@ int attribute_hidden Rstd_ReadConsole(const char *prompt, unsigned char *buf, in
             buf[ll++] = '\n';
             buf[ll] = '\0';
         }
-        if (!R_Slave)
+        if (!R_NoEcho)
         {
             fputs((char *)buf, stdout);
             fflush(stdout);

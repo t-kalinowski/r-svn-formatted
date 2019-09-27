@@ -415,15 +415,16 @@ int rcmdfn(int cmdarg, int argc, char **argv)
         /* Unix has --no-restore except for MM's undocumented --use-vanilla */
         snprintf(cmd, CMD_LEN,
                  "\"%s/%s/Rterm.exe\" -e tools:::.install_packages() R_DEFAULT_PACKAGES= LC_COLLATE=C --no-restore "
-                 "--slave --args ",
+                 "--no-echo --args ",
                  getRHOME(3), BINDIR);
         PROCESS_CMD("nextArg");
     }
     else if (!strcmp(argv[cmdarg], "REMOVE"))
     {
-        snprintf(cmd, CMD_LEN,
-                 "\"\"%s/%s/Rterm.exe\" -f \"%s/share/R/REMOVE.R\" R_DEFAULT_PACKAGES=NULL --no-restore --slave --args",
-                 getRHOME(3), BINDIR, getRHOME(3));
+        snprintf(
+            cmd, CMD_LEN,
+            "\"\"%s/%s/Rterm.exe\" -f \"%s/share/R/REMOVE.R\" R_DEFAULT_PACKAGES=NULL --no-restore --no-echo --args",
+            getRHOME(3), BINDIR, getRHOME(3));
         for (i = cmdarg + 1; i < argc; i++)
         {
             strcat(cmd, " ");
@@ -450,7 +451,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
     {
         snprintf(cmd, CMD_LEN,
                  "\"%s/%s/Rterm.exe\" -e tools:::.build_packages() R_DEFAULT_PACKAGES= LC_COLLATE=C --no-restore "
-                 "--slave --args ",
+                 "--no-echo --args ",
                  getRHOME(3), BINDIR);
         PROCESS_CMD("nextArg");
     }
@@ -458,7 +459,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
     {
         snprintf(cmd, CMD_LEN,
                  "\"%s/%s/Rterm.exe\" -e tools:::.check_packages() R_DEFAULT_PACKAGES= LC_COLLATE=C --no-restore "
-                 "--slave --args ",
+                 "--no-echo --args ",
                  getRHOME(3), BINDIR);
         PROCESS_CMD("nextArg");
     }
@@ -466,7 +467,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
     {
         snprintf(
             cmd, CMD_LEN,
-            "\"%s/%s/Rterm.exe\" -e tools:::.Rprof() R_DEFAULT_PACKAGES=utils LC_COLLATE=C --vanilla --slave --args ",
+            "\"%s/%s/Rterm.exe\" -e tools:::.Rprof() R_DEFAULT_PACKAGES=utils LC_COLLATE=C --vanilla --no-echo --args ",
             getRHOME(3), BINDIR);
         PROCESS_CMD("nextArg");
     }
@@ -484,29 +485,30 @@ int rcmdfn(int cmdarg, int argc, char **argv)
     else if (!strcmp(argv[cmdarg], "SHLIB"))
     {
         snprintf(cmd, CMD_LEN,
-                 "\"%s/%s/Rterm.exe\" -e tools:::.SHLIB() R_DEFAULT_PACKAGES=NULL --no-restore --slave --no-site-file "
-                 "--no-init-file --args",
+                 "\"%s/%s/Rterm.exe\" -e tools:::.SHLIB() R_DEFAULT_PACKAGES=NULL --no-restore --no-echo "
+                 "--no-site-file --no-init-file --args",
                  getRHOME(3), BINDIR);
         PROCESS_CMD(" ");
     }
     else if (!strcmp(argv[cmdarg], "Rdiff"))
     {
         snprintf(cmd, CMD_LEN,
-                 "\"%s/%s/Rterm.exe\" -e tools:::.Rdiff() R_DEFAULT_PACKAGES=NULL --vanilla --slave --args ",
+                 "\"%s/%s/Rterm.exe\" -e tools:::.Rdiff() R_DEFAULT_PACKAGES=NULL --vanilla --no-echo --args ",
                  getRHOME(3), BINDIR);
         PROCESS_CMD("nextArg");
     }
     else if (!strcmp(argv[cmdarg], "Rdconv"))
     {
-        snprintf(cmd, CMD_LEN,
-                 "\"%s/%s/Rterm.exe\" -e tools:::.Rdconv() R_DEFAULT_PACKAGES= LC_COLLATE=C --vanilla --slave --args ",
-                 getRHOME(3), BINDIR);
+        snprintf(
+            cmd, CMD_LEN,
+            "\"%s/%s/Rterm.exe\" -e tools:::.Rdconv() R_DEFAULT_PACKAGES= LC_COLLATE=C --vanilla --no-echo --args ",
+            getRHOME(3), BINDIR);
         PROCESS_CMD("nextArg");
     }
     else if (!strcmp(argv[cmdarg], "Rd2txt"))
     {
         snprintf(cmd, CMD_LEN,
-                 "\"%s/%s/Rterm.exe\" -e tools:::.Rdconv() R_DEFAULT_PACKAGES= LC_COLLATE=C --vanilla --slave --args "
+                 "\"%s/%s/Rterm.exe\" -e tools:::.Rdconv() R_DEFAULT_PACKAGES= LC_COLLATE=C --vanilla --no-echo --args "
                  "nextArg-tnextArgtxt",
                  getRHOME(3), BINDIR);
         PROCESS_CMD("nextArg");
@@ -514,19 +516,19 @@ int rcmdfn(int cmdarg, int argc, char **argv)
     else if (!strcmp(argv[cmdarg], "Rd2pdf"))
     {
         snprintf(cmd, CMD_LEN,
-                 "\"%s/%s/Rterm.exe\" -e tools:::..Rd2pdf() R_DEFAULT_PACKAGES= LC_ALL=C --vanilla --slave --args ",
+                 "\"%s/%s/Rterm.exe\" -e tools:::..Rd2pdf() R_DEFAULT_PACKAGES= LC_ALL=C --vanilla --no-echo --args ",
                  getRHOME(3), BINDIR);
         PROCESS_CMD("nextArg");
     }
     else if (!strcmp(argv[cmdarg], "Sweave"))
     {
-        snprintf(cmd, CMD_LEN, "\"%s/%s/Rterm.exe\" --no-restore --slave -e utils:::.Sweave() --args ", getRHOME(3),
+        snprintf(cmd, CMD_LEN, "\"%s/%s/Rterm.exe\" --no-restore --no-echo -e utils:::.Sweave() --args ", getRHOME(3),
                  BINDIR);
         PROCESS_CMD("nextArg");
     }
     else if (!strcmp(argv[cmdarg], "Stangle"))
     {
-        snprintf(cmd, CMD_LEN, "\"%s/%s/Rterm.exe\" --vanilla --slave -e utils:::.Stangle() --args ", getRHOME(3),
+        snprintf(cmd, CMD_LEN, "\"%s/%s/Rterm.exe\" --vanilla --no-echo -e utils:::.Stangle() --args ", getRHOME(3),
                  BINDIR);
         PROCESS_CMD("nextArg");
     }

@@ -329,7 +329,7 @@ static int FileReadConsole(const char *prompt, char *buf, int len, int addhistor
 {
     int ll, err = 0;
 
-    if (!R_Slave)
+    if (!R_NoEcho)
     {
         fputs(prompt, stdout);
         fflush(stdout);
@@ -366,7 +366,7 @@ static int FileReadConsole(const char *prompt, char *buf, int len, int addhistor
         buf[ll] = '\0';
     }
 
-    if (!R_Interactive && !R_Slave)
+    if (!R_Interactive && !R_NoEcho)
     {
         fputs(buf, stdout);
         fflush(stdout);
@@ -878,7 +878,7 @@ char *PrintUsage(void)
          msg2b[] = "  --max-mem-size=N      Set limit for memory to be used by R\n  --max-ppsize=N        Set max size "
                    "of protect stack to N\n",
          msg3[] = "  -q, --quiet           Don't print startup message\n  --silent              Same as --quiet\n  "
-                  "--slave               Make R run as quietly as possible\n  --verbose             Print more "
+                  "--no-echo               Make R run as quietly as possible\n  --verbose             Print more "
                   "information about progress\n  --args                Skip the rest of the command line\n",
          msg4[] = "  --ess                 Don't use getline for command-line editing\n                          and "
                   "assert interactive use\n  -f file               Take input from 'file'\n  --file=file           "
