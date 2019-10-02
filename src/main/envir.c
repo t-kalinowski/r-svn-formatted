@@ -381,7 +381,7 @@ SEXP R_NewHashedEnv(SEXP enclos, SEXP size)
 
   R_HashDelete
 
-  Hash table delete function. Symbols are completely removed from the table,
+  Hash table delete function. Symbols are completely removed from the table;
   there is no way to mark a symbol as not present without actually removing
   it.
 */
@@ -915,6 +915,7 @@ static SEXP findVarLocInFrame(SEXP rho, SEXP symbol, Rboolean *canCache)
                 *canCache = table->canCache(CHAR(PRINTNAME(symbol)), table);
                 UNPROTECT(1);
             }
+            MARK_NOT_MUTABLE(val); /* to keep complex assignment code sane */
         }
         return (tmp);
     }
@@ -1028,6 +1029,7 @@ SEXP findVarInFrame3(SEXP rho, SEXP symbol, Rboolean doGet)
                 else
                     val = R_UnboundValue;
             }
+            MARK_NOT_MUTABLE(val); /* to keep complex assignment code sane */
         }
         return (val);
     }
