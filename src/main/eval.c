@@ -543,6 +543,80 @@ static SEXP forcePromise(SEXP e)
     return PRVALUE(e);
 }
 
+/*
+ * Protecting the Stack During Possibly Mutating Operations
+ *
+ * Values below R_BCProtTop should be protected during a mutating
+ * operation by incrementing their link counts. Actual incrementing is
+ * deferred until a call to INCLNK_stack_commit, which should happen
+ * before a mutation that might affect stack values. (applydefine() in
+ * the AST interpreter, STARTASSIGN/STARTASSIGN2 and INCLNK/INCLNKSTK
+ * in the byte code interpreter. Deferring until needed avoids the
+ * cost of incrementing and decrementing for code written in a
+ * functional style.
+ */
+
+static R_bcstack_t *R_BCProtCommitted;
+
+static R_INLINE void INCLNK_stack(R_bcstack_t *top)
+{
+    R_BCProtTop = top;
+}
+
+static R_INLINE void INCLNK_stack_commit()
+{
+    if (R_BCProtCommitted < R_BCProtTop)
+    {
+        R_bcstack_t *base = R_BCProtCommitted;
+        R_bcstack_t *top = R_BCProtTop;
+        for (R_bcstack_t *p = base; p < top; p++)
+        {
+            if (p->tag == RAWMEM_TAG || p->tag == CACHESZ_TAG)
+                p += p->u.ival;
+            else if (p->tag == 0)
+                INCREMENT_LINKS(p->u.sxpval);
+        }
+        R_BCProtCommitted = R_BCProtTop;
+    }
+}
+
+static R_INLINE void DECLNK_stack(R_bcstack_t *base)
+{
+    if (base < R_BCProtCommitted)
+    {
+        R_bcstack_t *top = R_BCProtCommitted;
+        for (R_bcstack_t *p = base; p < top; p++)
+        {
+            if (p->tag == RAWMEM_TAG || p->tag == CACHESZ_TAG)
+                p += p->u.ival;
+            else if (p->tag == 0)
+                DECREMENT_LINKS(p->u.sxpval);
+        }
+        R_BCProtCommitted = base;
+    }
+    R_BCProtTop = base;
+}
+
+void attribute_hidden R_BCProtReset(R_bcstack_t *ptop)
+{
+    DECLNK_stack(ptop);
+}
+
+#define INCREMENT_BCSTACK_LINKS()                                                                                      \
+    R_bcstack_t *ibcl_oldptop = R_BCProtTop;                                                                           \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (R_BCNodeStackTop > R_BCProtTop)                                                                            \
+            INCLNK_stack(R_BCNodeStackTop);                                                                            \
+    } while (0)
+
+#define DECREMENT_BCSTACK_LINKS()                                                                                      \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (R_BCProtTop > ibcl_oldptop)                                                                                \
+            DECLNK_stack(ibcl_oldptop);                                                                                \
+    } while (0)
+
 /* Return value of "e" evaluated in "rho". */
 
 /* some places, e.g. deparse2buff, call this with a promise and rho = NULL */
@@ -2783,6 +2857,9 @@ static SEXP applydefine(SEXP call, SEXP op, SEXP args, SEXP rho)
     assignment is right associative i.e.  a <- b <- c is parsed as
     a <- (b <- c).  */
 
+    INCREMENT_BCSTACK_LINKS();
+    INCLNK_stack_commit();
+
     PROTECT(saverhs = rhs = eval(CADR(args), rho));
     INCREMENT_REFCNT(saverhs);
 
@@ -2932,6 +3009,9 @@ static SEXP applydefine(SEXP call, SEXP op, SEXP args, SEXP rho)
     INCREMENT_NAMED(saverhs);
 #endif
     DECREMENT_REFCNT(saverhs);
+
+    DECREMENT_BCSTACK_LINKS();
+
     return saverhs;
 }
 
@@ -3934,7 +4014,7 @@ attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP a
 }
 
 /* start of bytecode section */
-static int R_bcVersion = 11;
+static int R_bcVersion = 12;
 static int R_bcMinVersion = 9;
 
 static SEXP R_AddSym = NULL;
@@ -4013,6 +4093,8 @@ attribute_hidden void R_initialize_bcode(void)
     R_PreserveObject(R_ConstantsRegistry);
     SET_VECTOR_ELT(R_ConstantsRegistry, 0, R_NilValue);
     SET_VECTOR_ELT(R_ConstantsRegistry, 1, R_NilValue);
+
+    R_BCProtCommitted = R_BCNodeStackBase;
 }
 
 enum
@@ -4144,6 +4226,8 @@ enum
     INCLNK_OP,
     DECLNK_OP,
     DECLNK_N_OP,
+    INCLNKSTK_OP,
+    DECLNKSTK_OP,
     OPCOUNT
 };
 
@@ -4181,6 +4265,8 @@ static SEXP seq_int(int n1, int n2)
 #ifdef COMPACT_INTSEQ
 #define INTSEQSXP 9999
 #endif
+/* tag for boxed stack entries to be ignored by stack protection */
+#define NLNKSXP 9996
 
 static R_INLINE SEXP GETSTACK_PTR_TAG(R_bcstack_t *s)
 {
@@ -4217,9 +4303,31 @@ static R_INLINE SEXP GETSTACK_PTR_TAG(R_bcstack_t *s)
 
 #define GETSTACK_IVAL_PTR(s) ((s)->u.ival)
 
+#define SETSTACK_NLNK_PTR(s, v)                                                                                        \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        R_bcstack_t *__s__ = (s);                                                                                      \
+        SEXP __v__ = (v);                                                                                              \
+        __s__->tag = NLNKSXP;                                                                                          \
+        __s__->u.sxpval = __v__;                                                                                       \
+    } while (0)
+#define SETSTACK_NLNK(i, v) SETSTACK_NLNK_PTR(R_BCNodeStackTop + (i), v)
+
+#ifdef TESTING_WRITE_BARRIER
+#define CHECK_SET_BELOW_PROT(s)                                                                                        \
+    if ((s) < R_BCProtTop)                                                                                             \
+    error("changing stack value below R_BCProt pointer")
+#else
+#define CHECK_SET_BELOW_PROT(s)                                                                                        \
+    do                                                                                                                 \
+    {                                                                                                                  \
+    } while (0)
+#endif
+
 #define SETSTACK_PTR(s, v)                                                                                             \
     do                                                                                                                 \
     {                                                                                                                  \
+        CHECK_SET_BELOW_PROT(s);                                                                                       \
         SEXP __v__ = (v);                                                                                              \
         (s)->tag = 0;                                                                                                  \
         (s)->u.sxpval = __v__;                                                                                         \
@@ -4360,6 +4468,20 @@ static R_INLINE R_bcstack_t *bcStackScalarReal(R_bcstack_t *s, R_bcstack_t *v)
     {                                                                                                                  \
         if ((s)->tag == 0)                                                                                             \
             DECREMENT_LINKS((s)->u.sxpval);                                                                            \
+    } while (0)
+
+/* drop eventually */
+#define OLDBC_INCREMENT_LINKS(s)                                                                                       \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (old_byte_code)                                                                                             \
+            INCREMENT_LINKS(s);                                                                                        \
+    } while (0)
+#define OLDBC_DECLNK_STACK_PTR(s)                                                                                      \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (old_byte_code)                                                                                             \
+            DECLNK_STACK_PTR(s);                                                                                       \
     } while (0)
 
 #define FastRelop2(op, opval, opsym)                                                                                   \
@@ -4906,6 +5028,13 @@ static R_INLINE SEXP getForLoopSeq(int offset, Rboolean *iscompact)
         R_BCNodeStackTop = __ntop__;                                                                                   \
     } while (0)
 
+#define BCNPUSH_NLNK(v)                                                                                                \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        BCNPUSH(R_NilValue);                                                                                           \
+        SETSTACK_NLNK(-1, v);                                                                                          \
+    } while (0)
+
 #define BCNPUSH_REAL(v)                                                                                                \
     do                                                                                                                 \
     {                                                                                                                  \
@@ -5290,44 +5419,19 @@ static R_INLINE SEXP FORCE_PROMISE(SEXP value, SEXP symbol, SEXP rho, Rboolean k
     return value;
 }
 
-static R_INLINE void INCLNK_stack(R_bcstack_t *base, R_bcstack_t *top)
-{
-    for (R_bcstack_t *p = base; p < top; p++)
-    {
-        if (p->tag == RAWMEM_TAG)
-            p += p->u.ival;
-        else if (p->tag == 0)
-            INCREMENT_LINKS(p->u.sxpval);
-    }
-}
-
-static R_INLINE void DECLNK_stack(R_bcstack_t *base, R_bcstack_t *top)
-{
-    for (R_bcstack_t *p = base; p < top; p++)
-    {
-        if (p->tag == RAWMEM_TAG)
-            p += p->u.ival;
-        else if (p->tag == 0)
-            DECREMENT_LINKS(p->u.sxpval);
-    }
-}
-
-static R_INLINE SEXP FIND_VAR_NO_CACHE(SEXP symbol, SEXP rho, SEXP cell, R_bcstack_t *stack_base)
+static R_INLINE SEXP FIND_VAR_NO_CACHE(SEXP symbol, SEXP rho, SEXP cell)
 {
     R_varloc_t loc = R_findVarLoc(symbol, rho);
     if (loc.cell && IS_ACTIVE_BINDING(loc.cell))
     {
-        INCLNK_stack(stack_base, R_BCNodeStackTop);
         SEXP value = R_GetVarLocValue(loc);
-        DECLNK_stack(stack_base, R_BCNodeStackTop);
         return value;
     }
     else
         return R_GetVarLocValue(loc);
 }
 
-static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmiss, R_binding_cache_t vcache, int sidx,
-                            R_bcstack_t *stack_base)
+static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmiss, R_binding_cache_t vcache, int sidx)
 {
     SEXP value;
     if (dd)
@@ -5337,7 +5441,7 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
         SEXP cell = GET_BINDING_CELL_CACHE(symbol, rho, vcache, sidx);
         value = BINDING_VALUE(cell);
         if (value == R_UnboundValue)
-            value = FIND_VAR_NO_CACHE(symbol, rho, cell, stack_base);
+            value = FIND_VAR_NO_CACHE(symbol, rho, cell);
     }
     else
         value = findVar(symbol, rho);
@@ -5352,9 +5456,7 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
         if (pv == R_UnboundValue)
         {
             PROTECT(value);
-            INCLNK_stack(stack_base, R_BCNodeStackTop);
             value = FORCE_PROMISE(value, symbol, rho, keepmiss);
-            DECLNK_stack(stack_base, R_BCNodeStackTop);
             UNPROTECT(1);
         }
         else
@@ -5423,7 +5525,7 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
             }                                                                                                          \
         }                                                                                                              \
         SEXP symbol = VECTOR_ELT(constants, sidx);                                                                     \
-        BCNPUSH(getvar(symbol, rho, dd, keepmiss, vcache, sidx, stack_base));                                          \
+        BCNPUSH(getvar(symbol, rho, dd, keepmiss, vcache, sidx));                                                      \
         NEXT();                                                                                                        \
     } while (0)
 #else
@@ -5433,7 +5535,7 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
         int sidx = GETOP();                                                                                            \
         SEXP symbol = VECTOR_ELT(constants, sidx);                                                                     \
         R_Visible = TRUE;                                                                                              \
-        BCNPUSH(getvar(symbol, rho, dd, keepmiss, vcache, sidx, stack_base));                                          \
+        BCNPUSH(getvar(symbol, rho, dd, keepmiss, vcache, sidx));                                                      \
         NEXT();                                                                                                        \
     } while (0)
 #endif
@@ -5691,7 +5793,7 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
             }                                                                                                          \
         }                                                                                                              \
         SKIP_OP();                                                                                                     \
-        INCREMENT_LINKS(value);                                                                                        \
+        OLDBC_INCREMENT_LINKS(value);                                                                                  \
         NEXT();                                                                                                        \
     } while (0)
 
@@ -5721,7 +5823,7 @@ static int tryAssignDispatch(char *generic, SEXP call, SEXP lhs, SEXP rhs, SEXP 
                 NEXT();                                                                                                \
             }                                                                                                          \
         }                                                                                                              \
-        INCREMENT_LINKS(lhs);                                                                                          \
+        OLDBC_INCREMENT_LINKS(lhs);                                                                                    \
         NEXT();                                                                                                        \
     } while (0)
 
@@ -5904,7 +6006,7 @@ static R_INLINE void VECSUBSET_PTR(SEXP vec, R_bcstack_t *si, R_bcstack_t *sv, S
         int callidx = GETOP();                                                                                         \
         R_bcstack_t *sx = R_BCNodeStackTop - 2;                                                                        \
         R_bcstack_t *si = R_BCNodeStackTop - 1;                                                                        \
-        DECLNK_STACK_PTR(sx);                                                                                          \
+        OLDBC_DECLNK_STACK_PTR(sx);                                                                                    \
         SEXP vec = GETSTACK_PTR(sx);                                                                                   \
         VECSUBSET_PTR(vec, si, sx, rho, constants, callidx, sub2);                                                     \
         R_BCNodeStackTop--;                                                                                            \
@@ -5962,7 +6064,6 @@ static R_INLINE R_xlen_t colMajorStackIndex(SEXP dim, int rank, R_bcstack_t *si)
 static R_INLINE void MATSUBSET_PTR(R_bcstack_t *sx, R_bcstack_t *si, R_bcstack_t *sj, R_bcstack_t *sv, SEXP rho,
                                    SEXP consts, int callidx, Rboolean subset2)
 {
-    DECLNK_STACK_PTR(sx);
     SEXP idx, jdx, args, value;
     SEXP mat = GETSTACK_PTR(sx);
 
@@ -6003,8 +6104,9 @@ static R_INLINE void MATSUBSET_PTR(R_bcstack_t *sx, R_bcstack_t *si, R_bcstack_t
     do                                                                                                                 \
     {                                                                                                                  \
         int callidx = GETOP();                                                                                         \
-        MATSUBSET_PTR(R_BCNodeStackTop - 3, R_BCNodeStackTop - 2, R_BCNodeStackTop - 1, R_BCNodeStackTop - 3, rho,     \
-                      constants, callidx, sub2);                                                                       \
+        R_bcstack_t *sx = R_BCNodeStackTop - 3;                                                                        \
+        OLDBC_DECLNK_STACK_PTR(sx);                                                                                    \
+        MATSUBSET_PTR(sx, R_BCNodeStackTop - 2, R_BCNodeStackTop - 1, sx, rho, constants, callidx, sub2);              \
         R_BCNodeStackTop -= 2;                                                                                         \
         R_Visible = TRUE;                                                                                              \
     } while (0)
@@ -6030,7 +6132,6 @@ static R_INLINE SEXP getStackArgsList(int n, R_bcstack_t *start)
 static R_INLINE void SUBSET_N_PTR(R_bcstack_t *sx, int rank, R_bcstack_t *si, R_bcstack_t *sv, SEXP rho, SEXP consts,
                                   int callidx, Rboolean subset2)
 {
-    DECLNK_STACK_PTR(sx);
     SEXP args, value;
     SEXP x = GETSTACK_PTR(sx);
 
@@ -6061,8 +6162,9 @@ static R_INLINE void SUBSET_N_PTR(R_bcstack_t *sx, int rank, R_bcstack_t *si, R_
     {                                                                                                                  \
         int callidx = GETOP();                                                                                         \
         int rank = GETOP();                                                                                            \
-        SUBSET_N_PTR(R_BCNodeStackTop - rank - 1, rank, R_BCNodeStackTop - rank, R_BCNodeStackTop - rank - 1, rho,     \
-                     constants, callidx, sub2);                                                                        \
+        R_bcstack_t *sx = R_BCNodeStackTop - rank - 1;                                                                 \
+        OLDBC_DECLNK_STACK_PTR(sx);                                                                                    \
+        SUBSET_N_PTR(sx, rank, R_BCNodeStackTop - rank, sx, rho, constants, callidx, sub2);                            \
         R_BCNodeStackTop -= rank;                                                                                      \
         R_Visible = TRUE;                                                                                              \
     } while (0)
@@ -6166,7 +6268,7 @@ static R_INLINE void VECSUBASSIGN_PTR(SEXP vec, R_bcstack_t *srhs, R_bcstack_t *
         R_bcstack_t *sx = R_BCNodeStackTop - 3;                                                                        \
         R_bcstack_t *srhs = R_BCNodeStackTop - 2;                                                                      \
         R_bcstack_t *si = R_BCNodeStackTop - 1;                                                                        \
-        DECLNK_STACK_PTR(sx);                                                                                          \
+        OLDBC_DECLNK_STACK_PTR(sx);                                                                                    \
         SEXP vec = GETSTACK_PTR(sx);                                                                                   \
         if (MAYBE_SHARED(vec))                                                                                         \
         {                                                                                                              \
@@ -6181,7 +6283,6 @@ static R_INLINE void VECSUBASSIGN_PTR(SEXP vec, R_bcstack_t *srhs, R_bcstack_t *
 static R_INLINE void MATSUBASSIGN_PTR(R_bcstack_t *sx, R_bcstack_t *srhs, R_bcstack_t *si, R_bcstack_t *sj,
                                       R_bcstack_t *sv, SEXP rho, SEXP consts, int callidx, Rboolean subassign2)
 {
-    DECLNK_STACK_PTR(sx);
     SEXP dim, idx, jdx, args, value;
     SEXP mat = GETSTACK_PTR(sx);
 
@@ -6229,15 +6330,16 @@ static R_INLINE void MATSUBASSIGN_PTR(R_bcstack_t *sx, R_bcstack_t *srhs, R_bcst
     do                                                                                                                 \
     {                                                                                                                  \
         int callidx = GETOP();                                                                                         \
-        MATSUBASSIGN_PTR(R_BCNodeStackTop - 4, R_BCNodeStackTop - 3, R_BCNodeStackTop - 2, R_BCNodeStackTop - 1,       \
-                         R_BCNodeStackTop - 4, rho, constants, callidx, sub2);                                         \
+        R_bcstack_t *sx = R_BCNodeStackTop - 4;                                                                        \
+        OLDBC_DECLNK_STACK_PTR(sx);                                                                                    \
+        MATSUBASSIGN_PTR(sx, R_BCNodeStackTop - 3, R_BCNodeStackTop - 2, R_BCNodeStackTop - 1, sx, rho, constants,     \
+                         callidx, sub2);                                                                               \
         R_BCNodeStackTop -= 3;                                                                                         \
     } while (0)
 
 static R_INLINE void SUBASSIGN_N_PTR(R_bcstack_t *sx, int rank, R_bcstack_t *srhs, R_bcstack_t *si, R_bcstack_t *sv,
                                      SEXP rho, SEXP consts, int callidx, Rboolean subassign2)
 {
-    DECLNK_STACK_PTR(sx);
     SEXP dim, args, value;
     SEXP x = GETSTACK_PTR(sx);
 
@@ -6275,8 +6377,10 @@ static R_INLINE void SUBASSIGN_N_PTR(R_bcstack_t *sx, int rank, R_bcstack_t *srh
     {                                                                                                                  \
         int callidx = GETOP();                                                                                         \
         int rank = GETOP();                                                                                            \
-        SUBASSIGN_N_PTR(R_BCNodeStackTop - rank - 2, rank, R_BCNodeStackTop - rank - 1, R_BCNodeStackTop - rank,       \
-                        R_BCNodeStackTop - rank - 2, rho, constants, callidx, sub2);                                   \
+        R_bcstack_t *sx = R_BCNodeStackTop - rank - 2;                                                                 \
+        OLDBC_DECLNK_STACK_PTR(sx);                                                                                    \
+        SUBASSIGN_N_PTR(sx, rank, R_BCNodeStackTop - rank - 1, R_BCNodeStackTop - rank, sx, rho, constants, callidx,   \
+                        sub2);                                                                                         \
         R_BCNodeStackTop -= rank + 1;                                                                                  \
     } while (0)
 
@@ -6348,16 +6452,32 @@ typedef struct
     int type;
 } R_loopinfo_t;
 
-#define FOR_LOOP_STATE_SIZE 4
-
-#define GET_VEC_LOOP_VALUE(var, pos)                                                                                   \
+#define FOR_LOOP_STATE_SIZE 5
+#define GET_FOR_LOOP_INFO() ((R_loopinfo_t *)RAW0(GETSTACK_SXPVAL(-2)))
+#define GET_FOR_LOOP_BINDING() GETSTACK_SXPVAL(-3)
+#define GET_FOR_LOOP_SEQ() GETSTACK_SXPVAL(-4)
+#define SET_FOR_LOOP_SEQ(v) SETSTACK(-4, v);
+#define SET_FOR_LOOP_BCPROT_OFFSET(v) SETSTACK_INTEGER(-5, v)
+#define GET_FOR_LOOP_BCPROT_OFFSET() GETSTACK_IVAL_PTR(R_BCNodeStackTop - 5)
+#define INSERT_FOR_LOOP_BCPROT_OFFSET()                                                                                \
     do                                                                                                                 \
     {                                                                                                                  \
-        (var) = GETSTACK(pos);                                                                                         \
+        /* insert space for the BCProt offset below the sequence */                                                    \
+        if (R_BCNodeStackTop >= R_BCNodeStackEnd)                                                                      \
+            nodeStackOverflow();                                                                                       \
+        R_BCNodeStackTop[0] = R_BCNodeStackTop[-1];                                                                    \
+        SETSTACK_INTEGER(-1, 0);                                                                                       \
+        R_BCNodeStackTop++;                                                                                            \
+    } while (0)
+
+#define GET_VEC_LOOP_VALUE(var)                                                                                        \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        (var) = GETSTACK_SXPVAL(-1);                                                                                   \
         if ((var) != CAR(cell) || MAYBE_SHARED(var) || ATTRIB(var) != R_NilValue)                                      \
         {                                                                                                              \
             (var) = allocVector(TYPEOF(seq), 1);                                                                       \
-            SETSTACK(pos, var);                                                                                        \
+            SETSTACK_NLNK(-1, var);                                                                                    \
             INCREMENT_NAMED(var);                                                                                      \
         }                                                                                                              \
     } while (0)
@@ -6709,8 +6829,11 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
 
     /* check version */
     /* must be kept in sync with R_BCVersionOK */
+    int old_byte_code = FALSE; /* drop eventually */
     {
         int version = GETOP();
+        if (version < 12)
+            old_byte_code = TRUE; /* drop eventually */
         if (version < R_bcMinVersion || version > R_bcVersion)
         {
             if (version >= 2)
@@ -6732,6 +6855,8 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         }
     }
 
+    INCREMENT_BCSTACK_LINKS();
+
     R_Srcref = R_InBCInterpreter;
     R_BCIntActive = 1;
     R_BCbody = body;
@@ -6751,12 +6876,15 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
 #endif
 #ifdef CACHE_ON_STACK
         /* initialize binding cache on the stack */
-        vcache = R_BCNodeStackTop;
-        if (R_BCNodeStackTop + n > R_BCNodeStackEnd)
+        if (R_BCNodeStackTop + n + 1 > R_BCNodeStackEnd)
             nodeStackOverflow();
+        R_BCNodeStackTop->u.ival = n;
+        R_BCNodeStackTop->tag = CACHESZ_TAG;
+        R_BCNodeStackTop++;
+        vcache = R_BCNodeStackTop;
         while (n > 0)
         {
-            SETSTACK(0, R_NilValue);
+            SETSTACK_NLNK(0, R_NilValue);
             R_BCNodeStackTop++;
             n--;
         }
@@ -6769,7 +6897,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
     else
         smallcache = FALSE;
 #endif
-    R_bcstack_t *stack_base = R_BCNodeStackTop;
+    R_BCProtTop = R_BCNodeStackTop;
 
     BEGIN_MACHINE
     {
@@ -6817,6 +6945,8 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 for (int i = 0; i < FOR_LOOP_STATE_SIZE; i++)
                     R_BCNodeStackTop[i] = loopdata[i];
                 R_BCNodeStackTop += FOR_LOOP_STATE_SIZE;
+                SET_FOR_LOOP_BCPROT_OFFSET(R_BCProtTop - R_BCNodeStackBase);
+                INCLNK_stack(R_BCNodeStackTop);
 
                 begincontext(cntxt, CTXT_LOOP, R_NilValue, rho, R_BaseEnv, R_NilValue, R_NilValue);
                 switch (SETJMP(cntxt->cjmpbuf))
@@ -6849,8 +6979,13 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         {
             Rboolean is_for_loop = GETOP();
             if (is_for_loop)
+            {
+                int offset = GET_FOR_LOOP_BCPROT_OFFSET();
+                DECLNK_stack(R_BCNodeStackBase + offset);
+
                 /* remove the duplicated for loop state data */
                 R_BCNodeStackTop -= FOR_LOOP_STATE_SIZE;
+            }
             BCNPOP_IGNORE_VALUE(); /* 'next' target */
             BCNPOP_IGNORE_VALUE(); /* 'break' target */
             BCNPOP_AND_END_CNTXT();
@@ -6865,6 +7000,8 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             int callidx = GETOP();
             SEXP symbol = VECTOR_ELT(constants, GETOP());
             int label = GETOP();
+
+            INSERT_FOR_LOOP_BCPROT_OFFSET();
 
             /* if we are iterating over a factor, coerce to character first */
             if (inherits(seq, "factor"))
@@ -6915,12 +7052,15 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             case RAWSXP:
                 value = allocVector(TYPEOF(seq), 1);
                 INCREMENT_NAMED(value);
-                BCNPUSH(value);
+                BCNPUSH_NLNK(value);
                 break;
             default:
                 BCNPUSH(R_NilValue);
             }
             /* the seq, binding cell, and value on the stack are now boxed */
+
+            SET_FOR_LOOP_BCPROT_OFFSET(R_BCProtTop - R_BCNodeStackBase);
+            INCLNK_stack(R_BCNodeStackTop);
 
             BC_CHECK_SIGINT();
             pc = codebase + label;
@@ -6929,7 +7069,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         OP(STEPFOR, 1) :
         {
             int label = GETOP();
-            R_loopinfo_t *loopinfo = (R_loopinfo_t *)RAW0(GETSTACK_SXPVAL(-2));
+            R_loopinfo_t *loopinfo = GET_FOR_LOOP_INFO();
             R_xlen_t i = ++(loopinfo->idx);
             R_xlen_t n = loopinfo->len;
             if (i < n)
@@ -6937,8 +7077,8 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 BC_CHECK_SIGINT_LOOP(i);
                 pc = codebase + label;
                 int type = loopinfo->type;
-                SEXP seq = GETSTACK_SXPVAL(-4);
-                SEXP cell = GETSTACK_SXPVAL(-3);
+                SEXP seq = GET_FOR_LOOP_SEQ();
+                SEXP cell = GET_FOR_LOOP_BINDING();
                 SEXP value = NULL;
                 switch (type)
                 {
@@ -6949,7 +7089,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                         SET_SCALAR_DVAL(value, REAL_ELT(seq, i));
                         NEXT();
                     }
-                    GET_VEC_LOOP_VALUE(value, -1);
+                    GET_VEC_LOOP_VALUE(value);
                     SET_SCALAR_DVAL(value, REAL_ELT(seq, i));
                     SET_FOR_LOOP_VAR(value, cell, rho);
                     NEXT();
@@ -6960,7 +7100,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                         SET_SCALAR_IVAL(value, INTEGER_ELT(seq, i));
                         NEXT();
                     }
-                    GET_VEC_LOOP_VALUE(value, -1);
+                    GET_VEC_LOOP_VALUE(value);
                     SET_SCALAR_IVAL(value, INTEGER_ELT(seq, i));
                     SET_FOR_LOOP_VAR(value, cell, rho);
                     NEXT();
@@ -6977,7 +7117,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                         SET_SCALAR_IVAL(value, ival);
                         NEXT();
                     }
-                    GET_VEC_LOOP_VALUE(value, -1);
+                    GET_VEC_LOOP_VALUE(value);
                     SET_SCALAR_IVAL(value, ival);
                     SET_FOR_LOOP_VAR(value, cell, rho);
                     NEXT();
@@ -6990,20 +7130,20 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                         SET_SCALAR_LVAL(value, LOGICAL_ELT(seq, i));
                         NEXT();
                     }
-                    GET_VEC_LOOP_VALUE(value, -1);
+                    GET_VEC_LOOP_VALUE(value);
                     SET_SCALAR_LVAL(value, LOGICAL_ELT(seq, i));
                     SET_FOR_LOOP_VAR(value, cell, rho);
                     NEXT();
                 case CPLXSXP:
-                    GET_VEC_LOOP_VALUE(value, -1);
+                    GET_VEC_LOOP_VALUE(value);
                     SET_SCALAR_CVAL(value, COMPLEX_ELT(seq, i));
                     break;
                 case STRSXP:
-                    GET_VEC_LOOP_VALUE(value, -1);
+                    GET_VEC_LOOP_VALUE(value);
                     SET_STRING_ELT(value, 0, STRING_ELT(seq, i));
                     break;
                 case RAWSXP:
-                    GET_VEC_LOOP_VALUE(value, -1);
+                    GET_VEC_LOOP_VALUE(value);
                     SET_SCALAR_BVAL(value, RAW(seq)[i]);
                     break;
                 case EXPRSXP:
@@ -7013,7 +7153,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                     break;
                 case LISTSXP:
                     value = CAR(seq);
-                    SETSTACK(-4, CDR(seq));
+                    SET_FOR_LOOP_SEQ(CDR(seq));
                     ENSURE_NAMEDMAX(value);
                     break;
                 default:
@@ -7025,7 +7165,9 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         }
         OP(ENDFOR, 0) :
         {
-            SEXP seq = GETSTACK_SXPVAL(-4);
+            int offset = GET_FOR_LOOP_BCPROT_OFFSET();
+            DECLNK_stack(R_BCNodeStackBase + offset);
+            SEXP seq = GET_FOR_LOOP_SEQ();
             DECREMENT_LINKS(seq);
             R_BCNodeStackTop -= FOR_LOOP_STATE_SIZE - 1;
             SETSTACK(-1, R_NilValue);
@@ -7072,13 +7214,17 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             R_bcstack_t *s = R_BCNodeStackTop - 1;
             int tag = s->tag;
             SEXP x = CAR(loc); /* fast, but assumes binding is a CONS */
-            if (NOT_SHARED(x) && IS_SIMPLE_SCALAR(x, tag))
+            if (NOT_SHARED(x) && IS_SIMPLE_SCALAR(x, tag) && R_BCNodeStackTop == R_BCProtTop + 1)
+            {
                 /* If the binding value is not shared and is a simple
                    scalar of the same type as the immediate value, then we
                    can copy the stack value into the binding
                    value. NOT_SHARED implies the binding is not locked;
                    the types imply the binding is not R_NilValue and not
                    an active binding. */
+                /* The stack protection framework ensures that the
+                   variable is not on the stack if it is not shared */
+                INCLNK_stack_commit();
                 switch (tag)
                 {
                 case REALSXP:
@@ -7091,6 +7237,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                     SET_SCALAR_LVAL(x, s->u.ival);
                     NEXT();
                 }
+            }
 
             SEXP value = GETSTACK(-1);
             INCREMENT_NAMED(value);
@@ -7416,6 +7563,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         OP(DOTSERR, 0) : error(_("'...' used in an incorrect context"));
         OP(STARTASSIGN, 1) :
         {
+            INCLNK_stack_commit();
             int sidx = GETOP();
             SEXP symbol = VECTOR_ELT(constants, sidx);
             SEXP cell = GET_BINDING_CELL_CACHE(symbol, rho, vcache, sidx);
@@ -7636,6 +7784,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         }
         OP(STARTASSIGN2, 1) :
         {
+            INCLNK_stack_commit();
             SEXP symbol = VECTOR_ELT(constants, GETOP());
             R_varloc_t loc = R_findVarLoc(symbol, rho);
 
@@ -7645,7 +7794,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
             SET_ASSIGNMENT_PENDING(loc.cell, TRUE);
             BCNPUSH(loc.cell);
 
-            SEXP value = getvar(symbol, ENCLOS(rho), FALSE, FALSE, NULL, 0, stack_base);
+            SEXP value = getvar(symbol, ENCLOS(rho), FALSE, FALSE, NULL, 0);
             if (maybe_in_assign || MAYBE_SHARED(value))
                 value = shallow_duplicate(value);
             BCNPUSH(value);
@@ -7796,7 +7945,6 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         }
         OP(SWAP, 0) :
         {
-            R_bcstack_t tmp = R_BCNodeStackTop[-1];
             /* This instruction only occurs between accessor calls in
                complex assignments. [It should probably be renamed to
                reflect this.] It needs to make sure intermediate LHS
@@ -7820,8 +7968,9 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
     (IS_STACKVAL_BOXED(idx) && MAYBE_SHARED(GETSTACK_SXPVAL_PTR(R_BCNodeStackTop + (idx))))
 
             if (STACKVAL_MAYBE_REFERENCED(-1) && (STACKVAL_MAYBE_SHARED(-1) || STACKVAL_MAYBE_SHARED(-3)))
-                GETSTACK_SXPVAL_PTR(&tmp) = shallow_duplicate(GETSTACK_SXPVAL_PTR(&tmp));
+                SETSTACK(-1, shallow_duplicate(GETSTACK(-1)));
 
+            R_bcstack_t tmp = R_BCNodeStackTop[-1];
             R_BCNodeStackTop[-1] = R_BCNodeStackTop[-2];
             R_BCNodeStackTop[-2] = tmp;
             NEXT();
@@ -7929,12 +8078,29 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         NEXT();
         OP(BASEGUARD, 2) : DO_BASEGUARD();
         NEXT();
-        OP(INCLNK, 0) : INCLNK_STACK_PTR(R_BCNodeStackTop - 1);
+        OP(INCLNK, 0) : INCLNK_stack_commit(); /* needed for pre version 12 byte code */
+        INCLNK_STACK_PTR(R_BCNodeStackTop - 1);
         NEXT();
         OP(DECLNK, 0) : DECLNK_STACK_PTR(R_BCNodeStackTop - 2);
         NEXT();
         OP(DECLNK_N, 1) : for (int n = GETOP(), i = 0; i < n; i++) DECLNK_STACK_PTR(R_BCNodeStackTop - 2 - i);
         NEXT();
+        OP(INCLNKSTK, 0) :
+        {
+            int offset = R_BCProtTop - R_BCNodeStackBase;
+            INCLNK_stack(R_BCNodeStackTop);
+            BCNPUSH_INTEGER(offset);
+            NEXT();
+        }
+        OP(DECLNKSTK, 0) :
+        {
+            int offset = GETSTACK_IVAL_PTR(R_BCNodeStackTop - 2);
+            R_bcstack_t *ptop = R_BCNodeStackBase + offset;
+            DECLNK_stack(ptop);
+            R_BCNodeStackTop[-2] = R_BCNodeStackTop[-1];
+            R_BCNodeStackTop--;
+            NEXT();
+        }
         LASTOP;
     }
 
@@ -7943,10 +8109,15 @@ done:
     R_BCbody = oldbcbody;
     R_BCpc = oldbcpc;
     R_Srcref = oldsrcref;
-    R_BCNodeStackTop = oldntop;
 #ifdef BC_PROFILING
     current_opcode = old_current_opcode;
 #endif
+    if (body)
+    {
+        R_BCNodeStackTop = R_BCProtTop;
+        DECREMENT_BCSTACK_LINKS();
+    }
+    R_BCNodeStackTop = oldntop;
     return retvalue;
 }
 
