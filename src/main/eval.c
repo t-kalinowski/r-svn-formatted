@@ -1788,6 +1788,10 @@ void attribute_hidden unpromiseArgs(SEXP pargs)
         SETCAR(pargs, R_NilValue);
     }
 }
+#else
+void attribute_hidden unpromiseArgs(SEXP pargs)
+{
+}
 #endif
 
 /* Note: GCC will not inline execClosure because it calls setjmp */
@@ -2327,7 +2331,7 @@ static R_INLINE Rboolean SET_BINDING_VALUE(SEXP loc, SEXP value)
     {
         if (CAR(loc) != value)
         {
-            SETCAR(loc, value);
+            SET_BNDCELL(loc, value);
             if (MISSING(loc))
                 SET_MISSING(loc, 0);
         }

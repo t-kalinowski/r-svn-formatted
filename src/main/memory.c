@@ -4363,6 +4363,11 @@ static R_INLINE SEXP CHKCONS(SEXP e)
 #define CHKCONS(e) CHK(e)
 #endif
 
+attribute_hidden void SET_BNDCELL(SEXP cell, SEXP val)
+{
+    SETCAR(cell, val);
+}
+
 /* List Accessors */
 SEXP(TAG)(SEXP e)
 {
