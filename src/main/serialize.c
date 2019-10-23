@@ -1228,6 +1228,8 @@ tailcall:
                 WriteItem(ATTRIB(s), ref_table, stream);
             if (TAG(s) != R_NilValue)
                 WriteItem(TAG(s), ref_table, stream);
+            if (BNDCELL_TAG(s))
+                R_expand_binding_value(s);
             WriteItem(CAR(s), ref_table, stream);
             /* now do a tail call to WriteItem to handle the CDR */
             s = CDR(s);
