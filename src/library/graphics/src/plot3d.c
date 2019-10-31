@@ -1546,10 +1546,15 @@ static SEXP contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
 #endif
 
     vmax = vmaxget();
-    /* This R-allocs ctr_SegDB */
+    /* This R-allocs ctr_SegDB :
+     * contourLines() in ../../grDevices/src/stubs.c
+     *    --> do_contourLines() --> GEcontourLines() in ../../../main/plot3d.c */
     ctr_SegDB = contourLines(REAL(x), nx, REAL(y), ny, REAL(z), zc, atom);
 
     /* The segment database is now assembled. */
+
+    /// NB: The following code is very much the same as in addContourLines() in ...main/plot3d.c
+
     /* Begin following contours. */
     /* 1. Grab a segment */
     /* 2. Follow its tail */
@@ -1928,8 +1933,10 @@ static SEXP contour(SEXP x, int nx, SEXP y, int ny, SEXP z, double zc, SEXP labe
                 }
 
                 vmaxset(vmax);
-            }      /* while */
-        }          /* for(i .. )  for(j ..) */
+            } /* while */
+        }     /* for(i .. )  for(j ..) */
+    /* FIXME?  Instead of returning labelList which is not really used,
+     * -----   return  lengths() info on ctr_SegDB[] ?  */
     vmaxset(vmax); /* now we are done with ctr_SegDB */
     UNPROTECT(2);  /* label1, labelList */
     return labelList;
@@ -1957,7 +1964,7 @@ SEXP C_contour(SEXP args)
     Rboolean drawLabels;
     double labcex;
     pGEDevDesc dd = GEcurrentDevice();
-    SEXP result = R_NilValue;
+    SEXP result = R_NilValue; // FIXME? return info about contourlines drawn
     SEXP labelList;
 
     GCheckState(dd);
@@ -2030,7 +2037,7 @@ SEXP C_contour(SEXP args)
         error(_("dimension mismatch"));
 
     if (nc < 1)
-        error(_("no contour values"));
+        error(_("no 'levels'"));
 
     for (i = 0; i < nx; i++)
     {
@@ -2050,7 +2057,7 @@ SEXP C_contour(SEXP args)
 
     for (i = 0; i < nc; i++)
         if (!R_FINITE(REAL(c)[i]))
-            error(_("invalid NA contour values"));
+            error(_("non-finite level values: levels[%d] = %g"), i + 1, REAL(c)[i]);
 
     zmin = DBL_MAX;
     zmax = DBL_MIN;
