@@ -104,20 +104,16 @@
 #define SET_STDVEC_LENGTH(x, v) SETLENGTH(x, v)
 #endif
 
-/* This version of SET_VECTOR_ELT does not increment the REFCNT for
-   the new vector->element link. It assumes that the old vector is
-   becoming garbage and so it's references become no longer
-   accessible. */
-static R_INLINE void SET_VECTOR_ELT_NR(SEXP x, R_xlen_t i, SEXP v)
-{
 #ifdef COMPUTE_REFCNT_VALUES
-    int ref = REFCNT(v);
-    SET_VECTOR_ELT(x, i, v);
-    SET_REFCNT(v, ref);
+/* Set element to R_NilValue to decrement REFCNT on old value. */
+/* Might be good to have an ALTREP-friendlier version */
+#define CLEAR_VECTOR_ELT(x, i) SET_VECTOR_ELT(x, i, R_NilValue)
 #else
-    SET_VECTOR_ELT(x, i, v);
+#define CLEAR_VECTOR_ELT(x, i)                                                                                         \
+    do                                                                                                                 \
+    {                                                                                                                  \
+    } while (0)
 #endif
-}
 
 static R_INLINE SEXP getNames(SEXP x)
 {
@@ -247,7 +243,10 @@ static SEXP EnlargeVector(SEXP x, R_xlen_t newlen)
     case EXPRSXP:
     case VECSXP:
         for (R_xlen_t i = 0; i < len; i++)
-            SET_VECTOR_ELT_NR(newx, i, VECTOR_ELT(x, i));
+        {
+            SET_VECTOR_ELT(newx, i, VECTOR_ELT(x, i));
+            CLEAR_VECTOR_ELT(x, i);
+        }
         for (R_xlen_t i = len; i < newtruelen; i++)
             SET_VECTOR_ELT(newx, i, R_NilValue);
         break;
@@ -1844,7 +1843,10 @@ static SEXP DeleteOneVectorListItem(SEXP x, R_xlen_t which)
         k = 0;
         for (i = 0; i < n; i++)
             if (i != which)
-                SET_VECTOR_ELT_NR(y, k++, VECTOR_ELT(x, i));
+            {
+                SET_VECTOR_ELT(y, k++, VECTOR_ELT(x, i));
+                CLEAR_VECTOR_ELT(x, i);
+            }
         xnames = getAttrib(x, R_NamesSymbol);
         if (xnames != R_NilValue)
         {
@@ -2407,6 +2409,7 @@ SEXP R_subassign3_dflt(SEXP call, SEXP x, SEXP nlist, SEXP val)
                         if (i != imatch)
                         {
                             SET_VECTOR_ELT(ans, ii, VECTOR_ELT(x, i));
+                            CLEAR_VECTOR_ELT(x, i);
                             SET_STRING_ELT(ansnames, ii, STRING_ELT(names, i));
                             ii++;
                         }
@@ -2449,7 +2452,10 @@ SEXP R_subassign3_dflt(SEXP call, SEXP x, SEXP nlist, SEXP val)
                 PROTECT(ans = allocVector(VECSXP, nx + 1));
                 PROTECT(ansnames = allocVector(STRSXP, nx + 1));
                 for (i = 0; i < nx; i++)
-                    SET_VECTOR_ELT_NR(ans, i, VECTOR_ELT(x, i));
+                {
+                    SET_VECTOR_ELT(ans, i, VECTOR_ELT(x, i));
+                    CLEAR_VECTOR_ELT(x, i);
+                }
                 if (isNull(names))
                 {
                     for (i = 0; i < nx; i++)
