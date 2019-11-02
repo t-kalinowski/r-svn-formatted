@@ -1876,7 +1876,7 @@ SEXP applyClosure(SEXP call, SEXP op, SEXP arglist, SEXP rho, SEXP suppliedvars)
         call, newrho, (R_GlobalContext->callflag == CTXT_GENERIC) ? R_GlobalContext->sysparent : rho, rho, arglist, op);
 #ifdef ADJUST_ENVIR_REFCNTS
     R_CleanupEnvir(newrho, val);
-    if (MAYBE_REFERENCED(val) && is_getter_call)
+    if (is_getter_call && MAYBE_REFERENCED(val))
         val = shallow_duplicate(val);
 #endif
 
