@@ -4003,7 +4003,9 @@ void(SET_TYPEOF)(SEXP x, int v)
 }
 void(SET_NAMED)(SEXP x, int v)
 {
+#ifndef SWITCH_TO_REFCNT
     SET_NAMED(CHK(x), v);
+#endif
 }
 void(SET_RTRACE)(SEXP x, int v)
 {
