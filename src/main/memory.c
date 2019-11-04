@@ -2830,7 +2830,6 @@ SEXP allocVector3(SEXPTYPE type, R_xlen_t length, R_allocator_t *allocator)
             SET_TYPEOF(s, type);
             SET_STDVEC_LENGTH(s, (R_len_t)length); // is 1
             SET_STDVEC_TRUELENGTH(s, 0);
-            SET_NAMED(s, 0);
             INIT_REFCNT(s);
             return (s);
         }
@@ -3058,7 +3057,6 @@ SEXP allocVector3(SEXPTYPE type, R_xlen_t length, R_allocator_t *allocator)
     }
     SETALTREP(s, 0);
     SET_STDVEC_TRUELENGTH(s, 0);
-    SET_NAMED(s, 0);
     INIT_REFCNT(s);
 
     /* The following prevents disaster in the case */
