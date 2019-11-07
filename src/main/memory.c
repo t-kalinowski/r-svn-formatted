@@ -3400,17 +3400,18 @@ again:
             snprintf(msg, 256,
                      "GC encountered a node (%p) with type FREESXP (was %s)"
                      " at memory.c:%d",
-                     first_bad_sexp_type_sexp, sexptype2char(first_bad_sexp_type_old_type), first_bad_sexp_type_line);
+                     (void *)ffirst_bad_sexp_type_sexp, sexptype2char(first_bad_sexp_type_old_type),
+                     first_bad_sexp_type_line);
         else
             snprintf(msg, 256,
                      "GC encountered a node (%p) with an unknown SEXP type: %d"
                      " at memory.c:%d",
-                     first_bad_sexp_type_sexp, first_bad_sexp_type, first_bad_sexp_type_line);
+                     (void *)ffirst_bad_sexp_type_sexp, first_bad_sexp_type, first_bad_sexp_type_line);
 #else
         snprintf(msg, 256,
                  "GC encountered a node (%p) with an unknown SEXP type: %d"
                  " at memory.c:%d",
-                 first_bad_sexp_type_sexp, first_bad_sexp_type, first_bad_sexp_type_line);
+                 (void *)first_bad_sexp_type_sexp, first_bad_sexp_type, first_bad_sexp_type_line);
         gc_error(msg);
 #endif
     }
