@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2000--2018  The R Core Team
+ *  Copyright (C) 2000--2019  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -267,7 +267,12 @@ SEXP RTcl_ObjFromVar(SEXP args)
     Tcl_Obj *tclobj;
     const void *vmax = vmaxget();
 
+    if (!isValidString(CADR(args)))
+        error(_("invalid argument"));
     tclobj = Tcl_GetVar2Ex(RTcl_interp, translateChar(STRING_ELT(CADR(args), 0)), NULL, 0);
+    if (tclobj == NULL)
+        /* the variable may have been deleted using "unset" */
+        error(_("no such variable"));
     SEXP res = makeRTclObject(tclobj);
     vmaxset(vmax);
     return res;
@@ -276,6 +281,8 @@ SEXP RTcl_ObjFromVar(SEXP args)
 SEXP RTcl_AssignObjToVar(SEXP args)
 {
     const void *vmax = vmaxget();
+    if (!isValidString(CADR(args)))
+        error(_("invalid argument"));
     Tcl_SetVar2Ex(RTcl_interp, translateChar(STRING_ELT(CADR(args), 0)), NULL,
                   (Tcl_Obj *)R_ExternalPtrAddr(CADDR(args)), 0);
     vmaxset(vmax);
@@ -290,6 +297,8 @@ SEXP RTcl_StringFromObj(SEXP args)
     Tcl_DString s_ds;
     Tcl_Obj *obj;
 
+    if (TYPEOF(CADR(args)) != EXTPTRSXP)
+        error(_("invalid argument"));
     obj = (Tcl_Obj *)R_ExternalPtrAddr(CADR(args));
     if (!obj)
         error(_("invalid tclObj -- perhaps saved from another session?"));
@@ -309,6 +318,8 @@ SEXP RTcl_ObjAsCharVector(SEXP args)
     int ret, i;
     SEXP ans;
 
+    if (TYPEOF(CADR(args)) != EXTPTRSXP)
+        error(_("invalid argument"));
     obj = (Tcl_Obj *)R_ExternalPtrAddr(CADR(args));
     if (!obj)
         error(_("invalid tclObj -- perhaps saved from another session?"));
@@ -381,6 +392,8 @@ SEXP RTcl_ObjAsDoubleVector(SEXP args)
     double x;
     SEXP ans;
 
+    if (TYPEOF(CADR(args)) != EXTPTRSXP)
+        error(_("invalid argument"));
     obj = (Tcl_Obj *)R_ExternalPtrAddr(CADR(args));
     if (!obj)
         error(_("invalid tclObj -- perhaps saved from another session?"));
@@ -449,6 +462,8 @@ SEXP RTcl_ObjAsIntVector(SEXP args)
     int x;
     SEXP ans;
 
+    if (TYPEOF(CADR(args)) != EXTPTRSXP)
+        error(_("invalid argument"));
     obj = (Tcl_Obj *)R_ExternalPtrAddr(CADR(args));
     if (!obj)
         error(_("invalid tclObj -- perhaps saved from another session?"));
@@ -506,6 +521,8 @@ SEXP RTcl_ObjAsRawVector(SEXP args)
     unsigned char *ret;
     SEXP ans, el;
 
+    if (TYPEOF(CADR(args)) != EXTPTRSXP)
+        error(_("invalid argument"));
     obj = (Tcl_Obj *)R_ExternalPtrAddr(CADR(args));
     if (!obj)
         error(_("invalid tclObj -- perhaps saved from another session?"));
