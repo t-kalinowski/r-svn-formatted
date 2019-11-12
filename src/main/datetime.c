@@ -1271,9 +1271,9 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
         SET_VECTOR_ELT(ans, i, allocVector(i > 0 ? INTSXP : REALSXP, N));
     if (!isgmt)
     {
-        SET_VECTOR_ELT(ans, 9, allocVector(STRSXP, n));
+        SET_VECTOR_ELT(ans, 9, allocVector(STRSXP, N));
 #ifdef HAVE_TM_GMTOFF
-        SET_VECTOR_ELT(ans, 10, allocVector(INTSXP, n));
+        SET_VECTOR_ELT(ans, 10, allocVector(INTSXP, N));
 #endif
     }
 
