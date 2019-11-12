@@ -1,4 +1,6 @@
 /* Modified for R to support round-to-even */
+/* Modified for R to buffer printf/fprintf output before printing to avoid
+   problems with multi-byte characters */
 
 /*************************************************************************
  *
@@ -3911,6 +3913,80 @@ TRIO_PRIVATE void TrioOutStreamStringDynamic TRIO_ARGS2((self, output), trio_cla
 #endif /* TRIO_FEATURE_DYNAMICSTRING */
 
 /*************************************************************************
+ * TrioFormatFile
+ *
+ * a version of TrioFormat modified for R. Writes to a file or file
+ * descriptor, but via a single call, not by-byte, because that does
+ * not work with multi-byte coded characters.
+ *
+ */
+TRIO_PRIVATE int TrioFormatFile TRIO_ARGS6((destination, destinationSize, OutStream, format, arglist, argarray),
+                                           trio_pointer_t destination, size_t destinationSize,
+                                           void(*OutStream) TRIO_PROTO((trio_class_t *, int)), TRIO_CONST char *format,
+                                           va_list arglist, trio_pointer_t *argarray)
+{
+    int status;
+    trio_class_t data;
+    trio_parameter_t parameters[MAX_PARAMETERS];
+    trio_string_t *info = trio_xstring_duplicate("");
+    if (!info)
+        return TRIO_ERROR_RETURN(TRIO_ENOMEM, 0);
+
+    assert(VALID(OutStream));
+    assert(VALID(format));
+
+    memset(&data, 0, sizeof(data));
+    data.OutStream = TrioOutStreamStringDynamic;
+    data.location = info;
+    data.max = 0;
+    data.error = 0;
+
+#if defined(USE_LOCALE)
+    if (NULL == internalLocaleValues)
+    {
+        TrioSetLocale();
+    }
+#endif
+
+    status = TrioParse(TYPE_PRINT, format, parameters, arglist, argarray);
+    if (status < 0)
+        return status;
+
+    status = TrioFormatProcess(&data, format, parameters);
+    if (status >= 0)
+    {
+        trio_string_terminate(info);
+        char *result = trio_string_extract(info);
+        trio_string_destroy(info);
+        assert(VALID(destination));
+        if (OutStream == TrioOutStreamFile)
+        {
+            FILE *file = (FILE *)destination;
+            size_t written = fwrite(result, 1, status, file);
+            if (written < status)
+            {
+                data.error = TRIO_ERROR_RETURN(TRIO_ERRNO, 0);
+                status = (int)written;
+            }
+#if TRIO_FEATURE_FD
+        }
+        else if (OutStream == TrioOutStreamFileDescriptor)
+        {
+            assert(0); /* not implemented - not used by R */
+#endif
+        }
+        else
+            assert(0);
+        TRIO_FREE(result);
+    }
+    if (data.error != 0)
+    {
+        status = data.error;
+    }
+    return status;
+}
+
+/*************************************************************************
  *
  * Formatted printing functions
  *
@@ -3943,7 +4019,7 @@ TRIO_PUBLIC int trio_printf TRIO_VARGS2((format, va_alist), TRIO_CONST char *for
     assert(VALID(format));
 
     TRIO_VA_START(args, format);
-    status = TrioFormat(stdout, 0, TrioOutStreamFile, format, args, NULL);
+    status = TrioFormatFile(stdout, 0, TrioOutStreamFile, format, args, NULL);
     TRIO_VA_END(args);
     return status;
 }
@@ -3961,7 +4037,7 @@ TRIO_PUBLIC int trio_vprintf TRIO_ARGS2((format, args), TRIO_CONST char *format,
 {
     assert(VALID(format));
 
-    return TrioFormat(stdout, 0, TrioOutStreamFile, format, args, NULL);
+    return TrioFormatFile(stdout, 0, TrioOutStreamFile, format, args, NULL);
 }
 #endif /* TRIO_FEATURE_STDIO */
 
@@ -3979,7 +4055,7 @@ TRIO_PUBLIC int trio_printfv TRIO_ARGS2((format, args), TRIO_CONST char *format,
 
     assert(VALID(format));
 
-    return TrioFormat(stdout, 0, TrioOutStreamFile, format, unused, args);
+    return TrioFormatFile(stdout, 0, TrioOutStreamFile, format, unused, args);
 }
 #endif /* TRIO_FEATURE_STDIO */
 
@@ -4005,7 +4081,7 @@ TRIO_PUBLIC int trio_fprintf TRIO_VARGS3((file, format, va_alist), FILE *file, T
     assert(VALID(format));
 
     TRIO_VA_START(args, format);
-    status = TrioFormat(file, 0, TrioOutStreamFile, format, args, NULL);
+    status = TrioFormatFile(file, 0, TrioOutStreamFile, format, args, NULL);
     TRIO_VA_END(args);
     return status;
 }
@@ -4025,7 +4101,7 @@ TRIO_PUBLIC int trio_vfprintf TRIO_ARGS3((file, format, args), FILE *file, TRIO_
     assert(VALID(file));
     assert(VALID(format));
 
-    return TrioFormat(file, 0, TrioOutStreamFile, format, args, NULL);
+    return TrioFormatFile(file, 0, TrioOutStreamFile, format, args, NULL);
 }
 #endif /* TRIO_FEATURE_FILE */
 
@@ -4046,7 +4122,7 @@ TRIO_PUBLIC int trio_fprintfv TRIO_ARGS3((file, format, args), FILE *file, TRIO_
     assert(VALID(file));
     assert(VALID(format));
 
-    return TrioFormat(file, 0, TrioOutStreamFile, format, unused, args);
+    return TrioFormatFile(file, 0, TrioOutStreamFile, format, unused, args);
 }
 #endif /* TRIO_FEATURE_FILE */
 
@@ -4071,7 +4147,7 @@ TRIO_PUBLIC int trio_dprintf TRIO_VARGS3((fd, format, va_alist), int fd, TRIO_CO
     assert(VALID(format));
 
     TRIO_VA_START(args, format);
-    status = TrioFormat(&fd, 0, TrioOutStreamFileDescriptor, format, args, NULL);
+    status = TrioFormatFile(&fd, 0, TrioOutStreamFileDescriptor, format, args, NULL);
     TRIO_VA_END(args);
     return status;
 }
@@ -4090,7 +4166,7 @@ TRIO_PUBLIC int trio_vdprintf TRIO_ARGS3((fd, format, args), int fd, TRIO_CONST 
 {
     assert(VALID(format));
 
-    return TrioFormat(&fd, 0, TrioOutStreamFileDescriptor, format, args, NULL);
+    return TrioFormatFile(&fd, 0, TrioOutStreamFileDescriptor, format, args, NULL);
 }
 #endif /* TRIO_FEATURE_FD */
 
@@ -4109,7 +4185,7 @@ TRIO_PUBLIC int trio_dprintfv TRIO_ARGS3((fd, format, args), int fd, TRIO_CONST 
 
     assert(VALID(format));
 
-    return TrioFormat(&fd, 0, TrioOutStreamFileDescriptor, format, unused, args);
+    return TrioFormatFile(&fd, 0, TrioOutStreamFileDescriptor, format, unused, args);
 }
 #endif /* TRIO_FEATURE_FD */
 
