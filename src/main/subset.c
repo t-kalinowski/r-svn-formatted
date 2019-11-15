@@ -964,7 +964,6 @@ SEXP attribute_hidden do_subset2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP ans, dims, dimnames, indx, subs, x;
     int i, ndims, nsubs;
     int drop = 1, pok, exact = -1;
-    int named_x;
     R_xlen_t offset = 0;
 
     PROTECT(args);
@@ -1036,7 +1035,10 @@ SEXP attribute_hidden do_subset2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (!(isVector(x) || isList(x) || isLanguage(x)))
         errorcall(call, R_MSG_ob_nonsub, type2char(TYPEOF(x)));
 
+#ifndef SWITCH_TO_REFCNT
+    int named_x;
     named_x = NAMED(x); /* x may change below; save this now.  See PR#13411 */
+#endif
 
     if (nsubs == 1)
     { /* vector indexing */
@@ -1065,8 +1067,8 @@ SEXP attribute_hidden do_subset2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
                 x = vectorIndex(x, thesub, 0, len - 1, pok, call, FALSE);
 #else
             x = vectorIndex(x, thesub, 0, len - 1, pok, call, FALSE);
-#endif
             named_x = NAMED(x);
+#endif
             UNPROTECT(1); /* x */
             PROTECT(x);
         }
