@@ -709,8 +709,8 @@ SEXP col2rgb(SEXP colors, SEXP alpha)
 
 #define MAX_PALETTE_SIZE 1024
 static int PaletteSize = 8;
-static rcolor Palette[MAX_PALETTE_SIZE] = {0xff000000, 0xff6b53df, 0xff4fd061, 0xfffda513,
-                                           0xffdfdb33, 0xfff53ad0, 0xff1fc2ee, 0xff656565};
+static rcolor Palette[MAX_PALETTE_SIZE] = {0xff000000, 0xff6b53df, 0xff4fd061, 0xffe69722,
+                                           0xffe5e228, 0xfff53ad0, 0xff1fc2ee, 0xff656565};
 
 static rcolor Palette0[MAX_PALETTE_SIZE];
 
@@ -757,8 +757,8 @@ static int StrMatch(const char *s, const char *t)
  */
 
 /* Default Color Palette */
-attribute_hidden const rcolor DefaultPalette[8] = {0xff000000, 0xff6b53df, 0xff4fd061, 0xfffda513,
-                                                   0xffdfdb33, 0xfff53ad0, 0xff1fc2ee, 0xff656565};
+attribute_hidden const rcolor DefaultPalette[8] = {0xff000000, 0xff6b53df, 0xff4fd061, 0xffe69722,
+                                                   0xffe5e228, 0xfff53ad0, 0xff1fc2ee, 0xff656565};
 
 /* The Table of Known Color Names */
 /* Adapted from the X11 RGB database */
