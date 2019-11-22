@@ -154,7 +154,7 @@ SEXP attribute_hidden do_onexit(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (do_onexit_formals == NULL)
         do_onexit_formals = allocFormalsList3(install("expr"), install("add"), install("after"));
 
-    PROTECT(argList = matchArgs(do_onexit_formals, args, call));
+    PROTECT(argList = matchArgs_NR(do_onexit_formals, args, call));
     if (CAR(argList) == R_MissingArg)
         code = R_NilValue;
     else

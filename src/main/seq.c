@@ -709,7 +709,7 @@ SEXP attribute_hidden do_rep(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (do_rep_formals == NULL)
         do_rep_formals =
             allocFormalsList5(install("x"), install("times"), install("length.out"), install("each"), R_DotsSymbol);
-    PROTECT(args = matchArgs(do_rep_formals, args, call));
+    PROTECT(args = matchArgs_NR(do_rep_formals, args, call));
 
     x = CAR(args);
     /* supported in R 2.15.x */
@@ -895,7 +895,7 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (do_seq_formals == NULL)
         do_seq_formals = allocFormalsList6(install("from"), install("to"), install("by"), install("length.out"),
                                            install("along.with"), R_DotsSymbol);
-    PROTECT(args = matchArgs(do_seq_formals, args, call));
+    PROTECT(args = matchArgs_NR(do_seq_formals, args, call));
 
     from = CAR(args);
     args = CDR(args);
