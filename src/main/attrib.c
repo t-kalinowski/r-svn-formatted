@@ -232,7 +232,7 @@ attribute_hidden SEXP do_shortRowNames(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-/* This is allowed to change 'out' */
+// .Internal(copyDFattr(in, out)) --  is allowed to change 'out' (!!)
 attribute_hidden SEXP do_copyDFattr(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
@@ -308,7 +308,7 @@ void copyMostAttrib(SEXP inp, SEXP ans)
     for (s = ATTRIB(inp); s != R_NilValue; s = CDR(s))
     {
         if ((TAG(s) != R_NamesSymbol) && (TAG(s) != R_DimSymbol) && (TAG(s) != R_DimNamesSymbol))
-        {
+        { // << for matrix, array ..
             installAttrib(ans, TAG(s), CAR(s));
         }
     }
@@ -436,7 +436,7 @@ static void checkNames(SEXP x, SEXP s)
     if (isVector(x) || isList(x) || isLanguage(x))
     {
         if (!isVector(s) && !isList(s))
-            error(_("invalid type (%s) for 'names': must be vector"), type2char(TYPEOF(s)));
+            error(_("invalid type (%s) for 'names': must be vector or NULL"), type2char(TYPEOF(s)));
         if (xlength(x) != xlength(s))
             error(_("'names' attribute [%d] must be the same length as the vector [%d]"), length(s), length(x));
     }
@@ -1318,11 +1318,10 @@ SEXP dimgets(SEXP vec, SEXP val)
     R_xlen_t len, total;
     PROTECT(vec);
     PROTECT(val);
-    if ((!isVector(vec) && !isList(vec)))
-        error(_("invalid first argument"));
-
-    if (!isVector(val) && !isList(val))
-        error(_("invalid second argument"));
+    if (!isVector(vec) && !isList(vec))
+        error(_("invalid first argument, must be %s"), "vector (list or atomic)");
+    if (val != R_NilValue && !isVectorAtomic(val))
+        error(_("invalid second argument, must be %s"), "vector or NULL");
     val = coerceVector(val, INTSXP);
     UNPROTECT(1);
     PROTECT(val);
@@ -1443,20 +1442,16 @@ SEXP attribute_hidden do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
     /* brought to the front of the list.  This ensures that when both */
     /* "dim" and "dimnames" are set that the "dim" is attached first. */
 
-    SEXP object, attrs, names = R_NilValue /* -Wall */;
-    int i, nattrs;
-
     /* Extract the arguments from the argument list */
 
     checkArity(op, args);
 
-    object = CAR(args);
-    attrs = CADR(args);
+    SEXP object = CAR(args), attrs = CADR(args), names;
 
     /* Do checks before duplication */
     if (!isNewList(attrs))
         error(_("attributes must be a list or NULL"));
-    nattrs = length(attrs);
+    int nattrs = length(attrs), i;
     if (nattrs > 0)
     {
         names = getAttrib(attrs, R_NamesSymbol);
@@ -1470,6 +1465,8 @@ SEXP attribute_hidden do_attributesgets(SEXP call, SEXP op, SEXP args, SEXP env)
             }
         }
     }
+    else
+        names = R_NilValue; // -Wall
 
     if (object == R_NilValue)
     {
