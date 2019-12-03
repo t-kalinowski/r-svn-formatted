@@ -1709,7 +1709,12 @@ SEXP attribute_hidden R_possible_dispatch(SEXP call, SEXP op, SEXP args, SEXP rh
             }
             else
             {
+                /* INC/DEC of REFCNT needed for non-tracking args */
+                for (SEXP a = args; a != R_NilValue; a = CDR(a))
+                    INCREMENT_REFCNT(CAR(a));
                 value = applyClosure(call, value, args, rho, suppliedvars);
+                for (SEXP a = args; a != R_NilValue; a = CDR(a))
+                    DECREMENT_REFCNT(CAR(a));
                 UNPROTECT(1);
                 return value;
             }
@@ -1732,7 +1737,14 @@ SEXP attribute_hidden R_possible_dispatch(SEXP call, SEXP op, SEXP args, SEXP rh
         UNPROTECT(1);
     }
     else
+    {
+        /* INC/DEC of REFCNT needed for non-tracking args */
+        for (SEXP a = args; a != R_NilValue; a = CDR(a))
+            INCREMENT_REFCNT(CAR(a));
         value = applyClosure(call, fundef, args, rho, R_NilValue);
+        for (SEXP a = args; a != R_NilValue; a = CDR(a))
+            DECREMENT_REFCNT(CAR(a));
+    }
     prim_methods[offset] = current;
     if (value == deferred_default_object)
         return NULL;
