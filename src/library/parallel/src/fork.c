@@ -179,16 +179,39 @@ static void restore_sigchld(sigset_t *oldset)
 static void close_fds_child_ci(child_info_t *ci)
 {
     /* note the check and close is not atomic */
-    if (ci->pfd > 0)
+    if (ci->pfd >= 0)
     {
         close(ci->pfd);
         ci->pfd = -1;
     }
-    if (ci->sifd > 0)
+    if (ci->sifd >= 0)
     {
         close(ci->sifd);
         ci->sifd = -1;
     }
+}
+
+/* is the file descriptor used in child entries? */
+static int fd_used_by_children(int fd)
+{
+    if (fd == -1)
+        return 0;
+    child_info_t *ci = children;
+    while (ci)
+    {
+        if (ci->pfd == fd || ci->sifd == fd)
+            return 1;
+        ci = ci->next;
+    }
+    return 0;
+}
+
+static void close_non_child_fd(int fd)
+{
+    if (fd_used_by_children(fd))
+        /* should not happen */
+        error("cannot close internal file descriptor");
+    close(fd);
 }
 
 /* must only be called on attached child */
@@ -551,7 +574,7 @@ SEXP mc_fork(SEXP sEstranged)
             error(_("unable to create a pipe"));
         }
 #ifdef MC_DEBUG
-        Dprintf("parent[%d] created pipes: comm (%d->%d), sir (%d->%d)\n", getpid(), pipefd[1], pipefd[0], sipfd[1],
+        Dprintf("parent[%d] created pipes: comm (C%d->M%d), sir (M%d->C%d)\n", getpid(), pipefd[1], pipefd[0], sipfd[1],
                 sipfd[0]);
 #endif
     }
@@ -576,6 +599,14 @@ SEXP mc_fork(SEXP sEstranged)
         }
         error(_("unable to fork, possible reason: %s"), strerror(errno));
     }
+#ifdef MC_DEBUG
+    /* not worth checking always */
+    if (fd_used_by_children(pipefd[0]) || fd_used_by_children(pipefd[1]) || fd_used_by_children(sipfd[0]) ||
+        fd_used_by_children(sipfd[1]))
+
+        /* should not happen */
+        error("detected re-use of valid pipe ends\n");
+#endif
     res_i[0] = (int)pid;
     if (pid == 0)
     { /* child */
@@ -595,7 +626,8 @@ SEXP mc_fork(SEXP sEstranged)
             res_i[1] = res_i[2] = NA_INTEGER;
         else
         {
-            close(pipefd[0]); /* close read end */
+            close(pipefd[0]); /* close read end of the data pipe */
+            close(sipfd[1]);  /* close write end of the child-stdin pipe */
             master_fd = res_i[1] = pipefd[1];
             res_i[2] = NA_INTEGER;
             /* re-map stdin */
@@ -668,10 +700,10 @@ SEXP mc_close_stdout(SEXP toNULL)
             close(fd);
         }
         else
-            close(STDOUT_FILENO);
+            close_non_child_fd(STDOUT_FILENO);
     }
     else
-        close(STDOUT_FILENO);
+        close_non_child_fd(STDOUT_FILENO);
     return R_NilValue;
 }
 
@@ -687,10 +719,10 @@ SEXP mc_close_stderr(SEXP toNULL)
             close(fd);
         }
         else
-            close(STDERR_FILENO);
+            close_non_child_fd(STDERR_FILENO);
     }
     else
-        close(STDERR_FILENO);
+        close_non_child_fd(STDERR_FILENO);
     return R_NilValue;
 }
 
@@ -703,7 +735,7 @@ SEXP mc_close_fds(SEXP sFDS)
     fds = LENGTH(sFDS);
     fd = INTEGER(sFDS);
     while (i < fds)
-        close(fd[i++]);
+        close_non_child_fd(fd[i++]);
     return ScalarLogical(1);
 }
 
@@ -876,7 +908,7 @@ SEXP mc_select_children(SEXP sTimeout, SEXP sWhich)
     {
         if (!ci->detached && ci->ppid == ppid)
         {
-            /* attached children have ci->pfd > 0 */
+            /* attached children have ci->pfd >= 0 */
             if (which)
             { /* check for the FD only if it's on the list */
                 unsigned int k = 0;
@@ -1132,7 +1164,7 @@ SEXP mc_read_children(SEXP sTimeout)
         {
             if (ci->pfd > maxfd)
                 maxfd = ci->pfd;
-            if (ci->pfd > 0)
+            if (ci->pfd >= 0)
                 FD_SET(ci->pfd, &fs);
         }
         ci = ci->next;
@@ -1158,7 +1190,7 @@ SEXP mc_read_children(SEXP sTimeout)
     {
         if (!ci->detached && ci->ppid == ppid)
         {
-            if (ci->pfd > 0 && FD_ISSET(ci->pfd, &fs))
+            if (ci->pfd >= 0 && FD_ISSET(ci->pfd, &fs))
                 break;
         }
         ci = ci->next;
