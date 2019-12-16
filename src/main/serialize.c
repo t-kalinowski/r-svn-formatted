@@ -2313,12 +2313,9 @@ SEXP R_Unserialize(R_inpstream_t stream)
         break;
     case 3: {
         int nelen = InInteger(stream);
-        if (nelen > R_CODESET_MAX + 1)
+        if (nelen > R_CODESET_MAX)
             error(_("invalid length of encoding name"));
-        char nbuf[nelen + 1];
-        InString(stream, nbuf, nelen);
-        nbuf[nelen] = '\0';
-        strncpy(stream->native_encoding, nbuf, nelen);
+        InString(stream, stream->native_encoding, nelen);
         stream->native_encoding[nelen] = '\0';
         break;
     }
@@ -2414,7 +2411,7 @@ SEXP R_SerializeInfo(R_inpstream_t stream)
     {
         SET_STRING_ELT(names, 4, mkChar("native_encoding"));
         int nelen = InInteger(stream);
-        if (nelen > R_CODESET_MAX + 1)
+        if (nelen > R_CODESET_MAX)
             error(_("invalid length of encoding name"));
         char nbuf[nelen + 1];
         InString(stream, nbuf, nelen);
