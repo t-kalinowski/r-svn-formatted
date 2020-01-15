@@ -133,7 +133,7 @@ double choose(double n, double k)
     {
         int j;
         if (n - k < k && n >= 0 && R_IS_INT(n))
-            k = n - k; /* <- Symmetry */
+            k = R_forceint(n - k); /* <- Symmetry, ensure k still integer */
         if (k < 0)
             return 0.;
         if (k == 0)
