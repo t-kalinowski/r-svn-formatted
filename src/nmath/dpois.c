@@ -67,7 +67,7 @@ double dpois(double x, double lambda, int give_log)
 #endif
 
     if (lambda < 0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
     R_D_nonint_check(x);
     if (x < 0 || !R_FINITE(x))
         return R_D__0;

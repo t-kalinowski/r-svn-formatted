@@ -42,11 +42,11 @@ double plogis(double x, double location, double scale, int lower_tail, int log_p
         return x + location + scale;
 #endif
     if (scale <= 0.0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 
     x = (x - location) / scale;
     if (ISNAN(x))
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
     R_P_bounds_Inf_01(x);
 
     if (log_p)

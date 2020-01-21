@@ -26,7 +26,7 @@
 double runif(double a, double b)
 {
     if (!R_FINITE(a) || !R_FINITE(b) || b < a)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 
     if (a == b)
         return a;

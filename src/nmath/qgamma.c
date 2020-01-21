@@ -65,7 +65,7 @@ attribute_hidden double qchisq_appr(double p, double nu, double g /* = log Gamma
 #endif
     R_Q_P01_check(p);
     if (nu <= 0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 
     alpha = 0.5 * nu; /* = [pq]gamma() shape */
     c = alpha - 1;
@@ -145,7 +145,7 @@ double qgamma(double p, double alpha, double scale, int lower_tail, int log_p)
     R_Q_P01_boundaries(p, 0., ML_POSINF);
 
     if (alpha < 0 || scale <= 0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 
     if (alpha == 0) /* all mass at 0 : */
         return 0.;
@@ -247,7 +247,7 @@ double qgamma(double p, double alpha, double scale, int lower_tail, int log_p)
     MATHLIB_WARNING3("qgamma(%g) not converged in %d iterations; rel.ch=%g\n", p, MAXIT, ch / fabs(q - ch));
 #endif
     /* was
-     *    ML_ERROR(ME_PRECISION, "qgamma");
+     *    ML_WARNING(ME_PRECISION, "qgamma");
      * does nothing in R !*/
 
 END:

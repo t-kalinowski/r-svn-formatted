@@ -55,7 +55,7 @@ double qt(double p, double ndf, int lower_tail, int log_p)
     R_Q_P01_boundaries(p, ML_NEGINF, ML_POSINF);
 
     if (ndf <= 0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 
     if (ndf < 1)
     { /* based on qnt */
@@ -92,7 +92,7 @@ double qt(double p, double ndf, int lower_tail, int log_p)
         } while ((ux - lx) / fabs(nx) > accu && ++iter < 1000);
 
         if (iter >= 1000)
-            ML_ERROR(ME_PRECISION, "qt");
+            ML_WARNING(ME_PRECISION, "qt");
 
         return 0.5 * (lx + ux);
     }

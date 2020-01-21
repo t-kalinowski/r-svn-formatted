@@ -49,7 +49,7 @@ double dbeta(double x, double a, double b, int give_log)
 #endif
 
     if (a < 0 || b < 0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
     if (x < 0 || x > 1)
         return (R_D__0);
 

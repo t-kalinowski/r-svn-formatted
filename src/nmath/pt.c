@@ -34,7 +34,7 @@ double pt(double x, double n, int lower_tail, int log_p)
         return x + n;
 #endif
     if (n <= 0.0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 
     if (!R_FINITE(x))
         return (x < 0) ? R_DT_0 : R_DT_1;

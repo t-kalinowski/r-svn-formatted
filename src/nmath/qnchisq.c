@@ -37,14 +37,14 @@ double qnchisq(double p, double df, double ncp, int lower_tail, int log_p)
         return p + df + ncp;
 #endif
     if (!R_FINITE(df))
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 
     /* Was
      * df = floor(df + 0.5);
-     * if (df < 1 || ncp < 0) ML_ERR_return_NAN;
+     * if (df < 1 || ncp < 0) ML_WARN_return_NAN;
      */
     if (df < 0 || ncp < 0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 
     R_Q_P01_boundaries(p, 0, ML_POSINF);
 
@@ -71,7 +71,7 @@ double qnchisq(double p, double df, double ncp, int lower_tail, int log_p)
     {
         /* in this case, pnchisq() works via lower_tail = TRUE */
         if (pp < 1e-10)
-            ML_ERROR(ME_PRECISION, "qnchisq");
+            ML_WARNING(ME_PRECISION, "qnchisq");
         p = /* R_DT_qIv(p)*/ log_p ? -expm1(p) : (0.5 - (p) + 0.5);
         lower_tail = TRUE;
     }

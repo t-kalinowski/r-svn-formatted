@@ -39,7 +39,7 @@ double qcauchy(double p, double location, double scale, int lower_tail, int log_
     {
         if (scale == 0)
             return location;
-        /* else */ ML_ERR_return_NAN;
+        /* else */ ML_WARN_return_NAN;
     }
 
 #define my_INF location + (lower_tail ? scale : -scale) * ML_POSINF

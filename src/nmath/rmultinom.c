@@ -39,16 +39,16 @@
 #include <stdlib.h>
 
 #ifdef MATHLIB_STANDALONE
-#define ML_ERR_ret_NAN(_k_)                                                                                            \
+#define ML_WARN_ret_NAN(_k_)                                                                                           \
     {                                                                                                                  \
-        ML_ERROR(ME_DOMAIN, "rmultinom");                                                                              \
+        ML_WARNING(ME_DOMAIN, "rmultinom");                                                                            \
         rN[_k_] = -1;                                                                                                  \
         return;                                                                                                        \
     }
 #else
-#define ML_ERR_ret_NAN(_k_)                                                                                            \
+#define ML_WARN_ret_NAN(_k_)                                                                                           \
     {                                                                                                                  \
-        ML_ERROR(ME_DOMAIN, "rmultinom");                                                                              \
+        ML_WARNING(ME_DOMAIN, "rmultinom");                                                                            \
         rN[_k_] = NA_INTEGER;                                                                                          \
         return;                                                                                                        \
     }
@@ -70,19 +70,19 @@ void rmultinom(int n, double *prob, int K, int *rN)
 #ifdef MATHLIB_STANDALONE
     if (K < 1)
     {
-        ML_ERROR(ME_DOMAIN, "rmultinom");
+        ML_WARNING(ME_DOMAIN, "rmultinom");
         return;
     }
     if (n < 0)
-        ML_ERR_ret_NAN(0);
+        ML_WARN_ret_NAN(0);
 #else
     if (K == NA_INTEGER || K < 1)
     {
-        ML_ERROR(ME_DOMAIN, "rmultinom");
+        ML_WARNING(ME_DOMAIN, "rmultinom");
         return;
     }
     if (n == NA_INTEGER || n < 0)
-        ML_ERR_ret_NAN(0);
+        ML_WARN_ret_NAN(0);
 #endif
 
     /* Note: prob[K] is only used here for checking  sum_k prob[k] = 1 ;
@@ -92,7 +92,7 @@ void rmultinom(int n, double *prob, int K, int *rN)
     {
         pp = prob[k];
         if (!R_FINITE(pp) || pp < 0. || pp > 1.)
-            ML_ERR_ret_NAN(k);
+            ML_WARN_ret_NAN(k);
         p_tot += pp;
         rN[k] = 0;
     }
@@ -125,4 +125,4 @@ void rmultinom(int n, double *prob, int K, int *rN)
     rN[K - 1] = n;
     return;
 }
-#undef ML_ERR_ret_NAN
+#undef ML_WARN_ret_NAN

@@ -76,7 +76,7 @@ double pbeta(double x, double a, double b, int lower_tail, int log_p)
 #endif
 
     if (a < 0 || b < 0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
     // allowing a==0 and b==0  <==> treat as one- or two-point mass
 
     if (x <= 0)

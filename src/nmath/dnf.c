@@ -46,11 +46,11 @@ double dnf(double x, double df1, double df2, double ncp, int give_log)
      *   return df(x, df1, df2, give_log); */
 
     if (df1 <= 0. || df2 <= 0. || ncp < 0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
     if (x < 0.)
         return (R_D__0);
     if (!R_FINITE(ncp)) /* ncp = +Inf -- FIXME?: in some cases, limit exists */
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 
     /* This is not correct for  df1 == 2, ncp > 0 - and seems unneeded:
      *  if (x == 0.) return(df1 > 2 ? R_D__0 : (df1 == 2 ? R_D__1 : ML_POSINF));

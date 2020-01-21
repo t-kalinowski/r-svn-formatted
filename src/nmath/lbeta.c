@@ -53,7 +53,7 @@ double lbeta(double a, double b)
 
     /* both arguments must be >= 0 */
     if (p < 0)
-        ML_ERR_return_NAN else if (p == 0)
+        ML_WARN_return_NAN else if (p == 0)
         {
             return ML_POSINF;
         }

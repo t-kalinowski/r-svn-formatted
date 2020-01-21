@@ -30,10 +30,10 @@ double pexp(double x, double scale, int lower_tail, int log_p)
     if (ISNAN(x) || ISNAN(scale))
         return x + scale;
     if (scale < 0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 #else
     if (scale <= 0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 #endif
 
     if (x <= 0.)

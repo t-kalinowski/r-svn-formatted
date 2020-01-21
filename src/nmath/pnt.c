@@ -62,7 +62,7 @@ double pnt(double t, double df, double ncp, int lower_tail, int log_p)
     const static double errmax = 1.e-12;
 
     if (df <= 0.0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
     if (ncp == 0.0)
         return pt(t, df, lower_tail, log_p);
 
@@ -115,8 +115,8 @@ double pnt(double t, double df, double ncp, int lower_tail, int log_p)
         { /* underflow! */
 
             /*========== really use an other algorithm for this case !!! */
-            ML_ERROR(ME_UNDERFLOW, "pnt");
-            ML_ERROR(ME_RANGE, "pnt"); /* |ncp| too large */
+            ML_WARNING(ME_UNDERFLOW, "pnt");
+            ML_WARNING(ME_RANGE, "pnt"); /* |ncp| too large */
             return R_DT_0;
         }
 #ifdef DEBUG_pnt
@@ -158,7 +158,7 @@ double pnt(double t, double df, double ncp, int lower_tail, int log_p)
             /* R 2.4.0 added test for rounding error here. */
             if (s < -1.e-10)
             { /* happens e.g. for (t,df,ncp)=(40,10,38.5), after 799 it.*/
-                ML_ERROR(ME_PRECISION, "pnt");
+                ML_WARNING(ME_PRECISION, "pnt");
 #ifdef DEBUG_pnt
                 REprintf("s = %#14.7Lg < 0 !!! ---> non-convergence!!\n", s);
 #endif
@@ -175,7 +175,7 @@ double pnt(double t, double df, double ncp, int lower_tail, int log_p)
                 goto finis; /*convergence*/
         }
         /* non-convergence:*/
-        ML_ERROR(ME_NOCONV, "pnt");
+        ML_WARNING(ME_NOCONV, "pnt");
     }
     else
     { /* x = t = 0 */
@@ -186,7 +186,7 @@ finis:
 
     lower_tail = lower_tail != negdel; /* xor */
     if (tnc > 1 - 1e-10 && lower_tail)
-        ML_ERROR(ME_PRECISION, "pnt{final}");
+        ML_WARNING(ME_PRECISION, "pnt{final}");
 
     return R_DT_val(fmin2((double)tnc, 1.) /* Precaution */);
 }

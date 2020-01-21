@@ -94,7 +94,7 @@ double Rlog1p(double x)
     if (x == -1)
         return (ML_NEGINF);
     if (x < -1)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 
     if (fabs(x) <= .375)
     {
@@ -112,7 +112,7 @@ double Rlog1p(double x)
     if (x < xmin)
     {
         /* answer less than half precision because x too near -1 */
-        ML_ERROR(ME_PRECISION, "log1p");
+        ML_WARNING(ME_PRECISION, "log1p");
     }
     return log(1 + x);
 }

@@ -32,7 +32,7 @@ double pweibull(double x, double shape, double scale, int lower_tail, int log_p)
         return x + shape + scale;
 #endif
     if (shape <= 0 || scale <= 0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 
     if (x <= 0)
         return R_DT_0;

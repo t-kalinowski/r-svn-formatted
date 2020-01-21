@@ -33,7 +33,7 @@ double qgeom(double p, double prob, int lower_tail, int log_p)
         return p + prob;
 #endif
     if (prob <= 0 || prob > 1)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 
     R_Q_P01_check(p);
     if (prob == 1)

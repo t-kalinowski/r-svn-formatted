@@ -82,7 +82,7 @@ double qnbinom(double p, double size, double prob, int lower_tail, int log_p)
         return 0;
 
     if (prob <= 0 || prob > 1 || size < 0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 
     if (prob == 1 || size == 0)
         return 0;

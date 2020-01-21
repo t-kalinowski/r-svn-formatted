@@ -44,7 +44,7 @@ double df(double x, double m, double n, int give_log)
         return x + m + n;
 #endif
     if (m <= 0 || n <= 0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
     if (x < 0.)
         return (R_D__0);
     if (x == 0.)

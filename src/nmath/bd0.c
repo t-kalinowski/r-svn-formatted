@@ -40,7 +40,7 @@ double attribute_hidden bd0(double x, double np)
     int j;
 
     if (!R_FINITE(x) || !R_FINITE(np) || np == 0.0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 
     if (fabs(x - np) < 0.1 * (x + np))
     {

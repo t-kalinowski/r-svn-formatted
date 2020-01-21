@@ -33,7 +33,7 @@ double dexp(double x, double scale, int give_log)
         return x + scale;
 #endif
     if (scale <= 0.0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 
     if (x < 0.)
         return R_D__0;

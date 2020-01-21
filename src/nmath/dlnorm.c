@@ -34,7 +34,7 @@ double dlnorm(double x, double meanlog, double sdlog, int give_log)
         return x + meanlog + sdlog;
 #endif
     if (sdlog < 0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
     if (!R_FINITE(x) && log(x) == meanlog)
         return ML_NAN; /* log(x) - meanlog is NaN */
     if (sdlog == 0)

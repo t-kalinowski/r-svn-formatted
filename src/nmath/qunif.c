@@ -33,9 +33,9 @@ double qunif(double p, double a, double b, int lower_tail, int log_p)
 #endif
     R_Q_P01_check(p);
     if (!R_FINITE(a) || !R_FINITE(b))
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
     if (b < a)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
     if (b == a)
         return a;
 

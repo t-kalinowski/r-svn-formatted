@@ -32,7 +32,7 @@ double ppois(double x, double lambda, int lower_tail, int log_p)
         return x + lambda;
 #endif
     if (lambda < 0.)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
     if (x < 0)
         return R_DT_0;
     if (lambda == 0.)

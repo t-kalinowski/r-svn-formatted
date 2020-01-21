@@ -45,7 +45,7 @@ double dnbinom(double x, double size, double prob, int give_log)
 #endif
 
     if (prob <= 0 || prob > 1 || size < 0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
     R_D_nonint_check(x);
     if (x < 0 || !R_FINITE(x))
         return R_D__0;
@@ -72,7 +72,7 @@ double dnbinom_mu(double x, double size, double mu, int give_log)
 #endif
 
     if (mu < 0 || size < 0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
     R_D_nonint_check(x);
     if (x < 0 || !R_FINITE(x))
         return R_D__0;

@@ -31,7 +31,7 @@ double rweibull(double shape, double scale)
         if (scale == 0.)
             return 0.;
         /* else */
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
     }
 
     return scale * pow(-log(unif_rand()), 1.0 / shape);

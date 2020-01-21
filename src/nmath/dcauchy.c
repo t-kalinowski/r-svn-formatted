@@ -34,7 +34,7 @@ double dcauchy(double x, double location, double scale, int give_log)
         return x + location + scale;
 #endif
     if (scale <= 0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 
     y = (x - location) / scale;
     return give_log ? -log(M_PI * scale * (1. + y * y)) : 1. / (M_PI * scale * (1. + y * y));

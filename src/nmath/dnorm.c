@@ -38,7 +38,7 @@ double dnorm4(double x, double mu, double sigma, int give_log)
         return x + mu + sigma;
 #endif
     if (sigma < 0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
     if (!R_FINITE(sigma))
         return R_D__0;
     if (!R_FINITE(x) && mu == x)

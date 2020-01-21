@@ -33,7 +33,7 @@ double pgeom(double x, double p, int lower_tail, int log_p)
         return x + p;
 #endif
     if (p <= 0 || p > 1)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 
     if (x < 0.)
         return R_DT_0;

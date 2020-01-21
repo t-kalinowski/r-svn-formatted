@@ -65,7 +65,7 @@ double beta(double a, double b)
 #endif
 
     if (a < 0 || b < 0)
-        ML_ERR_return_NAN else if (a == 0 || b == 0) return ML_POSINF;
+        ML_WARN_return_NAN else if (a == 0 || b == 0) return ML_POSINF;
     else if (!R_FINITE(a) || !R_FINITE(b))
         return 0;
 
@@ -87,7 +87,7 @@ double beta(double a, double b)
         if (val < lnsml)
         {
             /* a and/or b so big that beta underflows */
-            ML_ERROR(ME_UNDERFLOW, "beta");
+            ML_WARNING(ME_UNDERFLOW, "beta");
             /* return ML_UNDERFLOW; pointless giving incorrect value */
         }
 #endif

@@ -33,7 +33,7 @@ double qexp(double p, double scale, int lower_tail, int log_p)
         return p + scale;
 #endif
     if (scale < 0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 
     R_Q_P01_check(p);
     if (p == R_DT_0)

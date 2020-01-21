@@ -36,7 +36,7 @@
 double rchisq(double df)
 {
     if (!R_FINITE(df) || df < 0.0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 
     return rgamma(df / 2.0, 2.0);
 }

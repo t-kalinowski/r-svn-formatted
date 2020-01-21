@@ -289,7 +289,7 @@ double ptukey(double q, double rr, double cc, double df, int lower_tail, int log
 
 #ifdef IEEE_754
     if (ISNAN(q) || ISNAN(rr) || ISNAN(cc) || ISNAN(df))
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 #endif
 
     if (q <= 0)
@@ -299,7 +299,7 @@ double ptukey(double q, double rr, double cc, double df, int lower_tail, int log
     /* there must be at least two values */
 
     if (df < 2 || rr < 1 || cc < 2)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 
     if (!R_FINITE(q))
         return R_DT_1;
@@ -393,7 +393,7 @@ double ptukey(double q, double rr, double cc, double df, int lower_tail, int log
 
     if (otsum > eps2)
     { /* not converged */
-        ML_ERROR(ME_PRECISION, "ptukey");
+        ML_WARNING(ME_PRECISION, "ptukey");
     }
     if (ans > 1.)
         ans = 1.;

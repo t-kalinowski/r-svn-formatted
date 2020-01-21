@@ -49,7 +49,7 @@ double bessel_y(double x, double alpha)
 #endif
     if (x < 0)
     {
-        ML_ERROR(ME_RANGE, "bessel_y");
+        ML_WARNING(ME_RANGE, "bessel_y");
         return ML_NAN;
     }
     na = floor(alpha);
@@ -116,7 +116,7 @@ double bessel_y_ex(double x, double alpha, double *by)
 #endif
     if (x < 0)
     {
-        ML_ERROR(ME_RANGE, "bessel_y");
+        ML_WARNING(ME_RANGE, "bessel_y");
         return ML_NAN;
     }
     na = floor(alpha);
@@ -266,7 +266,7 @@ static void Y_bessel(double *x, double *alpha, int *nb, double *by, int *ncalc)
         {
             /* Warning is not really appropriate, give
              * proper limit:
-             * ML_ERROR(ME_RANGE, "Y_bessel"); */
+             * ML_WARNING(ME_RANGE, "Y_bessel"); */
             *ncalc = *nb;
             if (ex > xlrg_BESS_Y)
                 by[0] = 0.; /*was ML_POSINF */

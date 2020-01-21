@@ -33,11 +33,11 @@ double pnf(double x, double df1, double df2, double ncp, int lower_tail, int log
         return x + df2 + df1 + ncp;
 #endif
     if (df1 <= 0. || df2 <= 0. || ncp < 0)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
     if (!R_FINITE(ncp))
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
     if (!R_FINITE(df1) && !R_FINITE(df2)) /* both +Inf */
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 
     R_P_bounds_01(x, 0., ML_POSINF);
 

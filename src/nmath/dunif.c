@@ -32,7 +32,7 @@ double dunif(double x, double a, double b, int give_log)
         return x + a + b;
 #endif
     if (b <= a)
-        ML_ERR_return_NAN;
+        ML_WARN_return_NAN;
 
     if (a <= x && x <= b)
         return give_log ? -log(b - a) : 1. / (b - a);
