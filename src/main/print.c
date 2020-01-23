@@ -83,8 +83,8 @@ void PrintInit(R_PrintData *data, SEXP env)
 {
     data->na_string = NA_STRING;
     data->na_string_noquote = mkChar("<NA>");
-    data->na_width = (int)strlen(CHAR(data->na_string));
-    data->na_width_noquote = (int)strlen(CHAR(data->na_string_noquote));
+    data->na_width = Rstrlen(data->na_string, 0);
+    data->na_width_noquote = Rstrlen(data->na_string_noquote, 0);
     data->quote = 1;
     data->right = Rprt_adj_left;
     data->digits = GetOptionDigits();
@@ -154,7 +154,7 @@ SEXP attribute_hidden do_prmatrix(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (!isString(naprint) || LENGTH(naprint) < 1)
             error(_("invalid 'na.print' specification"));
         R_print.na_string = R_print.na_string_noquote = STRING_ELT(naprint, 0);
-        R_print.na_width = R_print.na_width_noquote = (int)strlen(CHAR(R_print.na_string));
+        R_print.na_width = R_print.na_width_noquote = Rstrlen(R_print.na_string, 0);
     }
 
     if (length(rowlab) == 0)
@@ -271,7 +271,7 @@ SEXP attribute_hidden do_printdefault(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (!isString(naprint) || LENGTH(naprint) < 1)
             error(_("invalid 'na.print' specification"));
         data.na_string = data.na_string_noquote = STRING_ELT(naprint, 0);
-        data.na_width = data.na_width_noquote = (int)strlen(CHAR(data.na_string));
+        data.na_width = data.na_width_noquote = Rstrlen(data.na_string, 0);
     }
     advancePrintArgs(&args, &prev, &missingArg, &allMissing);
 
