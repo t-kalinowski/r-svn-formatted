@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1997--2019  The R Core Team
+ *  Copyright (C) 1997--2020  The R Core Team
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -696,23 +696,15 @@ SEXP R_data_class(SEXP obj, Rboolean singleString)
         {
             if (nd == 2)
             {
-                char *p = getenv("_R_CLASS_MATRIX_ARRAY_");
-                if (p != NULL && StringTrue(p))
-                { // "the future" (eventually, unconditionally)
-                    if (singleString)
-                        klass = mkChar("matrix");
-                    else
-                    { // R >= 4.0.0 :  class(<matrix>) |->  c("matrix", "array")
-                        PROTECT(klass = allocVector(STRSXP, 2));
-                        SET_STRING_ELT(klass, 0, mkChar("matrix"));
-                        SET_STRING_ELT(klass, 1, mkChar("array"));
-                        UNPROTECT(1);
-                        return klass;
-                    }
-                }
-                else
-                { // back-compatible R <= 3.x.y behavior
+                if (singleString)
                     klass = mkChar("matrix");
+                else
+                { // R >= 4.0.0 :  class(<matrix>) |->  c("matrix", "array")
+                    PROTECT(klass = allocVector(STRSXP, 2));
+                    SET_STRING_ELT(klass, 0, mkChar("matrix"));
+                    SET_STRING_ELT(klass, 1, mkChar("array"));
+                    UNPROTECT(1);
+                    return klass;
                 }
             }
             else
@@ -853,14 +845,9 @@ static SEXP createDefaultClass(SEXP part1, SEXP part2, SEXP part3, SEXP part4)
     return res;
 }
 
-static Rboolean use_matrix_array = FALSE; // -Wall  (initialized below)
-
 // called when R's main loop is setup :
 attribute_hidden void InitS3DefaultTypes()
 {
-    char *p = getenv("_R_CLASS_MATRIX_ARRAY_");
-    use_matrix_array = ((p != NULL && StringTrue(p)) ? TRUE : FALSE); // store globally
-
     for (int type = 0; type < MAX_NUM_SEXPTYPE; type++)
     {
         SEXP part3 = R_NilValue;
@@ -898,11 +885,9 @@ attribute_hidden void InitS3DefaultTypes()
 
         SEXP part2 = PROTECT(mkChar("array"));
         SEXP part1 = PROTECT(mkChar("matrix"));
-        Type2DefaultClass[type].matrix = (use_matrix_array ? createDefaultClass(part1, part2, part3, part4)
-                                                           : createDefaultClass(part1, R_NilValue, part3, part4));
-        UNPROTECT(1); // part1
+        Type2DefaultClass[type].matrix = createDefaultClass(part1, part2, part3, part4);
         Type2DefaultClass[type].array = createDefaultClass(R_NilValue, part2, part3, part4);
-        UNPROTECT(1 + nprotected);
+        UNPROTECT(2 + nprotected);
     }
 }
 
@@ -924,16 +909,6 @@ SEXP attribute_hidden R_data_class2(SEXP obj)
         int n = length(dim);
         SEXPTYPE t = TYPEOF(obj);
         SEXP defaultClass;
-
-        /* For now, allow the user to change environment variable *during* R session,
-           hence must check (slow ??!!) : */
-        char *p = getenv("_R_CLASS_MATRIX_ARRAY_");
-        Rboolean new_use_m_a = ((p != NULL && StringTrue(p)) ? TRUE : FALSE);
-        if (new_use_m_a != use_matrix_array)
-        {                                   // re-initialize Type2DefaultClass table
-            use_matrix_array = new_use_m_a; // global
-            InitS3DefaultTypes();
-        }
 
         switch (n)
         {
