@@ -205,7 +205,7 @@ int Rf_ReplIteration(SEXP rho, int savestack, int browselevel, R_ReplState *stat
     SEXP value, thisExpr;
     Rboolean wasDisplayed = FALSE;
 
-    /* clear warnings that might have accumulated furing a jump to top level */
+    /* clear warnings that might have accumulated during a jump to top level */
     if (R_CollectWarnings)
         PrintWarnings();
 
