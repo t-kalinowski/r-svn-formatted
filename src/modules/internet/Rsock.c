@@ -494,6 +494,8 @@ int R_SockConnect(int port, char *host, int timeout)
             CLOSE_N_RETURN(-1);
         }
     }
+    else
+        return (s);
 
     while (1)
     {
