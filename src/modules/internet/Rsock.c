@@ -51,8 +51,6 @@ extern void R_ProcessEvents(void);
 
 static int sock_inited = 0;
 
-static struct Sock_error_t perr;
-
 static int enter_sock(int fd)
 {
 #ifdef DEBUG
@@ -66,11 +64,12 @@ static int enter_sock(int fd)
 
 static int close_sock(int fd)
 {
+    struct Sock_error_t perr;
     perr.error = 0;
     int res = Sock_close(fd, &perr);
     if (res == -1)
     {
-        REprintf("socket error: %s\n", strerror(perr.error));
+        REprintf("socket error: %s\n", R_socket_strerror(perr.error));
         return -1;
     }
     return 0;
@@ -90,24 +89,27 @@ static void check_init(void)
 
 void in_Rsockopen(int *port)
 {
+    struct Sock_error_t perr;
     check_init();
     perr.error = 0;
     *port = enter_sock(Sock_open((Sock_port_t)*port, &perr));
     if (perr.error)
-        REprintf("socket error: %s\n", strerror(perr.error));
+        REprintf("socket error: %s\n", R_socket_strerror(perr.error));
 }
 
 void in_Rsocklisten(int *sockp, char **buf, int *len)
 {
+    struct Sock_error_t perr;
     check_init();
     perr.error = 0;
     *sockp = enter_sock(Sock_listen(*sockp, *buf, *len, &perr));
     if (perr.error)
-        REprintf("socket error: %s\n", strerror(perr.error));
+        REprintf("socket error: %s\n", R_socket_strerror(perr.error));
 }
 
 void in_Rsockconnect(int *port, char **host)
 {
+    struct Sock_error_t perr;
     check_init();
 #ifdef DEBUG
     printf("connect to %d at %s\n", *port, *host);
@@ -116,7 +118,7 @@ void in_Rsockconnect(int *port, char **host)
     *port = enter_sock(Sock_connect((Sock_port_t)*port, *host, &perr));
     //    if(perr.h_error) REprintf("host lookup error: %s\n", hstrerror(perr.h_error));
     if (perr.error)
-        REprintf("socket error: %s\n", strerror(perr.error));
+        REprintf("socket error: %s\n", R_socket_strerror(perr.error));
 }
 
 void in_Rsockclose(int *sockp)
@@ -126,6 +128,7 @@ void in_Rsockclose(int *sockp)
 
 void in_Rsockread(int *sockp, char **buf, int *maxlen)
 {
+    struct Sock_error_t perr;
     check_init();
 #ifdef DEBUG
     printf("Reading from %d\n", *sockp);
@@ -133,11 +136,12 @@ void in_Rsockread(int *sockp, char **buf, int *maxlen)
     perr.error = 0;
     *maxlen = (int)Sock_read(*sockp, *buf, *maxlen, &perr);
     if (perr.error)
-        REprintf("socket error: %s\n", strerror(perr.error));
+        REprintf("socket error: %s\n", R_socket_strerror(perr.error));
 }
 
 void in_Rsockwrite(int *sockp, char **buf, int *start, int *end, int *len)
 {
+    struct Sock_error_t perr;
     ssize_t n;
     if (*end > *len)
         *end = *len;
@@ -156,7 +160,7 @@ void in_Rsockwrite(int *sockp, char **buf, int *start, int *end, int *len)
     n = Sock_write(*sockp, *buf + *start, *end - *start, &perr);
     *len = (int)n;
     if (perr.error)
-        REprintf("socket error: %s\n", strerror(perr.error));
+        REprintf("socket error: %s\n", R_socket_strerror(perr.error));
 }
 
 /* --------- for use in socket connections ---------- */
@@ -164,11 +168,10 @@ void in_Rsockwrite(int *sockp, char **buf, int *start, int *end, int *len)
 #include <R_ext/R-ftp-http.h>
 
 #ifdef Win32
-#define FD_SETSIZE 1024
-#include <winsock2.h>
 #include <io.h>
 #define EWOULDBLOCK WSAEWOULDBLOCK
 #define EINPROGRESS WSAEINPROGRESS
+#define EINTR WSAEINTR
 #else
 #include <netdb.h>
 #include <sys/socket.h>
@@ -189,20 +192,6 @@ void in_Rsockwrite(int *sockp, char **buf, int *start, int *end, int *len)
 #endif
 
 struct hostent *R_gethostbyname(const char *name);
-
-#ifndef Win32
-#define closesocket(s) close(s)
-#define SOCKET int
-#endif
-
-static int socket_errno(void)
-{
-#ifdef Win32
-    return (WSAGetLastError());
-#else
-    return (errno);
-#endif
-}
 
 static int make_nonblocking(int s)
 {
@@ -229,11 +218,11 @@ static int make_nonblocking(int s)
 #endif // HAVE_FCNTL
     if (status < 0)
     {
-        closesocket(s);
+        R_close_socket(s);
         return -1;
     }
 #endif
-    return status;
+    return status; /* 0 */
 }
 
 #ifdef Unix
@@ -313,9 +302,9 @@ static int R_SocketWait(int sockfd, int write, int timeout)
 
         howmany = R_SelectEx(maxfd + 1, &rfd, &wfd, NULL, &tv, NULL);
 
-        if (howmany < 0)
+        if (R_socket_error(howmany))
         {
-            return -socket_errno();
+            return -R_socket_errno();
         }
         if (howmany == 0)
         {
@@ -413,9 +402,9 @@ int R_SocketWaitMultiple(int nsock, int *insockfd, int *ready, int *write, doubl
 
         howmany = R_SelectEx(maxfd + 1, &rfd, &wfd, NULL, &tv, NULL);
 
-        if (howmany < 0)
+        if (R_socket_error(howmany))
         {
-            return -socket_errno();
+            return -R_socket_errno();
         }
         if (howmany == 0)
         {
@@ -474,12 +463,12 @@ int R_SockConnect(int port, char *host, int timeout)
 
     check_init();
     s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (s == -1)
+    if (R_invalid_socket(s))
         return -1;
 
 #define CLOSE_N_RETURN(_ST_)                                                                                           \
     {                                                                                                                  \
-        closesocket(s);                                                                                                \
+        R_close_socket(s);                                                                                             \
         return (_ST_);                                                                                                 \
     }
 
@@ -493,10 +482,10 @@ int R_SockConnect(int port, char *host, int timeout)
     server.sin_port = htons((short)port);
     server.sin_family = AF_INET;
 
-    if ((connect(s, (struct sockaddr *)&server, sizeof(server)) == -1))
+    if (R_socket_error(connect(s, (struct sockaddr *)&server, sizeof(server))))
     {
 
-        switch (socket_errno())
+        switch (R_socket_errno())
         {
         case EINPROGRESS:
         case EWOULDBLOCK:
@@ -531,22 +520,22 @@ int R_SockConnect(int port, char *host, int timeout)
         used += tv.tv_sec + 1e-6 * tv.tv_usec;
 
 #ifdef Win32
-        switch (R_SelectEx(maxfd + 1, &rfd, &wfd, &efd, &tv, NULL))
+        status = R_SelectEx(maxfd + 1, &rfd, &wfd, &efd, &tv, NULL);
 #else
-        switch (R_SelectEx(maxfd + 1, &rfd, &wfd, NULL, &tv, NULL))
+        status = R_SelectEx(maxfd + 1, &rfd, &wfd, NULL, &tv, NULL);
 #endif
+        if (R_socket_error(status))
+            /* Ermm.. ?? */
+            CLOSE_N_RETURN(-1);
+
+        if (status == 0)
         {
-        case 0:
             /* Time out */
             if (used < timeout)
                 continue;
             CLOSE_N_RETURN(-1);
-        case -1:
-            /* Ermm.. ?? */
-            CLOSE_N_RETURN(-1);
         }
-
-        if (FD_ISSET(s, &wfd))
+        else if (FD_ISSET(s, &wfd))
         {
             R_SOCKLEN_T len;
             len = sizeof(status);
@@ -591,7 +580,7 @@ int R_SockConnect(int port, char *host, int timeout)
 
 int R_SockClose(int sockp)
 {
-    return closesocket(sockp);
+    return R_close_socket(sockp);
 }
 
 ssize_t R_SockRead(int sockp, void *buf, size_t len, int blocking, int timeout)
@@ -601,7 +590,7 @@ ssize_t R_SockRead(int sockp, void *buf, size_t len, int blocking, int timeout)
     if (blocking && (res = R_SocketWait(sockp, 0, timeout)) != 0)
         return res < 0 ? res : 0; /* socket error or timeout */
     res = recv(sockp, buf, len, 0);
-    return (res >= 0) ? res : -socket_errno();
+    return R_socket_error(res) ? -R_socket_errno() : res;
 }
 
 int R_SockOpen(int port)
@@ -641,8 +630,8 @@ ssize_t R_SockWrite(int sockp, const void *buf, size_t len, int timeout)
         if ((res = R_SocketWait(sockp, 1, timeout)) != 0)
             return res < 0 ? res : 0; /* socket error or timeout */
         res = send(sockp, buf, len, 0);
-        if (res < 0 && socket_errno() != EWOULDBLOCK)
-            return -socket_errno();
+        if (R_socket_error(res) && R_socket_errno() != EWOULDBLOCK)
+            return -R_socket_errno();
         else
         {
             {
