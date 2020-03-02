@@ -983,6 +983,7 @@ SEXP attribute_hidden do_namesgets(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     // 2 args ("x", "value")
 
+    /* DispatchOrEval internal generic: names<- */
     if (DispatchOrEval(call, op, "names<-", args, env, &ans, 0, 1))
         return (ans);
     /* Special case: removing non-existent names, to avoid a copy */
@@ -1104,6 +1105,7 @@ SEXP attribute_hidden do_names(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP ans;
     checkArity(op, args);
     check1arg(args, call, "x");
+    /* DispatchOrEval internal generic: names */
     if (DispatchOrEval(call, op, "names", args, env, &ans, 0, 1))
         return (ans);
     PROTECT(args = ans);
@@ -1124,6 +1126,7 @@ SEXP attribute_hidden do_dimnamesgets(SEXP call, SEXP op, SEXP args, SEXP env)
 
     checkArity(op, args);
     // 2 args ("x", "value")
+    /* DispatchOrEval internal generic: dimnames<- */
     if (DispatchOrEval(call, op, "dimnames<-", args, env, &ans, 0, 1))
         return (ans);
     PROTECT(args = ans);
@@ -1242,6 +1245,7 @@ SEXP attribute_hidden do_dimnames(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP ans;
     checkArity(op, args);
     check1arg(args, call, "x");
+    /* DispatchOrEval internal generic: dimnames */
     if (DispatchOrEval(call, op, "dimnames", args, env, &ans, 0, 1))
         return (ans);
     PROTECT(args = ans);
@@ -1255,6 +1259,7 @@ SEXP attribute_hidden do_dim(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP ans;
     checkArity(op, args);
     check1arg(args, call, "x");
+    /* DispatchOrEval internal generic: dim */
     if (DispatchOrEval(call, op, "dim", args, env, &ans, 0, 1))
         return (ans);
     PROTECT(args = ans);
@@ -1267,6 +1272,7 @@ SEXP attribute_hidden do_dimgets(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, x;
     checkArity(op, args);
+    /* DispatchOrEval internal generic: dim<- */
     if (DispatchOrEval(call, op, "dim<-", args, env, &ans, 0, 1))
         return (ans);
     x = CAR(args);
@@ -1398,6 +1404,7 @@ SEXP attribute_hidden do_levelsgets(SEXP call, SEXP op, SEXP args, SEXP env)
 
     checkArity(op, args);
     // 2 args ("x", "value")
+    /* DispatchOrEval internal generic: levels<- */
     if (DispatchOrEval(call, op, "levels<-", args, env, &ans, 0, 1))
         /* calls, e.g., levels<-.factor() */
         return (ans);
@@ -1708,6 +1715,7 @@ SEXP attribute_hidden do_attrgets(SEXP call, SEXP op, SEXP args, SEXP env)
         SETCADR(args, input);
         UNPROTECT(1); // 'input' is now protected
 
+        /* DispatchOrEval internal generic: @<- */
         if (DispatchOrEval(call, op, "@<-", args, env, &ans, 0, 0))
             return (ans);
 

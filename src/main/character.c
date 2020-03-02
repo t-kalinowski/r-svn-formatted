@@ -250,6 +250,7 @@ SEXP attribute_hidden do_nchar(SEXP call, SEXP op, SEXP args, SEXP env)
                        "%d arguments passed to '%s' which requires %d to %d", (unsigned long)nargs),
               nargs, PRIMNAME(op), 3, 4);
 #endif
+    /* DispatchOrEval internal generic: nchar */
     if (DispatchOrEval(call, op, "nchar", args, env, &ans, 0, 1))
         return (ans);
     if (isFactor(CAR(args)))

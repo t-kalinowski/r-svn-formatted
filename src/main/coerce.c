@@ -1608,6 +1608,12 @@ SEXP attribute_hidden do_asatomic(SEXP call, SEXP op, SEXP args, SEXP rho)
         type = RAWSXP;
         break;
     }
+    /* DispatchOrEval internal generic: as.character */
+    /* DispatchOrEval internal generic: as.integer */
+    /* DispatchOrEval internal generic: as.double */
+    /* DispatchOrEval internal generic: as.complex */
+    /* DispatchOrEval internal generic: as.logical */
+    /* DispatchOrEval internal generic: as.raw */
     if (DispatchOrEval(call, op, name, args, rho, &ans, 0, 1))
         return (ans);
 
@@ -1636,6 +1642,7 @@ SEXP attribute_hidden do_asvector(SEXP call, SEXP op, SEXP args, SEXP rho)
     SEXP x, ans;
     int type;
 
+    /* DispatchOrEval internal generic: as.vector */
     if (DispatchOrEval(call, op, "as.vector", args, rho, &ans, 0, 1))
         return (ans);
 
@@ -1859,6 +1866,7 @@ SEXP attribute_hidden do_ascall(SEXP call, SEXP op, SEXP args, SEXP rho)
     check1arg(args, call, "x");
 
     SEXP ans;
+    /* DispatchOrEval internal generic: as.call */
     if (DispatchOrEval(call, op, "as.call", args, rho, &ans, 0, 1))
         return (ans);
 
@@ -2138,6 +2146,9 @@ SEXP attribute_hidden do_is(SEXP call, SEXP op, SEXP args, SEXP rho)
         default:
             nm = ""; /* -Wall */
         }
+        /* DispatchOrEval internal generic: is.numeric */
+        /* DispatchOrEval internal generic: is.matrix */
+        /* DispatchOrEval internal generic: is.array */
         if (DispatchOrEval(call, op, nm, args, rho, &ans, 0, 1))
             return (ans);
     }
@@ -2376,6 +2387,7 @@ SEXP attribute_hidden do_isna(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     check1arg(args, call, "x");
 
+    /* DispatchOrEval internal generic: is.na */
     if (DispatchOrEval(call, op, "is.na", args, rho, &ans, 1, 1))
         return (ans);
     PROTECT(args = ans);
@@ -2556,6 +2568,7 @@ static Rboolean anyNA(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             SETCAR(args2, CAR(x));
             SETCADR(call2, CAR(x));
+            /* DispatchOrEval internal generic: anyNA */
             if ((DispatchOrEval(call2, op, "anyNA", args2, env, &ans, 0, 1) && asLogical(ans)) ||
                 anyNA(call2, op, args2, env))
             {
@@ -2574,6 +2587,7 @@ static Rboolean anyNA(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             SETCAR(args2, VECTOR_ELT(x, i));
             SETCADR(call2, VECTOR_ELT(x, i));
+            /* DispatchOrEval internal generic: anyNA */
             if ((DispatchOrEval(call2, op, "anyNA", args2, env, &ans, 0, 1) && asLogical(ans)) ||
                 anyNA(call2, op, args2, env))
             {
@@ -2599,6 +2613,7 @@ SEXP attribute_hidden do_anyNA(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (length(args) < 1 || length(args) > 2)
         errorcall(call, "anyNA takes 1 or 2 arguments");
 
+    /* DispatchOrEval internal generic: anyNA */
     if (DispatchOrEval(call, op, "anyNA", args, rho, &ans, 0, 1))
         return ans;
 
@@ -2631,6 +2646,7 @@ SEXP attribute_hidden do_isnan(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     check1arg(args, call, "x");
 
+    /* DispatchOrEval internal generic: is.nan */
     if (DispatchOrEval(call, op, "is.nan", args, rho, &ans, 1, 1))
         return (ans);
 
@@ -2680,6 +2696,7 @@ SEXP attribute_hidden do_isfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     check1arg(args, call, "x");
 
+    /* DispatchOrEval internal generic: is.finite */
     if (DispatchOrEval(call, op, "is.finite", args, rho, &ans, 0, 1))
         return (ans);
 #ifdef stringent_is
@@ -2751,6 +2768,7 @@ SEXP attribute_hidden do_isinfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
     checkArity(op, args);
     check1arg(args, call, "x");
 
+    /* DispatchOrEval internal generic: is.infinite */
     if (DispatchOrEval(call, op, "is.infinite", args, rho, &ans, 0, 1))
         return (ans);
 #ifdef stringent_is

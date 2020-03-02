@@ -302,6 +302,7 @@ static Rboolean dispatch_asvector(SEXP *x, SEXP call, SEXP rho)
     if (op == NULL)
         op = INTERNAL(install("as.vector"));
     PROTECT(args = list2(*x, mkString("any")));
+    /* DispatchOrEval internal generic: as.vector */
     ans = DispatchOrEval(call, op, "as.vector", args, rho, x, 0, 1);
     UNPROTECT(1);
     return ans;
@@ -1703,6 +1704,7 @@ SEXP attribute_hidden do_subassign(SEXP call, SEXP op, SEXP args, SEXP rho)
     /* We evaluate the first argument and attempt to dispatch on it. */
     /* If the dispatch fails, we "drop through" to the default code below. */
 
+    /* DispatchOrEval internal generic: [<- */
     if (R_DispatchOrEvalSP(call, op, "[<-", args, rho, &ans))
         /*     if(DispatchAnyOrEval(call, op, "[<-", args, rho, &ans, 0, 0)) */
         return (ans);
@@ -1871,6 +1873,7 @@ SEXP attribute_hidden do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans;
 
+    /* DispatchOrEval internal generic: [[<- */
     if (R_DispatchOrEvalSP(call, op, "[[<-", args, rho, &ans))
         /*     if(DispatchAnyOrEval(call, op, "[[<-", args, rho, &ans, 0, 0)) */
         return (ans);
@@ -2268,6 +2271,7 @@ SEXP attribute_hidden do_subassign3(SEXP call, SEXP op, SEXP args, SEXP env)
     /* Note the RHS has already been evaluated at this point */
     PROTECT(args = fixSubset3Args(call, args, env, &nlist));
 
+    /* DispatchOrEval internal generic: $<- */
     if (R_DispatchOrEvalSP(call, op, "$<-", args, env, &ans))
     {
         UNPROTECT(1); /* args */
