@@ -1689,12 +1689,14 @@ static void vector2buff(SEXP vector, LocalParseData *d)
              intSeq = FALSE; // := TRUE iff integer sequence 'm:n' (up *or* down)
     if (TYPEOF(vector) == INTSXP)
     {
-        int *vec = INTEGER(vector), d_i;
-        intSeq = (tlen > 1 && vec[0] != NA_INTEGER && vec[1] != NA_INTEGER && abs(d_i = vec[1] - vec[0]) == 1);
+        int *vec = INTEGER(vector);
+        // vec[1] - vec[0] could overflow, and does in package Rmpfr
+        double d_i = (double)vec[1] - (double)vec[0];
+        intSeq = (tlen > 1 && vec[0] != NA_INTEGER && vec[1] != NA_INTEGER && fabs(d_i) == 1);
         if (intSeq)
             for (i = 2; i < tlen; i++)
             {
-                if ((vec[i] == NA_INTEGER) || (vec[i] - vec[i - 1]) != d_i)
+                if ((vec[i] == NA_INTEGER) || ((double)vec[i] - (double)vec[i - 1]) != d_i)
                 {
                     intSeq = FALSE;
                     break;

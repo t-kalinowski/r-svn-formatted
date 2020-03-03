@@ -385,7 +385,7 @@ L13:
         {
             inh = il[inh];
             ++ma;
-            nia -= ia[ma];
+            nia -= ia[ma]; // seems RHS is NA in adehabitatHR
             if (ma == mp1)
                 goto Finis;
         } while (ia[ma] == 0);
