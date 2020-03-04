@@ -1617,7 +1617,7 @@ SEXP asUnit(SEXP simpleUnit)
 SEXP conformingUnits(SEXP unitList)
 {
     int n = LENGTH(unitList);
-    int unitType;
+    int unitType = -1;
     SEXP uAttrib = install("unit");
     for (int i = 0; i < n; i++)
     {
@@ -1634,7 +1634,10 @@ SEXP conformingUnits(SEXP unitList)
         else if (unitType != tempUnit)
             return R_NilValue;
     }
-    return Rf_ScalarInteger(unitType);
+    if (unitType < 0)
+        return R_NilValue;
+    else
+        return Rf_ScalarInteger(unitType);
 }
 
 SEXP matchUnit(SEXP units, SEXP unit)
