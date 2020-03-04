@@ -446,7 +446,7 @@ SEXP attribute_hidden do_rep_len(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (isObject(s))
     {
-        SEXP rep_call, rep_args;
+        SEXP rep_call;
         PROTECT(rep_call = shallow_duplicate(call));
         SETCAR(rep_call, install("rep"));
         SET_TAG(CDDR(rep_call), install("length.out"));
