@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1997-2019   The R Core Team
+ *  Copyright (C) 1997-2020   The R Core Team
  *  Copyright (C) 1995-1996   Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -782,11 +782,11 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
                     size_t clen = utf8toucs(&wc, inbuf);
                     if (clen > 0 && inb >= clen)
                     {
-                        Rwchar_t ucs;
+                        R_wchar_t ucs;
                         if (IS_HIGH_SURROGATE(wc))
                             ucs = utf8toucs32(wc, inbuf);
                         else
-                            ucs = (Rwchar_t)wc;
+                            ucs = (R_wchar_t)wc;
                         inbuf += clen;
                         inb -= clen;
                         if (ucs < 65536)
@@ -798,7 +798,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
                         }
                         else
                         {
-                            /* Rwchar_t is unsigned int on Windows,
+                            /* R_wchar_t is unsigned int on Windows,
                                otherwise wchar_t (usually int).
                                In any case Unicode points <= 0x10FFFF
                             */
@@ -1061,11 +1061,11 @@ next_char:
             size_t clen = utf8toucs(&wc, inbuf);
             if (clen > 0 && inb >= clen)
             {
-                Rwchar_t ucs;
+                R_wchar_t ucs;
                 if (IS_HIGH_SURROGATE(wc))
                     ucs = utf8toucs32(wc, inbuf);
                 else
-                    ucs = (Rwchar_t)wc;
+                    ucs = (R_wchar_t)wc;
                 inbuf += clen;
                 inb -= clen;
                 if (ucs < 65536)
@@ -1077,7 +1077,7 @@ next_char:
                 }
                 else
                 {
-                    // Rwchar_t is usually unsigned int, but wchar_t need not be
+                    // R_wchar_t is usually unsigned int, but wchar_t need not be
                     snprintf(outbuf, 13, "<U+%08X>", (unsigned int)ucs);
                     outbuf += 12;
                     outb -= 12;

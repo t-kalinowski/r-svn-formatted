@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1997--2019  The R Core Team
+ *  Copyright (C) 1997--2020  The R Core Team
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -191,7 +191,7 @@ int R_nchar(SEXP string, nchar_type type_, Rboolean allowNA, Rboolean keepNA, co
             else
             {
                 wchar_t wc1;
-                Rwchar_t ucs;
+                R_wchar_t ucs;
                 int nc = 0;
                 for (; *p; p += utf8clen(*p))
                 {
@@ -1822,7 +1822,7 @@ SEXP attribute_hidden do_strtrim(SEXP call, SEXP op, SEXP args, SEXP env)
             for (p = This, w0 = 0, q = buf; *p;)
             {
                 nb = (int)Mbrtowc(&wc, p, MB_CUR_MAX, &mb_st);
-                w0 = Ri18n_wcwidth((Rwchar_t)wc);
+                w0 = Ri18n_wcwidth((R_wchar_t)wc);
                 if (w0 < 0)
                 {
                     p += nb;
