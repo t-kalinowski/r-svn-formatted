@@ -725,7 +725,8 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                             continue;
                         if (slen)
                         {
-                            strncpy(pt, laststart, bufp - laststart);
+                            if (bufp > laststart)
+                                strncpy(pt, laststart, bufp - laststart);
                             pt[bufp - laststart] = '\0';
                         }
                         else

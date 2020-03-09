@@ -1233,7 +1233,7 @@ static char *hist_save(const char *p)
     {
         if ((s = (char *)malloc(len)) != 0)
         {
-            strncpy(s, p, len - 1);
+            memcpy(s, p, len - 1);
             s[len - 1] = 0;
         }
     }

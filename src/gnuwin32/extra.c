@@ -3,7 +3,7 @@
  *  file extra.c
  *  Copyright (C) 1998--2003  Guido Masarotto and Brian Ripley
  *  Copyright (C) 2004	      The R Foundation
- *  Copyright (C) 2005--2019  The R Core Team
+ *  Copyright (C) 2005--2020  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -58,7 +58,8 @@ void internal_shellexec(const char *file)
     home = getenv("R_HOME");
     if (home == NULL)
         error(_("R_HOME not set"));
-    strncpy(home2, home, 10000);
+    strncpy(home2, home, 10000 - 1);
+    home2[10000 - 1] = '\0';
     for (p = home2; *p; p++)
         if (*p == '/')
             *p = '\\';
