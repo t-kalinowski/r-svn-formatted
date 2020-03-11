@@ -3231,6 +3231,7 @@ static Rconnection newraw(const char *description, SEXP raw, const char *mode)
     return new;
 }
 
+// .Internal(rawConnection(deparse(substitute(object)), object, open))
 SEXP attribute_hidden do_rawconnection(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP sfile, sraw, sopen, ans, class;
@@ -3314,7 +3315,7 @@ typedef struct outtextconn
     int lastlinelength; /* buffer size */
 } * Routtextconn;
 
-/* read a R character vector into a buffer */
+/* read a R character vector into a buffer  --- helper for newtext() */
 static void text_init(Rconnection con, SEXP text, int type)
 {
     R_xlen_t nlines = xlength(text); // not very plausible that this is long
@@ -3324,10 +3325,13 @@ static void text_init(Rconnection con, SEXP text, int type)
     const void *vmax = vmaxget();
 
     for (R_xlen_t i = 0; i < nlines; i++)
-        dnc += (double)strlen(
-                   type == 1 ? translateChar(STRING_ELT(text, i))
-                             : ((type == 3) ? translateCharUTF8(STRING_ELT(text, i)) : CHAR(STRING_ELT(text, i)))) +
-               1;
+        dnc +=
+            /*     type =  1 |    2    |    3    <==>
+             * encoding = "" | "bytes" | "UTF-8" */
+            (double)strlen(type == 1
+                               ? translateChar(STRING_ELT(text, i))
+                               : ((type == 3) ? translateCharUTF8(STRING_ELT(text, i)) : CHAR(STRING_ELT(text, i)))) +
+            1;
     if (dnc >= (double)SIZE_MAX)
         error(_("too many characters for text connection"));
     else
@@ -3399,6 +3403,7 @@ static double text_seek(Rconnection con, double where, int origin, int rw)
     return 0; /* if just asking, always at the beginning */
 }
 
+// helper for do_textconnection(.., open = "r") :
 static Rconnection newtext(const char *description, SEXP text, int type)
 {
     Rconnection new;
@@ -3599,6 +3604,7 @@ static int text_vfprintf(Rconnection con, const char *format, va_list ap)
     return res;
 }
 
+// finalizing helper for  newouttext() :
 static void outtext_init(Rconnection con, SEXP stext, const char *mode, int idx)
 {
     Routtextconn this = con->private;
@@ -3646,6 +3652,7 @@ static void outtext_init(Rconnection con, SEXP stext, const char *mode, int idx)
     this->lastlinelength = LAST_LINE_LEN;
 }
 
+// helper for do_textconnection(.., open = "w" or "a") :
 static Rconnection newouttext(const char *description, SEXP stext, const char *mode, int idx)
 {
     Rconnection new;
@@ -3701,19 +3708,20 @@ static Rconnection newouttext(const char *description, SEXP stext, const char *m
     return new;
 }
 
+// .Internal(textConnection(name, object, open, env, type))
 SEXP attribute_hidden do_textconnection(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP sfile, stext, sopen, ans, class, venv;
+    SEXP sdesc, stext, sopen, ans, class, venv;
     const char *desc, *open;
     int ncon, type;
     Rconnection con = NULL;
 
     checkArity(op, args);
-    sfile = CAR(args);
-    if (!isString(sfile) || LENGTH(sfile) != 1 || STRING_ELT(sfile, 0) == NA_STRING)
+    sdesc = CAR(args);
+    if (!isString(sdesc) || LENGTH(sdesc) != 1 || STRING_ELT(sdesc, 0) == NA_STRING)
         error(_("invalid '%s' argument"), "description");
-    desc = translateChar(STRING_ELT(sfile, 0));
-    stext = CADR(args);
+    desc = translateChar(STRING_ELT(sdesc, 0));
+    stext = CADR(args); // object
     sopen = CADDR(args);
     if (!isString(sopen) || LENGTH(sopen) != 1)
         error(_("invalid '%s' argument"), "open");
@@ -3862,7 +3870,8 @@ SEXP attribute_hidden do_sockconn(SEXP call, SEXP op, SEXP args, SEXP env)
 
 /* ------------------- unz connections  --------------------- */
 
-/* see dounzip.c for the details */
+/* .Internal(unz(paste(description, filename, sep = ":"),
+ *               open, encoding)) */
 SEXP attribute_hidden do_unz(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP sfile, sopen, ans, class, enc;
@@ -3885,7 +3894,8 @@ SEXP attribute_hidden do_unz(SEXP call, SEXP op, SEXP args, SEXP env)
         error(_("invalid '%s' argument"), "encoding");
     open = CHAR(STRING_ELT(sopen, 0)); /* ASCII */
     ncon = NextConnection();
-    con = Connections[ncon] = R_newunz(file, strlen(open) ? open : "r");
+    con = Connections[ncon] = R_newunz(file, strlen(open) ? open : "r"); // see dounzip.c for the details
+
     strncpy(con->encname, CHAR(STRING_ELT(enc, 0)), 100); /* ASCII */
     con->encname[100 - 1] = '\0';
     con->ex_ptr = PROTECT(R_MakeExternalPtr(con->id, install("connection"), R_NilValue));
@@ -4730,22 +4740,33 @@ SEXP attribute_hidden do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             sizedef = sizeof(int);
             mode = 1;
-            if (size == NA_INTEGER)
-                size = sizedef;
-            switch (size)
-            {
-            case sizeof(signed char):
-            case sizeof(short):
-            case sizeof(int):
-#if SIZEOF_LONG == 8
-            case sizeof(long):
-#elif SIZEOF_LONG_LONG == 8
-            case sizeof(_lli_t):
+
+#if (SIZEOF_LONG == 8) && (SIZEOF_LONG > SIZEOF_INT)
+#define CASE_LONG_ETC case sizeof(long):
+#elif (SIZEOF_LONG_LONG == 8) && (SIZEOF_LONG_LONG > SIZEOF_INT)
+#define CASE_LONG_ETC case sizeof(_lli_t):
+#else
+#define CASE_LONG_ETC
 #endif
-                break;
-            default:
-                error(_("size %d is unknown on this machine"), size);
-            }
+
+#define CHECK_INT_SIZES(SIZE, DEF)                                                                                     \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (SIZE == NA_INTEGER)                                                                                        \
+            SIZE = DEF;                                                                                                \
+        switch (SIZE)                                                                                                  \
+        {                                                                                                              \
+        case sizeof(signed char):                                                                                      \
+        case sizeof(short):                                                                                            \
+        case sizeof(int):                                                                                              \
+            CASE_LONG_ETC                                                                                              \
+            break;                                                                                                     \
+        default:                                                                                                       \
+            error(_("size %d is unknown on this machine"), SIZE);                                                      \
+        }                                                                                                              \
+    } while (0)
+
+            CHECK_INT_SIZES(size, sizedef);
             PROTECT(ans = allocVector(INTSXP, n));
             p = (void *)INTEGER(ans);
         }
@@ -4753,22 +4774,7 @@ SEXP attribute_hidden do_readbin(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             sizedef = sizeof(int);
             mode = 1;
-            if (size == NA_INTEGER)
-                size = sizedef;
-            switch (size)
-            {
-            case sizeof(signed char):
-            case sizeof(short):
-            case sizeof(int):
-#if SIZEOF_LONG == 8
-            case sizeof(long):
-#elif SIZEOF_LONG_LONG == 8
-            case sizeof(_lli_t):
-#endif
-                break;
-            default:
-                error(_("size %d is unknown on this machine"), size);
-            }
+            CHECK_INT_SIZES(size, sizedef);
             PROTECT(ans = allocVector(LGLSXP, n));
             p = (void *)LOGICAL(ans);
         }
@@ -5052,22 +5058,7 @@ SEXP attribute_hidden do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
         {
         case LGLSXP:
         case INTSXP:
-            if (size == NA_INTEGER)
-                size = sizeof(int);
-            switch (size)
-            {
-            case sizeof(signed char):
-            case sizeof(short):
-            case sizeof(int):
-#if SIZEOF_LONG == 8
-            case sizeof(long):
-#elif SIZEOF_LONG_LONG == 8
-            case sizeof(_lli_t):
-#endif
-                break;
-            default:
-                error(_("size %d is unknown on this machine"), size);
-            }
+            CHECK_INT_SIZES(size, sizeof(int));
             break;
         case REALSXP:
             if (size == NA_INTEGER)
