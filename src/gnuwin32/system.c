@@ -598,8 +598,8 @@ int R_ShowFiles(int nfile, const char **file, const char **headers, const char *
                 }
                 else
                 {
-                    /* Quote path if necessary */
-                    if (pager[0] != '"' && Rf_strchr(pager, ' '))
+                    /* Quote path if not quoted */
+                    if (pager[0] != '"')
                         snprintf(buf, 1024, "\"%s\" \"%s\"", pager, file[i]);
                     else
                         snprintf(buf, 1024, "%s \"%s\"", pager, file[i]);
@@ -649,8 +649,8 @@ int R_EditFiles(int nfile, const char **file, const char **title, const char *ed
             }
             else
             {
-                /* Quote path if necessary */
-                if (editor[0] != '"' && Rf_strchr(editor, ' '))
+                /* Quote path if not quoted */
+                if (editor[0] != '"')
                     snprintf(buf, 1024, "\"%s\" \"%s\"", editor, file[i]);
                 else
                     snprintf(buf, 1024, "%s \"%s\"", editor, file[i]);

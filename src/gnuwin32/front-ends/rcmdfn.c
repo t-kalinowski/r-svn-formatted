@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2000-2018  R Core Team
+ *  Copyright (C) 2000-2020  R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -159,14 +159,9 @@ int rcmdfn(int cmdarg, int argc, char **argv)
                 fprintf(stderr, "command line too long\n");
                 return (27);
             }
-            if (strchr(argv[i], ' ') || !strlen(argv[i]))
-            {
-                strcat(cmd, "\"");
-                strcat(cmd, argv[i]);
-                strcat(cmd, "\"");
-            }
-            else
-                strcat(cmd, argv[i]);
+            strcat(cmd, "\"");
+            strcat(cmd, argv[i]);
+            strcat(cmd, "\"");
         }
         /* the outermost double quotes are needed for cmd.exe */
         strcat(cmd, "\"");
@@ -433,15 +428,10 @@ int rcmdfn(int cmdarg, int argc, char **argv)
                 fprintf(stderr, "command line too long\n");
                 return (27);
             }
-            /* Library names could contain spaces */
-            if (strchr(argv[i], ' '))
-            {
-                strcat(cmd, "\"");
-                strcat(cmd, argv[i]);
-                strcat(cmd, "\"");
-            }
-            else
-                strcat(cmd, argv[i]);
+            /* Library names could contain spaces and other special characters */
+            strcat(cmd, "\"");
+            strcat(cmd, argv[i]);
+            strcat(cmd, "\"");
         }
         /* the outermost double quotes are needed for cmd.exe */
         strcat(cmd, "\"");
@@ -560,14 +550,9 @@ int rcmdfn(int cmdarg, int argc, char **argv)
                 fprintf(stderr, "command line too long\n");
                 return (27);
             }
-            if (strchr(argv[i], ' '))
-            {
-                strcat(cmd, "\"");
-                strcat(cmd, argv[i]);
-                strcat(cmd, "\"");
-            }
-            else
-                strcat(cmd, argv[i]);
+            strcat(cmd, "\"");
+            strcat(cmd, argv[i]);
+            strcat(cmd, "\"");
         }
         /* the outermost double quotes are needed for cmd.exe */
         strcat(cmd, "\"");
