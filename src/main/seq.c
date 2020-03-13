@@ -1121,8 +1121,9 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (!R_FINITE(rby))
             errorcall(call, _("'%s' must be a finite number"), "by");
         rto = rfrom + (double)(lout - 1) * rby;
-        if (rby == (int)rby && rfrom == (int)rfrom && rfrom <= INT_MAX && rfrom >= INT_MIN && rto <= INT_MAX &&
-            rto >= INT_MIN)
+        // avoid undefined behaviour by testing range before converting.
+        if (rfrom <= INT_MAX && rfrom >= INT_MIN && rto <= INT_MAX && rto >= INT_MIN && rby == (int)rby &&
+            rfrom == (int)rfrom)
         {
             ans = allocVector(INTSXP, lout);
             for (i = 0; i < lout; i++)
