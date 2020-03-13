@@ -43,6 +43,10 @@
 
 #include <rlocale.h> /* for btowc */
 
+#ifdef Win32
+#include <trioremap.h> /* for %lld */
+#endif
+
 /* The size of vector initially allocated by scan */
 #define SCAN_BLOCKSIZE 1000
 /* The size of the console buffer */
@@ -675,7 +679,7 @@ static SEXP scanVector(SEXPTYPE type, R_xlen_t maxitems, R_xlen_t maxlines, int 
     bch = 1;
 
     if (d->ttyflag)
-        sprintf(ConsolePrompt, "1: ");
+        snprintf(ConsolePrompt, CONSOLE_PROMPT_SIZE, "1: ");
 
     strip = asLogical(stripwhite);
 
@@ -695,7 +699,7 @@ static SEXP scanVector(SEXPTYPE type, R_xlen_t maxitems, R_xlen_t maxlines, int 
             if (linesread == maxlines)
                 break;
             if (d->ttyflag)
-                sprintf(ConsolePrompt, "%lld: ", (long long)(n + 1));
+                snprintf(ConsolePrompt, CONSOLE_PROMPT_SIZE, "%lld: ", (long long)(n + 1));
             nprev = n;
         }
         if (n == blocksize)
@@ -836,7 +840,7 @@ static SEXP scanFrame(SEXP what, R_xlen_t maxitems, R_xlen_t maxlines, int flush
     c = 0; /* -Wall */
 
     if (d->ttyflag)
-        sprintf(ConsolePrompt, "1: ");
+        snprintf(ConsolePrompt, CONSOLE_PROMPT_SIZE, "1: ");
 
     // we checked its type in do_scan
     int *lstrip = LOGICAL(stripwhite);
@@ -880,7 +884,7 @@ static SEXP scanFrame(SEXP what, R_xlen_t maxitems, R_xlen_t maxlines, int flush
             if (maxlines > 0 && linesread == maxlines)
                 goto done;
             if (d->ttyflag)
-                sprintf(ConsolePrompt, "%lld: ", (long long)(n + 1));
+                snprintf(ConsolePrompt, CONSOLE_PROMPT_SIZE, "%lld: ", (long long)(n + 1));
         }
         if (n == blksize && colsread == 0)
         {

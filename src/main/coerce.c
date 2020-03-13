@@ -35,6 +35,10 @@
 #include <Rmath.h>
 #include <Print.h>
 
+#ifdef Win32
+#include <trioremap.h> /* for %lld */
+#endif
+
 /* This section of code handles type conversion for elements */
 /* of data vectors.  Type coercion throughout R should use these */
 /* routines to ensure consistency. */
