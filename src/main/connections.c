@@ -5221,7 +5221,7 @@ SEXP attribute_hidden do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 /* FIXME: could do any MBCS locale, but would need pushback */
-static SEXP readFixedString(Rconnection con, int len, int useBytes)
+static SEXP readFixedString(Rconnection con, int len, int useBytes, Rboolean *warnOnNul)
 {
     SEXP ans;
     char *buf;
@@ -5257,6 +5257,11 @@ static SEXP readFixedString(Rconnection con, int len, int useBytes)
                 if ((int)mbrtowc(NULL, q, clen, NULL) < 0)
                     error(_("invalid UTF-8 input in readChar()"));
             }
+            else if (*q == '\0' && *warnOnNul)
+            {
+                *warnOnNul = FALSE;
+                warning(_("truncating string with embedded nuls"));
+            }
         }
     }
     else
@@ -5266,9 +5271,14 @@ static SEXP readFixedString(Rconnection con, int len, int useBytes)
         m = (int)con->read(buf, sizeof(char), len, con);
         if (len && !m)
             return R_NilValue;
+        if (strlen(buf) < m && *warnOnNul)
+        {
+            *warnOnNul = FALSE;
+            warning(_("truncating string with embedded nuls"));
+        }
     }
     /* String may contain nuls which we now (R >= 2.8.0) assume to be
-       padding and ignore silently */
+       padding and ignore */
     ans = mkChar(buf);
     vmaxset(vmax);
     return ans;
@@ -5287,6 +5297,7 @@ static SEXP rawFixedString(Rbyte *bytes, int len, int nbytes, int *np, int useBy
             return (R_NilValue);
     }
 
+    /* Note: mkCharLenCE signals an error on embedded nuls. */
     if (utf8locale && !useBytes)
     {
         int i, clen, iread = *np;
@@ -5328,7 +5339,7 @@ SEXP attribute_hidden do_readchar(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP ans = R_NilValue, onechar, nchars;
     R_xlen_t i, n, m = 0;
     int nbytes = 0, np = 0, useBytes;
-    Rboolean wasopen = TRUE, isRaw = FALSE;
+    Rboolean wasopen = TRUE, isRaw = FALSE, warnOnNul = TRUE;
     Rconnection con = NULL;
     Rbyte *bytes = NULL;
     RCNTXT cntxt;
@@ -5387,7 +5398,8 @@ SEXP attribute_hidden do_readchar(SEXP call, SEXP op, SEXP args, SEXP env)
         int len = INTEGER(nchars)[i];
         if (len == NA_INTEGER || len < 0)
             error(_("invalid '%s' argument"), "nchars");
-        onechar = isRaw ? rawFixedString(bytes, len, nbytes, &np, useBytes) : readFixedString(con, len, useBytes);
+        onechar =
+            isRaw ? rawFixedString(bytes, len, nbytes, &np, useBytes) : readFixedString(con, len, useBytes, &warnOnNul);
         if (onechar != R_NilValue)
         {
             SET_STRING_ELT(ans, i, onechar);
