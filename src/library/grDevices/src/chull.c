@@ -385,9 +385,10 @@ L13:
         {
             inh = il[inh];
             ++ma;
-            nia -= ia[ma]; // seems RHS is NA in adehabitatHR
+            // Next two lines swapped in R 4.0.0 as nia is not used in Finis.
             if (ma == mp1)
                 goto Finis;
+            nia -= ia[ma];
         } while (ia[ma] == 0);
         ilinh = il[inh];
         /* on the right side of the tree, the left son of a left son */
