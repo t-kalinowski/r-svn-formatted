@@ -2573,5 +2573,5 @@ SEXP attribute_hidden do_addGlobHands(SEXP call, SEXP op, SEXP args, SEXP rho)
             error("should not be called with handlers on the stack");
 
     R_ToplevelContext->handlerstack = R_HandlerStack;
-    return NULL;
+    return R_NilValue;
 }
