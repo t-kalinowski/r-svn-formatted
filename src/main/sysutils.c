@@ -779,7 +779,7 @@ SEXP attribute_hidden do_iconv(SEXP call, SEXP op, SEXP args, SEXP env)
                         goto top_of_loop;
                     }
                     wchar_t wc;
-                    size_t clen = utf8toucs(&wc, inbuf);
+                    ssize_t clen = utf8toucs(&wc, inbuf);
                     if (clen > 0 && inb >= clen)
                     {
                         R_wchar_t ucs;
@@ -1058,7 +1058,7 @@ next_char:
             /* if starting in UTF-8, use \uxxxx */
             /* This must be the first byte */
             wchar_t wc;
-            size_t clen = utf8toucs(&wc, inbuf);
+            ssize_t clen = utf8toucs(&wc, inbuf);
             if (clen > 0 && inb >= clen)
             {
                 R_wchar_t ucs;
