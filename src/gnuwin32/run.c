@@ -899,7 +899,7 @@ typedef struct Wpipeconn
 static Rboolean Wpipe_open(Rconnection con)
 {
     rpipe *rp;
-    int visible = -1, io;
+    int visible = -1, io, mlen;
 
     io = con->mode[0] == 'w';
     if (io)
@@ -914,7 +914,8 @@ static Rboolean Wpipe_open(Rconnection con)
     con->isopen = TRUE;
     con->canwrite = io;
     con->canread = !con->canwrite;
-    if (strlen(con->mode) >= 2 && con->mode[1] == 'b')
+    mlen = (int)strlen(con->mode);
+    if (mlen >= 2 && con->mode[mlen - 1] == 'b')
         con->text = FALSE;
     else
         con->text = TRUE;
