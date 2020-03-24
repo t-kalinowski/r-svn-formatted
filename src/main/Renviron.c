@@ -52,6 +52,7 @@ static char *rmspace(char *s)
 static char *subterm(char *s)
 {
     char *p, *q;
+    int colon = 0;
 
     if (strncmp(s, "${", 2))
         return s;
@@ -68,15 +69,26 @@ static char *subterm(char *s)
     {
         q = p + 1; /* start of value */
         if (p - s > 1 && *(p - 1) == ':')
+        {
+            colon = 1;
             *(p - 1) = '\0';
+        }
         else
             *p = '\0';
     }
     else
         q = NULL;
     p = getenv(s);
-    if (p && strlen(p))
-        return p; /* variable was set and non-empty */
+    if (colon)
+    {
+        if (p && strlen(p))
+            return p; /* variable was set and non-empty */
+    }
+    else
+    {
+        if (p)
+            return p; /* variable was set */
+    }
     return q ? subterm(q) : (char *)"";
 }
 
