@@ -901,8 +901,9 @@ SEXP R_ExecWithCleanup(SEXP (*fun)(void *), void *data, void (*cleanfun)(void *)
     cntxt.cend = cleanfun;
     cntxt.cenddata = cleandata;
 
-    result = fun(data);
+    PROTECT(result = fun(data));
     cleanfun(cleandata);
+    UNPROTECT(1);
 
     endcontext(&cntxt);
     return result;
