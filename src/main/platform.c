@@ -3240,6 +3240,7 @@ SEXP attribute_hidden do_sysumask(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP ans;
     int mode;
     mode_t res = 0;
+    Rboolean visible;
 
     checkArity(op, args);
     mode = asInteger(CAR(args));
@@ -3248,20 +3249,21 @@ SEXP attribute_hidden do_sysumask(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         res = umask(0);
         umask(res);
-        R_Visible = TRUE;
+        visible = TRUE;
     }
     else
     {
         res = umask((mode_t)mode);
-        R_Visible = FALSE;
+        visible = FALSE;
     }
 #else
     warning(_("insufficient OS support on this platform"));
-    R_Visible = FALSE;
+    visible = FALSE;
 #endif
     PROTECT(ans = ScalarInteger(res));
     setAttrib(ans, R_ClassSymbol, mkString("octmode"));
     UNPROTECT(1);
+    R_Visible = visible;
     return ans;
 }
 

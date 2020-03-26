@@ -5214,8 +5214,8 @@ SEXP attribute_hidden do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     if (isRaw)
     {
-        R_Visible = TRUE;
         UNPROTECT(1);
+        R_Visible = TRUE;
     }
     else
         R_Visible = FALSE;
@@ -5632,8 +5632,8 @@ SEXP attribute_hidden do_writechar(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     if (isRaw)
     {
-        R_Visible = TRUE;
         UNPROTECT(1);
+        R_Visible = TRUE;
     }
     else
     {
