@@ -1518,6 +1518,11 @@ static const void *wrapper_Dataptr_or_null(SEXP x)
     return DATAPTR_OR_NULL(WRAPPER_WRAPPED(x));
 }
 
+static SEXP wrapper_Extract_subset(SEXP x, SEXP indx, SEXP call)
+{
+    return ExtractSubset(WRAPPER_WRAPPED(x), indx, call);
+}
+
 /*
  * ALTINTEGER Methods
  */
@@ -1695,6 +1700,7 @@ static void InitWrapIntegerClass(DllInfo *dll)
     /* override ALTVEC methods */
     R_set_altvec_Dataptr_method(cls, wrapper_Dataptr);
     R_set_altvec_Dataptr_or_null_method(cls, wrapper_Dataptr_or_null);
+    R_set_altvec_Extract_subset_method(cls, wrapper_Extract_subset);
 
     /* override ALTINTEGER methods */
     R_set_altinteger_Elt_method(cls, wrapper_integer_Elt);
@@ -1718,6 +1724,7 @@ static void InitWrapLogicalClass(DllInfo *dll)
     /* override ALTVEC methods */
     R_set_altvec_Dataptr_method(cls, wrapper_Dataptr);
     R_set_altvec_Dataptr_or_null_method(cls, wrapper_Dataptr_or_null);
+    R_set_altvec_Extract_subset_method(cls, wrapper_Extract_subset);
 
     /* override ALTLOGICAL methods */
     R_set_altlogical_Elt_method(cls, wrapper_logical_Elt);
@@ -1741,6 +1748,7 @@ static void InitWrapRealClass(DllInfo *dll)
     /* override ALTVEC methods */
     R_set_altvec_Dataptr_method(cls, wrapper_Dataptr);
     R_set_altvec_Dataptr_or_null_method(cls, wrapper_Dataptr_or_null);
+    R_set_altvec_Extract_subset_method(cls, wrapper_Extract_subset);
 
     /* override ALTREAL methods */
     R_set_altreal_Elt_method(cls, wrapper_real_Elt);
@@ -1764,6 +1772,7 @@ static void InitWrapComplexClass(DllInfo *dll)
     /* override ALTVEC methods */
     R_set_altvec_Dataptr_method(cls, wrapper_Dataptr);
     R_set_altvec_Dataptr_or_null_method(cls, wrapper_Dataptr_or_null);
+    R_set_altvec_Extract_subset_method(cls, wrapper_Extract_subset);
 
     /* override ALTCOMPLEX methods */
     R_set_altcomplex_Elt_method(cls, wrapper_complex_Elt);
@@ -1785,6 +1794,7 @@ static void InitWrapRawClass(DllInfo *dll)
     /* override ALTVEC methods */
     R_set_altvec_Dataptr_method(cls, wrapper_Dataptr);
     R_set_altvec_Dataptr_or_null_method(cls, wrapper_Dataptr_or_null);
+    R_set_altvec_Extract_subset_method(cls, wrapper_Extract_subset);
 
     /* override ALTRAW methods */
     R_set_altraw_Elt_method(cls, wrapper_raw_Elt);
@@ -1806,6 +1816,7 @@ static void InitWrapStringClass(DllInfo *dll)
     /* override ALTVEC methods */
     R_set_altvec_Dataptr_method(cls, wrapper_Dataptr);
     R_set_altvec_Dataptr_or_null_method(cls, wrapper_Dataptr_or_null);
+    R_set_altvec_Extract_subset_method(cls, wrapper_Extract_subset);
 
     /* override ALTSTRING methods */
     R_set_altstring_Elt_method(cls, wrapper_string_Elt);
