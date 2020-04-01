@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1997--2018  The R Core Team
+ *  Copyright (C) 1997--2020  The R Core Team
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -968,9 +968,11 @@ static SEXP stringSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, SEXP names, R_xlen
     int canstretch = *stretch > 0;
     /* product may overflow, so check factors as well. */
     Rboolean usehashing = (((ns > 1000 && nx) || (nx > 1000 && ns)) || (ns * nx > 15 * nx + ns));
+    int nprotect = 0;
 
     PROTECT(s);
     PROTECT(names);
+    nprotect += 2;
     nnames = nx;
     extra = nnames;
 
@@ -987,6 +989,7 @@ static SEXP stringSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, SEXP names, R_xlen
         /* NB: this does not behave in the same way with respect to ""
            and NA names: they will match */
         PROTECT(indx = match(names, s, 0)); /**** guaranteed to be fresh???*/
+        nprotect++;
         /* second pass to correct this */
         int *pindx = INTEGER(indx);
         for (i = 0; i < ns; i++)
@@ -996,6 +999,7 @@ static SEXP stringSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, SEXP names, R_xlen
     else
     {
         PROTECT(indx = allocVector(INTSXP, ns));
+        nprotect++;
         int *pindx = INTEGER(indx);
         for (i = 0; i < ns; i++)
         {
@@ -1027,6 +1031,7 @@ static SEXP stringSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, SEXP names, R_xlen
             {
                 sindx = PROTECT(match(s, s, 0));
                 indexnames = PROTECT(allocVector(VECSXP, ns));
+                nprotect += 2;
                 for (int z = 0; z < ns; z++)
                     SET_VECTOR_ELT(indexnames, z, R_NilValue);
             }
@@ -1053,13 +1058,9 @@ static SEXP stringSubscript(SEXP s, R_xlen_t ns, R_xlen_t nx, SEXP names, R_xlen
        subscript vector. */
     if (extra != nnames)
         setAttrib(indx, R_UseNamesSymbol, indexnames);
-    if (sindx != NULL)
-    {
-        UNPROTECT(2);
-    }
     if (canstretch)
         *stretch = extra;
-    UNPROTECT(3);
+    UNPROTECT(nprotect);
     return indx;
 }
 

@@ -580,7 +580,7 @@ static SEXP DeleteListElements(SEXP x, SEXP which)
             ii++;
         }
     }
-    xnames = getAttrib(x, R_NamesSymbol);
+    PROTECT(xnames = getAttrib(x, R_NamesSymbol));
     if (xnames != R_NilValue)
     {
         PROTECT(xnewnames = allocVector(STRSXP, ii));
@@ -597,7 +597,7 @@ static SEXP DeleteListElements(SEXP x, SEXP which)
         UNPROTECT(1);
     }
     copyMostAttrib(x, xnew);
-    UNPROTECT(2);
+    UNPROTECT(3);
     return xnew;
 }
 
@@ -1846,7 +1846,7 @@ static SEXP DeleteOneVectorListItem(SEXP x, R_xlen_t which)
                 SET_VECTOR_ELT(y, k++, VECTOR_ELT(x, i));
             CLEAR_VECTOR_ELT(x, i);
         }
-        xnames = getAttrib(x, R_NamesSymbol);
+        PROTECT(xnames = getAttrib(x, R_NamesSymbol));
         if (xnames != R_NilValue)
         {
             PROTECT(ynames = allocVector(STRSXP, n - 1));
@@ -1858,7 +1858,7 @@ static SEXP DeleteOneVectorListItem(SEXP x, R_xlen_t which)
             UNPROTECT(1);
         }
         copyMostAttrib(x, y);
-        UNPROTECT(1);
+        UNPROTECT(2);
         return y;
     }
     return x;
@@ -2292,9 +2292,11 @@ SEXP R_subassign3_dflt(SEXP call, SEXP x, SEXP nlist, SEXP val)
     PROTECT_INDEX pvalidx, pxidx;
     Rboolean S4;
     SEXP xS4 = R_NilValue;
+    int nprotect = 0;
 
     PROTECT_WITH_INDEX(x, &pxidx);
     PROTECT_WITH_INDEX(val, &pvalidx);
+    nprotect += 2;
     S4 = IS_S4_OBJECT(x);
 
     if (MAYBE_SHARED(x) || ((!IS_ASSIGNMENT_CALL(call)) && MAYBE_REFERENCED(x)))
@@ -2392,7 +2394,8 @@ SEXP R_subassign3_dflt(SEXP call, SEXP x, SEXP nlist, SEXP val)
             warning(_("Coercing LHS to a list"));
             REPROTECT(x = coerceVector(x, VECSXP), pxidx);
         }
-        names = getAttrib(x, R_NamesSymbol);
+        names = PROTECT(getAttrib(x, R_NamesSymbol));
+        nprotect++;
         nx = xlength(x);
         nlist = PRINTNAME(nlist);
         if (isNull(val))
@@ -2490,7 +2493,7 @@ SEXP R_subassign3_dflt(SEXP call, SEXP x, SEXP nlist, SEXP val)
             }
         }
     }
-    UNPROTECT(2);
+    UNPROTECT(nprotect);
     if (xS4 != R_NilValue)
         x = xS4; /* x was an env't, the data slot of xS4 */
     SETTER_CLEAR_NAMED(x);

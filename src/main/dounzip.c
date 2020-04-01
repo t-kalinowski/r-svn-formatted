@@ -240,6 +240,7 @@ static int zipunzip(const char *zipname, const char *dest, int nfiles, const cha
     { /* all files */
         unz_global_info64 gi;
         unzGetGlobalInfo64(uf, &gi);
+        PROTECT(names = allocVector(STRSXP, 5000));
         for (i = 0; i < gi.number_entry; i++)
         {
             if (i > 0)
@@ -264,6 +265,7 @@ static int zipunzip(const char *zipname, const char *dest, int nfiles, const cha
     }
     else
     {
+        PROTECT(names = allocVector(STRSXP, nfiles));
         for (i = 0; i < nfiles; i++)
         {
             if ((err = unzLocateFile(uf, files[i], 1)) != UNZ_OK)
@@ -279,6 +281,7 @@ static int zipunzip(const char *zipname, const char *dest, int nfiles, const cha
     }
     *pnames = names;
     unzClose(uf);
+    UNPROTECT(1); /* names */
     return err;
 }
 
@@ -389,11 +392,8 @@ SEXP Runzip(SEXP args)
     if (setTime == NA_LOGICAL)
         error(_("invalid '%s' argument"), "setTime");
 
-    if (ntopics > 0)
-        PROTECT(names = allocVector(STRSXP, ntopics));
-    else
-        PROTECT(names = allocVector(STRSXP, 5000));
     rc = zipunzip(zipname, dest, ntopics, topics, &names, &nnames, overwrite, junk, setTime);
+    PROTECT(names);
     if (rc != UNZ_OK)
         switch (rc)
         {
@@ -419,7 +419,7 @@ SEXP Runzip(SEXP args)
     PROTECT(ans = ScalarInteger(rc));
     PROTECT(names = lengthgets(names, nnames));
     setAttrib(ans, install("extracted"), names);
-    UNPROTECT(3);
+    UNPROTECT(3); /* old names, ans, names */
     vmaxset(vmax);
     return ans;
 }

@@ -515,6 +515,7 @@ SEXP attribute_hidden do_options(SEXP call, SEXP op, SEXP args, SEXP rho)
     default:
         UNIMPLEMENTED_TYPE("options", args);
     }
+    PROTECT(argnames);
 
     Rboolean visible = FALSE;
     for (int i = 0; i < n; i++)
@@ -912,7 +913,7 @@ SEXP attribute_hidden do_options(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
     } /* for() */
     setAttrib(value, R_NamesSymbol, names);
-    UNPROTECT(2);
+    UNPROTECT(3); /* value, names, argnames */
     R_Visible = visible;
     return value;
 }
