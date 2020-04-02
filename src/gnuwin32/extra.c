@@ -504,13 +504,28 @@ typedef enum _FILE_INFO_BY_HANDLE_CLASS
 } FILE_INFO_BY_HANDLE_CLASS,
     *PFILE_INFO_BY_HANDLE_CLASS;
 
-/* Older versions of MinGW define this differently */
-/*
+/* MinGW defines this structure even for Vista. Older versions of MinGW
+   define it differently from Windows (two ULONGLONG fields). Newer
+   versions and Windows use
+
 typedef struct _FILE_ID_128 {
   BYTE Identifier[16];
 } FILE_ID_128, *PFILE_ID_128;
 */
+#elif _WIN32_WINNT < 0x0602
+/* These constants were added to FILE_INFO_BY_HANDLE_CLASS in Windows 8 */
+enum
+{
+    FileStorageInfo = FileFullDirectoryRestartInfo + 1,
+    FileAlignmentInfo,
+    FileIdInfo,
+    FileIdExtdDirectoryInfo,
+    FileIdExtdDirectoryRestartInfo
+};
+#endif
 
+#if WIN32_WINNT < 0x602 || !defined(__MINGW32__)
+/* Available in Windows Server 2012, but also in MinGW from Windows 8.  */
 typedef struct _FILE_ID_INFO
 {
     ULONGLONG VolumeSerialNumber;
@@ -537,6 +552,8 @@ static int isSameFile(HANDLE a, HANDLE b)
     memset(&aid, 0, sizeof(FILE_ID_INFO));
     memset(&bid, 0, sizeof(FILE_ID_INFO));
     if (!gfibh(a, FileIdInfo, &aid, sizeof(FILE_ID_INFO)) || !gfibh(b, FileIdInfo, &bid, sizeof(FILE_ID_INFO)))
+        /* on Vista and Win7 it is expected to fail because FileIdInfo
+           is not supported */
         return -1;
 
     if (aid.VolumeSerialNumber == bid.VolumeSerialNumber && !memcmp(&aid.FileId, &bid.FileId, sizeof(FILE_ID_128)))
@@ -573,6 +590,7 @@ static Rboolean getFinalPathName(const char *orig, char *res)
 {
     HANDLE horig, hres;
     int ret;
+#if _WIN32_WINNT < 0x0600
     static LPFN_GFPNBH gfpnbh = NULL;
     static Rboolean initialized = FALSE;
 
@@ -583,14 +601,18 @@ static Rboolean getFinalPathName(const char *orig, char *res)
     }
     if (gfpnbh == NULL)
         return FALSE;
+#endif
 
     /* FILE_FLAG_BACKUP_SEMANTICS needed to open a directory */
     horig = CreateFile(orig, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING,
                        FILE_ATTRIBUTE_HIDDEN | FILE_FLAG_BACKUP_SEMANTICS, NULL);
     if (horig == INVALID_HANDLE_VALUE)
         return FALSE;
-
+#if _WIN32_WINNT < 0x0600
     ret = gfpnbh(horig, res, MAX_PATH, VOLUME_NAME_DOS);
+#else
+    ret = GetFinalPathNameByHandle(horig, res, MAX_PATH, VOLUME_NAME_DOS);
+#endif
 
     if (!ret || ret > MAX_PATH)
     {
@@ -652,6 +674,7 @@ static Rboolean getFinalPathNameW(const wchar_t *orig, wchar_t *res)
 {
     HANDLE horig, hres;
     int ret;
+#if _WIN32_WINNT < 0x0600
     static LPFN_GFPNBHW gfpnbhw = NULL;
     static Rboolean initialized = FALSE;
 
@@ -662,6 +685,7 @@ static Rboolean getFinalPathNameW(const wchar_t *orig, wchar_t *res)
     }
     if (gfpnbhw == NULL)
         return FALSE;
+#endif
 
     /* FILE_FLAG_BACKUP_SEMANTICS needed to open a directory */
     horig = CreateFileW(orig, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING,
@@ -669,7 +693,11 @@ static Rboolean getFinalPathNameW(const wchar_t *orig, wchar_t *res)
     if (horig == INVALID_HANDLE_VALUE)
         return FALSE;
 
+#if _WIN32_WINNT < 0x0600
     ret = gfpnbhw(horig, res, 32767, VOLUME_NAME_DOS);
+#else
+    ret = GetFinalPathNameByHandleW(horig, res, 32767, VOLUME_NAME_DOS);
+#endif
 
     if (!ret || ret > 32768)
     {
