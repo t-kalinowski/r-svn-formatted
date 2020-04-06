@@ -2228,7 +2228,6 @@ SEXP termsform(SEXP args)
     Rprintf(".. finished step 5: term.labels: ");
     printVector(termlabs, 1, /* quote */ 1);
 #endif
-    UNPROTECT(1); // termlabs
 
     if (nterm > 0)
     { // dimnames("factors") <- ...
@@ -2239,6 +2238,7 @@ SEXP termsform(SEXP args)
         UNPROTECT(1);
     }
     SETCAR(a, termlabs);
+    UNPROTECT(1); // termlabs
     SET_TAG(a, install("term.labels"));
     a = CDR(a);
 
