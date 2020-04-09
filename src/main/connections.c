@@ -5893,7 +5893,7 @@ SEXP attribute_hidden do_sinknumber(SEXP call, SEXP op, SEXP args, SEXP rho)
 void WinCheckUTF8(void)
 {
     if (EmitEmbeddedUTF8) /* RGui */
-        WinUTF8out = (SinkCons[R_SinkNumber] == 1 || SinkCons[R_SinkNumber] == 2);
+        WinUTF8out = (SinkCons[R_SinkNumber] == 1 || SinkCons[R_SinkNumber] == 2) && localeCP != 65001;
     else
         WinUTF8out = FALSE;
 }
