@@ -475,10 +475,61 @@ static SEXP Cairo_Cap(pDevDesc dd)
 }
 #endif
 
+static const char *utf8Toutf8NoPUA(const char *in)
+{
+    int i, j, used, tmp;
+    /* At least enough because assumes each incoming char only one byte */
+    int nChar = 3 * strlen(in) + 1;
+    char *result = R_alloc(nChar, sizeof(char));
+    const char *s = in;
+    char *p = result;
+    for (i = 0; i < nChar; i++)
+    {
+        /* Convert UTF8 char to int */
+        used = mbrtoint(&tmp, s);
+        /* Only re-encode if necessary
+         * This is more efficient AND protects against input that is
+         * NOT from Rf_AdobeSymbol2utf8(), e.g., plotmath on Windows
+         * (which is from reEnc(CE_LATIN1, CE_UTF8))
+         */
+        if (tmp > 0xF600)
+        {
+            char inChar[4], symbolChar[2], utf8Char[4];
+            char *q;
+            for (j = 0; j < used; j++)
+            {
+                inChar[j] = *s++;
+            }
+            inChar[used] = '\0';
+            Rf_utf8toAdobeSymbol(symbolChar, inChar);
+            Rf_AdobeSymbol2utf8(utf8Char, symbolChar, 4, FALSE);
+            q = utf8Char;
+            while (*q)
+            {
+                *p++ = *q++;
+            }
+        }
+        else
+        {
+            for (j = 0; j < used; j++)
+            {
+                *p++ = *s++;
+            }
+        }
+    }
+    *p = '\0';
+    return result;
+}
+
 #ifdef HAVE_PANGOCAIRO
 /* ------------- pangocairo section --------------- */
 
-static PangoFontDescription *PG_getFont(const pGEcontext gc, double fs, const char *family)
+SEXP in_CairoFT(void)
+{
+    return mkString("");
+}
+
+static PangoFontDescription *PG_getFont(const pGEcontext gc, double fs, const char *family, const char *symbolfamily)
 {
     PangoFontDescription *fontdesc;
     gint face = gc->fontface;
@@ -493,7 +544,9 @@ static PangoFontDescription *PG_getFont(const pGEcontext gc, double fs, const ch
 
     fontdesc = pango_font_description_new();
     if (face == 5)
-        pango_font_description_set_family(fontdesc, "symbol");
+    {
+        pango_font_description_set_family(fontdesc, symbolfamily);
+    }
     else
     {
         const char *fm = gc->fontfamily;
@@ -570,7 +623,7 @@ static void PangoCairo_MetricInfo(int c, const pGEcontext gc, double *ascent, do
     pX11Desc xd = (pX11Desc)dd->deviceSpecific;
     char str[16];
     int Unicode = mbcslocale;
-    PangoFontDescription *desc = PG_getFont(gc, xd->fontscale, xd->basefontfamily);
+    PangoFontDescription *desc = PG_getFont(gc, xd->fontscale, xd->basefontfamily, xd->symbolfamily);
     PangoLayout *layout;
     gint iascent, idescent, iwidth;
 
@@ -579,12 +632,21 @@ static void PangoCairo_MetricInfo(int c, const pGEcontext gc, double *ascent, do
     if (c < 0)
     {
         c = -c;
-        Unicode = 1;
+        Unicode = 2;
     }
 
     if (Unicode)
     {
+        const char *textstr;
         Rf_ucstoutf8(str, (unsigned int)c);
+        /* Unicode == 2 means we have a Unicode point */
+        if (Unicode > 1 && gc->fontface == 5 && !xd->usePUA)
+        {
+            textstr = utf8Toutf8NoPUA(str);
+            /* At most 3 bytes (plus null) in textstr */
+            for (int i = 0; i < 4; i++)
+                str[i] = textstr[i];
+        }
     }
     else
     {
@@ -610,10 +672,19 @@ static double PangoCairo_StrWidth(const char *str, const pGEcontext gc, pDevDesc
     pX11Desc xd = (pX11Desc)dd->deviceSpecific;
     gint width;
 
+    const char *textstr;
     if (!utf8Valid(str))
-        error("invalid string in PangoCairo_StrWidth");
-    PangoFontDescription *desc = PG_getFont(gc, xd->fontscale, xd->basefontfamily);
-    PangoLayout *layout = PG_layout(desc, xd->cc, str);
+        error("invalid string in PangoCairo_Text");
+    if (gc->fontface == 5 && !xd->usePUA)
+    {
+        textstr = utf8Toutf8NoPUA(str);
+    }
+    else
+    {
+        textstr = str;
+    }
+    PangoFontDescription *desc = PG_getFont(gc, xd->fontscale, xd->basefontfamily, xd->symbolfamily);
+    PangoLayout *layout = PG_layout(desc, xd->cc, textstr);
 
     PG_text_extents(xd->cc, layout, NULL, NULL, &width, NULL, NULL, 0);
     g_object_unref(layout);
@@ -624,16 +695,25 @@ static double PangoCairo_StrWidth(const char *str, const pGEcontext gc, pDevDesc
 static void PangoCairo_Text(double x, double y, const char *str, double rot, double hadj, const pGEcontext gc,
                             pDevDesc dd)
 {
+    pX11Desc xd = (pX11Desc)dd->deviceSpecific;
+    const char *textstr;
     if (!utf8Valid(str))
         error("invalid string in PangoCairo_Text");
+    if (gc->fontface == 5 && !xd->usePUA)
+    {
+        textstr = utf8Toutf8NoPUA(str);
+    }
+    else
+    {
+        textstr = str;
+    }
     if (R_ALPHA(gc->col) > 0)
     {
-        pX11Desc xd = (pX11Desc)dd->deviceSpecific;
         gint ascent, lbearing, width;
         PangoLayout *layout;
-        PangoFontDescription *desc = PG_getFont(gc, xd->fontscale, xd->basefontfamily);
+        PangoFontDescription *desc = PG_getFont(gc, xd->fontscale, xd->basefontfamily, xd->symbolfamily);
         cairo_save(xd->cc);
-        layout = PG_layout(desc, xd->cc, str);
+        layout = PG_layout(desc, xd->cc, textstr);
         PG_text_extents(xd->cc, layout, &lbearing, NULL, &width, &ascent, NULL, 0);
         cairo_move_to(xd->cc, x, y);
         if (rot != 0.0)
@@ -662,6 +742,11 @@ static void PangoCairo_Text(double x, double y, const char *str, double rot, dou
 #endif
 
 #if CAIRO_HAS_FT_FONT && USE_FC
+
+SEXP in_CairoFT(void)
+{
+    return mkString("yes");
+}
 
 /* FT implies FC in Cairo */
 #include <cairo-ft.h>
@@ -823,13 +908,8 @@ static void FT_getFont(pGEcontext gc, pDevDesc dd, double fs)
     family = gc->fontfamily;
     if (face == 5)
     {
-#ifdef Win32
         if (!*family)
-            family = "Standard Symbols L";
-#else
-        if (!*family)
-            family = "Symbol";
-#endif
+            family = xd->symbolfamily;
     }
     else
     {
@@ -859,6 +939,11 @@ static void FT_getFont(pGEcontext gc, pDevDesc dd, double fs)
 
 #else
 
+SEXP in_CairoFT(void)
+{
+    return mkString("");
+}
+
 static void FT_getFont(pGEcontext gc, pDevDesc dd, double fs)
 {
     pX11Desc xd = (pX11Desc)dd->deviceSpecific;
@@ -875,7 +960,7 @@ static void FT_getFont(pGEcontext gc, pDevDesc dd, double fs)
     if (face < 1 || face > 5)
         face = 1;
     if (face == 5)
-        family = "Symbol";
+        family = xd->symbolfamily;
     if (face == 2 || face == 4)
         wt = CAIRO_FONT_WEIGHT_BOLD;
     if (face == 3 || face == 4)
@@ -917,12 +1002,21 @@ static void Cairo_MetricInfo(int c, pGEcontext gc, double *ascent, double *desce
     if (c < 0)
     {
         c = -c;
-        Unicode = 1;
+        Unicode = 2;
     }
 
     if (Unicode)
     {
+        const char *textstr;
         Rf_ucstoutf8(str, (unsigned int)c);
+        /* Unicode == 2 means we have a Unicode point */
+        if (Unicode > 1 && gc->fontface == 5 && !xd->usePUA)
+        {
+            textstr = utf8Toutf8NoPUA(str);
+            /* At most 3 bytes (plus null) in textstr */
+            for (int i = 0; i < 4; i++)
+                str[i] = textstr[i];
+        }
     }
     else
     {
@@ -943,34 +1037,52 @@ static double Cairo_StrWidth(const char *str, pGEcontext gc, pDevDesc dd)
     pX11Desc xd = (pX11Desc)dd->deviceSpecific;
     cairo_text_extents_t exts;
 
+    const char *textstr;
     if (!utf8Valid(str))
         error("invalid string in Cairo_StrWidth");
+    if (gc->fontface == 5 && !xd->usePUA)
+    {
+        textstr = utf8Toutf8NoPUA(str);
+    }
+    else
+    {
+        textstr = str;
+    }
     FT_getFont(gc, dd, xd->fontscale);
-    cairo_text_extents(xd->cc, str, &exts);
+    cairo_text_extents(xd->cc, textstr, &exts);
     return exts.x_advance;
 }
 
 static void Cairo_Text(double x, double y, const char *str, double rot, double hadj, pGEcontext gc, pDevDesc dd)
 {
+    pX11Desc xd = (pX11Desc)dd->deviceSpecific;
+    const char *textstr;
     if (!utf8Valid(str))
         error("invalid string in Cairo_Text");
+    if (gc->fontface == 5 && !xd->usePUA)
+    {
+        textstr = utf8Toutf8NoPUA(str);
+    }
+    else
+    {
+        textstr = str;
+    }
     if (R_ALPHA(gc->col) > 0)
     {
-        pX11Desc xd = (pX11Desc)dd->deviceSpecific;
         cairo_save(xd->cc);
         FT_getFont(gc, dd, xd->fontscale);
         cairo_move_to(xd->cc, x, y);
         if (hadj != 0.0 || rot != 0.0)
         {
             cairo_text_extents_t te;
-            cairo_text_extents(xd->cc, str, &te);
+            cairo_text_extents(xd->cc, textstr, &te);
             if (rot != 0.0)
                 cairo_rotate(xd->cc, -rot / 180. * M_PI);
             if (hadj != 0.0)
                 cairo_rel_move_to(xd->cc, -te.x_advance * hadj, 0);
         }
         CairoColor(gc->col, xd);
-        cairo_show_text(xd->cc, str);
+        cairo_show_text(xd->cc, textstr);
         cairo_restore(xd->cc);
     }
 }

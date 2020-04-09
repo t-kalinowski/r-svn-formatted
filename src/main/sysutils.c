@@ -1514,7 +1514,7 @@ const char *reEnc(const char *x, cetype_t ce_in, cetype_t ce_out, int subst)
         {
             size_t nc = 3 * strlen(x) + 1; /* all in BMP */
             p = R_alloc(nc, 1);
-            Rf_AdobeSymbol2utf8(p, x, nc);
+            Rf_AdobeSymbol2utf8(p, x, nc, TRUE);
             return p;
         }
         else
