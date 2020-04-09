@@ -188,16 +188,12 @@ R_xlen_t attribute_hidden get1index(SEXP s, SEXP names, R_xlen_t len, int pok, i
        pok : is "partial ok" ?
          if pok is -1, warn if partial matching occurs, but allow.
     */
-    int warn_pok = 0;
     const char *ss, *cur_name;
-    R_xlen_t indx;
     const void *vmax;
 
-    if (pok == -1)
-    {
+    int warn_pok = (pok == -1);
+    if (warn_pok)
         pok = 1;
-        warn_pok = 1;
-    }
 
     if (pos < 0 && length(s) != 1)
     {
@@ -216,7 +212,7 @@ R_xlen_t attribute_hidden get1index(SEXP s, SEXP names, R_xlen_t len, int pok, i
     }
     if (pos < 0)
         pos = 0;
-    indx = -1;
+    R_xlen_t indx = -1;
     switch (TYPEOF(s))
     {
     case LGLSXP:
@@ -232,16 +228,25 @@ R_xlen_t attribute_hidden get1index(SEXP s, SEXP names, R_xlen_t len, int pok, i
         {
             /* see comment above integerOneIndex */
             if (dblind > 0)
-                indx = (R_xlen_t)(dblind - 1);
+            {
+                if (R_FINITE(dblind))
+                    indx = (R_xlen_t)(dblind - 1);
+            }
             else if (dblind == 0 || len < 2)
             {
-                ECALL3(call, _("attempt to select less than one element in %s"), "get1index <real>");
+                ECALL3(call,
+                       _((dblind < 0) ? "invalid negative subscript in %s"
+                                      : "attempt to select less than one element in %s"),
+                       "get1index <real>");
             }
-            else if (len == 2 && dblind > -3)
+            else if (len == 2 && dblind > -3) // dblind = -2 or -1 {why exception ?}
                 indx = (R_xlen_t)(2 + dblind);
             else
             {
-                ECALL3(call, _("attempt to select more than one element in %s"), "get1index <real>");
+                ECALL3(call,
+                       _((dblind < 0) ? "invalid negative subscript in %s"
+                                      : "attempt to select more than one element in %s"),
+                       "get1index <real>");
             }
         }
         break;

@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
+ *  Copyright (C) 1997--2020  The R Core Team
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997-2015   The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -965,7 +965,7 @@ SEXP attribute_hidden do_subset2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, dims, dimnames, indx, subs, x;
     int i, ndims, nsubs;
-    int drop = 1, pok, exact = -1;
+    int drop = 1;
     R_xlen_t offset = 0;
 
     PROTECT(args);
@@ -973,7 +973,7 @@ SEXP attribute_hidden do_subset2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
     /* Is partial matching ok?  When the exact arg is NA, a warning is
        issued if partial matching occurs.
      */
-    exact = ExtractExactArg(args);
+    int exact = ExtractExactArg(args), pok;
     if (exact == -1)
         pok = exact;
     else
@@ -1091,7 +1091,7 @@ SEXP attribute_hidden do_subset2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
         }
     }
     else
-    { /* matrix indexing */
+    { /* nsubs == ndims >= 2 : matrix|array indexing */
         /* Here we use the fact that: */
         /* CAR(R_NilValue) = R_NilValue */
         /* CDR(R_NilValue) = R_NilValue */
