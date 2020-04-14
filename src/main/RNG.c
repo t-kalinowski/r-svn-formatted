@@ -63,7 +63,7 @@ typedef struct
     Int32 *i_seed;
 } RNGTAB;
 
-static Int32 dummy[625];
+static Int32 dummy[628]; // allow for optimizing compilers to read over bound
 static RNGTAB RNG_Table[] = {
     /* kind Nkind	  name	           n_seed      i_seed */
     {WICHMANN_HILL, BUGGY_KINDERMAN_RAMAGE, "Wichmann-Hill", 3, dummy},
