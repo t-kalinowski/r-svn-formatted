@@ -4242,7 +4242,7 @@ attribute_hidden size_t Rconn_getline(Rconnection con, char *buf, size_t bufsize
             error(_("line longer than buffer size %lu"), (unsigned long)bufsize);
         if (c != '\n')
         {
-            buf[++nbuf] = (char)c;
+            buf[++nbuf] = (char)c; /* compiler-defined conversion behavior */
         }
         else
         {
@@ -4398,6 +4398,7 @@ SEXP attribute_hidden do_readLines(SEXP call, SEXP op, SEXP args, SEXP env)
             if (skipNul && c == '\0')
                 continue;
             if (c != '\n')
+                /* compiler-defined conversion behavior */
                 buf[nbuf++] = (char)c;
             else
                 break;
@@ -5132,6 +5133,7 @@ SEXP attribute_hidden do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             case 1:
                 for (i = 0; i < len; i++)
+                    /* compiler-defined conversion behavior */
                     buf[i] = (signed char)INTEGER(object)[i];
                 break;
             default:
