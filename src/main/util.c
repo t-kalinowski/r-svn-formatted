@@ -1,5 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
+ *  Copyright (C) 1997--2020  The R Core Team
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 1997--2020  The R Core Team
  *
@@ -286,12 +287,11 @@ attribute_hidden void InitTypeTables(void)
 
 SEXP type2str_nowarn(SEXPTYPE t) /* returns a CHARSXP */
 {
-    if (t < MAX_NUM_SEXPTYPE)
-    { /* FIXME: branch not really needed */
-        SEXP res = Type2Table[t].rcharName;
-        if (res != NULL)
-            return res;
-    }
+    // if (t < MAX_NUM_SEXPTYPE) { /* branch not really needed */
+    SEXP res = Type2Table[t].rcharName;
+    if (res != NULL)
+        return res;
+    // }
     return R_NilValue;
 }
 
@@ -310,24 +310,22 @@ SEXP type2str(SEXPTYPE t) /* returns a CHARSXP */
 
 SEXP type2rstr(SEXPTYPE t) /* returns a STRSXP */
 {
-    if (t < MAX_NUM_SEXPTYPE)
-    { /* FIXME: branch not really needed */
-        SEXP res = Type2Table[t].rstrName;
-        if (res != NULL)
-            return res;
-    }
+    // if (t < MAX_NUM_SEXPTYPE) {
+    SEXP res = Type2Table[t].rstrName;
+    if (res != NULL)
+        return res;
+    // }
     error(_("type %d is unimplemented in '%s'"), t, "type2ImmutableScalarString");
     return R_NilValue; /* for -Wall */
 }
 
 const char *type2char(SEXPTYPE t) /* returns a char* */
 {
-    if (t < MAX_NUM_SEXPTYPE)
-    { /* FIXME: branch not really needed */
-        const char *res = Type2Table[t].cstrName;
-        if (res != NULL)
-            return res;
-    }
+    // if (t < MAX_NUM_SEXPTYPE) { /* branch not really needed */
+    const char *res = Type2Table[t].cstrName;
+    if (res != NULL)
+        return res;
+    // }
     warning(_("type %d is unimplemented in '%s'"), t, "type2char");
     static char buf[50];
     snprintf(buf, 50, "unknown type #%d", t);
@@ -337,14 +335,11 @@ const char *type2char(SEXPTYPE t) /* returns a char* */
 #ifdef UNUSED
 SEXP NORET type2symbol(SEXPTYPE t)
 {
-    if (t >= 0 && t < MAX_NUM_SEXPTYPE)
-    { /* FIXME: branch not really needed */
-        SEXP res = Type2Table[t].rsymName;
-        if (res != NULL)
-        {
-            return res;
-        }
-    }
+    // if (t >= 0 && t < MAX_NUM_SEXPTYPE) { /* branch not really needed */
+    SEXP res = Type2Table[t].rsymName;
+    if (res != NULL)
+        return res;
+    // }
     error(_("type %d is unimplemented in '%s'"), t, "type2symbol");
 }
 #endif
@@ -498,11 +493,12 @@ SEXP attribute_hidden EnsureString(SEXP s)
     return s;
 }
 
-/* FIXME: ngettext reguires unsigned long, but %u would seem appropriate */
+// NB: have  checkArity(a,b) :=  Rf_checkArityCall(a,b,call)
 void Rf_checkArityCall(SEXP op, SEXP args, SEXP call)
 {
     if (PRIMARITY(op) >= 0 && PRIMARITY(op) != length(args))
     {
+        /* FIXME: ngettext reguires unsigned long, but %u would seem appropriate */
         if (PRIMINTERNAL(op))
             error(ngettext("%d argument passed to .Internal(%s) which requires %d",
                            "%d arguments passed to .Internal(%s) which requires %d", (unsigned long)length(args)),
@@ -518,12 +514,10 @@ void Rf_checkArityCall(SEXP op, SEXP args, SEXP call)
 void attribute_hidden Rf_check1arg(SEXP arg, SEXP call, const char *formal)
 {
     SEXP tag = TAG(arg);
-    const char *supplied;
-    size_t ns;
     if (tag == R_NilValue)
         return;
-    supplied = CHAR(PRINTNAME(tag));
-    ns = strlen(supplied);
+    const char *supplied = CHAR(PRINTNAME(tag));
+    size_t ns = strlen(supplied);
     if (ns > strlen(formal) || strncmp(supplied, formal, ns))
         errorcall(call, _("supplied argument name '%s' does not match '%s'"), supplied, formal);
 }
@@ -2076,8 +2070,8 @@ int attribute_hidden Rf_AdobeSymbol2ucs2(int n)
 
 double R_strtod5(const char *str, char **endptr, char dec, Rboolean NA, int exact)
 {
-    LDOUBLE ans = 0.0, p10 = 10.0, fac = 1.0;
-    int n, expn = 0, sign = 1, ndigits = 0, exph = -1;
+    LDOUBLE ans = 0.0;
+    int sign = 1;
     const char *p = str;
 
     /* optional whitespace */
@@ -2121,8 +2115,11 @@ double R_strtod5(const char *str, char **endptr, char dec, Rboolean NA, int exac
         goto done;
     }
 
+    int n, expn = 0;
     if (strlen(p) > 2 && p[0] == '0' && (p[1] == 'x' || p[1] == 'X'))
-    {
+    { // Hexadecimal "0x....."
+        int exph = -1;
+
         /* This will overflow to Inf if appropriate */
         for (p += 2; p; p++)
         {
@@ -2174,6 +2171,7 @@ double R_strtod5(const char *str, char **endptr, char dec, Rboolean NA, int exac
                 n = (n < MAX_EXPONENT_PREFIX) ? n * 10 + (*p - '0') : n;
             if (ans != 0.0)
             { /* PR#15976:  allow big exponents on 0 */
+                LDOUBLE fac = 1.0;
                 expn += expsign * n;
                 if (exph > 0)
                 {
@@ -2206,8 +2204,9 @@ double R_strtod5(const char *str, char **endptr, char dec, Rboolean NA, int exac
             }
         }
         goto done;
-    }
+    } // end {hexadecimal case}
 
+    int ndigits = 0;
     for (; *p >= '0' && *p <= '9'; p++, ndigits++)
         ans = 10 * ans + (*p - '0');
     if (*p == dec)
@@ -2244,6 +2243,7 @@ double R_strtod5(const char *str, char **endptr, char dec, Rboolean NA, int exac
             ans /= 10.0;
         expn += ndigits;
     }
+    LDOUBLE p10 = 10., fac = 1.0;
     if (expn < -307)
     { /* use underflow, not overflow */
         for (n = -expn, fac = 1.0; n; n >>= 1, p10 *= p10)
