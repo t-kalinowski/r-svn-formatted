@@ -1,6 +1,5 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1997--2020  The R Core Team
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 1997--2020  The R Core Team
  *
@@ -1989,7 +1988,7 @@ int Rf_utf8toAdobeSymbol(char *out, const char *in)
         {
             if (symbolint[j] == s2u[k])
             {
-                out[j] = k + 32;
+                out[j] = (char)(k + 32);
                 found = 1;
             }
             if (found)
@@ -2007,7 +2006,7 @@ const char *Rf_utf8Toutf8NoPUA(const char *in)
 {
     int i, j, used, tmp;
     /* At least enough because assumes each incoming char only one byte */
-    int nChar = 3 * strlen(in) + 1;
+    int nChar = 3 * (int)strlen(in) + 1;
     char *result = R_alloc(nChar, sizeof(char));
     const char *s = in;
     char *p = result;
@@ -2054,7 +2053,7 @@ const char *Rf_utf8ToLatin1AdobeSymbol2utf8(const char *in, Rboolean usePUA)
     const char *latinStr;
     char *utf8str;
     latinStr = reEnc(in, CE_UTF8, CE_LATIN1, 2);
-    int nc = 3 * strlen(latinStr) + 1;
+    int nc = 3 * (int)strlen(latinStr) + 1;
     utf8str = R_alloc(nc, sizeof(char));
     Rf_AdobeSymbol2utf8(utf8str, latinStr, nc, usePUA);
     return utf8str;
@@ -2177,7 +2176,7 @@ double R_strtod5(const char *str, char **endptr, char dec, Rboolean NA, int exac
                 {
                     if (expn - exph < -122)
                     { /* PR#17199:  fac may overflow below if expn - exph is too small.
-                         2^-122 is a bit bigger than 1E-37, so should be fine on all systems */
+         2^-122 is a bit bigger than 1E-37, so should be fine on all systems */
                         for (n = exph, fac = 1.0; n; n >>= 1, p2 *= p2)
                             if (n & 1)
                                 fac *= p2;
