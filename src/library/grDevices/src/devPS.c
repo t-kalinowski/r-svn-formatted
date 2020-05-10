@@ -5474,12 +5474,12 @@ static void XFig_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevD
     cpen = (R_OPAQUE(gc->col)) ? cfg : -1;
     dofill = (R_OPAQUE(gc->fill)) ? 20 : -1;
 
-    fprintf(fp, "2 3 ");                           /* Polyline */
-    fprintf(fp, "%d %d ", lty, lwd > 0 ? lwd : 1); /* style, thickness */
-    fprintf(fp, "%d %d ", cpen, cbg);              /* pen colour fill colour */
-    fprintf(fp, "100 0 %d ", dofill);              /* depth, pen style, area fill */
-    fprintf(fp, "%.2f 0 0 -1 0 0 ", 4.0 * lwd);    /* style value, join .... */
-    fprintf(fp, "%d\n", n + 1);                    /* number of points */
+    fprintf(fp, "2 3 ");                                           /* Polyline */
+    fprintf(fp, "%d %d ", lty, cfg < 0 ? 0 : (lwd > 0 ? lwd : 1)); /* style, thickness */
+    fprintf(fp, "%d %d ", cpen, cbg);                              /* pen colour fill colour */
+    fprintf(fp, "100 0 %d ", dofill);                              /* depth, pen style, area fill */
+    fprintf(fp, "%.2f 0 0 -1 0 0 ", 4.0 * lwd);                    /* style value, join .... */
+    fprintf(fp, "%d\n", n + 1);                                    /* number of points */
     /* close the path */
     for (i = 0; i <= n; i++)
     {
