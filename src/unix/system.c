@@ -64,9 +64,11 @@ attribute_hidden Rboolean UsingReadline = TRUE; /* used in sys-std.c & ../main/p
 
 /* call pointers to allow interface switching */
 
-void R_Suicide(const char *s)
+void NORET R_Suicide(const char *s)
 {
     ptr_R_Suicide(s);
+    // This should not have returned, but belt-and-braces
+    exit(2); // same status as Rstd_Suicide
 }
 void R_ShowMessage(const char *s)
 {
@@ -108,9 +110,11 @@ void R_Busy(int which)
 {
     ptr_R_Busy(which);
 }
-void R_CleanUp(SA_TYPE saveact, int status, int runLast)
+void NORET R_CleanUp(SA_TYPE saveact, int status, int runLast)
 {
     ptr_R_CleanUp(saveact, status, runLast);
+    // This should not have returned, but belt-and-braces
+    exit(status);
 }
 
 attribute_hidden int R_ShowFiles(int nfile, const char **file, const char **headers, const char *wtitle, Rboolean del,
