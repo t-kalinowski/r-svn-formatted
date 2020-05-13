@@ -1372,7 +1372,9 @@ static encodinginfo findEncoding(const char *encpath, encodinglist deviceEncodin
     if (!strcmp(encpath, "default"))
     {
         found = 1;
-        encoding = deviceEncodings->encoding;
+        // called from PDFDeviceDriver with null deviceEncodings as last resort
+        if (deviceEncodings)
+            encoding = deviceEncodings->encoding;
     }
     else
     {
@@ -1546,8 +1548,17 @@ static type1fontfamily findLoadedFont(const char *name, const char *encoding, Rb
             {
                 char encconvname[50];
                 const char *encname = getFontEncoding(name, fontdbname);
-                seticonvName(encoding, encconvname);
-                if (!strcmp(encname, "default") && strcmp(fontlist->family->encoding->convname, encconvname))
+                // encname could be NULL
+                if (encname)
+                {
+                    seticonvName(encoding, encconvname);
+                    if (!strcmp(encname, "default") && strcmp(fontlist->family->encoding->convname, encconvname))
+                    {
+                        font = NULL;
+                        found = 0;
+                    }
+                }
+                else
                 {
                     font = NULL;
                     found = 0;
