@@ -261,17 +261,16 @@ SEXP check_nonASCII2(SEXP text)
 
 SEXP doTabExpand(SEXP strings, SEXP starts) /* does tab expansion for UTF-8 strings only */
 {
-    int i, start, bufsize = 1024;
-    char *buffer = malloc(bufsize * sizeof(char)), *b;
-    const char *input;
-    SEXP result;
-    if (!buffer)
+    int bufsize = 1024;
+    char *buffer = malloc(bufsize * sizeof(char));
+    if (buffer == NULL)
         error(_("out of memory"));
-    PROTECT(result = allocVector(STRSXP, length(strings)));
-    for (i = 0; i < length(strings); i++)
+    SEXP result = PROTECT(allocVector(STRSXP, length(strings)));
+    for (int i = 0; i < length(strings); i++)
     {
-        input = CHAR(STRING_ELT(strings, i));
-        start = INTEGER(starts)[i];
+        char *b;
+        const char *input = CHAR(STRING_ELT(strings, i));
+        int start = INTEGER(starts)[i];
         for (b = buffer; *input;)
         {
             /* only the first byte of multi-byte chars counts */
@@ -294,7 +293,7 @@ SEXP doTabExpand(SEXP strings, SEXP starts) /* does tab expansion for UTF-8 stri
                 tmp = realloc(buffer, bufsize * sizeof(char));
                 if (!tmp)
                 {
-                    free(buffer); /* free original allocation */
+                    free(buffer); // free original allocation
                     error(_("out of memory"));
                 }
                 else
