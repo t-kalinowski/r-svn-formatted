@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2007-11  The R Foundation
+ *  Copyright (C) 2007-2020  The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1051,8 +1051,9 @@ static CFStringRef text2unichar(CTXDESC, const char *text, UniChar **buffer, int
     if (*buffer == NULL)
     {
         CFIndex length = CFStringGetLength(str);
-        /* FIXME: check allocation */
         *buffer = malloc(length * sizeof(UniChar));
+        if (buffer == NULL)
+            error("allocation failure in text2unichar");
         CFStringGetCharacters(str, CFRangeMake(0, length), *buffer);
         *free = 1;
     }
@@ -1076,9 +1077,12 @@ static double RQuartz_StrWidth(const char *text, CTXDESC)
     if (!str)
         return 0.0; /* invalid text contents */
     len = (int)CFStringGetLength(str);
-    /* FIXME: check allocations */
     glyphs = malloc(sizeof(CGGlyph) * len);
+    if (!glyphs)
+        error("allocation failure in RQuartz_StrWidth");
     advances = malloc(sizeof(int) * len);
+    if (!advances)
+        error("allocation failure in RQuartz_StrWidth");
     CGFontGetGlyphsForUnichars(font, buffer, glyphs, len);
     CGFontGetGlyphAdvances(font, glyphs, len, advances);
     float width = 0.0; /* aScale*CGFontGetLeading(CGContextGetFont(ctx)); */
@@ -1114,8 +1118,9 @@ static void RQuartz_Text(double x, double y, const char *text, double rot, doubl
     if (!str)
         return; /* invalid text contents */
     len = (int)CFStringGetLength(str);
-    /* FIXME: check allocations */
     glyphs = malloc(sizeof(CGGlyph) * len);
+    if (!glyphs)
+        error("allocation failure in RQuartz_Text");
     CGFontGetGlyphsForUnichars(font, buffer, glyphs, len);
     int *advances = malloc(sizeof(int) * len);
     CGSize *g_adv = malloc(sizeof(CGSize) * len);
