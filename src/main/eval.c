@@ -4009,7 +4009,15 @@ attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP a
                 rsxp = R_NilValue;
             else if (streql(lname, "Ops.difftime") && (streql(rname, "+.POSIXt") || streql(rname, "+.Date")))
                 lsxp = R_NilValue;
-            else
+
+            /* Strict comparison, the docs requires methods to be "the same":
+              16 to take environments into account
+             1+2 for bitwise comparison of numbers
+               4 for the same order of attributes
+                 bytecode ignored (can change at runtime)
+                 srcref ignored (as per default)
+            */
+            else if (!R_compute_identical(lsxp, rsxp, 16 + 1 + 2 + 4))
             {
                 warning(_("Incompatible methods (\"%s\", \"%s\") for \"%s\""), lname, rname, generic);
                 UNPROTECT(4);
