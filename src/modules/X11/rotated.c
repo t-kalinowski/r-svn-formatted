@@ -734,12 +734,12 @@ static RotatedTextItem *XRotRetrieveFromCache(Display *dpy, XFontStruct *font, d
             return NULL;
 
         /* record what it shows */
-        item->text = strdup(text);
+        item->text = strdup(text); // FIXME: could be NULL
 
         /* fontname or ID */
         if (font_name != NULL)
         {
-            item->font_name = strdup(font_name);
+            item->font_name = strdup(font_name); // FIXME: could be NULL
             item->fid = 0;
         }
         else
@@ -1903,12 +1903,12 @@ static RotatedTextItem *XmbRotRetrieveFromCache(Display *dpy, XFontSet font, dou
             return NULL;
 
         /* record what it shows */
-        item->text = strdup(text);
+        item->text = strdup(text); // FIXME: could be NULL
 
         /* fontname or ID */
         if (font_name != NULL)
         {
-            item->font_name = strdup(font_name);
+            item->font_name = strdup(font_name); // FIXME: could be NULL
             item->fid = 0;
         }
         else
