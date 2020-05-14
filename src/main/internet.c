@@ -244,8 +244,13 @@ SEXP Rsockread(SEXP ssock, SEXP smaxlen)
 {
     if (length(ssock) != 1)
         error("invalid 'socket' argument");
-    int sock = asInteger(ssock), maxlen = asInteger(smaxlen);
-    char buf[maxlen + 1], *abuf[1];
+    int sock = asInteger(ssock);
+    int maxlen = asInteger(smaxlen);
+    if (maxlen < 0) /* also catches NA_INTEGER */
+        error(_("maxlen must be non-negative"));
+    SEXP rbuf = allocVector(RAWSXP, maxlen + 1);
+    PROTECT(rbuf);
+    char *buf = (char *)RAW(rbuf), *abuf[1];
     abuf[0] = buf;
     if (!initialized)
         internet_Init();
@@ -257,7 +262,7 @@ SEXP Rsockread(SEXP ssock, SEXP smaxlen)
         error("Error reading data in Rsockread");
     SEXP ans = PROTECT(allocVector(STRSXP, 1));
     SET_STRING_ELT(ans, 0, mkCharLen(buf, maxlen));
-    UNPROTECT(1);
+    UNPROTECT(2); /* rbuf, ans */
     return ans;
 }
 
