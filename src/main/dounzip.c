@@ -300,7 +300,10 @@ static SEXP ziplist(const char *zipname)
     gi.number_entry = 0; /* =Wall */
     err = unzGetGlobalInfo64(uf, &gi);
     if (err != UNZ_OK)
+    {
+        unzClose(uf);
         error("error %d with zipfile in unzGetGlobalInfo", err);
+    }
     nfiles = (int)gi.number_entry;
     /* name, length, datetime */
     PROTECT(ans = allocVector(VECSXP, 3));
@@ -315,7 +318,10 @@ static SEXP ziplist(const char *zipname)
 
         err = unzGetCurrentFileInfo64(uf, &file_info, filename_inzip, sizeof(filename_inzip), NULL, 0, NULL, 0);
         if (err != UNZ_OK)
+        {
+            unzClose(uf);
             error("error %d with zipfile in unzGetCurrentFileInfo\n", err);
+        }
         /* In theory at least bit 11 of the flag tells us that the
            filename is in UTF-8, so FIXME */
         SET_STRING_ELT(names, i, mkChar(filename_inzip));
@@ -328,7 +334,10 @@ static SEXP ziplist(const char *zipname)
         {
             err = unzGoToNextFile(uf);
             if (err != UNZ_OK)
+            {
+                unzClose(uf);
                 error("error %d with zipfile in unzGoToNextFile\n", err);
+            }
         }
     }
     unzClose(uf);
