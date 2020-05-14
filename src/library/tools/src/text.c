@@ -288,16 +288,15 @@ SEXP doTabExpand(SEXP strings, SEXP starts) /* does tab expansion for UTF-8 stri
             if (b - buffer >= bufsize - 8)
             {
                 int pos = (int)(b - buffer);
-                char *tmp;
                 bufsize *= 2;
-                tmp = realloc(buffer, bufsize * sizeof(char));
+                char *tmp = realloc(buffer, bufsize * sizeof(char));
                 if (!tmp)
                 {
                     free(buffer); // free original allocation
                     error(_("out of memory"));
                 }
                 else
-                    buffer = tmp;
+                    buffer = tmp; // and realloc freed original buffer
                 b = buffer + pos;
             }
             input++;
@@ -307,7 +306,7 @@ SEXP doTabExpand(SEXP strings, SEXP starts) /* does tab expansion for UTF-8 stri
     }
     UNPROTECT(1);
     free(buffer);
-    return result;
+    return result; // -fanalyzer claims b leaks, but maybe it does not understand realloc
 }
 
 /* This could be done in wchar_t, but it is only used for
