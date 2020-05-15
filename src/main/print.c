@@ -447,7 +447,7 @@ static void PrintGenericVector(SEXP s, R_PrintData *data)
                     snprintf(pbuf, 115, "%s", EncodeLogical(x[0], w));
                 }
                 else
-                    snprintf(pbuf, 115, "Logical,%d", LENGTH(tmp));
+                    snprintf(pbuf, 115, "logical,%d", LENGTH(tmp));
                 break;
             case INTSXP:
                 /* factors are stored as integers */
@@ -464,7 +464,7 @@ static void PrintGenericVector(SEXP s, R_PrintData *data)
                         snprintf(pbuf, 115, "%s", EncodeInteger(x[0], w));
                     }
                     else
-                        snprintf(pbuf, 115, "Integer,%d", LENGTH(tmp));
+                        snprintf(pbuf, 115, "integer,%d", LENGTH(tmp));
                 }
                 break;
             case REALSXP:
@@ -475,7 +475,7 @@ static void PrintGenericVector(SEXP s, R_PrintData *data)
                     snprintf(pbuf, 115, "%s", EncodeReal0(x[0], w, d, e, OutDec));
                 }
                 else
-                    snprintf(pbuf, 115, "Numeric,%d", LENGTH(tmp));
+                    snprintf(pbuf, 115, "numeric,%d", LENGTH(tmp));
                 break;
             case CPLXSXP:
                 if (LENGTH(tmp) == 1)
@@ -491,7 +491,7 @@ static void PrintGenericVector(SEXP s, R_PrintData *data)
                     }
                 }
                 else
-                    snprintf(pbuf, 115, "Complex,%d", LENGTH(tmp));
+                    snprintf(pbuf, 115, "complex,%d", LENGTH(tmp));
                 break;
             case STRSXP:
                 if (LENGTH(tmp) == 1)
@@ -512,17 +512,17 @@ static void PrintGenericVector(SEXP s, R_PrintData *data)
                     vmaxset(vmax);
                 }
                 else
-                    snprintf(pbuf, 115, "Character,%d", LENGTH(tmp));
+                    snprintf(pbuf, 115, "character,%d", LENGTH(tmp));
                 break;
             case RAWSXP:
-                snprintf(pbuf, 115, "Raw,%d", LENGTH(tmp));
+                snprintf(pbuf, 115, "raw,%d", LENGTH(tmp));
                 break;
             case LISTSXP:
             case VECSXP:
-                snprintf(pbuf, 115, "List,%d", length(tmp));
+                snprintf(pbuf, 115, "list,%d", length(tmp));
                 break;
             case LANGSXP:
-                snprintf(pbuf, 115, "Expression");
+                snprintf(pbuf, 115, "expression");
                 break;
             default:
                 snprintf(pbuf, 115, "?");
