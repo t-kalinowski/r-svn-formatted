@@ -434,100 +434,125 @@ static void PrintGenericVector(SEXP s, R_PrintData *data)
         /* FIXME: check (ns <= data->max +1) ? ns : data->max; */
         for (i = 0; i < ns; i++)
         {
-            switch (TYPEOF(PROTECT(tmp = VECTOR_ELT(s, i))))
+            PROTECT(tmp = VECTOR_ELT(s, i));
+            if (isObject(tmp))
             {
-            case NILSXP:
-                snprintf(pbuf, 115, "NULL");
-                break;
-            case LGLSXP:
-                if (LENGTH(tmp) == 1)
+                const char *str;
+                Rboolean use_fmt = FALSE;
+                SEXP fun = PROTECT(findFun(install("format"), R_BaseNamespace));
+                SEXP call = PROTECT(lang2(fun, tmp));
+                SEXP ans = PROTECT(eval(call, data->env));
+                if (TYPEOF(ans) == STRSXP && LENGTH(ans) == 1)
                 {
-                    const int *x = LOGICAL_RO(tmp);
-                    formatLogical(x, 1, &w);
-                    snprintf(pbuf, 115, "%s", EncodeLogical(x[0], w));
+                    str = translateChar(STRING_ELT(ans, 0));
+                    if (strlen(str) < 100)
+                        use_fmt = TRUE;
                 }
-                else
-                    snprintf(pbuf, 115, "logical,%d", LENGTH(tmp));
-                break;
-            case INTSXP:
-                /* factors are stored as integers */
-                if (inherits(tmp, "factor"))
-                {
-                    snprintf(pbuf, 115, "factor,%d", LENGTH(tmp));
-                }
+                if (use_fmt)
+                    snprintf(pbuf, 115, "%s", str);
                 else
                 {
+                    SEXP cls = PROTECT(R_data_class2(tmp));
+                    snprintf(pbuf, 115, "%s,%d", translateChar(STRING_ELT(cls, 0)), length(tmp));
+                    UNPROTECT(1);
+                }
+                UNPROTECT(3);
+            }
+            else
+                switch (TYPEOF(tmp))
+                {
+                case NILSXP:
+                    snprintf(pbuf, 115, "NULL");
+                    break;
+                case LGLSXP:
                     if (LENGTH(tmp) == 1)
                     {
-                        const int *x = INTEGER_RO(tmp);
-                        formatInteger(x, 1, &w);
-                        snprintf(pbuf, 115, "%s", EncodeInteger(x[0], w));
+                        const int *x = LOGICAL_RO(tmp);
+                        formatLogical(x, 1, &w);
+                        snprintf(pbuf, 115, "%s", EncodeLogical(x[0], w));
                     }
                     else
-                        snprintf(pbuf, 115, "integer,%d", LENGTH(tmp));
-                }
-                break;
-            case REALSXP:
-                if (LENGTH(tmp) == 1)
-                {
-                    const double *x = REAL_RO(tmp);
-                    formatReal(x, 1, &w, &d, &e, 0);
-                    snprintf(pbuf, 115, "%s", EncodeReal0(x[0], w, d, e, OutDec));
-                }
-                else
-                    snprintf(pbuf, 115, "numeric,%d", LENGTH(tmp));
-                break;
-            case CPLXSXP:
-                if (LENGTH(tmp) == 1)
-                {
-                    const Rcomplex *x = COMPLEX_RO(tmp);
-                    if (ISNA(x[0].r) || ISNA(x[0].i))
-                        /* formatReal(NA) --> w=data->na_width, d=0, e=0 */
-                        snprintf(pbuf, 115, "%s", EncodeReal0(NA_REAL, data->na_width, 0, 0, OutDec));
+                        snprintf(pbuf, 115, "logical,%d", LENGTH(tmp));
+                    break;
+                case INTSXP:
+                    /* factors are stored as integers */
+                    if (inherits(tmp, "factor"))
+                    {
+                        snprintf(pbuf, 115, "factor,%d", LENGTH(tmp));
+                    }
                     else
                     {
-                        formatComplex(x, 1, &wr, &dr, &er, &wi, &di, &ei, 0);
-                        snprintf(pbuf, 115, "%s", EncodeComplex(x[0], wr, dr, er, wi, di, ei, OutDec));
+                        if (LENGTH(tmp) == 1)
+                        {
+                            const int *x = INTEGER_RO(tmp);
+                            formatInteger(x, 1, &w);
+                            snprintf(pbuf, 115, "%s", EncodeInteger(x[0], w));
+                        }
+                        else
+                            snprintf(pbuf, 115, "integer,%d", LENGTH(tmp));
                     }
-                }
-                else
-                    snprintf(pbuf, 115, "complex,%d", LENGTH(tmp));
-                break;
-            case STRSXP:
-                if (LENGTH(tmp) == 1)
-                {
-                    const void *vmax = vmaxget();
-                    /* This can potentially overflow */
-                    const char *ctmp = translateChar(STRING_ELT(tmp, 0));
-                    int len = (int)strlen(ctmp);
-                    if (len < 100)
-                        snprintf(pbuf, 115, "\"%s\"", ctmp);
-                    else
+                    break;
+                case REALSXP:
+                    if (LENGTH(tmp) == 1)
                     {
-                        snprintf(pbuf, 101, "\"%s\"", ctmp);
-                        pbuf[100] = '"';
-                        pbuf[101] = '\0';
-                        strcat(pbuf, " [truncated]");
+                        const double *x = REAL_RO(tmp);
+                        formatReal(x, 1, &w, &d, &e, 0);
+                        snprintf(pbuf, 115, "%s", EncodeReal0(x[0], w, d, e, OutDec));
                     }
-                    vmaxset(vmax);
+                    else
+                        snprintf(pbuf, 115, "numeric,%d", LENGTH(tmp));
+                    break;
+                case CPLXSXP:
+                    if (LENGTH(tmp) == 1)
+                    {
+                        const Rcomplex *x = COMPLEX_RO(tmp);
+                        if (ISNA(x[0].r) || ISNA(x[0].i))
+                            /* formatReal(NA) --> w=data->na_width, d=0, e=0 */
+                            snprintf(pbuf, 115, "%s", EncodeReal0(NA_REAL, data->na_width, 0, 0, OutDec));
+                        else
+                        {
+                            formatComplex(x, 1, &wr, &dr, &er, &wi, &di, &ei, 0);
+                            snprintf(pbuf, 115, "%s", EncodeComplex(x[0], wr, dr, er, wi, di, ei, OutDec));
+                        }
+                    }
+                    else
+                        snprintf(pbuf, 115, "complex,%d", LENGTH(tmp));
+                    break;
+                case STRSXP:
+                    if (LENGTH(tmp) == 1)
+                    {
+                        const void *vmax = vmaxget();
+                        /* This can potentially overflow */
+                        const char *ctmp = translateChar(STRING_ELT(tmp, 0));
+                        int len = (int)strlen(ctmp);
+                        if (len < 100)
+                            snprintf(pbuf, 115, "\"%s\"", ctmp);
+                        else
+                        {
+                            snprintf(pbuf, 101, "\"%s\"", ctmp);
+                            pbuf[100] = '"';
+                            pbuf[101] = '\0';
+                            strcat(pbuf, " [truncated]");
+                        }
+                        vmaxset(vmax);
+                    }
+                    else
+                        snprintf(pbuf, 115, "character,%d", LENGTH(tmp));
+                    break;
+                case RAWSXP:
+                    snprintf(pbuf, 115, "raw,%d", LENGTH(tmp));
+                    break;
+                case LISTSXP:
+                case VECSXP:
+                    snprintf(pbuf, 115, "list,%d", length(tmp));
+                    break;
+                case LANGSXP:
+                    snprintf(pbuf, 115, "expression");
+                    break;
+                default:
+                    snprintf(pbuf, 115, "?");
+                    break;
                 }
-                else
-                    snprintf(pbuf, 115, "character,%d", LENGTH(tmp));
-                break;
-            case RAWSXP:
-                snprintf(pbuf, 115, "raw,%d", LENGTH(tmp));
-                break;
-            case LISTSXP:
-            case VECSXP:
-                snprintf(pbuf, 115, "list,%d", length(tmp));
-                break;
-            case LANGSXP:
-                snprintf(pbuf, 115, "expression");
-                break;
-            default:
-                snprintf(pbuf, 115, "?");
-                break;
-            }
             UNPROTECT(1); /* tmp */
             pbuf[114] = '\0';
             SET_STRING_ELT(t, i, mkChar(pbuf));
