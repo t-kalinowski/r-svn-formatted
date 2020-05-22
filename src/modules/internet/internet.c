@@ -1106,7 +1106,7 @@ static void *in_R_HTTPOpen2(const char *url, const char *agent, const char *head
     // NB: this can only retrieve in a DWORD, so up to 2GB or 4GB?
     if (HttpQueryInfo(wictxt->session, HTTP_QUERY_CONTENT_LENGTH | HTTP_QUERY_FLAG_NUMBER, &len, &d1, &d2))
         wictxt->length = len;
-    wictxt->type = strdup(buf); // FIXME: could be NULL
+    wictxt->type = Rstrdup(buf);
     if (!IDquiet)
     {
         REprintf("Content type '%s'", buf);

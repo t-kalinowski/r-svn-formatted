@@ -1518,10 +1518,10 @@ R_ToplevelCallbackEl *Rf_addTaskCallback(R_ToplevelCallback cb, void *data, void
     {
         char buf[20];
         snprintf(buf, 20, "%d", which + 1);
-        el->name = strdup(buf);
+        el->name = Rstrdup(buf);
     }
     else
-        el->name = strdup(name);
+        el->name = Rstrdup(name);
 
     if (pos)
         *pos = which;
