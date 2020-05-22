@@ -175,8 +175,32 @@ QuartzDesc_t QuartzBitmap_DeviceCreate(void *dd, QuartzFunctions_t *fn, QuartzPa
         if (dev == NULL)
             error("allocation failure in QuartzBitmap_DeviceCreate");
         dev->length = (unsigned int)s;
-        dev->uti = type ? strdup(type) : NULL;
-        dev->path = par->file ? strdup(par->file) : NULL;
+        // dev->uti  = type ? strdup(type) : NULL;
+        if (type)
+        { // code above forces this
+            dev->uti = strdup(type);
+            if (dev->uti == NULL)
+            {
+                free(dev);
+                error("allocation failure in QuartzBitmap_DeviceCreate");
+            }
+        }
+        else
+            dev->uti = NULL;
+        // dev->path = par->file ? strdup(par->file) : NULL;
+        if (par->file)
+        {
+            dev->path = strdup(par->file);
+            if (dev->path == NULL)
+            {
+                if (dev->uti)
+                    free(dev->uti);
+                free(dev);
+                error("allocation failure in QuartzBitmap_DeviceCreate");
+            }
+        }
+        else
+            dev->path = NULL;
         dev->page = 0;
         memset(dev->data, 0, s);
         dev->bitmap = CGBitmapContextCreate(dev->data, w, h, 8, rb, CGColorSpaceCreateWithName(kCGColorSpaceGenericRGB),
