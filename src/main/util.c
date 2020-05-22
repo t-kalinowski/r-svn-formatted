@@ -3207,3 +3207,17 @@ static void str_signif_sexp(SEXP x, const char *type, int width, int digits, con
         error("unsupported type ");
     }
 }
+
+/* added in R 4.1.0.
+   This checks if it succeeds.
+   FIXME: is this worth inlining?
+ */
+char *Rstrdup(const char *s)
+{
+    size_t nb = strlen(s) + 1;
+    void *cpy = malloc(nb);
+    if (cpy == NULL)
+        error("allocation error in Rstrdup");
+    memcpy(cpy, s, nb);
+    return (char *)cpy;
+}
