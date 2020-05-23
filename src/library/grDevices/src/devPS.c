@@ -515,7 +515,7 @@ static void seticonvName(const char *encpath, char *convname)
 static int LoadEncoding(const char *encpath, char *encname, char *encconvname, CNAME *encnames, char *enccode,
                         Rboolean isPDF)
 {
-    char buf[BUFSIZE];
+    char buf[BUFSIZE]; // BUFSIZE is 512
     int i;
     FILE *fp;
     EncodingInputState state;
@@ -540,8 +540,8 @@ static int LoadEncoding(const char *encpath, char *encname, char *encconvname, C
     {
         fclose(fp);
         return 0;
-    } /* encoding name */
-    strncpy(encname, buf + 1, 99);
+    }                             /* encoding name */
+    memcpy(encname, buf + 1, 99); // was strncpy, deliberate truncation
     encname[99] = '\0';
     if (!isPDF)
         snprintf(enccode, 5000, "/%s [\n", encname);
@@ -559,7 +559,7 @@ static int LoadEncoding(const char *encpath, char *encname, char *encconvname, C
             fclose(fp);
             return 0;
         }
-        strncpy(encnames[i].cname, buf + 1, 39);
+        memcpy(encnames[i].cname, buf + 1, 39); // was strncpy, gcc10 warned
         encnames[i].cname[39] = '\0';
         strcat(enccode, " /");
         strcat(enccode, encnames[i].cname);
