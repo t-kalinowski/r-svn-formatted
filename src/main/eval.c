@@ -6632,6 +6632,12 @@ typedef struct
 {
     R_xlen_t idx, len;
     int type;
+    /* Include the symbol in the loopinfo structure in case the
+       binding cell is R_NilValue, e.g. for an active binding. Even if
+       we eventually allow symbols to be garbage collected, the loop
+       symbol is GC protected during the loop evaluation by its
+       reference from the current byte code object. */
+    SEXP symbol;
 } R_loopinfo_t;
 
 #define FOR_LOOP_STATE_SIZE 5
@@ -6664,11 +6670,13 @@ typedef struct
         }                                                                                                              \
     } while (0)
 
-#define SET_FOR_LOOP_VAR(value, cell, rho)                                                                             \
+/* This uses use loopinfo->symbol in case cell is R_NilValue, e.g. for
+   an active binding. */
+#define SET_FOR_LOOP_VAR(value, cell, loopinfo, rho)                                                                   \
     do                                                                                                                 \
     {                                                                                                                  \
         if (BNDCELL_UNBOUND(cell) || !SET_BINDING_VALUE(cell, value))                                                  \
-            defineVar(BINDING_SYMBOL(cell), value, rho);                                                               \
+            defineVar(loopinfo->symbol, value, rho);                                                                   \
     } while (0)
 
 /* Loops that cannot have their SETJMPs optimized out are bracketed by
@@ -7221,6 +7229,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
 #else
             loopinfo->type = TYPEOF(seq);
 #endif
+            loopinfo->symbol = symbol;
             BCNPUSH(value);
 
             /* bump up links count of seq to avoid modification by loop code */
@@ -7280,7 +7289,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                     }
                     GET_VEC_LOOP_VALUE(value);
                     SET_SCALAR_DVAL(value, REAL_ELT(seq, i));
-                    SET_FOR_LOOP_VAR(value, cell, rho);
+                    SET_FOR_LOOP_VAR(value, cell, loopinfo, rho);
                     NEXT();
                 case INTSXP:
                     if (BNDCELL_TAG_WR(cell) == INTSXP)
@@ -7295,7 +7304,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                     }
                     GET_VEC_LOOP_VALUE(value);
                     SET_SCALAR_IVAL(value, INTEGER_ELT(seq, i));
-                    SET_FOR_LOOP_VAR(value, cell, rho);
+                    SET_FOR_LOOP_VAR(value, cell, loopinfo, rho);
                     NEXT();
 #ifdef COMPACT_INTSEQ
                 case INTSEQSXP: {
@@ -7316,7 +7325,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                     }
                     GET_VEC_LOOP_VALUE(value);
                     SET_SCALAR_IVAL(value, ival);
-                    SET_FOR_LOOP_VAR(value, cell, rho);
+                    SET_FOR_LOOP_VAR(value, cell, loopinfo, rho);
                     NEXT();
                 }
 #endif
@@ -7333,7 +7342,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                     }
                     GET_VEC_LOOP_VALUE(value);
                     SET_SCALAR_LVAL(value, LOGICAL_ELT(seq, i));
-                    SET_FOR_LOOP_VAR(value, cell, rho);
+                    SET_FOR_LOOP_VAR(value, cell, loopinfo, rho);
                     NEXT();
                 case CPLXSXP:
                     GET_VEC_LOOP_VALUE(value);
@@ -7360,7 +7369,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
                 default:
                     error(_("invalid sequence argument in for loop"));
                 }
-                SET_FOR_LOOP_VAR(value, cell, rho);
+                SET_FOR_LOOP_VAR(value, cell, loopinfo, rho);
             }
             NEXT();
         }
