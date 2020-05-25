@@ -1050,6 +1050,16 @@ SEXP L_newpage()
     {
         SEXP currentgp = gridStateElement(dd, GSS_GPAR);
         gcontextFromgpar(currentgp, 0, &gc, dd);
+        /* Turn on recording;  allows grid.newpage() to "reset" device
+         * after error.
+         */
+#ifdef R_GE_DEBUG
+        if (getenv("R_GE_DEBUG_record"))
+        {
+            printf("L_newpagerecording: record = TRUE\n");
+        }
+#endif
+        dd->recordGraphics = TRUE;
         GENewPage(&gc, dd);
     }
     return R_NilValue;
