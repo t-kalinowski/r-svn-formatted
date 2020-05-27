@@ -121,11 +121,12 @@ SEXP attribute_hidden do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
         if (correct_nargs)
             recycle_0 = asLogical(CADDR(args));
     }
-    if (!isNull(collapse))
+    Rboolean do_collapse = (collapse != R_NilValue); // == !isNull(collapse)
+    if (do_collapse)
         if (!isString(collapse) || LENGTH(collapse) <= 0 || STRING_ELT(collapse, 0) == NA_STRING)
             error(_("invalid '%s' argument"), "collapse");
 
-#define zero_return return (recycle_0 || isNull(collapse)) ? allocVector(STRSXP, 0) : mkString("")
+#define zero_return return (do_collapse ? mkString("") : allocVector(STRSXP, 0))
 
     if (nx == 0)
         zero_return;
@@ -163,7 +164,7 @@ SEXP attribute_hidden do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
             maxlen = XLENGTH(VECTOR_ELT(x, j));
     }
     if (recycle_0 && has_0_len) // one of the args was character(0)
-        return allocVector(STRSXP, 0);
+        zero_return;
     if (maxlen == 0) // all of the arguments where (equivalent to)  character(0)
         zero_return;
 
@@ -289,16 +290,16 @@ SEXP attribute_hidden do_paste(SEXP call, SEXP op, SEXP args, SEXP env)
 
     /* Now collapse, if required. */
 
-    if (collapse != R_NilValue && (nx = XLENGTH(ans)) > 0)
+    if (do_collapse && (nx = XLENGTH(ans)) > 0)
     {
         sep = STRING_ELT(collapse, 0);
         use_UTF8 = IS_UTF8(sep);
         use_Bytes = IS_BYTES(sep);
         for (R_xlen_t i = 0; i < nx; i++)
         {
-            if (IS_UTF8(STRING_ELT(ans, i)))
+            if (!use_UTF8 && IS_UTF8(STRING_ELT(ans, i)))
                 use_UTF8 = TRUE;
-            if (IS_BYTES(STRING_ELT(ans, i)))
+            if (!use_Bytes && IS_BYTES(STRING_ELT(ans, i)))
                 use_Bytes = TRUE;
         }
         if (use_Bytes)
