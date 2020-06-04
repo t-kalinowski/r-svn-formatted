@@ -159,7 +159,7 @@ static void fmingr(int n, double *p, double *df, void *ex)
                 val2 = REAL(s)[0] / (OS->fnscale);
                 df[i] = (val1 - val2) / (2 * eps);
                 if (!R_FINITE(df[i]))
-                    error(("non-finite finite-difference value [%d]"), i + 1);
+                    error(_("non-finite finite-difference value [%d]"), i + 1);
                 if (MAYBE_REFERENCED(x))
                 {
                     REPROTECT(x = duplicate(x), ipx_x);
@@ -206,7 +206,7 @@ static void fmingr(int n, double *p, double *df, void *ex)
                 val2 = REAL(s)[0] / (OS->fnscale);
                 df[i] = (val1 - val2) / (epsused + eps);
                 if (!R_FINITE(df[i]))
-                    error(("non-finite finite-difference value [%d]"), i + 1);
+                    error(_("non-finite finite-difference value [%d]"), i + 1);
                 if (MAYBE_REFERENCED(x))
                 {
                     REPROTECT(x = duplicate(x), ipx_x);

@@ -649,7 +649,7 @@ static SEXP La_solve_cmplx(SEXP A, SEXP Bin)
     if (info < 0)
         error(_("argument %d of Lapack routine %s had invalid value"), -info, "zgesv");
     if (info > 0)
-        error(("Lapack routine zgesv: system is exactly singular"));
+        error(_("Lapack routine zgesv: system is exactly singular"));
     UNPROTECT(3); /* B, Bin, A */
     return B;
 #else
