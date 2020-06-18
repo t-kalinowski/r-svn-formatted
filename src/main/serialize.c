@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1995--2019  The R Core Team
+ *  Copyright (C) 1995--2020  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1169,7 +1169,9 @@ tailcall:
         if (R_IsPackageEnv(s))
         {
             SEXP name = R_PackageEnvName(s);
-            warning(_("'%s' may not be available when loading"), CHAR(STRING_ELT(name, 0)));
+            const void *vmax = vmaxget();
+            warning(_("'%s' may not be available when loading"), translateChar(STRING_ELT(name, 0)));
+            vmaxset(vmax);
             OutInteger(stream, PACKAGESXP);
             OutStringVec(stream, name, ref_table);
         }
@@ -3098,26 +3100,30 @@ static SEXP appendRawToFile(SEXP file, SEXP bytes)
     size_t len, out;
     long pos; // what ftell gives: won't work for > 2GB files
     SEXP val;
+    const void *vmax;
+    const char *cfile;
 
     if (!IS_PROPER_STRING(file))
         error(_("not a proper file name"));
+    vmax = vmaxget();
+    cfile = translateCharFP(STRING_ELT(file, 0));
     if (TYPEOF(bytes) != RAWSXP)
         error(_("not a proper raw vector"));
 #ifdef HAVE_WORKING_FTELL
     /* Windows' ftell returns position 0 with "ab" */
-    if ((fp = R_fopen(CHAR(STRING_ELT(file, 0)), "ab")) == NULL)
+    if ((fp = R_fopen(cfile, "ab")) == NULL)
     {
-        error(_("cannot open file '%s': %s"), CHAR(STRING_ELT(file, 0)), strerror(errno));
+        error(_("cannot open file '%s': %s"), cfile, strerror(errno));
     }
 #else
-    if ((fp = R_fopen(CHAR(STRING_ELT(file, 0)), "r+b")) == NULL)
+    if ((fp = R_fopen(cfile, "r+b")) == NULL)
     {
-        error(_("cannot open file '%s': %s"), CHAR(STRING_ELT(file, 0)), strerror(errno));
+        error(_("cannot open file '%s': %s"), cfile, strerror(errno));
     }
     if (fseek(fp, 0, SEEK_END) != 0)
     {
         fclose(fp);
-        error(_("seek failed on %s"), CHAR(STRING_ELT(file, 0)));
+        error(_("seek failed on %s"), cfile);
     }
 #endif
 
@@ -3134,6 +3140,8 @@ static SEXP appendRawToFile(SEXP file, SEXP bytes)
     val = allocVector(INTSXP, 2);
     INTEGER(val)[0] = (int)pos;
     INTEGER(val)[1] = (int)len;
+    vmaxset(vmax);
+
     return val;
 }
 
@@ -3149,7 +3157,7 @@ SEXP attribute_hidden do_lazyLoadDBflush(SEXP call, SEXP op, SEXP args, SEXP env
     checkArity(op, args);
 
     int i;
-    const char *cfile = CHAR(STRING_ELT(CAR(args), 0));
+    const char *cfile = translateCharFP(STRING_ELT(CAR(args), 0));
 
     /* fprintf(stderr, "flushing file %s", cfile); */
     for (i = 0; i < used; i++)
@@ -3175,10 +3183,13 @@ static SEXP readRawFromFile(SEXP file, SEXP key)
     int offset, len, in, i, icache = -1;
     long filelen;
     SEXP val;
-    const char *cfile = CHAR(STRING_ELT(file, 0));
+    const void *vmax;
+    const char *cfile;
 
     if (!IS_PROPER_STRING(file))
         error(_("not a proper file name"));
+    vmax = vmaxget();
+    cfile = translateCharFP(STRING_ELT(file, 0));
     if (TYPEOF(key) != INTSXP || LENGTH(key) != 2)
         error(_("bad offset/length argument"));
 
@@ -3196,6 +3207,7 @@ static SEXP readRawFromFile(SEXP file, SEXP key)
     if (icache >= 0)
     {
         memcpy(RAW(val), ptr[icache] + offset, len);
+        vmaxset(vmax);
         return val;
     }
 
@@ -3252,6 +3264,7 @@ static SEXP readRawFromFile(SEXP file, SEXP key)
                 if (len != in)
                     error(_("read failed on %s"), cfile);
             }
+            vmaxset(vmax);
             return val;
         }
         else
@@ -3265,6 +3278,7 @@ static SEXP readRawFromFile(SEXP file, SEXP key)
             fclose(fp);
             if (len != in)
                 error(_("read failed on %s"), cfile);
+            vmaxset(vmax);
             return val;
         }
     }
@@ -3280,6 +3294,7 @@ static SEXP readRawFromFile(SEXP file, SEXP key)
     fclose(fp);
     if (len != in)
         error(_("read failed on %s"), cfile);
+    vmaxset(vmax);
     return val;
 }
 
@@ -3395,7 +3410,7 @@ SEXP attribute_hidden do_lazyLoadDBfetch(SEXP call, SEXP op, SEXP args, SEXP env
     else if (compressed)
         REPROTECT(val = R_decompress1(val, &err), vpi);
     if (err)
-        error("lazy-load database '%s' is corrupt", CHAR(STRING_ELT(file, 0)));
+        error("lazy-load database '%s' is corrupt", translateChar(STRING_ELT(file, 0)));
     val = R_unserialize(val, hook);
     if (TYPEOF(val) == PROMSXP)
     {
