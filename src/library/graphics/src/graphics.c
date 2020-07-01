@@ -2660,6 +2660,10 @@ void gcontextFromGP(pGEcontext gc, pGEDevDesc dd)
     gc->lineheight = gpptr(dd)->lheight;
     gc->fontface = gpptr(dd)->font;
     strncpy(gc->fontfamily, gpptr(dd)->family, 201);
+    /*
+     * Just "zero" this for now
+     */
+    gc->patternFill = R_NilValue;
 }
 
 /* Draw a line. */

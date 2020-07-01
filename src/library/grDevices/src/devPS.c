@@ -2876,35 +2876,31 @@ static void PostScriptSetFont(FILE *fp, int fontnum, double size)
 
 static void PostScriptSetLineTexture(FILE *fp, const char *dashlist, int nlty, double lwd, int lend)
 {
-/* use same macro for Postscript and PDF */
-/* Historically the adjustment was 1 to allow for round end caps.
-   As from 2.11.0, no adjustment is done for butt endcaps.
-   The + 1 adjustment on the 'off' segments seems wrong, but it
-   has been left in for back-compatibility
-*/
-#define PP_SetLineTexture(_CMD_, adj)                                                                                  \
-    double dash[8], a = adj;                                                                                           \
-    int i;                                                                                                             \
-    Rboolean allzero = TRUE;                                                                                           \
-    for (i = 0; i < nlty; i++)                                                                                         \
-    {                                                                                                                  \
-        dash[i] = lwd * ((i % 2) ? (dashlist[i] + a) : ((nlty == 1 && dashlist[i] == 1.) ? 1. : dashlist[i] - a));     \
-        if (dash[i] < 0)                                                                                               \
-            dash[i] = 0;                                                                                               \
-        if (dash[i] > .01)                                                                                             \
-            allzero = FALSE;                                                                                           \
-    }                                                                                                                  \
-    fprintf(fp, "[");                                                                                                  \
-    if (!allzero)                                                                                                      \
-    {                                                                                                                  \
-        for (i = 0; i < nlty; i++)                                                                                     \
-        {                                                                                                              \
-            fprintf(fp, " %.2f", dash[i]);                                                                             \
-        }                                                                                                              \
-    }                                                                                                                  \
-    fprintf(fp, "] 0 %s\n", _CMD_)
-
-    PP_SetLineTexture("setdash", (lend == GE_BUTT_CAP) ? 0. : 1.);
+    /* Historically the adjustment was 1 to allow for round end caps.
+       As from 2.11.0, no adjustment is done for butt endcaps.
+       The + 1 adjustment on the 'off' segments seems wrong, but it
+       has been left in for back-compatibility
+    */
+    double dash[8], a = (lend == GE_BUTT_CAP) ? 0. : 1.;
+    int i;
+    Rboolean allzero = TRUE;
+    for (i = 0; i < nlty; i++)
+    {
+        dash[i] = lwd * ((i % 2) ? (dashlist[i] + a) : ((nlty == 1 && dashlist[i] == 1.) ? 1. : dashlist[i] - a));
+        if (dash[i] < 0)
+            dash[i] = 0;
+        if (dash[i] > .01)
+            allzero = FALSE;
+    }
+    fprintf(fp, "[");
+    if (!allzero)
+    {
+        for (i = 0; i < nlty; i++)
+        {
+            fprintf(fp, " %.2f", dash[i]);
+        }
+    }
+    fprintf(fp, "] 0 setdash\n");
 }
 
 static void PostScriptMoveTo(FILE *fp, double x, double y)
@@ -3187,6 +3183,12 @@ static double PS_StrWidth(const char *str, const pGEcontext gc, pDevDesc dd);
 static void PS_Text(double x, double y, const char *str, double rot, double hadj, const pGEcontext gc, pDevDesc dd);
 static double PS_StrWidthUTF8(const char *str, const pGEcontext gc, pDevDesc dd);
 static void PS_TextUTF8(double x, double y, const char *str, double rot, double hadj, const pGEcontext gc, pDevDesc dd);
+static SEXP PS_setPattern(SEXP pattern, pDevDesc dd);
+static void PS_releasePattern(SEXP ref, pDevDesc dd);
+static SEXP PS_setClipPath(SEXP path, SEXP ref, pDevDesc dd);
+static void PS_releaseClipPath(SEXP ref, pDevDesc dd);
+static SEXP PS_setMask(SEXP path, SEXP ref, pDevDesc dd);
+static void PS_releaseMask(SEXP ref, pDevDesc dd);
 
 /* PostScript Support (formerly in PostScript.c) */
 
@@ -3721,9 +3723,17 @@ Rboolean PSDeviceDriver(pDevDesc dd, const char *file, const char *paper, const 
     dd->haveTransparency = 1;
     dd->haveTransparentBg = 2;
     dd->haveRaster = 3; /* non-missing colours */
+    dd->setPattern = PS_setPattern;
+    dd->releasePattern = PS_releasePattern;
+    dd->setClipPath = PS_setClipPath;
+    dd->releaseClipPath = PS_releaseClipPath;
+    dd->setMask = PS_setMask;
+    dd->releaseMask = PS_releaseMask;
 
     dd->deviceSpecific = (void *)pd;
     dd->displayListOn = FALSE;
+
+    dd->deviceVersion = R_GE_definitions;
     return TRUE;
 }
 
@@ -4729,6 +4739,33 @@ static void PS_TextUTF8(double x, double y, const char *str, double rot, double 
     PS_Text0(x, y, str, CE_UTF8, rot, hadj, gc, dd);
 }
 
+static SEXP PS_setPattern(SEXP pattern, pDevDesc dd)
+{
+    return R_NilValue;
+}
+
+static void PS_releasePattern(SEXP ref, pDevDesc dd)
+{
+}
+
+static SEXP PS_setClipPath(SEXP path, SEXP ref, pDevDesc dd)
+{
+    return R_NilValue;
+}
+
+static void PS_releaseClipPath(SEXP ref, pDevDesc dd)
+{
+}
+
+static SEXP PS_setMask(SEXP path, SEXP ref, pDevDesc dd)
+{
+    return R_NilValue;
+}
+
+static void PS_releaseMask(SEXP ref, pDevDesc dd)
+{
+}
+
 /***********************************************************************
 
          XFig driver shares font handling
@@ -4901,6 +4938,12 @@ static void XFig_Rect(double x0, double y0, double x1, double y1, const pGEconte
 static void XFig_Size(double *left, double *right, double *bottom, double *top, pDevDesc dd);
 static double XFig_StrWidth(const char *str, const pGEcontext gc, pDevDesc dd);
 static void XFig_Text(double x, double y, const char *str, double rot, double hadj, const pGEcontext gc, pDevDesc dd);
+static SEXP XFig_setPattern(SEXP pattern, pDevDesc dd);
+static void XFig_releasePattern(SEXP ref, pDevDesc dd);
+static SEXP XFig_setClipPath(SEXP path, SEXP ref, pDevDesc dd);
+static void XFig_releaseClipPath(SEXP ref, pDevDesc dd);
+static SEXP XFig_setMask(SEXP path, SEXP ref, pDevDesc dd);
+static void XFig_releaseMask(SEXP ref, pDevDesc dd);
 static Rboolean XFig_Open(pDevDesc, XFigDesc *);
 
 /*
@@ -5211,9 +5254,16 @@ static Rboolean XFigDeviceDriver(pDevDesc dd, const char *file, const char *pape
     dd->haveRaster = 1;
     dd->haveCapture = 1;
     dd->haveLocator = 1;
+    dd->setPattern = XFig_setPattern;
+    dd->releasePattern = XFig_releasePattern;
+    dd->setClipPath = XFig_setClipPath;
+    dd->releaseClipPath = XFig_releaseClipPath;
+    dd->setMask = XFig_setMask;
+    dd->releaseMask = XFig_releaseMask;
 
     dd->deviceSpecific = (void *)pd;
     dd->displayListOn = FALSE;
+    dd->deviceVersion = R_GE_definitions;
     return 1;
 }
 
@@ -5630,6 +5680,33 @@ static void XFig_MetricInfo(int c, const pGEcontext gc, double *ascent, double *
     *width = floor(gc->cex * gc->ps + 0.5) * *width;
 }
 
+static SEXP XFig_setPattern(SEXP pattern, pDevDesc dd)
+{
+    return R_NilValue;
+}
+
+static void XFig_releasePattern(SEXP ref, pDevDesc dd)
+{
+}
+
+static SEXP XFig_setClipPath(SEXP path, SEXP ref, pDevDesc dd)
+{
+    return R_NilValue;
+}
+
+static void XFig_releaseClipPath(SEXP ref, pDevDesc dd)
+{
+}
+
+static SEXP XFig_setMask(SEXP path, SEXP ref, pDevDesc dd)
+{
+    return R_NilValue;
+}
+
+static void XFig_releaseMask(SEXP ref, pDevDesc dd)
+{
+}
+
 /***********************************************************************
 
          PDF driver also shares font handling
@@ -5645,6 +5722,24 @@ typedef struct
     int nobj;     /* The object number when written out */
     int nmaskobj; /* The mask object number */
 } rasterImage;
+
+#define DEFBUFSIZE 8192
+
+#define PDFlinearGradient 0
+#define PDFstitchedFunction 1
+#define PDFexpFunction 2
+#define PDFshadingPattern 3
+#define PDFsoftMask 4
+#define PDFclipPath 5
+#define PDFcontent 6
+#define PDFtilingPattern 7
+
+typedef struct
+{
+    int type;
+    int nchar;
+    char *str;
+} PDFdefn;
 
 typedef struct
 {
@@ -5685,6 +5780,8 @@ typedef struct
         rcolor fill;          /* fill color */
         rcolor bg;            /* color */
         int srgb_fg, srgb_bg; /* Are stroke and fill colorspaces set? */
+        int patternfill;
+        int mask;
     } current;
 
     /*
@@ -5739,15 +5836,42 @@ typedef struct
     /* Raster images used on the device */
     rasterImage *rasters;
     int numRasters;     /* number in use */
-    int writtenRasters; /* number written out */
+    int writtenRasters; /* number written out on this page */
+    int fileRasters;    /* number written out in this file */
     int maxRasters;     /* size of array allocated */
     /* Soft masks for raster images */
     int *masks;
     int numMasks;
 
+    PDFdefn *definitions;
+    int numDefns;
+    int maxDefns;
+    Rboolean appendingClipPath; /* Are we defining a clipping path ? */
+    int appendingMask;          /* Are we defining a mask ? */
+    int currentMask;
+    int appendingPattern; /* Are we defining a (tiling) pattern ? */
+
     /* Is the device "offline" (does not write out to a file) */
     Rboolean offline;
 } PDFDesc;
+
+/* Called at the start of a page and when clipping is reset */
+static void PDF_Invalidate(PDFDesc *pd)
+{
+    pd->current.fontsize = -1;
+    pd->current.lwd = -1;
+    pd->current.lty = -1;
+    pd->current.lend = 0;
+    pd->current.ljoin = 0;
+    pd->current.lmitre = 0;
+    /* page starts with black as the default fill and stroke colours */
+    pd->current.col = INVALID_COL;
+    pd->current.fill = INVALID_COL;
+    pd->current.bg = INVALID_COL;
+    pd->current.srgb_fg = pd->current.srgb_bg = 0;
+    pd->current.patternfill = -1;
+    pd->current.mask = -1;
+}
 
 /* Macro for driver actions to check for "offline" device and bail out */
 
@@ -5776,6 +5900,926 @@ static void PDF_Text(double x, double y, const char *str, double rot, double had
 static double PDF_StrWidthUTF8(const char *str, const pGEcontext gc, pDevDesc dd);
 static void PDF_TextUTF8(double x, double y, const char *str, double rot, double hadj, const pGEcontext gc,
                          pDevDesc dd);
+static SEXP PDF_setPattern(SEXP pattern, pDevDesc dd);
+static void PDF_releasePattern(SEXP ref, pDevDesc dd);
+static SEXP PDF_setClipPath(SEXP path, SEXP ref, pDevDesc dd);
+static void PDF_releaseClipPath(SEXP ref, pDevDesc dd);
+static SEXP PDF_setMask(SEXP path, SEXP ref, pDevDesc dd);
+static void PDF_releaseMask(SEXP ref, pDevDesc dd);
+
+/***********************************************************************
+ * Stuff for recording definitions
+ */
+
+static void initDefn(int i, int type, PDFDesc *pd)
+{
+    pd->definitions[i].type = type;
+    pd->definitions[i].nchar = DEFBUFSIZE;
+    pd->definitions[i].str = malloc(DEFBUFSIZE * sizeof(char));
+    pd->definitions[i].str[0] = '\0';
+}
+
+static void catDefn(char *buf, int i, PDFDesc *pd)
+{
+    int len = strlen(pd->definitions[i].str);
+    int buflen = strlen(buf);
+    /* Grow definition string if necessary) */
+    if (len + buflen + 1 >= pd->definitions[i].nchar)
+    {
+        void *tmp;
+        pd->definitions[i].nchar = pd->definitions[i].nchar + DEFBUFSIZE;
+        tmp = realloc(pd->definitions[i].str, (pd->definitions[i].nchar) * sizeof(char));
+        if (!tmp)
+            error(_("failed to increase definition string (shut down PDF device)"));
+        pd->definitions[i].str = tmp;
+    }
+    strncat(pd->definitions[i].str, buf, buflen);
+}
+
+static void copyDefn(int fromDefn, int toDefn, PDFDesc *pd)
+{
+    catDefn(pd->definitions[fromDefn].str, toDefn, pd);
+}
+
+static void trimDefn(int i, PDFDesc *pd)
+{
+    int len = strlen(pd->definitions[i].str);
+    pd->definitions[i].str = realloc(pd->definitions[i].str, (len + 1) * sizeof(char));
+    pd->definitions[i].str[len] = '\0';
+}
+
+static void killDefn(int i, PDFDesc *pd)
+{
+    if (pd->definitions[i].str != NULL)
+    {
+        free(pd->definitions[i].str);
+    }
+}
+
+static void initDefinitions(PDFDesc *pd)
+{
+    int i;
+    pd->definitions = malloc(pd->maxDefns * sizeof(PDFdefn));
+    for (i = 0; i < pd->maxDefns; i++)
+    {
+        pd->definitions[i].str = NULL;
+    }
+}
+
+static int growDefinitions(PDFDesc *pd)
+{
+    if (pd->numDefns == pd->maxDefns)
+    {
+        int newMax = 2 * pd->maxDefns;
+        void *tmp;
+        /* Do it this way so previous pointer is retained if it fails */
+        tmp = realloc(pd->definitions, newMax * sizeof(PDFdefn));
+        if (!tmp)
+            error(_("failed to increase 'maxDefns'"));
+        pd->definitions = tmp;
+        for (int i = pd->maxDefns; i < newMax; i++)
+        {
+            pd->definitions[i].str = NULL;
+        }
+        pd->maxDefns = newMax;
+    }
+    return pd->numDefns++;
+}
+
+static void shrinkDefinitions(PDFDesc *pd)
+{
+    pd->numDefns--;
+}
+
+static void killDefinitions(PDFDesc *pd)
+{
+    int i;
+    for (i = 0; i < pd->numDefns; i++)
+        killDefn(i, pd);
+    free(pd->definitions);
+}
+
+/* For when end file and start a new one on new page */
+static void resetDefinitions(PDFDesc *pd)
+{
+    int i;
+    for (i = 0; i < pd->numDefns; i++)
+        killDefn(i, pd);
+    pd->numDefns = 0;
+    /* Leave pd->maxDefns as is */
+}
+
+/***********************************************************************
+ * Stuff for gradients
+ */
+
+static void addRGBExpGradientFunction(SEXP gradient, int i, double start, double end, int toDefn, PDFDesc *pd)
+{
+    char buf[300];
+    rcolor col1, col2;
+    switch (R_GE_patternType(gradient))
+    {
+    case R_GE_linearGradientPattern:
+        col1 = R_GE_linearGradientColour(gradient, i);
+        col2 = R_GE_linearGradientColour(gradient, i + 1);
+        break;
+    case R_GE_radialGradientPattern:
+        col1 = R_GE_radialGradientColour(gradient, i);
+        col2 = R_GE_radialGradientColour(gradient, i + 1);
+        break;
+    }
+    snprintf(buf, 300,
+             "<<\n/FunctionType 2\n/Domain [%.4f %.4f]\n/C0 [%0.4f %0.4f %0.4f]\n/C1 [%0.4f %0.4f %0.4f]\n/N 1\n>>\n",
+             start, end, R_RED(col1) / 255.0, R_GREEN(col1) / 255.0, R_BLUE(col1) / 255.0, R_RED(col2) / 255.0,
+             R_GREEN(col2) / 255.0, R_BLUE(col2) / 255.0);
+    catDefn(buf, toDefn, pd);
+}
+
+static void addAlphaExpGradientFunction(SEXP gradient, int i, double start, double end, int toDefn, PDFDesc *pd)
+{
+    char buf[300];
+    rcolor col1, col2;
+    switch (R_GE_patternType(gradient))
+    {
+    case R_GE_linearGradientPattern:
+        col1 = R_GE_linearGradientColour(gradient, i);
+        col2 = R_GE_linearGradientColour(gradient, i + 1);
+        break;
+    case R_GE_radialGradientPattern:
+        col1 = R_GE_radialGradientColour(gradient, i);
+        col2 = R_GE_radialGradientColour(gradient, i + 1);
+        break;
+    }
+    snprintf(buf, 300, "<<\n/FunctionType 2\n/Domain [%.4f %.4f]\n/C0 [%0.4f]\n/C1 [%0.4f]\n/N 1\n>>\n", start, end,
+             R_ALPHA(col1) / 255.0, R_ALPHA(col2) / 255.0);
+    catDefn(buf, toDefn, pd);
+}
+
+static void addStitchedGradientFunction(SEXP gradient, int nStops, int toDefn, Rboolean alpha, PDFDesc *pd)
+{
+    int defNum = growDefinitions(pd);
+    int i;
+    double firstStop, lastStop, stop;
+    char buf[100];
+    initDefn(defNum, PDFstitchedFunction, pd);
+    switch (R_GE_patternType(gradient))
+    {
+    case R_GE_linearGradientPattern:
+        firstStop = R_GE_linearGradientStop(gradient, 0);
+        lastStop = R_GE_linearGradientStop(gradient, nStops - 1);
+        break;
+    case R_GE_radialGradientPattern:
+        firstStop = R_GE_radialGradientStop(gradient, 0);
+        lastStop = R_GE_radialGradientStop(gradient, nStops - 1);
+        break;
+    }
+    snprintf(buf, 100, "<<\n/FunctionType 3\n/Domain [%0.4f %0.4f]\n/Functions [\n", firstStop, lastStop);
+    catDefn(buf, defNum, pd);
+    for (i = 0; i < (nStops - 1); i++)
+    {
+        if (alpha)
+        {
+            addAlphaExpGradientFunction(gradient, i, 0.0, 1.0, defNum, pd);
+        }
+        else
+        {
+            addRGBExpGradientFunction(gradient, i, 0.0, 1.0, defNum, pd);
+        }
+    }
+    catDefn("]\n/Bounds [", defNum, pd);
+    for (i = 1; i < (nStops - 1); i++)
+    {
+        switch (R_GE_patternType(gradient))
+        {
+        case R_GE_linearGradientPattern:
+            stop = R_GE_linearGradientStop(gradient, i);
+            break;
+        case R_GE_radialGradientPattern:
+            stop = R_GE_radialGradientStop(gradient, i);
+            break;
+        }
+        sprintf(buf, "%0.4f ", stop);
+        catDefn(buf, defNum, pd);
+    }
+    catDefn("]\n/Encode [", defNum, pd);
+    for (i = 0; i < (nStops - 1); i++)
+    {
+        catDefn("0 1 ", defNum, pd);
+    }
+    catDefn("]\n>>\n", defNum, pd);
+    /* Copy toDefn */
+    copyDefn(defNum, toDefn, pd);
+    /* Discard temporary definition */
+    killDefn(defNum, pd);
+    shrinkDefinitions(pd);
+}
+
+static void addGradientFunction(SEXP gradient, int toDefn, Rboolean alpha, PDFDesc *pd)
+{
+    int nStops;
+    switch (R_GE_patternType(gradient))
+    {
+    case R_GE_linearGradientPattern:
+        nStops = R_GE_linearGradientNumStops(gradient);
+        break;
+    case R_GE_radialGradientPattern:
+        nStops = R_GE_radialGradientNumStops(gradient);
+        break;
+    }
+    if (nStops > 2)
+    {
+        addStitchedGradientFunction(gradient, nStops, toDefn, alpha, pd);
+    }
+    else
+    {
+        double start, end;
+        switch (R_GE_patternType(gradient))
+        {
+        case R_GE_linearGradientPattern:
+            start = R_GE_linearGradientStop(gradient, 0);
+            end = R_GE_linearGradientStop(gradient, 1);
+            break;
+        case R_GE_radialGradientPattern:
+            start = R_GE_radialGradientStop(gradient, 0);
+            end = R_GE_radialGradientStop(gradient, 1);
+            break;
+        }
+        if (alpha)
+        {
+            addAlphaExpGradientFunction(gradient, 0, start, end, toDefn, pd);
+        }
+        else
+        {
+            addRGBExpGradientFunction(gradient, 0, start, end, toDefn, pd);
+        }
+    }
+}
+
+static void addLinearGradient(SEXP gradient, char *colormodel, int toDefn, PDFDesc *pd)
+{
+    int defNum = growDefinitions(pd);
+    char buf[200];
+    char colorspace[12];
+    if (streql(colormodel, "gray"))
+        strcpy(colorspace, "/DeviceGray");
+    else if (streql(colormodel, "srgb"))
+        strcpy(colorspace, "5 0 R");
+    else
+        strcpy(colorspace, "/DeviceRGB");
+    initDefn(defNum, PDFlinearGradient, pd);
+    snprintf(buf, 200, "<<\n/ShadingType 2\n/ColorSpace %s\n/Coords [%.4f %.4f %.4f %.4f]\n/Function\n", colorspace,
+             R_GE_linearGradientX1(gradient), R_GE_linearGradientY1(gradient), R_GE_linearGradientX2(gradient),
+             R_GE_linearGradientY2(gradient));
+    catDefn(buf, defNum, pd);
+    if (streql(colormodel, "gray"))
+    {
+        addGradientFunction(gradient, defNum, TRUE, pd);
+    }
+    else
+    {
+        addGradientFunction(gradient, defNum, FALSE, pd);
+    }
+    char extend[6];
+    switch (R_GE_linearGradientExtend(gradient))
+    {
+    case R_GE_patternExtendPad:
+        strcpy(extend, "true");
+        break;
+    case R_GE_patternExtendRepeat:
+    case R_GE_patternExtendReflect:
+        warning("Repeat or reflect pattern not supported on PDF device");
+    case R_GE_patternExtendNone:
+        strcpy(extend, "false");
+    }
+    snprintf(buf, 200, "/Extend [%s %s]\n>>\n", extend, extend);
+    catDefn(buf, defNum, pd);
+    /* Copy toDefn */
+    copyDefn(defNum, toDefn, pd);
+    /* Discard temporary definition */
+    killDefn(defNum, pd);
+    shrinkDefinitions(pd);
+}
+
+static void addRadialGradient(SEXP gradient, char *colormodel, int toDefn, PDFDesc *pd)
+{
+    int defNum = growDefinitions(pd);
+    char buf[200];
+    char colorspace[12];
+    if (streql(colormodel, "gray"))
+        strcpy(colorspace, "/DeviceGray");
+    else if (streql(colormodel, "srgb"))
+        strcpy(colorspace, "5 0 R");
+    else
+        strcpy(colorspace, "/DeviceRGB");
+    initDefn(defNum, PDFlinearGradient, pd);
+    snprintf(buf, 200, "<<\n/ShadingType 3\n/ColorSpace %s\n/Coords [%.4f %.4f %.4f %.4f %.4f %.4f]\n/Function\n",
+             colorspace, R_GE_radialGradientCX1(gradient), R_GE_radialGradientCY1(gradient),
+             R_GE_radialGradientR1(gradient), R_GE_radialGradientCX2(gradient), R_GE_radialGradientCY2(gradient),
+             R_GE_radialGradientR2(gradient));
+    catDefn(buf, defNum, pd);
+    if (streql(colormodel, "gray"))
+    {
+        addGradientFunction(gradient, defNum, TRUE, pd);
+    }
+    else
+    {
+        addGradientFunction(gradient, defNum, FALSE, pd);
+    }
+    char extend[6];
+    switch (R_GE_radialGradientExtend(gradient))
+    {
+    case R_GE_patternExtendPad:
+        strcpy(extend, "true");
+        break;
+    case R_GE_patternExtendRepeat:
+    case R_GE_patternExtendReflect:
+        warning("Repeat or reflect pattern not supported on PDF device");
+    case R_GE_patternExtendNone:
+        strcpy(extend, "false");
+    }
+    snprintf(buf, 200, "/Extend [%s %s]\n>>\n", extend, extend);
+    catDefn(buf, defNum, pd);
+    /* Copy toDefn */
+    copyDefn(defNum, toDefn, pd);
+    /* Discard temporary definition */
+    killDefn(defNum, pd);
+    shrinkDefinitions(pd);
+}
+
+static int addShadingSoftMask(SEXP pattern, PDFDesc *pd)
+{
+    int defNum = growDefinitions(pd);
+    initDefn(defNum, PDFsoftMask, pd);
+    /* Object number will be determined when definition written
+     * to file (PDF_endfile)
+     */
+    catDefn(" 0 obj\n<<\n/Type /ExtGState\n/AIS false\n/SMask\n<<\n", defNum, pd);
+    catDefn("/Type /Mask\n/S /Luminosity\n/G\n<<\n", defNum, pd);
+    catDefn("/Type /XObject\n/Subtype /Form\n/FormType 1\n/Group\n<<\n", defNum, pd);
+    catDefn("/Type /Group\n/CS /DeviceGray\n/I true\n/S /Transparency\n", defNum, pd);
+    catDefn(">>\n/Resources\n<<\n", defNum, pd);
+    catDefn("/Shading\n<<\n/S0\n", defNum, pd);
+    switch (R_GE_patternType(pattern))
+    {
+    case R_GE_linearGradientPattern:
+        addLinearGradient(pattern, "gray", defNum, pd);
+        break;
+    case R_GE_radialGradientPattern:
+        addRadialGradient(pattern, "gray", defNum, pd);
+        break;
+    default:
+        warning("Shading type not yet supported");
+        return -1;
+    }
+    catDefn(">>\n/ExtGState << /G0 << /CA 1 /ca 1 >> >>\n", defNum, pd);
+    char buf[30];
+    snprintf(buf, 30, ">>\n/BBox [0 0 %d %d]\n", (int)(0.5 + pd->paperwidth), (int)(0.5 + pd->paperheight));
+    catDefn(buf, defNum, pd);
+    /* Note the spaces before the >> just after the endstream;
+     * ghostscript seems to need those to avoid error (!?) */
+    catDefn("/Length 14\n>>\nstream\n/G0 gs /S0 sh\nendstream\n  >>\n", defNum, pd);
+    catDefn(">>\nendobj\n", defNum, pd);
+    trimDefn(defNum, pd);
+    return defNum;
+}
+
+/*
+ * Do we need to bother with semi-transparency?
+ */
+static int semiTransparent(int col)
+{
+    return !(R_OPAQUE(col) || R_TRANSPARENT(col));
+}
+
+static Rboolean semiTransparentShading(SEXP pattern)
+{
+    int i, nStops;
+    switch (R_GE_patternType(pattern))
+    {
+    case R_GE_linearGradientPattern:
+        nStops = R_GE_linearGradientNumStops(pattern);
+        break;
+    case R_GE_radialGradientPattern:
+        nStops = R_GE_radialGradientNumStops(pattern);
+        break;
+    }
+    rcolor col;
+    Rboolean anyOpaque = FALSE;
+    Rboolean anyTransparent = FALSE;
+    for (i = 0; i < nStops; i++)
+    {
+        switch (R_GE_patternType(pattern))
+        {
+        case R_GE_linearGradientPattern:
+            col = R_GE_linearGradientColour(pattern, i);
+            break;
+        case R_GE_radialGradientPattern:
+            col = R_GE_radialGradientColour(pattern, i);
+            break;
+        }
+        if (semiTransparent(col))
+            return TRUE;
+        if (R_OPAQUE(col))
+            anyOpaque = TRUE;
+        if (R_TRANSPARENT(col))
+            anyTransparent = TRUE;
+        if (anyOpaque && anyTransparent)
+            return TRUE;
+    }
+    return FALSE;
+}
+
+static SEXP addShading(SEXP pattern, PDFDesc *pd)
+{
+    SEXP ref = R_NilValue;
+    int defNum = growDefinitions(pd);
+    /* Object number will be determined when definition written
+     * to file (PDF_endfile)
+     */
+    initDefn(defNum, PDFshadingPattern, pd);
+    catDefn(" 0 obj\n<<\n/Type Pattern\n/PatternType 2\n/Shading\n", defNum, pd);
+    switch (R_GE_patternType(pattern))
+    {
+    case R_GE_linearGradientPattern:
+        addLinearGradient(pattern, pd->colormodel, defNum, pd);
+        break;
+    case R_GE_radialGradientPattern:
+        addRadialGradient(pattern, pd->colormodel, defNum, pd);
+        break;
+    default:
+        warning("Shading type not yet supported");
+        return R_NilValue;
+    }
+    catDefn(">>\nendobj\n", defNum, pd);
+    trimDefn(defNum, pd);
+    if (defNum >= 0)
+    {
+        if (semiTransparentShading(pattern))
+        {
+            int maskNum = addShadingSoftMask(pattern, pd);
+            if (maskNum >= 0)
+            {
+                PROTECT(ref = allocVector(INTSXP, 2));
+                INTEGER(ref)[0] = defNum;
+                INTEGER(ref)[1] = maskNum;
+                UNPROTECT(1);
+            }
+        }
+        else
+        {
+            PROTECT(ref = allocVector(INTSXP, 1));
+            INTEGER(ref)[0] = defNum;
+            UNPROTECT(1);
+        }
+    }
+    return ref;
+}
+
+/***********************************************************************
+ * Stuff for tiling patterns
+ */
+
+static int newTiling(SEXP pattern, PDFDesc *pd)
+{
+    SEXP R_fcall;
+    int mainPattern;
+    char buf[100];
+    int defNum = growDefinitions(pd);
+    initDefn(defNum, PDFtilingPattern, pd);
+
+    /* Use separate definition to store the pattern content
+     * so we can determine length of the content
+     */
+    int contentDefn = growDefinitions(pd);
+    initDefn(contentDefn, PDFcontent, pd);
+    /* Some initialisation that newpage does
+     * (expected by other captured output)
+     */
+    catDefn("1 J 1 j q\n", contentDefn, pd);
+
+    mainPattern = pd->appendingPattern;
+    pd->appendingPattern = contentDefn;
+
+    /* Invalidate current settings so pattern enforces its settings */
+    PDF_Invalidate(pd);
+
+    /* Evaluate the pattern function to generate the pattern */
+    R_fcall = PROTECT(lang1(R_GE_tilingPatternFunction(pattern)));
+    eval(R_fcall, R_GlobalEnv);
+    UNPROTECT(1);
+
+    /* Invalidate current settings so normal drawing enforces its settings */
+    PDF_Invalidate(pd);
+
+    /* Some finalisation that endpage does
+     * (to match the newpage initilisation)
+     */
+    catDefn("Q\n", contentDefn, pd);
+    /* Cannot discard temporary definition because there may have been
+     * other definitions created during its creation (so it may no
+     * longer be the topmost definition)
+     */
+    trimDefn(contentDefn, pd);
+
+    pd->appendingPattern = mainPattern;
+
+    /* Object number will be determined when definition written
+     * to file (PDF_endfile)
+     */
+    catDefn(" 0 obj\n<<\n/Type /Pattern\n/PatternType 1\n/PaintType 1\n", defNum, pd);
+    catDefn("/TilingType 1\n", defNum, pd);
+    snprintf(buf, 100, "/BBox [%d %d %d %d]\n", (int)(0.5 + R_GE_tilingPatternX(pattern)),
+             (int)(0.5 + R_GE_tilingPatternY(pattern)),
+             (int)(0.5 + R_GE_tilingPatternX(pattern) + R_GE_tilingPatternWidth(pattern)),
+             (int)(0.5 + R_GE_tilingPatternY(pattern) + R_GE_tilingPatternHeight(pattern)));
+    catDefn(buf, defNum, pd);
+    snprintf(buf, 100, "/XStep %d /YStep %d\n", (int)(0.5 + R_GE_tilingPatternWidth(pattern)),
+             (int)(0.5 + R_GE_tilingPatternHeight(pattern)));
+    catDefn(buf, defNum, pd);
+
+    /* Tiling pattern will be completed at end of file with
+     * call to completeTiling()
+     */
+
+    return defNum;
+}
+
+static int PDFwriteResourceDictionary(int objOffset, Rboolean endpage, int excludeDef, PDFDesc *pd);
+
+static void completeTiling(int defNum, int resourceDictOffset, PDFDesc *pd)
+{
+    char buf[100];
+    /* (strong) assumption here that tiling pattern content is
+     * very next definition
+     */
+    int contentDefn = defNum + 1;
+
+    catDefn("/Resources\n", defNum, pd);
+
+    /* Write the resource dictionary for the tiling pattern.
+     * This is just a copy of the Resource Dictionary for the page,
+     * WITHOUT the tiling pattern itself.
+     * This will be AT LEAST as much as the tiling pattern needs,
+     * but it MUST exclude itself to avoid infinite loop in PDF viewer.
+     */
+    /* Redirect PDFwriteResourceDictionary() output to pattern */
+    pd->appendingPattern = defNum;
+    PDFwriteResourceDictionary(resourceDictOffset, FALSE, defNum, pd);
+
+    /* Note the spaces before the >> just after the endstream;
+     * ghostscript seems to need those to avoid error (!?) */
+    snprintf(buf, 100, "/Length %d\n", (int)strlen(pd->definitions[contentDefn].str));
+    catDefn(buf, defNum, pd);
+    catDefn(">>\nstream\n", defNum, pd);
+    /* Copy pattern content */
+    copyDefn(contentDefn, defNum, pd);
+    catDefn("endstream\nendobj\n", defNum, pd);
+
+    trimDefn(defNum, pd);
+}
+
+static SEXP addTiling(SEXP pattern, PDFDesc *pd)
+{
+    SEXP ref = R_NilValue;
+    int defNum = newTiling(pattern, pd);
+
+    if (defNum >= 0)
+    {
+        PROTECT(ref = allocVector(INTSXP, 1));
+        INTEGER(ref)[0] = defNum;
+        UNPROTECT(1);
+    }
+
+    return ref;
+}
+
+static void addToPattern(char *str, PDFDesc *pd)
+{
+    /* append to a tiling pattern content definition */
+    catDefn(str, pd->appendingPattern, pd);
+}
+
+/***********************************************************************
+ * Stuff for patterns
+ */
+
+static SEXP addPattern(SEXP pattern, PDFDesc *pd)
+{
+    SEXP ref = R_NilValue;
+    switch (R_GE_patternType(pattern))
+    {
+    case R_GE_linearGradientPattern:
+    case R_GE_radialGradientPattern:
+        ref = addShading(pattern, pd);
+        break;
+    case R_GE_tilingPattern:
+        ref = addTiling(pattern, pd);
+        break;
+    }
+    return ref;
+}
+
+static int countPatterns(PDFDesc *pd)
+{
+    int i, count = 0;
+    for (i = 0; i < pd->numDefns; i++)
+    {
+        if (pd->definitions[i].type == PDFshadingPattern || pd->definitions[i].type == PDFtilingPattern)
+        {
+            count++;
+        }
+    }
+    return count;
+}
+
+/***********************************************************************
+ * Stuff for clipping paths
+ */
+
+static void addToClipPath(char *str, PDFDesc *pd)
+{
+    /* Just append to the "current" definition */
+    catDefn(str, pd->numDefns - 1, pd);
+}
+
+static int newClipPath(SEXP path, PDFDesc *pd)
+{
+    SEXP R_fcall;
+    int defNum = growDefinitions(pd);
+    initDefn(defNum, PDFclipPath, pd);
+    catDefn("Q q\n", defNum, pd);
+
+    /* Put device in "append mode" */
+    pd->appendingClipPath = TRUE;
+
+    /* Evaluate the path function to generate the clipping path */
+    R_fcall = PROTECT(lang1(path));
+    eval(R_fcall, R_GlobalEnv);
+    UNPROTECT(1);
+
+    trimDefn(defNum, pd);
+    /* Exit "append mode" */
+    pd->appendingClipPath = FALSE;
+
+    return defNum;
+}
+
+/***********************************************************************
+ * Stuff for masks
+ */
+
+static void addToMask(char *str, PDFDesc *pd)
+{
+    /* append to the a mask content definition */
+    catDefn(str, pd->appendingMask, pd);
+}
+
+static int newMask(SEXP path, PDFDesc *pd)
+{
+    SEXP R_fcall;
+    int mainMask;
+    char buf[100];
+    int defNum = growDefinitions(pd);
+    initDefn(defNum, PDFsoftMask, pd);
+
+    /* Use temporary definition to store the mask content
+     * so we can determine length of the content
+     */
+    int tempDefn = growDefinitions(pd);
+    initDefn(tempDefn, PDFcontent, pd);
+    /* Some initialisation that newpage does
+     * (expected by other captured output)
+     */
+    catDefn("1 J 1 j q\n", tempDefn, pd);
+
+    mainMask = pd->appendingMask;
+    pd->appendingMask = tempDefn;
+
+    /* Invalidate current settings so mask enforces its settings */
+    PDF_Invalidate(pd);
+
+    /* Evaluate the path function to generate the mask */
+    R_fcall = PROTECT(lang1(path));
+    eval(R_fcall, R_GlobalEnv);
+    UNPROTECT(1);
+
+    /* Invalidate current settings so normal drawing enforces its settings */
+    PDF_Invalidate(pd);
+
+    /* Some finalisation that endpage does
+     * (to match the newpage initilisation)
+     */
+    catDefn("Q\n", tempDefn, pd);
+    /* Cannot discard temporary definition because there may have been
+     * other definitions created during its creation (so it may no
+     * longer be the topmost definition)
+     */
+    trimDefn(tempDefn, pd);
+
+    pd->appendingMask = mainMask;
+
+    /* Object number will be determined when definition written
+     * to file (PDF_endfile)
+     */
+    catDefn(" 0 obj\n<<\n/Type /ExtGState\n/AIS false\n/SMask\n<<\n", defNum, pd);
+    catDefn("/Type /Mask\n/S /Alpha\n/G\n<<\n", defNum, pd);
+    catDefn("/Type /XObject\n/Subtype /Form\n/FormType 1\n/Group\n<<\n", defNum, pd);
+    char colorspace[12];
+    if (streql(pd->colormodel, "gray"))
+        strcpy(colorspace, "/DeviceGray");
+    else if (streql(pd->colormodel, "srgb"))
+        strcpy(colorspace, "5 0 R");
+    else
+        strcpy(colorspace, "/DeviceRGB");
+    snprintf(buf, 100, "/Type /Group\n/CS %s\n/I true\n/S /Transparency\n", colorspace);
+    catDefn(buf, defNum, pd);
+    snprintf(buf, 100, ">>\n/BBox [0 0 %d %d]\n", (int)(0.5 + pd->paperwidth), (int)(0.5 + pd->paperheight));
+    catDefn(buf, defNum, pd);
+
+    /* Note the spaces before the >> just after the endstream;
+     * ghostscript seems to need those to avoid error (!?) */
+    snprintf(buf, 100, "/Length %d\n", (int)strlen(pd->definitions[tempDefn].str));
+    catDefn(buf, defNum, pd);
+    catDefn(">>\nstream\n", defNum, pd);
+    /* Copy mask content */
+    copyDefn(tempDefn, defNum, pd);
+    catDefn("endstream\n  >>\n", defNum, pd);
+    catDefn(">>\nendobj\n", defNum, pd);
+
+    trimDefn(defNum, pd);
+    return defNum;
+}
+
+static SEXP addMask(SEXP mask, SEXP ref, PDFDesc *pd)
+{
+    SEXP newref = R_NilValue;
+    int index;
+
+    if (isNull(mask))
+    {
+        /* Set NO mask */
+        index = -1;
+    }
+    else
+    {
+        if (isNull(ref))
+        {
+            /* Generate new mask */
+            index = newMask(mask, pd);
+            if (index >= 0)
+            {
+                PROTECT(newref = allocVector(INTSXP, 1));
+                INTEGER(newref)[0] = index;
+                UNPROTECT(1);
+            }
+        }
+        else
+        {
+            /* Reuse existing clipping path */
+            index = INTEGER(ref)[0];
+            newref = ref;
+        }
+    }
+    pd->currentMask = index;
+
+    return newref;
+}
+
+/***********************************************************************
+ * Stuff for writing out PDF code
+ */
+
+/* Write output to a variety of destinations
+ * (buf must be preallocated)
+ *
+ * Check for clip path first
+ * (because clippaths cannot be nested and
+ *  because patterns and masks cannot be used in clippaths)
+ *
+ * Check for mask next
+ * (and capture all output to mask in that case)
+ *
+ * Otherwise, write directly to the PDF file
+ */
+static int PDFwrite(char *buf, size_t size, const char *fmt, PDFDesc *pd, ...)
+{
+    int val;
+    va_list ap;
+
+    va_start(ap, pd);
+    val = vsnprintf(buf, size, fmt, ap);
+    va_end(ap);
+
+    if (pd->appendingClipPath)
+    {
+        addToClipPath(buf, pd);
+    }
+    else if (pd->appendingPattern >= 0 && (pd->appendingPattern > pd->appendingMask))
+    {
+        addToPattern(buf, pd);
+    }
+    else if (pd->appendingMask >= 0)
+    {
+        addToMask(buf, pd);
+    }
+    else
+    {
+        fputs(buf, pd->pdffp);
+    }
+
+    return val;
+}
+
+static void PDFwritePatternDefs(int objoffset, int excludeDef, PDFDesc *pd)
+{
+    int i;
+    char buf[100];
+    PDFwrite(buf, 100, "/Pattern\n<<\n", pd);
+    for (i = 0; i < pd->numDefns; i++)
+    {
+        if ((pd->definitions[i].type == PDFshadingPattern || pd->definitions[i].type == PDFtilingPattern) &&
+            i != excludeDef)
+        {
+            PDFwrite(buf, 100, "/Def%d %d 0 R\n", pd, i, i + objoffset);
+        }
+    }
+    PDFwrite(buf, 100, ">>\n", pd);
+}
+
+static void PDFwriteSoftMaskDefs(int objoffset, PDFDesc *pd)
+{
+    int i;
+    char buf[100];
+    for (i = 0; i < pd->numDefns; i++)
+    {
+        if (pd->definitions[i].type == PDFsoftMask)
+        {
+            PDFwrite(buf, 100, "/Def%d %d 0 R\n", pd, i, i + objoffset);
+        }
+    }
+}
+
+static void PDFwriteClipPath(int i, PDFDesc *pd)
+{
+    char *buf1;
+    char buf2[10];
+    int len = strlen(pd->definitions[i].str);
+    buf1 = malloc((len + 1) * sizeof(char));
+
+    PDFwrite(buf1, len + 1, "%s", pd, pd->definitions[i].str);
+    if (pd->fillOddEven)
+    {
+        PDFwrite(buf2, 10, " W* n\n", pd);
+    }
+    else
+    {
+        PDFwrite(buf2, 10, " W n\n", pd);
+    }
+
+    free(buf1);
+}
+
+static void PDFwriteMask(int i, PDFDesc *pd)
+{
+    char buf[20];
+    if (pd->current.mask != i)
+    {
+        PDFwrite(buf, 20, "/Def%d gs\n", pd, i);
+        pd->current.mask = i;
+    }
+}
+
+static void PDFwriteDefinitions(int resourceDictOffset, PDFDesc *pd)
+{
+    for (int i = 0; i < pd->numDefns; i++)
+    {
+        /* All definitions written out, to keep the math somewhere near sane,
+         * but some definitions are just empty here
+         * (e.g., clipping paths are written inline every time
+         *  they are used rather than here AND temporary mask content
+         *  is still hanging around)
+         */
+        pd->pos[++pd->nobjs] = (int)ftell(pd->pdffp);
+        /* Definition object number */
+        fprintf(pd->pdffp, "%d", pd->nobjs);
+        if (pd->definitions[i].type == PDFclipPath || pd->definitions[i].type == PDFcontent)
+        {
+            fprintf(pd->pdffp, " 0 obj << >>\n");
+        }
+        else if (pd->definitions[i].type == PDFtilingPattern)
+        {
+            /* Need to complete tiling pattern at end of file
+             * to get its Resource Dictionary right
+             */
+            completeTiling(i, resourceDictOffset, pd);
+            fputs(pd->definitions[i].str, pd->pdffp);
+        }
+        else
+        {
+            fputs(pd->definitions[i].str, pd->pdffp);
+        }
+    }
+}
 
 /***********************************************************************
  * Some stuff for recording raster images
@@ -6073,6 +7117,8 @@ static void PDFcleanup(int stage, PDFDesc *pd)
 {
     switch (stage)
     {
+    case 7: /* Allocated defns */
+        killDefinitions(pd);
     case 6: /* Allocated masks */
         free(pd->masks);
     case 5: /* Allocated rasters */
@@ -6373,7 +7419,7 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
      * END Load fonts
      *****************************/
 
-    pd->numRasters = pd->writtenRasters = 0;
+    pd->numRasters = pd->writtenRasters = pd->fileRasters = 0;
     pd->maxRasters = 64; /* dynamic */
     pd->rasters = initRasterArray(pd->maxRasters);
     if (!pd->rasters)
@@ -6390,6 +7436,20 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
         free(dd);
         error(_("failed to allocate masks"));
     }
+
+    pd->numDefns = 0;
+    pd->maxDefns = 64;
+    initDefinitions(pd);
+    if (!pd->definitions)
+    {
+        PDFcleanup(6, pd);
+        free(dd);
+        error(_("failed to allocate definitions"));
+    }
+    pd->appendingClipPath = FALSE;
+    pd->appendingMask = -1;
+    pd->currentMask = -1;
+    pd->appendingPattern = -1;
 
     setbg = R_GE_str2col(bg);
     setfg = R_GE_str2col(fg);
@@ -6454,7 +7514,7 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
     {
         char errbuf[strlen(pd->papername) + 1];
         strcpy(errbuf, pd->papername);
-        PDFcleanup(6, pd);
+        PDFcleanup(7, pd);
         free(dd);
         error(_("invalid paper type '%s' (pdf)"), errbuf);
     }
@@ -6481,7 +7541,7 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
     pointsize = floor(ps);
     if (R_TRANSPARENT(setbg) && R_TRANSPARENT(setfg))
     {
-        PDFcleanup(6, pd);
+        PDFcleanup(7, pd);
         free(dd);
         error(_("invalid foreground/background color (pdf)"));
     }
@@ -6564,28 +7624,17 @@ Rboolean PDFDeviceDriver(pDevDesc dd, const char *file, const char *paper, const
     dd->haveTransparency = 2;
     dd->haveTransparentBg = 3;
     dd->haveRaster = 2;
+    dd->setPattern = PDF_setPattern;
+    dd->releasePattern = PDF_releasePattern;
+    dd->setClipPath = PDF_setClipPath;
+    dd->releaseClipPath = PDF_releaseClipPath;
+    dd->setMask = PDF_setMask;
+    dd->releaseMask = PDF_releaseMask;
 
     dd->deviceSpecific = (void *)pd;
     dd->displayListOn = FALSE;
+    dd->deviceVersion = R_GE_definitions;
     return TRUE;
-}
-
-/* Called at the start of a page and when clipping is reset */
-static void PDF_Invalidate(pDevDesc dd)
-{
-    PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
-
-    pd->current.fontsize = -1;
-    pd->current.lwd = -1;
-    pd->current.lty = -1;
-    pd->current.lend = 0;
-    pd->current.ljoin = 0;
-    pd->current.lmitre = 0;
-    /* page starts with black as the default fill and stroke colours */
-    pd->current.col = INVALID_COL;
-    pd->current.fill = INVALID_COL;
-    pd->current.bg = INVALID_COL;
-    pd->current.srgb_fg = pd->current.srgb_bg = 0;
 }
 
 /*
@@ -6641,17 +7690,10 @@ static void alphaVersion(PDFDesc *pd)
     pd->usedAlpha = TRUE;
 }
 
-/*
- * Do we need to bother with semi-transparency?
- */
-static int semiTransparent(int col)
-{
-    return !(R_OPAQUE(col) || R_TRANSPARENT(col));
-}
-
 static void PDF_SetLineColor(int color, pDevDesc dd)
 {
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
+    char buf[100];
 
     if (color != pd->current.col)
     {
@@ -6664,7 +7706,7 @@ static void PDF_SetLineColor(int color, pDevDesc dd)
              * Apply graphics state parameter dictionary
              * to set alpha
              */
-            fprintf(pd->pdffp, "/GS%i gs\n", colAlphaIndex(alpha, pd));
+            PDFwrite(buf, 100, "/GS%i gs\n", pd, colAlphaIndex(alpha, pd));
         }
         if (streql(pd->colormodel, "gray"))
         {
@@ -6673,7 +7715,7 @@ static void PDF_SetLineColor(int color, pDevDesc dd)
                http://www.faqs.org/faqs/graphics/colorspace-faq/
                Those from C-11 might be more appropriate.
             */
-            fprintf(pd->pdffp, "%.3f G\n", (0.213 * r + 0.715 * g + 0.072 * b));
+            PDFwrite(buf, 100, "%.3f G\n", pd, (0.213 * r + 0.715 * g + 0.072 * b));
         }
         else if (streql(pd->colormodel, "cmyk"))
         {
@@ -6689,12 +7731,12 @@ static void PDF_SetLineColor(int color, pDevDesc dd)
                 m = (m - k) / (1 - k);
                 y = (y - k) / (1 - k);
             }
-            fprintf(pd->pdffp, "%.3f %.3f %.3f %.3f K\n", c, m, y, k);
+            PDFwrite(buf, 100, "%.3f %.3f %.3f %.3f K\n", pd, c, m, y, k);
         }
         else if (streql(pd->colormodel, "rgb"))
         {
-            fprintf(pd->pdffp, "%.3f %.3f %.3f RG\n", R_RED(color) / 255.0, R_GREEN(color) / 255.0,
-                    R_BLUE(color) / 255.0);
+            PDFwrite(buf, 100, "%.3f %.3f %.3f RG\n", pd, R_RED(color) / 255.0, R_GREEN(color) / 255.0,
+                     R_BLUE(color) / 255.0);
         }
         else
         {
@@ -6702,11 +7744,11 @@ static void PDF_SetLineColor(int color, pDevDesc dd)
                 warning(_("unknown 'colormodel', using 'srgb'"));
             if (!pd->current.srgb_bg)
             {
-                fprintf(pd->pdffp, "/sRGB CS\n");
+                PDFwrite(buf, 100, "/sRGB CS\n", pd);
                 pd->current.srgb_bg = 1;
             }
-            fprintf(pd->pdffp, "%.3f %.3f %.3f SCN\n", R_RED(color) / 255.0, R_GREEN(color) / 255.0,
-                    R_BLUE(color) / 255.0);
+            PDFwrite(buf, 100, "%.3f %.3f %.3f SCN\n", pd, R_RED(color) / 255.0, R_GREEN(color) / 255.0,
+                     R_BLUE(color) / 255.0);
         }
         pd->current.col = color;
     }
@@ -6715,6 +7757,7 @@ static void PDF_SetLineColor(int color, pDevDesc dd)
 static void PDF_SetFill(int color, pDevDesc dd)
 {
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
+    char buf[100];
     if (color != pd->current.fill)
     {
         unsigned int alpha = R_ALPHA(color);
@@ -6726,12 +7769,12 @@ static void PDF_SetFill(int color, pDevDesc dd)
              * Apply graphics state parameter dictionary
              * to set alpha
              */
-            fprintf(pd->pdffp, "/GS%i gs\n", fillAlphaIndex(alpha, pd));
+            PDFwrite(buf, 100, "/GS%i gs\n", pd, fillAlphaIndex(alpha, pd));
         }
         if (streql(pd->colormodel, "gray"))
         {
             double r = R_RED(color) / 255.0, g = R_GREEN(color) / 255.0, b = R_BLUE(color) / 255.0;
-            fprintf(pd->pdffp, "%.3f g\n", (0.213 * r + 0.715 * g + 0.072 * b));
+            PDFwrite(buf, 100, "%.3f g\n", pd, (0.213 * r + 0.715 * g + 0.072 * b));
         }
         else if (streql(pd->colormodel, "cmyk"))
         {
@@ -6747,12 +7790,12 @@ static void PDF_SetFill(int color, pDevDesc dd)
                 m = (m - k) / (1 - k);
                 y = (y - k) / (1 - k);
             }
-            fprintf(pd->pdffp, "%.3f %.3f %.3f %.3f k\n", c, m, y, k);
+            PDFwrite(buf, 100, "%.3f %.3f %.3f %.3f k\n", pd, c, m, y, k);
         }
         else if (streql(pd->colormodel, "rgb"))
         {
-            fprintf(pd->pdffp, "%.3f %.3f %.3f rg\n", R_RED(color) / 255.0, R_GREEN(color) / 255.0,
-                    R_BLUE(color) / 255.0);
+            PDFwrite(buf, 100, "%.3f %.3f %.3f rg\n", pd, R_RED(color) / 255.0, R_GREEN(color) / 255.0,
+                     R_BLUE(color) / 255.0);
         }
         else
         {
@@ -6760,19 +7803,46 @@ static void PDF_SetFill(int color, pDevDesc dd)
                 warning(_("unknown 'colormodel', using 'srgb'"));
             if (!pd->current.srgb_fg)
             {
-                fprintf(pd->pdffp, "/sRGB cs\n");
+                PDFwrite(buf, 100, "/sRGB cs\n", pd);
                 pd->current.srgb_fg = 1;
             }
-            fprintf(pd->pdffp, "%.3f %.3f %.3f scn\n", R_RED(color) / 255.0, R_GREEN(color) / 255.0,
-                    R_BLUE(color) / 255.0);
+            PDFwrite(buf, 100, "%.3f %.3f %.3f scn\n", pd, R_RED(color) / 255.0, R_GREEN(color) / 255.0,
+                     R_BLUE(color) / 255.0);
         }
 
         pd->current.fill = color;
     }
+    /* Fill set means pattern fill not set */
+    pd->current.patternfill = -1;
 }
 
-static void PDFSetLineEnd(FILE *fp, R_GE_lineend lend)
+static void PDF_SetPatternFill(SEXP ref, pDevDesc dd)
 {
+    PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
+    int patternIndex = INTEGER(ref)[0];
+
+    if (pd->current.patternfill != patternIndex)
+    {
+        char buf[100];
+        if (length(ref) > 1)
+        {
+            /* Define soft mask as well as pattern */
+            int maskIndex = INTEGER(ref)[1];
+            PDFwrite(buf, 100, "/Def%d gs /Pattern cs /Def%d scn\n", pd, maskIndex, patternIndex);
+        }
+        else
+        {
+            PDFwrite(buf, 100, "/Pattern cs /Def%d scn\n", pd, patternIndex);
+        }
+        pd->current.patternfill = patternIndex;
+    }
+    /* Pattern fill set means fill not set */
+    pd->current.fill = INVALID_COL;
+}
+
+static void PDFSetLineEnd(PDFDesc *pd, R_GE_lineend lend)
+{
+    char buf[10];
     int lineend = 1; /* -Wall */
     switch (lend)
     {
@@ -6788,11 +7858,12 @@ static void PDFSetLineEnd(FILE *fp, R_GE_lineend lend)
     default:
         error(_("invalid line end"));
     }
-    fprintf(fp, "%1d J\n", lineend);
+    PDFwrite(buf, 10, "%1d J\n", pd, lineend);
 }
 
-static void PDFSetLineJoin(FILE *fp, R_GE_linejoin ljoin)
+static void PDFSetLineJoin(PDFDesc *pd, R_GE_linejoin ljoin)
 {
+    char buf[10];
     int linejoin = 1; /* -Wall */
     switch (ljoin)
     {
@@ -6808,13 +7879,33 @@ static void PDFSetLineJoin(FILE *fp, R_GE_linejoin ljoin)
     default:
         error(_("invalid line join"));
     }
-    fprintf(fp, "%1d j\n", linejoin);
+    PDFwrite(buf, 10, "%1d j\n", pd, linejoin);
 }
 
 /* Note that the line texture is scaled by the line width.*/
-static void PDFSetLineTexture(FILE *fp, const char *dashlist, int nlty, double lwd, int lend)
+static void PDFSetLineTexture(PDFDesc *pd, const char *dashlist, int nlty, double lwd, int lend)
 {
-    PP_SetLineTexture("d", (lend == GE_BUTT_CAP) ? 0. : 1.);
+    double dash[8], a = (lend == GE_BUTT_CAP) ? 0. : 1.;
+    int i;
+    Rboolean allzero = TRUE;
+    char buf[10];
+    for (i = 0; i < nlty; i++)
+    {
+        dash[i] = lwd * ((i % 2) ? (dashlist[i] + a) : ((nlty == 1 && dashlist[i] == 1.) ? 1. : dashlist[i] - a));
+        if (dash[i] < 0)
+            dash[i] = 0;
+        if (dash[i] > .01)
+            allzero = FALSE;
+    }
+    PDFwrite(buf, 10, "[", pd);
+    if (!allzero)
+    {
+        for (i = 0; i < nlty; i++)
+        {
+            PDFwrite(buf, 10, " %.2f", pd, dash[i]);
+        }
+    }
+    PDFwrite(buf, 10, "] 0 d\n", pd);
 }
 
 static void PDF_SetLineStyle(const pGEcontext gc, pDevDesc dd)
@@ -6828,6 +7919,7 @@ static void PDF_SetLineStyle(const pGEcontext gc, pDevDesc dd)
     R_GE_lineend newlend = gc->lend;
     R_GE_linejoin newljoin = gc->ljoin;
     double newlmitre = gc->lmitre;
+    char buf[100];
 
     if (pd->current.lty != newlty || pd->current.lwd != newlwd || pd->current.lend != newlend)
     {
@@ -6837,29 +7929,29 @@ static void PDF_SetLineStyle(const pGEcontext gc, pDevDesc dd)
         /* Must not allow line width to be zero */
         if (linewidth < .01)
             linewidth = .01;
-        fprintf(pd->pdffp, "%.2f w\n", linewidth);
+        PDFwrite(buf, 100, "%.2f w\n", pd, linewidth);
         /* process lty : */
         for (i = 0; i < 8 && newlty & 15; i++)
         {
             dashlist[i] = newlty & 15;
             newlty = newlty >> 4;
         }
-        PDFSetLineTexture(pd->pdffp, dashlist, i, newlwd * 0.75, newlend);
+        PDFSetLineTexture(pd, dashlist, i, newlwd * 0.75, newlend);
     }
     if (pd->current.lend != newlend)
     {
         pd->current.lend = newlend;
-        PDFSetLineEnd(pd->pdffp, newlend);
+        PDFSetLineEnd(pd, newlend);
     }
     if (pd->current.ljoin != newljoin)
     {
         pd->current.ljoin = newljoin;
-        PDFSetLineJoin(pd->pdffp, newljoin);
+        PDFSetLineJoin(pd, newljoin);
     }
     if (pd->current.lmitre != newlmitre)
     {
         pd->current.lmitre = newlmitre;
-        fprintf(pd->pdffp, "%.2f M\n", newlmitre);
+        PDFwrite(buf, 100, "%.2f M\n", pd, newlmitre);
     }
 }
 
@@ -6871,13 +7963,15 @@ static void PDF_SetLineStyle(const pGEcontext gc, pDevDesc dd)
 */
 static void texton(PDFDesc *pd)
 {
-    fprintf(pd->pdffp, "BT\n");
+    char buf[10];
+    PDFwrite(buf, 10, "BT\n", pd);
     pd->inText = TRUE;
 }
 
 static void textoff(PDFDesc *pd)
 {
-    fprintf(pd->pdffp, "ET\n");
+    char buf[10];
+    PDFwrite(buf, 10, "ET\n", pd);
     pd->inText = FALSE;
 }
 
@@ -7045,56 +8139,33 @@ static int isSans(const char *name)
 #define APPENDBUFSIZE 512
 #endif
 
-static void PDF_endfile(PDFDesc *pd)
+/* Write out the resources for a page OR for a tiling pattern.
+ * Return the number of objects in the dictionary
+ */
+static int PDFwriteResourceDictionary(int objOffset, Rboolean endpage, int excludeDef, PDFDesc *pd)
 {
-    int i, startxref, tempnobj, nenc, nfonts, cidnfonts, firstencobj;
-    int nraster, nmask;
+    char buf[100];
+    int i, objCount, nenc, nfonts, cidnfonts, nraster, nmask;
 
-    /* object 3 lists all the pages */
-
-    pd->pos[3] = (int)ftell(pd->pdffp);
-    fprintf(pd->pdffp, "3 0 obj\n<< /Type /Pages /Kids [ ");
-    for (i = 0; i < pd->pageno; i++)
-        fprintf(pd->pdffp, "%d 0 R ", pd->pageobj[i]);
-
-    fprintf(pd->pdffp, "] /Count %d /MediaBox [0 0 %d %d] >>\nendobj\n", pd->pageno, (int)(0.5 + pd->paperwidth),
-            (int)(0.5 + pd->paperheight));
-
-    /* Object 4 is the standard resources dict for each page */
-
-    /* Count how many images and masks */
     nraster = pd->numRasters;
     nmask = pd->numMasks;
 
-    if (pd->nobjs + nraster + nmask + 500 >= pd->max_nobjs)
-    {
-        int new = pd->nobjs + nraster + nmask + 500;
-        void *tmp = realloc(pd->pos, new * sizeof(int));
-        if (!tmp)
-            error("unable to increase object limit: please shutdown the pdf device");
-        pd->pos = (int *)tmp;
-        pd->max_nobjs = new;
-    }
-
-    pd->pos[4] = (int)ftell(pd->pdffp);
-
-    /* The resource dictionary for each page */
     /* ProcSet is regarded as obsolete as from PDF 1.4 */
     if (nraster > 0)
     {
         if (nmask > 0)
         {
-            fprintf(pd->pdffp, "4 0 obj\n<<\n/ProcSet [/PDF /Text /ImageC /ImageB]\n/Font <<");
+            PDFwrite(buf, 100, "<<\n/ProcSet [/PDF /Text /ImageC /ImageB]\n/Font <<", pd);
         }
         else
         {
-            fprintf(pd->pdffp, "4 0 obj\n<<\n/ProcSet [/PDF /Text /ImageC]\n/Font <<");
+            PDFwrite(buf, 100, "<<\n/ProcSet [/PDF /Text /ImageC]\n/Font <<", pd);
         }
     }
     else
     {
         /* fonts */
-        fprintf(pd->pdffp, "4 0 obj\n<<\n/ProcSet [/PDF /Text]\n/Font <<");
+        PDFwrite(buf, 100, "<<\n/ProcSet [/PDF /Text]\n/Font <<", pd);
     }
 
     /* Count how many encodings will be included:
@@ -7110,11 +8181,11 @@ static void PDF_endfile(PDFDesc *pd)
         }
     }
     /* Should be a default text font at least, plus possibly others */
-    tempnobj = pd->nobjs + nenc;
+    objCount = objOffset + nenc;
 
     /* Dingbats always F1 */
     if (pd->fontUsed[1])
-        fprintf(pd->pdffp, " /F1 %d 0 R ", ++tempnobj);
+        PDFwrite(buf, 100, " /F1 %d 0 R ", pd, ++objCount);
 
     nfonts = 2;
     if (pd->fonts)
@@ -7126,10 +8197,10 @@ static void PDF_endfile(PDFDesc *pd)
             {
                 if (nfonts >= 100 || pd->fontUsed[nfonts])
                 {
-                    fprintf(pd->pdffp, "/F%d %d 0 R ", nfonts, ++tempnobj);
+                    PDFwrite(buf, 100, "/F%d %d 0 R ", pd, nfonts, ++objCount);
                     /* Allow for the font descriptor object, if present */
                     if (!isBase14(fontlist->family->fonts[i]->name))
-                        tempnobj++;
+                        objCount++;
                 }
                 nfonts++;
             }
@@ -7144,53 +8215,111 @@ static void PDF_endfile(PDFDesc *pd)
         {
             for (i = 0; i < 5; i++)
             {
-                fprintf(pd->pdffp, "/F%d %d 0 R ", 1000 + cidnfonts + 1, ++tempnobj);
+                PDFwrite(buf, 100, "/F%d %d 0 R ", pd, 1000 + cidnfonts + 1, ++objCount);
                 cidnfonts++;
             }
             fontlist = fontlist->next;
         }
     }
-    fprintf(pd->pdffp, ">>\n");
+    PDFwrite(buf, 100, ">>\n", pd);
 
     if (nraster > 0)
     {
         /* image XObjects */
-        fprintf(pd->pdffp, "/XObject <<\n");
-        for (i = 0; i < nraster; i++)
+        PDFwrite(buf, 100, "/XObject <<\n", pd);
+        for (i = pd->fileRasters; i < nraster; i++)
         {
-            fprintf(pd->pdffp, "  /Im%d %d 0 R\n", i, pd->rasters[i].nobj);
+            PDFwrite(buf, 100, "  /Im%d %d 0 R\n", pd, i, pd->rasters[i].nobj);
             if (pd->masks[i] >= 0)
-                fprintf(pd->pdffp, "  /Mask%d %d 0 R\n", pd->masks[i], pd->rasters[i].nmaskobj);
+                PDFwrite(buf, 100, "  /Mask%d %d 0 R\n", pd, pd->masks[i], pd->rasters[i].nmaskobj);
         }
-        fprintf(pd->pdffp, ">>\n");
+        PDFwrite(buf, 100, ">>\n", pd);
+        if (endpage)
+        {
+            pd->fileRasters = nraster;
+        }
     }
 
     /* graphics state parameter dictionaries */
-    fprintf(pd->pdffp, "/ExtGState << ");
+    PDFwrite(buf, 100, "/ExtGState << ", pd);
     for (i = 0; i < 256 && pd->colAlpha[i] >= 0; i++)
-        fprintf(pd->pdffp, "/GS%i %d 0 R ", i + 1, ++tempnobj);
+        PDFwrite(buf, 100, "/GS%i %d 0 R ", pd, i + 1, ++objCount);
     for (i = 0; i < 256 && pd->fillAlpha[i] >= 0; i++)
-        fprintf(pd->pdffp, "/GS%i %d 0 R ", i + 257, ++tempnobj);
+        PDFwrite(buf, 100, "/GS%i %d 0 R ", pd, i + 257, ++objCount);
     /* Special state to set AIS if we have soft masks */
     if (nmask > 0)
-        fprintf(pd->pdffp, "/GSais %d 0 R ", ++tempnobj);
-    fprintf(pd->pdffp, ">>\n");
+        PDFwrite(buf, 100, "/GSais %d 0 R ", pd, ++objCount);
+    /* Soft mask definitions */
+    int defnOffset = ++objCount;
+    if (pd->numDefns > 0)
+    {
+        PDFwriteSoftMaskDefs(defnOffset, pd);
+    }
+    PDFwrite(buf, 100, ">>\n", pd);
+
+    /* patterns */
+    if (pd->numDefns > 0)
+    {
+        PDFwritePatternDefs(defnOffset, excludeDef, pd);
+    }
 
     if (streql(pd->colormodel, "srgb"))
     {
-        /* Objects 5 and 6 are the sRGB color space, if required */
-        fprintf(pd->pdffp, "/ColorSpace << /sRGB 5 0 R >>\n");
-        fprintf(pd->pdffp, ">>\nendobj\n");
+        /* Ojects 5 and 6 are the sRGB color space, if required */
+        PDFwrite(buf, 100, "/ColorSpace << /sRGB 5 0 R >>\n", pd);
+    }
+    PDFwrite(buf, 100, ">>\n", pd);
+
+    return objCount;
+}
+
+static void PDF_endfile(PDFDesc *pd)
+{
+    int i, startxref, tempnobj, nfonts, cidnfonts, firstencobj;
+    int nraster, nmask, npattern;
+
+    /* object 3 lists all the pages */
+
+    pd->pos[3] = (int)ftell(pd->pdffp);
+    fprintf(pd->pdffp, "3 0 obj\n<< /Type /Pages /Kids [ ");
+    for (i = 0; i < pd->pageno; i++)
+        fprintf(pd->pdffp, "%d 0 R ", pd->pageobj[i]);
+
+    fprintf(pd->pdffp, "] /Count %d /MediaBox [0 0 %d %d] >>\nendobj\n", pd->pageno, (int)(0.5 + pd->paperwidth),
+            (int)(0.5 + pd->paperheight));
+
+    /* Object 4 is the standard resources dict for each page */
+
+    /* Count how many images and masks and patterns */
+    nraster = pd->numRasters;
+    nmask = pd->numMasks;
+    npattern = countPatterns(pd);
+
+    if (pd->nobjs + nraster + nmask + npattern + 500 >= pd->max_nobjs)
+    {
+        int new = pd->nobjs + nraster + nmask + npattern + 500;
+        void *tmp = realloc(pd->pos, new * sizeof(int));
+        if (!tmp)
+            error("unable to increase object limit: please shutdown the pdf device");
+        pd->pos = (int *)tmp;
+        pd->max_nobjs = new;
+    }
+
+    int resourceDictOffset = pd->nobjs;
+    pd->pos[4] = (int)ftell(pd->pdffp);
+    fprintf(pd->pdffp, "4 0 obj\n");
+    /* The resource dictionary for the page */
+    tempnobj = PDFwriteResourceDictionary(resourceDictOffset, TRUE, -1, pd);
+    fprintf(pd->pdffp, "endobj\n");
+
+    if (streql(pd->colormodel, "srgb"))
+    {
         pd->pos[5] = (int)ftell(pd->pdffp);
         fprintf(pd->pdffp, "5 0 obj\n[/ICCBased 6 0 R]\nendobj\n");
         pd->pos[6] = (int)ftell(pd->pdffp);
         fprintf(pd->pdffp, "6 0 obj\n");
         PDFwritesRGBcolorspace(pd);
         fprintf(pd->pdffp, "endobj\n");
-    }
-    else
-    {
-        fprintf(pd->pdffp, ">>\nendobj\n");
     }
 
     if (tempnobj >= pd->max_nobjs)
@@ -7387,6 +8516,9 @@ static void PDF_endfile(PDFDesc *pd)
         fprintf(pd->pdffp, "%d 0 obj\n<<\n/Type /ExtGState\n/AIS false\n>>\nendobj\n", pd->nobjs);
     }
 
+    /* Write out definitions */
+    PDFwriteDefinitions(resourceDictOffset, pd);
+
     /* write out xref table */
 
     startxref = (int)ftell(pd->pdffp);
@@ -7394,7 +8526,9 @@ static void PDF_endfile(PDFDesc *pd)
     fprintf(pd->pdffp, "xref\n0 %d\n", pd->nobjs + 1);
     fprintf(pd->pdffp, "0000000000 65535 f \n");
     for (i = 1; i <= pd->nobjs; i++)
+    {
         fprintf(pd->pdffp, "%010d 00000 n \n", pd->pos[i]);
+    }
     fprintf(pd->pdffp, "trailer\n<< /Size %d /Info 1 0 R /Root 2 0 R >>\nstartxref\n%d\n", pd->nobjs + 1, startxref);
     fprintf(pd->pdffp, "%%%%EOF\n");
 
@@ -7441,7 +8575,7 @@ static Rboolean PDF_Open(pDevDesc dd, PDFDesc *pd)
         {
             char errbuf[strlen(pd->cmd) + 1];
             strcpy(errbuf, pd->cmd);
-            PDFcleanup(6, pd);
+            PDFcleanup(7, pd);
             error(_("cannot open 'pdf' pipe to '%s'"), errbuf);
             return FALSE;
         }
@@ -7460,7 +8594,7 @@ static Rboolean PDF_Open(pDevDesc dd, PDFDesc *pd)
     pd->mainfp = R_fopen(R_ExpandFileName(buf), "wb");
     if (!pd->mainfp)
     {
-        PDFcleanup(6, pd);
+        PDFcleanup(7, pd);
         free(dd);
         error(_("cannot open file '%s'"), buf);
     }
@@ -7472,10 +8606,11 @@ static Rboolean PDF_Open(pDevDesc dd, PDFDesc *pd)
 
 static void pdfClip(double x0, double x1, double y0, double y1, PDFDesc *pd)
 {
+    char buf[100];
     if (x0 != 0.0 || y0 != 0.0 || x1 != 72 * pd->width || y1 != 72 * pd->height)
-        fprintf(pd->pdffp, "Q q %.2f %.2f %.2f %.2f re W n\n", x0, y0, x1 - x0, y1 - y0);
+        PDFwrite(buf, 100, "Q q %.2f %.2f %.2f %.2f re W n\n", pd, x0, y0, x1 - x0, y1 - y0);
     else
-        fprintf(pd->pdffp, "Q q\n");
+        PDFwrite(buf, 100, "Q q\n", pd);
 }
 
 static void PDF_Clip(double x0, double x1, double y0, double y1, pDevDesc dd)
@@ -7487,7 +8622,7 @@ static void PDF_Clip(double x0, double x1, double y0, double y1, pDevDesc dd)
     if (pd->inText)
         textoff(pd);
     pdfClip(x0, x1, y0, y1, pd);
-    PDF_Invalidate(dd);
+    PDF_Invalidate(pd);
 }
 
 static void PDF_Size(double *left, double *right, double *bottom, double *top, pDevDesc dd)
@@ -7604,6 +8739,7 @@ static void PDF_NewPage(const pGEcontext gc, pDevDesc dd)
             if (!pd->mainfp)
                 error(_("cannot open 'pdf' file argument '%s'\n  please shut down the PDF device"), buf);
             pd->pdffp = pd->mainfp;
+            resetDefinitions(pd);
             PDF_startfile(pd);
         }
     }
@@ -7648,7 +8784,11 @@ static void PDF_NewPage(const pGEcontext gc, pDevDesc dd)
      * fprintf(pd->pdffp, "1 J 1 j 10 M q\n");
      */
     fprintf(pd->pdffp, "1 J 1 j q\n");
-    PDF_Invalidate(dd);
+    PDF_Invalidate(pd);
+    pd->appendingClipPath = FALSE;
+    pd->appendingMask = -1;
+    pd->currentMask = -1;
+    pd->appendingPattern = -1;
     if (R_VIS(gc->fill))
     {
         PDF_SetFill(gc->fill, dd);
@@ -7669,40 +8809,85 @@ static void PDF_Close(pDevDesc dd)
         /* may no longer be needed */
         killRasterArray(pd->rasters, pd->maxRasters);
     }
-    PDFcleanup(6, pd); /* which frees masks and rasters */
+    PDFcleanup(7, pd); /* which frees masks and rasters */
 }
 
 static void PDF_Rect(double x0, double y0, double x1, double y1, const pGEcontext gc, pDevDesc dd)
 {
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
     int code;
+    char buf[100];
 
     PDF_checkOffline();
 
-    code = 2 * (R_VIS(gc->fill)) + (R_VIS(gc->col));
+    if (gc->patternFill != R_NilValue)
+    {
+        if (R_VIS(gc->col))
+        {
+            code = 3;
+        }
+        else
+        {
+            code = 2;
+        }
+    }
+    else
+    {
+        code = 2 * (R_VIS(gc->fill)) + (R_VIS(gc->col));
+    }
     if (code)
     {
         if (pd->inText)
             textoff(pd);
-        if (code & 2)
-            PDF_SetFill(gc->fill, dd);
-        if (code & 1)
+        /*
+         * IF appending a clip path:
+         *    Do NOT set graphical parameters
+         *    Do NOT stroke or fill
+         *
+         * IF there is a pattern fill, use that instead of fill
+         *
+         * IF there is a mask apply that
+         *
+         * PDFwrite writes to ...
+         *    clip path (if appending a clip path)
+         *    mask (if appending a mask)
+         *    file (otherwise)
+         */
+        if (!pd->appendingClipPath)
         {
-            PDF_SetLineColor(gc->col, dd);
-            PDF_SetLineStyle(gc, dd);
+            if (gc->patternFill != R_NilValue)
+            {
+                PDF_SetPatternFill(gc->patternFill, dd);
+            }
+            else if (code & 2)
+            {
+                PDF_SetFill(gc->fill, dd);
+            }
+            if (code & 1)
+            {
+                PDF_SetLineColor(gc->col, dd);
+                PDF_SetLineStyle(gc, dd);
+            }
         }
-        fprintf(pd->pdffp, "%.2f %.2f %.2f %.2f re", x0, y0, x1 - x0, y1 - y0);
-        switch (code)
+        if (pd->currentMask >= 0)
         {
-        case 1:
-            fprintf(pd->pdffp, " S\n");
-            break;
-        case 2:
-            fprintf(pd->pdffp, " f\n");
-            break;
-        case 3:
-            fprintf(pd->pdffp, " B\n");
-            break;
+            PDFwriteMask(pd->currentMask, pd);
+        }
+        PDFwrite(buf, 100, "%.2f %.2f %.2f %.2f re", pd, x0, y0, x1 - x0, y1 - y0);
+        if (!pd->appendingClipPath)
+        {
+            switch (code)
+            {
+            case 1:
+                PDFwrite(buf, 100, " S\n", pd);
+                break;
+            case 2:
+                PDFwrite(buf, 100, " f\n", pd);
+                break;
+            case 3:
+                PDFwrite(buf, 100, " B\n", pd);
+                break;
+            }
         }
     }
 }
@@ -7768,6 +8953,17 @@ static void PDF_Raster(unsigned int *raster, int w, int h, double x, double y, d
 
     PDF_checkOffline();
 
+    /* A raster image adds nothing to a clipping path */
+    if (pd->appendingClipPath)
+        return;
+
+    /* A raster image cannot be used in a pattern or mask either (for now) */
+    if (pd->appendingMask >= 0 || pd->appendingPattern >= 0)
+    {
+        warning("Raster image within mask ignored");
+        return;
+    }
+
     /* Record the raster so can write it out when page is finished */
     alpha = addRaster(raster, w, h, interpolate, pd);
 
@@ -7801,6 +8997,7 @@ static void PDF_Circle(double x, double y, double r, const pGEcontext gc, pDevDe
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
     int code, tr;
     double xx, yy, a;
+    char buf[100];
 
     PDF_checkOffline();
 
@@ -7808,16 +9005,40 @@ static void PDF_Circle(double x, double y, double r, const pGEcontext gc, pDevDe
         return; /* since PR#14797 use 0-sized pch=1, but now
        GECircle omits such circles */
 
-    code = 2 * (R_VIS(gc->fill)) + (R_VIS(gc->col));
-    if (code)
+    if (gc->patternFill != R_NilValue)
     {
-        if (code & 2)
+        if (R_VIS(gc->col))
+        {
+            code = 3;
+        }
+        else
+        {
+            code = 2;
+        }
+    }
+    else
+    {
+        code = 2 * (R_VIS(gc->fill)) + (R_VIS(gc->col));
+    }
+    if (!pd->appendingClipPath)
+    {
+        if (gc->patternFill != R_NilValue)
+        {
+            PDF_SetPatternFill(gc->patternFill, dd);
+        }
+        else if (code & 2)
+        {
             PDF_SetFill(gc->fill, dd);
+        }
         if (code & 1)
         {
             PDF_SetLineColor(gc->col, dd);
             PDF_SetLineStyle(gc, dd);
         }
+    }
+    if (pd->currentMask >= 0)
+    {
+        PDFwriteMask(pd->currentMask, pd);
     }
     if (code)
     {
@@ -7833,22 +9054,25 @@ static void PDF_Circle(double x, double y, double r, const pGEcontext gc, pDevDe
                 double s = 0.55 * r;
                 if (pd->inText)
                     textoff(pd);
-                fprintf(pd->pdffp, "  %.2f %.2f m\n", x - r, y);
-                fprintf(pd->pdffp, "  %.2f %.2f %.2f %.2f %.2f %.2f c\n", x - r, y + s, x - s, y + r, x, y + r);
-                fprintf(pd->pdffp, "  %.2f %.2f %.2f %.2f %.2f %.2f c\n", x + s, y + r, x + r, y + s, x + r, y);
-                fprintf(pd->pdffp, "  %.2f %.2f %.2f %.2f %.2f %.2f c\n", x + r, y - s, x + s, y - r, x, y - r);
-                fprintf(pd->pdffp, "  %.2f %.2f %.2f %.2f %.2f %.2f c\n", x - s, y - r, x - r, y - s, x - r, y);
-                switch (code)
+                PDFwrite(buf, 100, "  %.2f %.2f m\n", pd, x - r, y);
+                PDFwrite(buf, 100, "  %.2f %.2f %.2f %.2f %.2f %.2f c\n", pd, x - r, y + s, x - s, y + r, x, y + r);
+                PDFwrite(buf, 100, "  %.2f %.2f %.2f %.2f %.2f %.2f c\n", pd, x + s, y + r, x + r, y + s, x + r, y);
+                PDFwrite(buf, 100, "  %.2f %.2f %.2f %.2f %.2f %.2f c\n", pd, x + r, y - s, x + s, y - r, x, y - r);
+                PDFwrite(buf, 100, "  %.2f %.2f %.2f %.2f %.2f %.2f c\n", pd, x - s, y - r, x - r, y - s, x - r, y);
+                if (!pd->appendingClipPath)
                 {
-                case 1:
-                    fprintf(pd->pdffp, "S\n");
-                    break;
-                case 2:
-                    fprintf(pd->pdffp, "f\n");
-                    break;
-                case 3:
-                    fprintf(pd->pdffp, "B\n");
-                    break;
+                    switch (code)
+                    {
+                    case 1:
+                        PDFwrite(buf, 100, "S\n", pd);
+                        break;
+                    case 2:
+                        PDFwrite(buf, 100, "f\n", pd);
+                        break;
+                    case 3:
+                        PDFwrite(buf, 100, "B\n", pd);
+                        break;
+                    }
                 }
             }
         }
@@ -7865,11 +9089,18 @@ static void PDF_Circle(double x, double y, double r, const pGEcontext gc, pDevDe
                 return; // avoid 0 dims below.
             xx = x - 0.396 * a;
             yy = y - 0.347 * a;
-            tr = (R_OPAQUE(gc->fill)) + 2 * (R_OPAQUE(gc->col)) - 1;
+            if (pd->appendingClipPath)
+            {
+                tr = 7;
+            }
+            else
+            {
+                tr = (R_OPAQUE(gc->fill)) + 2 * (R_OPAQUE(gc->col)) - 1;
+            }
             if (!pd->inText)
                 texton(pd);
-            fprintf(pd->pdffp, "/F1 1 Tf %d Tr %.2f 0 0 %.2f %.2f %.2f Tm", tr, a, a, xx, yy);
-            fprintf(pd->pdffp, " (l) Tj 0 Tr\n");
+            PDFwrite(buf, 100, "/F1 1 Tf %d Tr %.2f 0 0 %.2f %.2f %.2f Tm", pd, tr, a, a, xx, yy);
+            PDFwrite(buf, 100, " (l) Tj 0 Tr\n", pd);
             textoff(pd); /* added in 2.8.0 */
         }
     }
@@ -7878,17 +9109,26 @@ static void PDF_Circle(double x, double y, double r, const pGEcontext gc, pDevDe
 static void PDF_Line(double x1, double y1, double x2, double y2, const pGEcontext gc, pDevDesc dd)
 {
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
+    char buf[100];
 
     PDF_checkOffline();
 
     if (!R_VIS(gc->col))
         return;
 
-    PDF_SetLineColor(gc->col, dd);
-    PDF_SetLineStyle(gc, dd);
+    if (!pd->appendingClipPath)
+    {
+        PDF_SetLineColor(gc->col, dd);
+        PDF_SetLineStyle(gc, dd);
+    }
+    if (pd->currentMask >= 0)
+    {
+        PDFwriteMask(pd->currentMask, pd);
+    }
+
     if (pd->inText)
         textoff(pd);
-    fprintf(pd->pdffp, "%.2f %.2f m %.2f %.2f l S\n", x1, y1, x2, y2);
+    PDFwrite(buf, 100, "%.2f %.2f m %.2f %.2f l S\n", pd, x1, y1, x2, y2);
 }
 
 static void PDF_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDesc dd)
@@ -7896,58 +9136,90 @@ static void PDF_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDe
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
     double xx, yy;
     int i, code;
+    char buf[100];
 
     PDF_checkOffline();
 
-    code = 2 * (R_VIS(gc->fill)) + (R_VIS(gc->col));
+    if (gc->patternFill != R_NilValue)
+    {
+        if (R_VIS(gc->col))
+        {
+            code = 3;
+        }
+        else
+        {
+            code = 2;
+        }
+    }
+    else
+    {
+        code = 2 * (R_VIS(gc->fill)) + (R_VIS(gc->col));
+    }
     if (code)
     {
         if (pd->inText)
             textoff(pd);
-        if (code & 2)
-            PDF_SetFill(gc->fill, dd);
-        if (code & 1)
+        if (!pd->appendingClipPath)
         {
-            PDF_SetLineColor(gc->col, dd);
-            PDF_SetLineStyle(gc, dd);
+            if (gc->patternFill != R_NilValue)
+            {
+                PDF_SetPatternFill(gc->patternFill, dd);
+            }
+            else if (code & 2)
+            {
+                PDF_SetFill(gc->fill, dd);
+            }
+            if (code & 1)
+            {
+                PDF_SetLineColor(gc->col, dd);
+                PDF_SetLineStyle(gc, dd);
+            }
+        }
+        if (pd->currentMask >= 0)
+        {
+            PDFwriteMask(pd->currentMask, pd);
         }
         xx = x[0];
         yy = y[0];
-        fprintf(pd->pdffp, "%.2f %.2f m\n", xx, yy);
+        PDFwrite(buf, 100, "%.2f %.2f m\n", pd, xx, yy);
         for (i = 1; i < n; i++)
         {
             xx = x[i];
             yy = y[i];
-            fprintf(pd->pdffp, "%.2f %.2f l\n", xx, yy);
+            PDFwrite(buf, 100, "%.2f %.2f l\n", pd, xx, yy);
         }
-        if (pd->fillOddEven)
+        PDFwrite(buf, 100, "h ", pd, xx, yy);
+        if (!pd->appendingClipPath)
         {
-            switch (code)
+            if (pd->fillOddEven)
             {
-            case 1:
-                fprintf(pd->pdffp, "s\n");
-                break;
-            case 2:
-                fprintf(pd->pdffp, "h f*\n");
-                break;
-            case 3:
-                fprintf(pd->pdffp, "b*\n");
-                break;
+                switch (code)
+                {
+                case 1:
+                    PDFwrite(buf, 100, "S\n", pd);
+                    break;
+                case 2:
+                    PDFwrite(buf, 100, "f*\n", pd);
+                    break;
+                case 3:
+                    PDFwrite(buf, 100, "B*\n", pd);
+                    break;
+                }
             }
-        }
-        else
-        {
-            switch (code)
+            else
             {
-            case 1:
-                fprintf(pd->pdffp, "s\n");
-                break;
-            case 2:
-                fprintf(pd->pdffp, "h f\n");
-                break;
-            case 3:
-                fprintf(pd->pdffp, "b\n");
-                break;
+                switch (code)
+                {
+                case 1:
+                    PDFwrite(buf, 100, "S\n", pd);
+                    break;
+                case 2:
+                    PDFwrite(buf, 100, "f\n", pd);
+                    break;
+                case 3:
+                    PDFwrite(buf, 100, "B\n", pd);
+                    break;
+                }
             }
         }
     }
@@ -7958,20 +9230,42 @@ static void PDF_Path(double *x, double *y, int npoly, int *nper, Rboolean windin
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
     double xx, yy;
     int i, j, index, code;
+    char buf[100];
 
     PDF_checkOffline();
 
-    code = 2 * (R_VIS(gc->fill)) + (R_VIS(gc->col));
+    if (gc->patternFill != R_NilValue)
+    {
+        if (R_VIS(gc->col))
+        {
+            code = 3;
+        }
+        else
+        {
+            code = 2;
+        }
+    }
+    else
+    {
+        code = 2 * (R_VIS(gc->fill)) + (R_VIS(gc->col));
+    }
     if (code)
     {
         if (pd->inText)
             textoff(pd);
-        if (code & 2)
-            PDF_SetFill(gc->fill, dd);
-        if (code & 1)
+        if (!pd->appendingClipPath)
         {
-            PDF_SetLineColor(gc->col, dd);
-            PDF_SetLineStyle(gc, dd);
+            if (code & 2)
+                PDF_SetFill(gc->fill, dd);
+            if (code & 1)
+            {
+                PDF_SetLineColor(gc->col, dd);
+                PDF_SetLineStyle(gc, dd);
+            }
+        }
+        if (pd->currentMask >= 0)
+        {
+            PDFwriteMask(pd->currentMask, pd);
         }
         index = 0;
         for (i = 0; i < npoly; i++)
@@ -7979,45 +9273,49 @@ static void PDF_Path(double *x, double *y, int npoly, int *nper, Rboolean windin
             xx = x[index];
             yy = y[index];
             index++;
-            fprintf(pd->pdffp, "%.2f %.2f m\n", xx, yy);
+            PDFwrite(buf, 100, "%.2f %.2f m\n", pd, xx, yy);
             for (j = 1; j < nper[i]; j++)
             {
                 xx = x[index];
                 yy = y[index];
                 index++;
-                fprintf(pd->pdffp, "%.2f %.2f l\n", xx, yy);
+                PDFwrite(buf, 100, "%.2f %.2f l\n", pd, xx, yy);
             }
             if (i < npoly - 1)
-                fprintf(pd->pdffp, "h\n");
+                PDFwrite(buf, 100, "h\n", pd);
         }
-        if (winding)
+        PDFwrite(buf, 100, "h\n", pd);
+        if (!pd->appendingClipPath)
         {
-            switch (code)
+            if (winding)
             {
-            case 1:
-                fprintf(pd->pdffp, "s\n");
-                break;
-            case 2:
-                fprintf(pd->pdffp, "h f\n");
-                break;
-            case 3:
-                fprintf(pd->pdffp, "b\n");
-                break;
+                switch (code)
+                {
+                case 1:
+                    PDFwrite(buf, 100, "S\n", pd);
+                    break;
+                case 2:
+                    PDFwrite(buf, 100, "f\n", pd);
+                    break;
+                case 3:
+                    PDFwrite(buf, 100, "B\n", pd);
+                    break;
+                }
             }
-        }
-        else
-        {
-            switch (code)
+            else
             {
-            case 1:
-                fprintf(pd->pdffp, "s\n");
-                break;
-            case 2:
-                fprintf(pd->pdffp, "h f*\n");
-                break;
-            case 3:
-                fprintf(pd->pdffp, "b*\n");
-                break;
+                switch (code)
+                {
+                case 1:
+                    PDFwrite(buf, 100, "S\n", pd);
+                    break;
+                case 2:
+                    PDFwrite(buf, 100, "f*\n", pd);
+                    break;
+                case 3:
+                    PDFwrite(buf, 100, "B*\n", pd);
+                    break;
+                }
             }
         }
     }
@@ -8028,6 +9326,7 @@ static void PDF_Polyline(int n, double *x, double *y, const pGEcontext gc, pDevD
     PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
     double xx, yy;
     int i;
+    char buf[100];
 
     PDF_checkOffline();
 
@@ -8035,18 +9334,25 @@ static void PDF_Polyline(int n, double *x, double *y, const pGEcontext gc, pDevD
         textoff(pd);
     if (R_VIS(gc->col))
     {
-        PDF_SetLineColor(gc->col, dd);
-        PDF_SetLineStyle(gc, dd);
+        if (!pd->appendingClipPath)
+        {
+            PDF_SetLineColor(gc->col, dd);
+            PDF_SetLineStyle(gc, dd);
+        }
+        if (pd->currentMask >= 0)
+        {
+            PDFwriteMask(pd->currentMask, pd);
+        }
         xx = x[0];
         yy = y[0];
-        fprintf(pd->pdffp, "%.2f %.2f m\n", xx, yy);
+        PDFwrite(buf, 100, "%.2f %.2f m\n", pd, xx, yy);
         for (i = 1; i < n; i++)
         {
             xx = x[i];
             yy = y[i];
-            fprintf(pd->pdffp, "%.2f %.2f l\n", xx, yy);
+            PDFwrite(buf, 100, "%.2f %.2f l\n", pd, xx, yy);
         }
-        fprintf(pd->pdffp, "S\n");
+        PDFwrite(buf, 100, "S\n", pd);
     }
 }
 
@@ -8660,6 +9966,62 @@ void PDF_MetricInfo(int c, const pGEcontext gc, double *ascent, double *descent,
     *ascent = floor(gc->cex * gc->ps + 0.5) * *ascent;
     *descent = floor(gc->cex * gc->ps + 0.5) * *descent;
     *width = floor(gc->cex * gc->ps + 0.5) * *width;
+}
+
+static SEXP PDF_setPattern(SEXP pattern, pDevDesc dd)
+{
+    PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
+    SEXP ref = R_NilValue;
+    ref = addPattern(pattern, pd);
+    return ref;
+}
+
+static void PDF_releasePattern(SEXP ref, pDevDesc dd)
+{
+}
+
+static SEXP PDF_setClipPath(SEXP path, SEXP ref, pDevDesc dd)
+{
+    PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
+    SEXP newref = R_NilValue;
+
+    if (isNull(ref))
+    {
+        /* Generate new clipping path */
+        int index = newClipPath(path, pd);
+        if (index >= 0)
+        {
+            PDFwriteClipPath(index, pd);
+            PROTECT(newref = allocVector(INTSXP, 1));
+            INTEGER(newref)[0] = index;
+            UNPROTECT(1);
+        }
+    }
+    else
+    {
+        /* Reuse existing clipping path */
+        int index = INTEGER(ref)[0];
+        PDFwriteClipPath(index, pd);
+        newref = ref;
+    }
+
+    PDF_Invalidate(pd);
+    return newref;
+}
+
+static void PDF_releaseClipPath(SEXP ref, pDevDesc dd)
+{
+}
+
+static SEXP PDF_setMask(SEXP path, SEXP ref, pDevDesc dd)
+{
+    PDFDesc *pd = (PDFDesc *)dd->deviceSpecific;
+    ref = addMask(path, ref, pd);
+    return ref;
+}
+
+static void PDF_releaseMask(SEXP ref, pDevDesc dd)
+{
 }
 
 /*  PostScript Device Driver Parameters:

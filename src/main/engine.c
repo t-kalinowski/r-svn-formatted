@@ -1209,7 +1209,7 @@ static void clipPolygon(int n, double *x, double *y, const pGEcontext gc, int to
      * then draw as polyline rather than polygon
      * to avoid drawing line along border of clipping region
      * If bg was NA then it has been converted to fully transparent */
-    if (R_TRANSPARENT(gc->fill) && !toDevice)
+    if (R_TRANSPARENT(gc->fill) && !toDevice && gc->patternFill == R_NilValue)
     {
         int i;
         double xmin = DBL_MAX, xmax = DBL_MIN, ymin = DBL_MAX, ymax = DBL_MIN;

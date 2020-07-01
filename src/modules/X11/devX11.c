@@ -162,6 +162,12 @@ static void X11_Size(double *left, double *right, double *bottom, double *top, p
 static double X11_StrWidth(const char *str, const pGEcontext gc, pDevDesc dd);
 static void X11_Text(double x, double y, const char *str, double rot, double hadj, const pGEcontext gc, pDevDesc dd);
 static void X11_eventHelper(pDevDesc dd, int code);
+static SEXP X11_setPattern(SEXP pattern, pDevDesc dd);
+static void X11_releasePattern(SEXP ref, pDevDesc dd);
+static SEXP X11_setClipPath(SEXP path, SEXP ref, pDevDesc dd);
+static void X11_releaseClipPath(SEXP ref, pDevDesc dd);
+static SEXP X11_setMask(SEXP path, SEXP ref, pDevDesc dd);
+static void X11_releaseMask(SEXP ref, pDevDesc dd);
 
 /*************************************************/
 /* End of list of required device driver actions */
@@ -1745,6 +1751,11 @@ Rboolean X11_Open(pDevDesc dd, pX11Desc xd, const char *dsp, double w, double h,
                 cairo_new_path(xd->cc);
                 cairo_paint(xd->cc);
             }
+
+            CairoInitPatterns(xd);
+            CairoInitClipPaths(xd);
+            CairoInitMasks(xd);
+            xd->appending = 0;
 #endif
         }
         /* Save the pDevDesc with the window for event dispatching */
@@ -2159,6 +2170,9 @@ static void X11_Close(pDevDesc dd)
 #ifdef HAVE_WORKING_CAIRO
         if (xd->useCairo)
         {
+            CairoDestroyMasks(xd);
+            CairoDestroyClipPaths(xd);
+            CairoDestroyPatterns(xd);
             if (xd->cs)
                 cairo_surface_destroy(xd->cs);
             if (xd->cc)
@@ -2865,6 +2879,33 @@ static void X11_Mode(int mode, pDevDesc dd)
     }
 }
 
+static SEXP X11_setPattern(SEXP pattern, pDevDesc dd)
+{
+    return R_NilValue;
+}
+
+static void X11_releasePattern(SEXP ref, pDevDesc dd)
+{
+}
+
+static SEXP X11_setClipPath(SEXP path, SEXP ref, pDevDesc dd)
+{
+    return R_NilValue;
+}
+
+static void X11_releaseClipPath(SEXP ref, pDevDesc dd)
+{
+}
+
+static SEXP X11_setMask(SEXP path, SEXP ref, pDevDesc dd)
+{
+    return R_NilValue;
+}
+
+static void X11_releaseMask(SEXP ref, pDevDesc dd)
+{
+}
+
 /*  X11 Device Driver Arguments	:	*/
 /*	1) display name			*/
 /*	2) width (inches)		*/
@@ -3028,6 +3069,13 @@ int Rf_setX11DeviceData(pDevDesc dd, double gamma_fac, pX11Desc xd)
         dd->haveRaster = 2;
         dd->haveCapture = (xd->type > WINDOW) ? 1 : 2;
         dd->haveLocator = (xd->type > WINDOW) ? 1 : 2;
+
+        dd->setPattern = Cairo_SetPattern;
+        dd->releasePattern = Cairo_ReleasePattern;
+        dd->setClipPath = Cairo_SetClipPath;
+        dd->releaseClipPath = Cairo_ReleaseClipPath;
+        dd->setMask = Cairo_SetMask;
+        dd->releaseMask = Cairo_ReleaseMask;
     }
     else
 #endif
@@ -3052,6 +3100,13 @@ int Rf_setX11DeviceData(pDevDesc dd, double gamma_fac, pX11Desc xd)
         dd->haveRaster = 3;
         dd->haveCapture = (xd->type > WINDOW) ? 1 : 2;
         dd->haveLocator = (xd->type > WINDOW) ? 1 : 2;
+
+        dd->setPattern = X11_setPattern;
+        dd->releasePattern = X11_releasePattern;
+        dd->setClipPath = X11_setClipPath;
+        dd->releaseClipPath = X11_releaseClipPath;
+        dd->setMask = X11_setMask;
+        dd->releaseMask = X11_releaseMask;
     }
 
     dd->eventHelper = X11_eventHelper;
@@ -3153,6 +3208,7 @@ int Rf_setX11DeviceData(pDevDesc dd, double gamma_fac, pX11Desc xd)
     dd->deviceSpecific = (void *)xd;
 
     dd->displayListOn = TRUE;
+    dd->deviceVersion = R_GE_definitions;
 
     return TRUE;
 }
