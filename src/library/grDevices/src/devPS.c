@@ -6058,8 +6058,7 @@ static void addAlphaExpGradientFunction(SEXP gradient, int i, double start, doub
 static void addStitchedGradientFunction(SEXP gradient, int nStops, int toDefn, Rboolean alpha, PDFDesc *pd)
 {
     int defNum = growDefinitions(pd);
-    int i;
-    double firstStop, lastStop, stop;
+    double firstStop = 0.0, lastStop = 0.0, stop = 0.0; // -Wall for gcc 9
     char buf[100];
     initDefn(defNum, PDFstitchedFunction, pd);
     switch (R_GE_patternType(gradient))
@@ -6075,7 +6074,7 @@ static void addStitchedGradientFunction(SEXP gradient, int nStops, int toDefn, R
     }
     snprintf(buf, 100, "<<\n/FunctionType 3\n/Domain [%0.4f %0.4f]\n/Functions [\n", firstStop, lastStop);
     catDefn(buf, defNum, pd);
-    for (i = 0; i < (nStops - 1); i++)
+    for (int i = 0; i < (nStops - 1); i++)
     {
         if (alpha)
         {
@@ -6087,7 +6086,7 @@ static void addStitchedGradientFunction(SEXP gradient, int nStops, int toDefn, R
         }
     }
     catDefn("]\n/Bounds [", defNum, pd);
-    for (i = 1; i < (nStops - 1); i++)
+    for (int i = 1; i < (nStops - 1); i++)
     {
         switch (R_GE_patternType(gradient))
         {
@@ -6102,10 +6101,8 @@ static void addStitchedGradientFunction(SEXP gradient, int nStops, int toDefn, R
         catDefn(buf, defNum, pd);
     }
     catDefn("]\n/Encode [", defNum, pd);
-    for (i = 0; i < (nStops - 1); i++)
-    {
+    for (int i = 0; i < (nStops - 1); i++)
         catDefn("0 1 ", defNum, pd);
-    }
     catDefn("]\n>>\n", defNum, pd);
     /* Copy toDefn */
     copyDefn(defNum, toDefn, pd);
