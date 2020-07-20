@@ -6009,17 +6009,10 @@ extern Rconnection R_newCurlUrl(const char *description, const char *const mode,
 */
 SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP scmd, sopen, ans, class, enc,
-#ifdef HAVE_LIBCURL
-        headers = R_NilValue,
-#endif
-        headers_flat = R_NilValue;
+    SEXP scmd, sopen, ans, class, enc, headers = R_NilValue, headers_flat = R_NilValue;
     char *class2 = "url";
     const char *url, *open;
-    int ncon, block, raw = 0,
-#ifndef Win32
-                     defmeth,
-#endif
+    int ncon, block, raw = 0, defmeth,
                      meth = 0, // 0: "default" | "internal" | "wininet", 1: "libcurl"
         winmeth;               // 0: "internal", 1: "wininet" (Windows only)
     cetype_t ienc = CE_NATIVE;
@@ -6085,8 +6078,8 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     // --------- method
     const char *cmeth = CHAR(asChar(CAD4R(args)));
     meth = streql(cmeth, "libcurl"); // 1 if "libcurl", else 0
-#ifndef Win32
     defmeth = streql(cmeth, "default");
+#ifndef Win32
     if (defmeth)
         meth = 1;
 #endif
@@ -6117,9 +6110,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
         SEXP lheaders = CAD4R(CDR(args));
         if (!isNull(lheaders))
         {
-#ifdef HAVE_LIBCURL
             headers = VECTOR_ELT(lheaders, 0);
-#endif
             headers_flat = VECTOR_ELT(lheaders, 1);
         }
     }
