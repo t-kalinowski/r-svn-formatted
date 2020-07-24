@@ -1776,7 +1776,7 @@ attribute_hidden void addMissingVarsToNewEnv(SEXP env, SEXP addVars)
         {
             if (TAG(s) == endTag)
             {
-                /* remove variable s from the list, because it is overriden by "end" */
+                /* remove variable s from the list, because it is overridden by "end" */
                 if (sprev == R_NilValue)
                 {
                     addVars = CDR(s);
