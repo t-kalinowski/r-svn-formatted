@@ -91,7 +91,7 @@ void rcont2(int nrow, int ncol,
                     if (j > INT_MAX)
                         REprintf("Incr.: j = %20.20g > INT_MAX !! (id,ia,nlm) = (%d,%d,%d)\n", j, id, ia, nlm);
 #endif
-                    lsp = ((int)j == 0);
+                    lsp = ((nlm == ia) || (nlm == id));
                     if (!lsp)
                     {
                         ++nlm;
@@ -112,7 +112,7 @@ void rcont2(int nrow, int ncol,
                         if (j > INT_MAX)
                             REprintf("Decr.: j = %20.20g > INT_MAX !! (ii,nll) = (%d,%d)\n", j, ii, nll);
 #endif
-                        lsm = ((int)j == 0);
+                        lsm = (nll == 0);
                         if (!lsm)
                         {
                             --nll;
