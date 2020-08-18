@@ -262,7 +262,7 @@ SEXP modelframe(SEXP call, SEXP op, SEXP args, SEXP rho)
 /* The code below is related to model expansion */
 /* and is ultimately called by modelmatrix. */
 
-static void firstfactor(double *x, int nrx, int ncx, double *c, int nrc, int ncc, int *v)
+static void firstfactor(double *x, int nrx, int ncx, double *c, int nrc, int ncc, int *v, int adj)
 {
     double *cj, *xj;
 
@@ -274,11 +274,11 @@ static void firstfactor(double *x, int nrx, int ncx, double *c, int nrc, int ncc
             if (v[i] == NA_INTEGER)
                 xj[i] = NA_REAL;
             else
-                xj[i] = cj[v[i] - 1];
+                xj[i] = cj[v[i] - 1 + adj];
     }
 }
 
-static void addfactor(double *x, int nrx, int ncx, double *c, int nrc, int ncc, int *v)
+static void addfactor(double *x, int nrx, int ncx, double *c, int nrc, int ncc, int *v, int adj)
 {
     double *ck, *xj, *yj;
 
@@ -293,7 +293,7 @@ static void addfactor(double *x, int nrx, int ncx, double *c, int nrc, int ncc, 
                 if (v[i] == NA_INTEGER)
                     yj[i] = NA_REAL;
                 else
-                    yj[i] = ck[v[i] - 1] * xj[i];
+                    yj[i] = ck[v[i] - 1 + adj] * xj[i];
         }
     }
 }
@@ -802,7 +802,7 @@ alldone:;
                         int adj = isLogical(var_i) ? 1 : 0;
                         // avoid overflow of jstart * nn PR#15578
                         firstfactor(&rx[jstart * nn], n, jnext - jstart, REAL(contrast), nrows(contrast),
-                                    ncols(contrast), INTEGER(var_i) + adj);
+                                    ncols(contrast), INTEGER(var_i), adj);
                         jnext = jnext + ncols(contrast);
                     }
                     else
@@ -817,7 +817,7 @@ alldone:;
                     {
                         int adj = isLogical(var_i) ? 1 : 0;
                         addfactor(&rx[jstart * nn], n, jnext - jstart, REAL(contrast), nrows(contrast), ncols(contrast),
-                                  INTEGER(var_i) + adj);
+                                  INTEGER(var_i), adj);
                         jnext = jnext + (jnext - jstart) * (ncols(contrast) - 1);
                     }
                     else
