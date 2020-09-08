@@ -1117,7 +1117,7 @@ attribute_hidden void Rcons_vprintf(const char *format, va_list arg)
     va_list aq;
 
     va_copy(aq, arg);
-    res = vsnprintf(buf, R_BUFSIZE, format, aq);
+    res = Rvsnprintf_mbcs(buf, R_BUFSIZE, format, aq);
     va_end(aq);
 #ifdef HAVE_VASPRINTF
     if (res >= R_BUFSIZE || res < 0)
@@ -1126,8 +1126,7 @@ attribute_hidden void Rcons_vprintf(const char *format, va_list arg)
         if (res < 0)
         {
             p = buf;
-            buf[R_BUFSIZE - 1] = '\0';
-            warning("printing of extremely long output is truncated");
+            warning(_("printing of extremely long output is truncated"));
         }
         else
             usedVasprintf = TRUE;
@@ -1140,15 +1139,14 @@ attribute_hidden void Rcons_vprintf(const char *format, va_list arg)
         vsprintf(p, format, arg);
     }
     else if (res < 0)
-    { /* just a failure indication */
+    {
+        /* Some non-C99 conforming vsnprintf implementations return -1 on
+           truncation instead of only on error. */
         usedRalloc = TRUE;
         p = R_alloc(10 * R_BUFSIZE, sizeof(char));
-        res = vsnprintf(p, 10 * R_BUFSIZE, format, arg);
-        if (res < 0)
-        {
-            *(p + 10 * R_BUFSIZE - 1) = '\0';
-            warning("printing of extremely long output is truncated");
-        }
+        res = Rvsnprintf_mbcs(p, 10 * R_BUFSIZE, format, arg);
+        if (res < 0 || res >= 10 * R_BUFSIZE)
+            warning(_("printing of extremely long output is truncated"));
     }
 #endif /* HAVE_VASPRINTF */
     R_WriteConsole(p, (int)strlen(p));
