@@ -1854,6 +1854,7 @@ void NORET F77_SYMBOL(rexitc)(char *msg, int *nchar)
     }
     strncpy(buf, msg, (size_t)nc);
     buf[nc] = '\0';
+    mbcsTruncateToValid(buf);
     error("%s", buf);
 }
 
@@ -1872,6 +1873,7 @@ void F77_SYMBOL(rwarnc)(char *msg, int *nchar)
     }
     strncpy(buf, msg, (size_t)nc);
     buf[nc] = '\0';
+    mbcsTruncateToValid(buf);
     warning("%s", buf);
 }
 
