@@ -430,13 +430,14 @@ static int NORET null_vfprintf(Rconnection con, const char *format, va_list ap)
 }
 
 /* va_copy is C99, but a draft standard had __va_copy.  Glibc has
-   __va_copy declared uncondiitonally */
+   __va_copy declared unconditionally */
 
 #if defined(HAVE_VASPRINTF) && !HAVE_DECL_VASPRINTF
 int vasprintf(char **strp, const char *fmt, va_list ap);
 #endif
 
 #define BUFSIZE 10000
+// similar to Rcons_vprintf in printutils.c
 int dummy_vfprintf(Rconnection con, const char *format, va_list ap)
 {
     R_CheckStack2(BUFSIZE); // prudence
@@ -456,9 +457,8 @@ int dummy_vfprintf(Rconnection con, const char *format, va_list ap)
         if (res < 0)
         {
             b = buf;
-            res = (int)strlen(buf) + 1;
-            buf[res - 1] = '\n';
             warning(_("printing of extremely long output is truncated"));
+            res = (int)strlen(buf);
         }
         else
             usedVasprintf = TRUE;
@@ -483,8 +483,7 @@ int dummy_vfprintf(Rconnection con, const char *format, va_list ap)
         if (res < 0 || res >= 10 * BUFSIZE)
         {
             warning(_("printing of extremely long output is truncated"));
-            res = strlen(b) + 1;
-            b[res - 1] = '\n';
+            res = (int)strlen(b);
         }
     }
 #endif /* HAVE_VASPRINTF */
