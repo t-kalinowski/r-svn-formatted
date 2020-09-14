@@ -30,6 +30,14 @@
 #include "nmath.h"
 #include "dpq.h"
 
+/**----------- DEBUGGING -------------
+ *
+ *	make CFLAGS='-DDEBUG_qbeta  ...'
+ *MM (w/ Debug, w/o Optimization):
+ (cd `R-devel RHOME`/src/nmath ; gcc -I. -I../../src/include -I../../../R/src/include  -DHAVE_CONFIG_H -fopenmp -g
+ -pedantic -Wall --std=gnu99 -DDEBUG_q -DDEBUG_qbeta -Wcast-align -Wclobbered  -c ../../../R/src/nmath/qbeta.c -o
+ qbeta.o; cd ../..; make R)
+*/
 #ifdef DEBUG_qbeta
 #define R_ifDEBUG_printf(...) REprintf(__VA_ARGS__)
 #else
@@ -154,7 +162,7 @@ attribute_hidden void qbeta_raw(double alpha, double p, double q, int lower_tail
         return_q_1;
     }
 
-    // check alpha {*before* transformation which may all accuracy}:
+    // check alpha {*before* transformation which may lose all accuracy}:
     if ((log_p && alpha > 0) || (!log_p && (alpha < 0 || alpha > 1)))
     { // alpha is outside
         R_ifDEBUG_printf("qbeta(alpha=%g, %g, %g, .., log_p=%d): %s%s\n", alpha, p, q, log_p, "alpha not in ",

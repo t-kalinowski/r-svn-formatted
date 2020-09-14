@@ -22,8 +22,7 @@
  *
  *	make CFLAGS='-DDEBUG_pnch ....'
 (cd `R-devel RHOME`/src/nmath; gcc -I. -I../../src/include -I../../../R/src/include -I/usr/local/include -DHAVE_CONFIG_H
--fopenmp -g -O0 -pedantic -Wall --std=gnu99 -DDEBUG_pnch -DDEBUG_q -Wcast-align -Wclobbered  -c
-../../../R/src/nmath/pnchisq.c -o pnchisq.o )
+-fopenmp -g -O0 -pedantic -Wall -DDEBUG_pnch -DDEBUG_q -c ../../../R/src/nmath/pnchisq.c -o pnchisq.o )
 
  * -- Feb.6, 2000 (R pre0.99); M.Maechler:  still have
  * bad precision & non-convergence in some cases (x ~= f, both LARGE)
@@ -83,7 +82,7 @@ double pnchisq(double x, double df, double ncp, int lower_tail, int log_p)
     if (!log_p || ans < -1e-8)
         return ans;
     else
-    {   // log_p  &&  ans >= -1e-8
+    {   // log_p (==> ans <= 0) &&  -1e-8 <= ans <= 0
         // prob. = exp(ans) is near one: we can do better using the other tail
 #ifdef DEBUG_pnch
         REprintf("   pnchisq_raw(*, log_p): ans=%g => 2nd call, other tail\n", ans);
@@ -134,11 +133,11 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta /* = ncp */
         {
             // all  pchisq(x, f+2*i, lower_tail, FALSE), i=0,...,110 would underflow to 0.
             // ==> work in log scale
-            double lambda = 0.5 * theta;
-            double sum, sum2, pr = -lambda;
+            double lambda = 0.5 * theta; // < 40
+            double sum, sum2, pr = -lambda, log_lam = log(lambda);
             sum = sum2 = ML_NEGINF;
             /* we need to renormalize here: the result could be very close to 1 */
-            for (i = 0; i < 110; pr += log(lambda) - log(++i))
+            for (i = 0; i < 110; pr += log_lam - log(++i))
             {
                 sum2 = logspace_add(sum2, pr);
                 sum = logspace_add(sum, pr + pchisq(x, f + 2 * i, lower_tail, TRUE));
@@ -186,9 +185,7 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta /* = ncp */
     lamSml = (-lam < _dbl_min_exp);
     if (lamSml)
     {
-        /* MATHLIB_ERROR(
-           "non centrality parameter (= %g) too large for current algorithm",
-    p 	   theta) */
+        // originally error: "non centrality parameter too large for current algorithm"
         u = 0;
         lu = -lam; /* == ln(u) */
         l_lam = log(lam);
@@ -255,7 +252,10 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta /* = ncp */
     for (n = 1, f_2n = f + 2., f_x_2n += 2.; n <= itrmax; n++, f_2n += 2, f_x_2n += 2)
     {
 #ifdef DEBUG_pnch_n
-        REprintf("\n _OL_: n=%d", n);
+        if (n % 1000 == 0)
+            REprintf("\n _OL_: n=%d,  f_x_2n = %g", n);
+        else
+            REprintf(n % 100 == 0 ? ".\n" : ".");
 #endif
 #ifndef MATHLIB_STANDALONE
         if (n % 1000 == 0)
@@ -269,15 +269,16 @@ double attribute_hidden pnchisq_raw(double x, double f, double theta /* = ncp */
 
             bound = (double)(t * x / f_x_2n);
 #ifdef DEBUG_pnch_n
-            REprintf("\n L10: n=%d; term= %g; bound= %g", n, term, bound);
+            if (n % 1000 == 0)
+                REprintf("\n L10: n=%d; term, ans = %g, %g; bound= %g", n, term, ans, bound);
 #endif
             is_r = FALSE;
             /* convergence only if BOTH absolute and relative error < 'bnd' */
             if (((is_b = (bound <= errmax)) && (is_r = (term <= reltol * ans))))
             {
 #ifdef DEBUG_pnch
-                REprintf("BREAK out of for(n = 1 ..): n=%d; bound= %g %s, rel.err= %g %s\n", n, bound,
-                         (is_b ? "<= errmax" : ""), term / ans, (is_r ? "<= reltol" : ""));
+                REprintf("BREAK from for(n=1 ..): n=%d; bound= %g %s; term=%g, rel.err= %g %s\n", n, bound,
+                         (is_b ? "<= errmax" : ""), term, term / ans, (is_r ? "<= reltol" : ""));
 #endif
                 break; /* out completely */
             }
