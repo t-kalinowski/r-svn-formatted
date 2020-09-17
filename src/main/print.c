@@ -76,7 +76,7 @@ static void printAttributes(SEXP, R_PrintData *, Rboolean);
 static void PrintObject(SEXP, R_PrintData *);
 
 #define TAGBUFLEN 256
-#define TAGBUFLEN0 TAGBUFLEN + 6
+#define TAGBUFLEN0 (TAGBUFLEN + 6)
 static char tagbuf[TAGBUFLEN0 * 2]; /* over-allocate to allow overflow check */
 
 void PrintInit(R_PrintData *data, SEXP env)
