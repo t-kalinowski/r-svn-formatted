@@ -1015,14 +1015,13 @@ static int Wpipe_vfprintf(Rconnection con, const char *format, va_list ap)
     char buf[BUFSIZE], *b = buf;
     int res = 0;
 
-    res = vsnprintf(b, BUFSIZE, format, ap);
-    if (res < 0)
-    { /* a failure indication, so try again */
-        b[BUFSIZE - 1] = '\0';
-        warning("printing of extremely long output is truncated");
-        res = BUFSIZE;
+    res = Rvsnprintf_mbcs(b, BUFSIZE, format, ap);
+    if (res < 0 || res >= BUFSIZE)
+    {
+        warning(_("printing of extremely long output is truncated"));
+        res = strlen(b);
     }
-    return Wpipe_write(buf, res, 1, con);
+    return Wpipe_write(buf, (size_t)1, (size_t)res, con);
 }
 
 Rconnection newWpipe(const char *description, int ienc, const char *mode)

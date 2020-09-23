@@ -1240,9 +1240,8 @@ void REvprintf(const char *format, va_list arg)
         va_list aq;
 
         va_copy(aq, arg);
-        int res = vsnprintf(buf, BUFSIZE, format, aq);
+        int res = Rvsnprintf_mbcs(buf, BUFSIZE, format, aq);
         va_end(aq);
-        buf[BUFSIZE - 1] = '\0';
         if (res >= BUFSIZE)
         {
             /* A very long string has been truncated. Try to allocate a large
