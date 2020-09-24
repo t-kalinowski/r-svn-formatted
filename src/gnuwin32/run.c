@@ -819,6 +819,7 @@ int rpipeGetc(rpipe *r)
             doevent();
         if (UserBreak)
         {
+            /* FIXME: close handles */
             rpipeTerminate(r);
             break;
         }
@@ -869,6 +870,22 @@ int rpipeClose(rpipe *r, int *timedout)
 
     if (!r)
         return NOLAUNCH;
+    /* Close both pipe ends before forcibly terminating the child process to
+       let it read all data (if it is reading) and exit gracefully.
+
+       r->write and r->read are set to hNULL for the case that threadedwait
+       ends up flushing file buffers
+
+       FIXME: should we be forcing the termination at all? */
+    HANDLE hNULL = CreateFile("NUL:", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+    HANDLE tmp;
+    tmp = r->read;
+    r->read = hNULL;
+    CloseHandle(tmp);
+    tmp = r->write;
+    r->write = hNULL;
+    CloseHandle(tmp);
+
     rpipeTerminate(r);
     /* threadedwait may have obtained the exit code of the pipe process,
        but also may have been terminated too early; retrieve the exit
@@ -876,9 +893,8 @@ int rpipeClose(rpipe *r, int *timedout)
     DWORD ret;
     GetExitCodeProcess(r->pi.pi.hProcess, &ret);
     r->exitcode = ret;
-    CloseHandle(r->read);
-    CloseHandle(r->write);
     CloseHandle(r->pi.pi.hProcess);
+    CloseHandle(hNULL);
     i = r->exitcode;
     if (timedout)
         *timedout = r->timedout;
