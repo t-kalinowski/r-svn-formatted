@@ -3824,8 +3824,10 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
                 setAttrib(matchpos, install("match.length"), matchlen);
                 if (useBytes)
+                {
                     setAttrib(matchpos, install("index.type"), itype);
-                setAttrib(matchpos, install("useBytes"), R_TrueValue);
+                    setAttrib(matchpos, install("useBytes"), R_TrueValue);
+                }
                 SET_VECTOR_ELT(ans, i, matchpos);
                 UNPROTECT(2);
             }
@@ -3841,8 +3843,10 @@ SEXP attribute_hidden do_regexec(SEXP call, SEXP op, SEXP args, SEXP env)
                 PROTECT(matchlen = ScalarInteger(-1));
                 setAttrib(matchpos, install("match.length"), matchlen);
                 if (useBytes)
+                {
                     setAttrib(matchpos, install("index.type"), itype);
-                setAttrib(matchpos, install("useBytes"), R_TrueValue);
+                    setAttrib(matchpos, install("useBytes"), R_TrueValue);
+                }
                 SET_VECTOR_ELT(ans, i, matchpos);
                 UNPROTECT(2);
             }
