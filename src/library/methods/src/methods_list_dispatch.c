@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2001-2019   The R Core Team.
+ *  Copyright (C) 2001-2020   The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1046,12 +1046,17 @@ SEXP R_getClassFromCache(SEXP class, SEXP table)
 
 static SEXP do_inherited_table(SEXP class_objs, SEXP fdef, SEXP mtable, SEXP ev)
 {
-    static SEXP dotFind = NULL, f;
+    static SEXP f = NULL;
     SEXP e, ee;
-    if (dotFind == NULL)
+
+    if (f == NULL)
     {
-        dotFind = install(".InheritForDispatch");
+        SEXP dotFind = install(".InheritForDispatch");
+        /* NOTE: the call to findFun can lead to recursive (but it seems only one)
+           invocation of do_inherited_table(), and hence this initialization
+           (PR#17923). */
         f = findFun(dotFind, R_MethodsNamespace);
+        R_PreserveObject(f);
     }
     PROTECT(e = allocVector(LANGSXP, 4));
     SETCAR(e, f);
