@@ -1298,7 +1298,14 @@ SEXP coerceVector(SEXP v, SEXPTYPE type)
     {
         ans = ALTREP_COERCE(v, type);
         if (ans)
+        {
+            /* attribute copying could be handled by a Coerce_Ex
+               method as for Duplicate; for now, do it here */
+            PROTECT(ans);
+            SHALLOW_DUPLICATE_ATTRIB(ans, v);
+            UNPROTECT(1);
             return ans;
+        }
     }
 
     /* code to allow classes to extend ENVSXP, SYMSXP, etc */
