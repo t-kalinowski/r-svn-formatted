@@ -1296,6 +1296,7 @@ SEXP coerceVector(SEXP v, SEXPTYPE type)
     SEXP ans = R_NilValue; /* -Wall */
     if (ALTREP(v))
     {
+        PROTECT(v); /* the methods should protect, but ... */
         ans = ALTREP_COERCE(v, type);
         if (ans)
         {
@@ -1303,9 +1304,10 @@ SEXP coerceVector(SEXP v, SEXPTYPE type)
                method as for Duplicate; for now, do it here */
             PROTECT(ans);
             SHALLOW_DUPLICATE_ATTRIB(ans, v);
-            UNPROTECT(1);
+            UNPROTECT(2); /* v, ans */
             return ans;
         }
+        UNPROTECT(1); /* v */
     }
 
     /* code to allow classes to extend ENVSXP, SYMSXP, etc */
