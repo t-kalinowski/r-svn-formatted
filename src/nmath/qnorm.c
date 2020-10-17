@@ -1,7 +1,7 @@
 /*
  *  Mathlib : A C Library of Special Functions
+ *  Copyright (C) 2000--2020 The R Core Team
  *  Copyright (C) 1998       Ross Ihaka
- *  Copyright (C) 2000--2005 The R Core Team
  *  based on AS 111 (C) 1977 Royal Statistical Society
  *  and   on AS 241 (C) 1988 Royal Statistical Society
  *
@@ -82,8 +82,8 @@ double qnorm5(double p, double mu, double sigma, int lower_tail, int log_p)
              and provided hash codes for checking them...)
     */
     if (fabs(q) <= .425)
-    { /* 0.075 <= p <= 0.925 */
-        r = .180625 - q * q;
+    {                        /* |p~ - 0.5| <= .425  <==> 0.075 <= p~ <= 0.925 */
+        r = .180625 - q * q; // = .425^2 - q^2  >= 0
         val = q *
               (((((((r * 2509.0809287301226727 + 33430.575583588128105) * r + 67265.770927008700853) * r +
                    45921.953931549871457) *
@@ -107,20 +107,21 @@ double qnorm5(double p, double mu, double sigma, int lower_tail, int log_p)
                1.);
     }
     else
-    { /* closer than 0.075 from {0,1} boundary */
-
-        /* r = min(p, 1-p) < 0.075 */
-        if (q > 0)
-            r = R_DT_CIv(p); /* 1-p */
+    { /* closer than 0.075 from {0,1} boundary :
+       *  r := log(p~);  p~ = min(p, 1-p) < 0.075 :  */
+        if (log_p && ((lower_tail && q <= 0) || (!lower_tail && q > 0)))
+        {
+            r = p;
+        }
         else
-            r = p_; /* = R_DT_Iv(p) ^=  p */
-
-        r = sqrt(-((log_p && ((lower_tail && q <= 0) || (!lower_tail && q > 0))) ? p : /* else */ log(r)));
-        /* r = sqrt(-log(r))  <==>  min(p, 1-p) = exp( - r^2 ) */
+        {
+            r = log((q > 0) ? R_DT_CIv(p) /* 1-p */ : p_ /* = R_DT_Iv(p) ^=  p */);
+        }
+        // r = sqrt( - log(min(p,1-p)) )  <==>  min(p, 1-p) = exp( - r^2 ) :
+        r = sqrt(-r);
 #ifdef DEBUG_qnorm
         REprintf("\t close to 0 or 1: r = %7g\n", r);
 #endif
-
         if (r <= 5.)
         { /* <==> min(p,1-p) >= exp(-25) ~= 1.3888e-11 */
             r += -1.6;
@@ -145,8 +146,13 @@ double qnorm5(double p, double mu, double sigma, int lower_tail, int log_p)
                        r +
                    1.);
         }
+        else if (r >= 816)
+        { // p is *extremly* close to 0 or 1 - only possibly when log_p =TRUE
+            // Using the asymptotical formula -- is *not* optimal but uniformly better than branch below
+            val = r * M_SQRT2;
+        }
         else
-        { /* very close to  0 or 1 */
+        { // p is very close to  0 or 1:  r > 5 <==> min(p,1-p) < exp(-25) = 1.3888..e-11
             r += -5.;
             val =
                 (((((((r * 2.01033439929228813265e-7 + 2.71155556874348757815e-5) * r + .0012426609473880784386) * r +
