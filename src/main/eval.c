@@ -3918,12 +3918,6 @@ static SEXP classForGroupDispatch(SEXP obj)
 
 attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP args, SEXP rho, SEXP *ans)
 {
-    int i, nargs, lwhich, rwhich;
-    SEXP lclass, s, t, m, lmeth, lsxp, lgr, newvars;
-    SEXP rclass, rmeth, rgr, rsxp, value;
-    char *generic;
-    Rboolean useS4 = TRUE, isOps = FALSE;
-
     /* pre-test to avoid string computations when there is nothing to
        dispatch on because either there is only one argument and it
        isn't an object or there are two or more arguments but neither
@@ -3933,19 +3927,25 @@ attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP a
     if (args != R_NilValue && !isObject(CAR(args)) && (CDR(args) == R_NilValue || !isObject(CADR(args))))
         return 0;
 
-    isOps = strcmp(group, "Ops") == 0;
+    SEXP s;
+    Rboolean isOps = strcmp(group, "Ops") == 0;
 
     /* try for formal method */
     if (length(args) == 1 && !IS_S4_OBJECT(CAR(args)))
-        useS4 = FALSE;
-    if (length(args) == 2 && !IS_S4_OBJECT(CAR(args)) && !IS_S4_OBJECT(CADR(args)))
-        useS4 = FALSE;
-    if (useS4)
     {
+        // no S4
+    }
+    else if (length(args) == 2 && !IS_S4_OBJECT(CAR(args)) && !IS_S4_OBJECT(CADR(args)))
+    {
+        // no S4
+    }
+    else
+    { // try to use S4 :
         /* Remove argument names to ensure positional matching */
         if (isOps)
             for (s = args; s != R_NilValue; s = CDR(s))
                 SET_TAG(s, R_NilValue);
+        SEXP value;
         if (R_has_methods(op) && (value = R_possible_dispatch(call, op, args, rho, FALSE)))
         {
             *ans = value;
@@ -3962,31 +3962,22 @@ attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP a
             return 0;
     }
 
-    if (isOps)
-        nargs = length(args);
-    else
-        nargs = 1;
+    int nargs = isOps ? length(args) : 1;
 
     if (nargs == 1 && !isObject(CAR(args)))
         return 0;
 
-    generic = PRIMNAME(op);
-
-    PROTECT(lclass = classForGroupDispatch(CAR(args)));
-
+    char *generic = PRIMNAME(op);
+    SEXP lclass = PROTECT(classForGroupDispatch(CAR(args))), rclass;
     if (nargs == 2)
         rclass = classForGroupDispatch(CADR(args));
     else
         rclass = R_NilValue;
-
     PROTECT(rclass);
-    lsxp = R_NilValue;
-    lgr = R_NilValue;
-    lmeth = R_NilValue;
-    rsxp = R_NilValue;
-    rgr = R_NilValue;
-    rmeth = R_NilValue;
 
+    SEXP lmeth = R_NilValue, lsxp = R_NilValue, lgr = R_NilValue, rmeth = R_NilValue, rsxp = R_NilValue,
+         rgr = R_NilValue;
+    int lwhich, rwhich;
     findmethod(lclass, group, generic, &lsxp, &lgr, &lmeth, &lwhich, args, rho);
     PROTECT(lgr);
 
@@ -3994,7 +3985,6 @@ attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP a
         findmethod(rclass, group, generic, &rsxp, &rgr, &rmeth, &rwhich, CDR(args), rho);
     else
         rwhich = 0;
-
     PROTECT(rgr);
 
     if (!isFunction(lsxp) && !isFunction(rsxp))
@@ -4042,11 +4032,12 @@ attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP a
 
     /* we either have a group method or a class method */
 
-    PROTECT(m = allocVector(STRSXP, nargs));
     const void *vmax = vmaxget();
     s = args;
     const char *dispatchClassName = translateChar(STRING_ELT(lclass, lwhich));
-    for (i = 0; i < nargs; i++)
+
+    SEXP t, m = PROTECT(allocVector(STRSXP, nargs));
+    for (int i = 0; i < nargs; i++)
     {
         t = classForGroupDispatch(CAR(s));
         if (isString(t) && (stringPositionTr(t, dispatchClassName) >= 0))
@@ -4057,7 +4048,7 @@ attribute_hidden int DispatchGroup(const char *group, SEXP call, SEXP op, SEXP a
     }
     vmaxset(vmax);
 
-    newvars = PROTECT(
+    SEXP newvars = PROTECT(
         createS3Vars(PROTECT(mkString(generic)), lgr, PROTECT(stringSuffix(lclass, lwhich)), m, rho, R_BaseEnv));
 
     PROTECT(t = LCONS(lmeth, CDR(call)));

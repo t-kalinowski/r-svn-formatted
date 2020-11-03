@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
+ *  Copyright (C) 2001--2020  The R Core Team
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 2001-2018   The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -299,12 +299,13 @@ SEXP attribute_hidden do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
            different encodings, but all that matters is that all
            non-ASCII elements have known encoding.
         */
-        for (int i = 0; i < length(text); i++)
-            if (!ENC_KNOWN(STRING_ELT(text, i)) && !IS_ASCII(STRING_ELT(text, i)))
-            {
-                allKnown = FALSE;
-                break;
-            }
+        if (allKnown)
+            for (int i = 0; i < length(text); i++)
+                if (!ENC_KNOWN(STRING_ELT(text, i)) && !IS_ASCII(STRING_ELT(text, i)))
+                {
+                    allKnown = FALSE;
+                    break;
+                }
         if (allKnown)
         {
             known_to_be_latin1 = pci.old_latin1;
@@ -313,8 +314,6 @@ SEXP attribute_hidden do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
         if (num == NA_INTEGER)
             num = -1;
         s = R_ParseVector(text, num, &status, source);
-        if (status != PARSE_OK)
-            parseError(call, R_ParseError);
     }
     else if (ifile >= 3)
     { /* file != "" */
@@ -336,17 +335,16 @@ SEXP attribute_hidden do_parse(SEXP call, SEXP op, SEXP args, SEXP env)
             con->close(con);
             UNPROTECT(1);
         }
-        if (status != PARSE_OK)
-            parseError(call, R_ParseError);
     }
     else
     {
         if (num == NA_INTEGER)
             num = 1;
         s = R_ParseBuffer(&R_ConsoleIob, num, &status, prompt, source);
-        if (status != PARSE_OK)
-            parseError(call, R_ParseError);
     }
+    if (status != PARSE_OK)
+        parseError(call, R_ParseError);
+
     known_to_be_latin1 = pci.old_latin1;
     known_to_be_utf8 = pci.old_utf8;
     PROTECT(s);
