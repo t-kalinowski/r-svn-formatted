@@ -179,12 +179,12 @@ static void Init_R_Machine(SEXP rho)
     SET_STRING_ELT(nms, 17, mkChar("sizeof.pointer"));
     SET_VECTOR_ELT(ans, 17, ScalarInteger(sizeof(SEXP)));
 
-    /* This used to be
-    #ifdef HAVE_LONG_DOUBLE
-       but that platforms can have the type and it be identical to double
-       (as on ARM).  So do the same as capabilities("long.double")
-    */
-
+/* This used to be just
+#ifdef HAVE_LONG_DOUBLE
+   but platforms can have the type and it be identical to double
+   (as on ARM).  So do the same as capabilities("long.double")
+*/
+#ifdef HAVE_LONG_DOUBLE
     if (sizeof(LDOUBLE) > sizeof(double))
     {
         static struct
@@ -238,6 +238,7 @@ static void Init_R_Machine(SEXP rho)
         SET_STRING_ELT(nms, 18 + 9, mkChar("longdouble.max.exp"));
         SET_VECTOR_ELT(ans, 18 + 9, ScalarInteger(R_LD_AccuracyInfo.maxexp));
     }
+#endif
 
     setAttrib(ans, R_NamesSymbol, nms);
     defineVar(install(".Machine"), ans, rho);
