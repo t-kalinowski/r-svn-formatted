@@ -365,8 +365,8 @@ SEXP attribute_hidden do_envirgets(SEXP call, SEXP op, SEXP args, SEXP rho)
  */
 SEXP attribute_hidden do_newenv(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP enclos, ans;
-    int hash, size;
+    SEXP enclos;
+    int hash, size = 0;
 
     checkArity(op, args);
 
@@ -381,8 +381,7 @@ SEXP attribute_hidden do_newenv(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (hash)
     {
-        args = CDR(args);
-        int size = asInteger(CAR(args));
+        size = asInteger(CADR(args));
         if (size == NA_INTEGER)
             size = 0; /* so it will use the internal default */
     }
