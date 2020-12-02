@@ -286,8 +286,9 @@ void begincontext(RCNTXT *cptr, int flags, SEXP syscall, SEXP env, SEXP sysp, SE
 
 void endcontext(RCNTXT *cptr)
 {
-    void R_FixupExitingHandlerResult(SEXP); /* defined in error.x */
-    R_HandlerStack = cptr->handlerstack;
+    void R_FixupExitingHandlerResult(SEXP); /* defined in error.c */
+    SEXP R_UnwindHandlerStack(SEXP);        /* defined in error.c */
+    R_HandlerStack = R_UnwindHandlerStack(cptr->handlerstack);
     R_RestartStack = cptr->restartstack;
     RCNTXT *jumptarget = cptr->jumptarget;
     if (cptr->cloenv != R_NilValue && cptr->conexit != R_NilValue)
