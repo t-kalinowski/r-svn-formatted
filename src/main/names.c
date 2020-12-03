@@ -1001,12 +1001,17 @@ FUNTAB R_FunTab[] = {
    Any symbols can be put here, but ones that contain special
    characters, or are reserved words, are the ones unlikely to be
    defined in any environment other than base, and hence the ones
-   where this is most likely to help. */
+   where this is most likely to help.
 
-static char *Spec_name[] = {
-    "if", "while", "repeat", "for", "break", "next", "return", "function", "(",   "{",   "+",    "-", "*", "/",
-    "^",  "%%",    "%/%",    "%*%", ":",     "==",   "!=",     "<",        ">",   "<=",  ">=",   "&", "|", "&&",
-    "||", "!",     "<-",     "<<-", "=",     "$",    "[",      "[[",       "$<-", "[<-", "[[<-", 0};
+   This is now also used for screening out syntactically special
+   functions fromuse on the RHS of a pipe. If a
+   non-syntactically-special symbol is added here it would neet to be
+   explicutly allowed in the pipe code. */
+
+static char *Spec_name[] = {"if", "while", "repeat", "for", "break", "next", "return", "function", "(",   "{",    "+",
+                            "-",  "*",     "/",      "^",   "%%",    "%/%",  "%*%",    ":",        "::",  ":::",  "?",
+                            "|>", "==",    "!=",     "<",   ">",     "<=",   ">=",     "&",        "|",   "&&",   "||",
+                            "!",  "<-",    "<<-",    "=",   "$",     "[",    "[[",     "$<-",      "[<-", "[[<-", 0};
 
 /* also used in eval.c */
 SEXP attribute_hidden R_Primitive(const char *primname)
@@ -1112,6 +1117,7 @@ static void SymbolShortcuts(void)
     R_SpecSymbol = install("spec");
     R_NamespaceEnvSymbol = install(".__NAMESPACE__.");
     R_AsCharacterSymbol = install("as.character");
+    R_FunctionSymbol = install("function");
 
     R_dot_Generic = install(".Generic");
     R_dot_Method = install(".Method");
