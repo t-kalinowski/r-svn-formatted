@@ -1008,10 +1008,11 @@ FUNTAB R_FunTab[] = {
    non-syntactically-special symbol is added here it would neet to be
    explicutly allowed in the pipe code. */
 
-static char *Spec_name[] = {"if", "while", "repeat", "for", "break", "next", "return", "function", "(",   "{",    "+",
-                            "-",  "*",     "/",      "^",   "%%",    "%/%",  "%*%",    ":",        "::",  ":::",  "?",
-                            "|>", "==",    "!=",     "<",   ">",     "<=",   ">=",     "&",        "|",   "&&",   "||",
-                            "!",  "<-",    "<<-",    "=",   "$",     "[",    "[[",     "$<-",      "[<-", "[[<-", 0};
+static char *Spec_name[] = {
+    "if", "while", "repeat", "for", "break", "next", "return", "function", "(",    "{",  "+",  "-",
+    "*",  "/",     "^",      "%%",  "%/%",   "%*%",  ":",      "::",       ":::",  "?",  "|>", "~",
+    "@",  "==",    "!=",     "<",   ">",     "<=",   ">=",     "&",        "|",    "&&", "||", "!",
+    "<-", "<<-",   "=",      "$",   "[",     "[[",   "$<-",    "[<-",      "[[<-", 0};
 
 /* also used in eval.c */
 SEXP attribute_hidden R_Primitive(const char *primname)
