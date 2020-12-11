@@ -69,6 +69,12 @@ abbreviate chartr make.names strtrim tolower toupper give error.
 #include <config.h>
 #endif
 
+/* Used to indicate that we can safely converted marked UTF-8 strings
+ * to wchar_t* */
+#if defined(Win32) || defined(__STDC_ISO_10646__) || defined(__APPLE__) || defined(__FreeBSD__) || defined(__sun)
+#define TO_WCS_OK
+#endif
+
 #include <Defn.h>
 #include <Internal.h>
 #include <errno.h>
@@ -1131,7 +1137,7 @@ SEXP attribute_hidden do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
         error(_("non-character argument"));
     n = XLENGTH(x);
     PROTECT(y = allocVector(STRSXP, n));
-#if defined(Win32) || defined(__STDC_ISO_10646__) || defined(__APPLE__) || defined(__FreeBSD__)
+#ifdef TO_WCS_OK
     /* utf8towcs is really to UCS-4/2 */
     for (i = 0; i < n; i++)
         if (getCharCE(STRING_ELT(x, i)) == CE_UTF8)
@@ -1535,8 +1541,8 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isString(x))
         error("invalid '%s' argument", "x");
 
-        /* utf8towcs is really to UCS-4/2 */
-#if defined(Win32) || defined(__STDC_ISO_10646__) || defined(__APPLE__) || defined(__FreeBSD__)
+#ifdef TO_WCS_OK
+    /* utf8towcs is really to UCS-4/2 */
     for (i = 0; i < n; i++)
         if (getCharCE(STRING_ELT(x, i)) == CE_UTF8)
             use_UTF8 = TRUE;
