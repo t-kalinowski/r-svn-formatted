@@ -5293,7 +5293,10 @@ static int StringValue(int c, Rboolean forSymbol)
                 if (!val)
                     error(_("nul character not allowed (line %d)"), ParseState.xxlineno);
                 if (val > 0x10FFFF)
-                    error(_("invalid \\U{xxxxxxxx} sequence (line %d)"), ParseState.xxlineno);
+                    if (delim)
+                        error(_("invalid \\U{xxxxxxxx} value %6x (line %d)"), val, ParseState.xxlineno);
+                    else
+                        error(_("invalid \\Uxxxxxxxx value %6x (line %d)"), val, ParseState.xxlineno);
 #ifdef Win32
                 if (0x010000 <= val && val <= 0x10FFFF)
                 { /* Need surrogate pair in Windows */
