@@ -627,7 +627,7 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
 {
     int b, b0, i, j, cnt;
     const char *p;
-    char *q, buf[11];
+    char *q, buf[13];
     cetype_t ienc = getCharCE(s);
     Rboolean useUTF8 = w < 0;
     const void *vmax = vmaxget();
@@ -773,9 +773,7 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
 #ifndef __STDC_ISO_10646__
         Rboolean Unicode_warning = FALSE;
 #endif
-        // avoid system mbrtowc in a UTF-8 locale
-        Rboolean use_ucs = ienc == CE_UTF8 || utf8locale;
-        if (!use_ucs)
+        if (ienc != CE_UTF8)
             mbs_init(&mb_st);
 #ifdef Win32
         else if (WinUTF8out)
@@ -786,7 +784,7 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
 #endif
         for (i = 0; i < cnt; i++)
         {
-            res = (int)(use_ucs ? utf8toucs(&wc, p) : mbrtowc(&wc, p, MB_CUR_MAX, NULL));
+            res = (int)((ienc == CE_UTF8) ? utf8toucs(&wc, p) : mbrtowc(&wc, p, MB_CUR_MAX, NULL));
             if (res >= 0)
             { /* res = 0 is a terminator */
                 if (ienc == CE_UTF8 && IS_HIGH_SURROGATE(wc))
@@ -892,7 +890,8 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
                             Unicode_warning = TRUE;
 #endif
                         if (k > 0xffff)
-                            snprintf(buf, 11, "\\U%06x", k);
+                            // This could conceivably use >6 hex digits
+                            snprintf(buf, 13, "\\U{%06x}", k);
                         else
                             snprintf(buf, 11, "\\u%04x", k);
                         j = (int)strlen(buf);
