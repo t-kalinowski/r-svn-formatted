@@ -1587,7 +1587,11 @@ attribute_hidden // but used in windlgs
             p++;
         }
         else
+        {
+            if (IS_HIGH_SURROGATE(*p) || IS_LOW_SURROGATE(*p))
+                warning("unpaired surrogate Unicode point %x", *p);
             m = Rwcrtomb32(t, (R_wchar_t)(*p), n - res);
+        }
         if (!m)
             break;
         res += m;
