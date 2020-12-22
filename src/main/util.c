@@ -1491,6 +1491,8 @@ size_t attribute_hidden utf8toucs(wchar_t *wc, const char *s)
     }
 }
 
+/* despite its name this translates to UTF-16 if there are (invalid)
+ * UTF-8 codings for surrogates in the input */
 size_t utf8towcs(wchar_t *wc, const char *s, size_t n)
 {
     ssize_t m, res = 0;
