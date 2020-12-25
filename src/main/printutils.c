@@ -490,6 +490,7 @@ attribute_hidden int Rstrwid(const char *str, int slen, cetype_t ienc, int quote
                     k = utf8toucs32(wc, p);
                 else
                     k = wc;
+                // OK to cast as k is small
                 if (0x20 <= k && k < 0x7f && iswprint((wint_t)k))
                 {
                     switch (wc)
@@ -532,6 +533,7 @@ attribute_hidden int Rstrwid(const char *str, int slen, cetype_t ienc, int quote
                 else
                 {
                     // conceivably an invalid \U escape could use 11 or 12
+                    // Should not just cast here, as that may truncate.
                     len += iswprint((wint_t)k) ? Ri18n_wcwidth(wc) : (k > 0xffff ? 10 : 6);
                     i += (res - 1);
                     p += res;
@@ -798,6 +800,7 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
                     k = 0;
                     wc = L'\0';
                 }
+                // OK to cast as k is small
                 if (0x20 <= k && k < 0x7f && iswprint((wint_t)k))
                 {
                     switch (wc)
@@ -871,6 +874,8 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
                 }
                 else
                 {
+                    /* wc could be an unpaired surrogate and this does
+                     * not do the same as Rstrwid */
                     if (iswprint(wc))
                     {
                         /* The problem here is that wc may be
