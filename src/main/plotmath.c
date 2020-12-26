@@ -982,6 +982,7 @@ static BBOX RenderSymbolStr(const char *str, int draw, mathContext *mc, pGEconte
             while (*s)
             {
                 wc = 0;
+                // FIXME this does not allow for surrogate pairs (implausible)
                 res = mbrtowc(&wc, s, MB_LEN_MAX, &mb_st);
                 if (res == -1)
                     error("invalid multibyte string '%s'", s);
@@ -1099,6 +1100,7 @@ static BBOX RenderStr(const char *str, int draw, mathContext *mc, pGEcontext gc,
             const char *p = str;
             mbstate_t mb_st;
             mbs_init(&mb_st);
+            // FIXME this does not allow for surrogate pairs
             while ((used = Mbrtowc(&wc, p, n, &mb_st)) > 0)
             {
                 /* On Windows could have sign extension here */
