@@ -235,6 +235,7 @@ int R_nchar(SEXP string, nchar_type type_, Rboolean allowNA, Rboolean keepNA, co
         else if (IS_LATIN1(string))
         {
             // just count bytes as they are all width-1 chars
+            // FIXME, well not control chars but there is ambiguity for most of 0x80-9F
             return (int)strlen(CHAR(string));
         }
         else if (mbcslocale)
@@ -244,8 +245,12 @@ int R_nchar(SEXP string, nchar_type type_, Rboolean allowNA, Rboolean keepNA, co
             if (nc >= 0)
             {
                 const void *vmax = vmaxget();
+                /* working in wchar_t restricts this to the BMP on
+                   Windows, but maybe that is all current native
+                   charsets cover. */
                 wchar_t *wc = (wchar_t *)R_AllocStringBuffer((nc + 1) * sizeof(wchar_t), &cbuff);
                 mbstowcs(wc, xi, nc + 1);
+                // FIXME: width could conceivably exceed MAX_INT.
                 int nci18n = Ri18n_wcswidth(wc, 2147483647);
                 vmaxset(vmax);
                 return (nci18n < 1) ? nc : nci18n;
@@ -256,6 +261,7 @@ int R_nchar(SEXP string, nchar_type type_, Rboolean allowNA, Rboolean keepNA, co
                 return NA_INTEGER;
         }
         else
+            // See Latin-1 comment.
             return (int)strlen(translateChar(string));
 
     }                  // switch
