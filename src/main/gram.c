@@ -4686,7 +4686,7 @@ static int SkipSpace(void)
 {
     int c;
 
-#if defined(USE_RI18N_FNS) || !defined(HAVE_ISWBLANK)
+#if defined(USE_RI18N_FNS) // includes Win32
     static wctype_t blankwct = 0;
     if (!blankwct)
         blankwct = Ri18n_wctype("blank");
@@ -4736,8 +4736,7 @@ static int SkipSpace(void)
             if ((unsigned int)c < 0x80)
                 break;
             clen = mbcs_get_next(c, &wc);
-            // need override on macOS and AIX_, very old Solaris
-#if defined(USE_RI18N_FNS) || !defined(HAVE_ISWBLANK)
+#if defined(USE_RI18N_FNS)
             if (!Ri18n_iswctype(wc, blankwct))
                 break;
 #else
