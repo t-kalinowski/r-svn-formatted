@@ -706,7 +706,7 @@ SEXP attribute_hidden do_substrgets(SEXP call, SEXP op, SEXP args, SEXP env)
                 int ienc2 = ienc;
                 v_ss = CHAR(v_el);
                 /* is the value in the same encoding?
-                   FIXME: could prefer UTF-8 here
+                   FIXME: could re-encode to UTF-8 rather than to native.
                  */
                 venc = getCharCE(v_el);
                 if (venc != ienc && !strIsASCII(v_ss))
@@ -1165,7 +1165,7 @@ SEXP attribute_hidden do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
     for (i = 0; i < n; i++)
     {
         SEXP xi = STRING_ELT(x, i);
-        if (IS_UTF8(xi) || IS_LATIN1(xi))
+        if (IS_UTF8(xi) || (!latin1locale && IS_LATIN1(xi)))
             use_UTF8 = TRUE;
     }
     if (mbcslocale || use_UTF8 == TRUE)
@@ -1580,13 +1580,13 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
     for (i = 0; i < n; i++)
     {
         SEXP xi = STRING_ELT(x, i);
-        if (IS_UTF8(xi) || IS_LATIN1(xi))
+        if (IS_UTF8(xi) || (!latin1locale && IS_LATIN1(xi)))
             use_WC = TRUE;
     }
 
-    if (IS_UTF8(STRING_ELT(old, 0)) || IS_LATIN1(STRING_ELT(old, 0)))
+    if (IS_UTF8(STRING_ELT(old, 0)) || (!latin1locale && IS_LATIN1(STRING_ELT(old, 0))))
         use_WC = TRUE;
-    if (IS_UTF8(STRING_ELT(_new, 0)) || IS_LATIN1(STRING_ELT(_new, 0)))
+    if (IS_UTF8(STRING_ELT(_new, 0)) || (!latin1locale && IS_LATIN1(STRING_ELT(_new, 0))))
         use_WC = TRUE;
 
     if (mbcslocale || use_WC == TRUE)

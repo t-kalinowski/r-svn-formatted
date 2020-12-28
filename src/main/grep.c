@@ -26,8 +26,7 @@ Support for UTF-8-encoded strings in non-UTF-8 locales
 strsplit grep [g]sub [g]regexpr
   handle UTF-8 directly if fixed/perl = TRUE, via wchar_t for extended
 
-  We currrently translate latin1 strings to the native encoding.
-  We could use UTF-8 in a non-latin1-locale instead.
+As from R 4.1.0 we translate latin1 strings in a non-latin1-locale to UTF-8.
 
 */
 
@@ -522,7 +521,6 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         else
         {
-            // FIXME handle Latin-1-marked inputs.
             // use_UTF8 means use wchar_t* for the TRE engine
             if (perl_opt && mbcslocale)
                 use_UTF8 = TRUE;
@@ -540,6 +538,23 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                         use_UTF8 = TRUE;
                         break;
                     }
+            if (!use_UTF8 && !latin1locale)
+            {
+                if (!use_UTF8)
+                    for (i = 0; i < tlen; i++)
+                        if (IS_LATIN1(STRING_ELT(tok, i)))
+                        {
+                            use_UTF8 = TRUE;
+                            break;
+                        }
+                if (!use_UTF8)
+                    for (i = 0; i < len; i++)
+                        if (IS_LATIN1(STRING_ELT(x, i)))
+                        {
+                            use_UTF8 = TRUE;
+                            break;
+                        }
+            }
         }
     }
 
@@ -1353,7 +1368,6 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!useBytes)
     {
         /* As from R 2.10.0 we use UTF-8 mode in PCRE in all MBCS locales */
-        // FIXME handle Latin-1
         if (perl_opt && mbcslocale)
             use_UTF8 = TRUE;
         else if (IS_UTF8(STRING_ELT(pat, 0)))
@@ -1365,6 +1379,18 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
                     use_UTF8 = TRUE;
                     break;
                 }
+        if (!use_UTF8 && !latin1locale)
+        {
+            if (IS_LATIN1(STRING_ELT(pat, 0)))
+                use_UTF8 = TRUE;
+            if (!use_UTF8)
+                for (i = 0; i < n; i++)
+                    if (IS_LATIN1(STRING_ELT(text, i)))
+                    {
+                        use_UTF8 = TRUE;
+                        break;
+                    }
+        }
     }
 
     if (!fixed_opt && !perl_opt)
@@ -2340,6 +2366,15 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     use_UTF8 = TRUE;
                     break;
                 }
+        if (!use_UTF8 && !latin1locale)
+        {
+            for (i = 0; i < n; i++)
+                if (IS_LATIN1(STRING_ELT(text, i)))
+                {
+                    use_UTF8 = TRUE;
+                    break;
+                }
+        }
     }
 
     if (!fixed_opt && !perl_opt)
@@ -3345,7 +3380,6 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
            and as from 2.11.0 in TRE too. */
         if (!fixed_opt && mbcslocale)
             use_UTF8 = TRUE;
-        // FIXME handle Latin-1-encoded inputs
         else if (IS_UTF8(STRING_ELT(pat, 0)))
             use_UTF8 = TRUE;
         if (!use_UTF8)
@@ -3355,6 +3389,18 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
                     use_UTF8 = TRUE;
                     break;
                 }
+        if (!use_UTF8 && !latin1locale)
+        {
+            if (IS_LATIN1(STRING_ELT(pat, 0)))
+                use_UTF8 = TRUE;
+            if (!use_UTF8)
+                for (i = 0; i < n; i++)
+                    if (IS_LATIN1(STRING_ELT(text, i)))
+                    {
+                        use_UTF8 = TRUE;
+                        break;
+                    }
+        }
     }
 
     if (!fixed_opt && !perl_opt)
