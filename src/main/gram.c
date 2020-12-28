@@ -4686,7 +4686,7 @@ static int SkipSpace(void)
 {
     int c;
 
-#if defined(Win32) || defined(__APPLE__) || defined(_AIX) || !defined(HAVE_ISWBLANK)
+#if defined(USE_RI18N_FNS) || !defined(HAVE_ISWBLANK)
     static wctype_t blankwct = 0;
     if (!blankwct)
         blankwct = Ri18n_wctype("blank");
@@ -4737,7 +4737,7 @@ static int SkipSpace(void)
                 break;
             clen = mbcs_get_next(c, &wc);
             // need override on macOS and AIX_, very old Solaris
-#if defined(__APPLE__) || defined(_AIX) || !defined(HAVE_ISWBLANK)
+#if defined(USE_RI18N_FNS) || !defined(HAVE_ISWBLANK)
             if (!Ri18n_iswctype(wc, blankwct))
                 break;
 #else
