@@ -402,9 +402,9 @@ names(tab) <- c('pt', 'uc', 'lc')
 toupper <- tab[tab$uc !="", 1:2]
 tolower <- tab[tab$lc !="", c(1,3)]
 cat(with(toupper, sprintf("  { 0x%s, 0x%s},", pt, uc)),
-   sep = "\n", file = "rlocale_upper.h")
+   sep = "\n", file = "rlocale_toupper.h")
 cat(with(tolower, sprintf("  { 0x%s, 0x%s},", pt, lc)),
-   sep = "\n", file = "rlocale_lower.h")
+   sep = "\n", file = "rlocale_tolower.h")
 
    from https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt
 */
@@ -416,11 +416,11 @@ struct pair
 };
 
 static const struct pair table_toupper[] = {
-#include "rlocale_upper.h"
+#include "rlocale_toupper.h"
 };
 
 static const struct pair table_tolower[] = {
-#include "rlocale_lower.h"
+#include "rlocale_tolower.h"
 };
 
 static int tlsearch(int wint, const struct pair *table, int max)
