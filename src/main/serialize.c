@@ -1204,10 +1204,12 @@ tailcall:
         {
         case LISTSXP:
         case LANGSXP:
-        case CLOSXP:
         case PROMSXP:
         case DOTSXP:
             hastag = TAG(s) != R_NilValue;
+            break;
+        case CLOSXP:
+            hastag = TRUE;
             break;
         default:
             hastag = FALSE;
@@ -1222,7 +1224,6 @@ tailcall:
         {
         case LISTSXP:
         case LANGSXP:
-        case CLOSXP:
         case PROMSXP:
         case DOTSXP:
             /* Dotted pair objects */
@@ -1237,6 +1238,17 @@ tailcall:
             WriteItem(CAR(s), ref_table, stream);
             /* now do a tail call to WriteItem to handle the CDR */
             s = CDR(s);
+            goto tailcall;
+        case CLOSXP:
+            /* Like a dotted pair object */
+            /* Write the ATTRIB field first to allow us to avoid
+               recursion on the CDR/BODY */
+            if (hasattr)
+                WriteItem(ATTRIB(s), ref_table, stream);
+            WriteItem(CLOENV(s), ref_table, stream);
+            WriteItem(FORMALS(s), ref_table, stream);
+            /* now do a tail call to WriteItem to handle the CDR/BODY */
+            s = BODY(s);
             goto tailcall;
         case EXTPTRSXP:
             /* external pointers */
