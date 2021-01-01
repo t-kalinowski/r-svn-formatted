@@ -322,7 +322,9 @@ ISWFUNC(digit)
 ISWFUNC(xdigit)
 ISWFUNC(space)
 ISWFUNC(print)
+/* derived below
 ISWFUNC(graph)
+*/
 ISWFUNC(blank)
 ISWFUNC(cntrl)
 ISWFUNC(punct)
@@ -340,13 +342,12 @@ static int Ri18n_iswalnum(wint_t wc)
 /* Defined in the C99 standard as
 
    'any wide character for which iswprint is true and iswspace is false'
-
-static int Ri18n_iswgraph (wint_t wc)
-{
-    return (Ri18n_iswctype(wc, Ri18n_wctype("print")) &&
-        !Ri18n_iswctype(wc, Ri18n_wctype("space"))    );
-}
 */
+
+static int Ri18n_iswgraph(wint_t wc)
+{
+    return (Ri18n_iswctype(wc, Ri18n_wctype("print")) && !Ri18n_iswctype(wc, Ri18n_wctype("space")));
+}
 
 /*
  * iswctype
