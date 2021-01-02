@@ -474,24 +474,29 @@ attribute_hidden int Rstrwid(const char *str, int slen, cetype_t ienc, int quote
         warning("unsupported encoding (%d) in Rstrwid", ienc);
     if (mbcslocale || ienc == CE_UTF8)
     {
-        int res;
+#ifdef __sun
+        /* Need to avoid mbtrowc on Solaris, where it only covers the BMP
+           so we set ienc for unmarked strings in a UTF-8 locale */
+        Rboolean useUTF8 = (ienc == CE_UTF8) || utf8locale;
+#else
+        Rboolean useUTF8 = (ienc == CE_UTF8);
+#endif
         mbstate_t mb_st;
-        wchar_t wc;
-        R_wchar_t k; /* not wint_t as it might be signed */
 
-        if (ienc != CE_UTF8)
+        if (!useUTF8)
             mbs_init(&mb_st);
         for (i = 0; i < slen; i++)
         {
-            res = (ienc == CE_UTF8) ? (int)utf8toucs(&wc, p) : (int)mbrtowc(&wc, p, MB_CUR_MAX, NULL);
+            unsigned int k; /* not wint_t as it might be signed */
+            wchar_t wc;
+            int res = useUTF8 ? (int)utf8toucs(&wc, p) : (int)mbrtowc(&wc, p, MB_CUR_MAX, NULL);
             if (res >= 0)
             {
-                if (ienc == CE_UTF8 && IS_HIGH_SURROGATE(wc))
+                if (useUTF8 && IS_HIGH_SURROGATE(wc))
                     k = utf8toucs32(wc, p);
                 else
                     k = wc;
-                // OK to cast as k is small
-                if (0x20 <= k && k < 0x7f && iswprint((wint_t)k))
+                if (0x20 <= k && k < 0x7f && iswprint(k))
                 {
                     switch (wc)
                     {
@@ -532,9 +537,10 @@ attribute_hidden int Rstrwid(const char *str, int slen, cetype_t ienc, int quote
                 }
                 else
                 {
+                    /* no need to worry about truncation as iswprint
+                     * gets replaced on Windows */
                     // conceivably an invalid \U escape could use 11 or 12
-                    // Should not just cast here, as that may truncate.
-                    len += iswprint((wint_t)k) ? Ri18n_wcwidth(wc) : (k > 0xffff ? 10 : 6);
+                    len += iswprint(k) ? Ri18n_wcwidth(k) : (k > 0xffff ? 10 : 6);
                     i += (res - 1);
                     p += res;
                 }
@@ -628,7 +634,7 @@ attribute_hidden int Rstrlen(SEXP s, int quote)
 
 attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj justify)
 {
-    int b, b0, i, j, cnt;
+    int i, cnt;
     const char *p;
     char *q, buf[13];
     cetype_t ienc = getCharCE(s);
@@ -677,7 +683,7 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
                 else
                 {
                     snprintf(buf, 5, "\\x%02x", k);
-                    for (j = 0; j < 4; j++)
+                    for (int j = 0; j < 4; j++)
                         *qq++ = buf[j];
                     cnt += 3;
                 }
@@ -705,12 +711,27 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
                 }
                 else
                 {
-                    cnt = strlen(p);
+                    cnt = (int)strlen(p);
                     i = Rstrwid(p, cnt, CE_UTF8, quote);
                 }
                 ienc = CE_UTF8;
             }
 #endif
+        }
+        else if (ienc == CE_LATIN1)
+        {
+            p = translateCharUTF8(s);
+            if (p == CHAR(s))
+            {
+                i = Rstrlen(s, quote);
+                cnt = LENGTH(s);
+            }
+            else
+            {
+                cnt = (int)strlen(p);
+                i = Rstrwid(p, cnt, CE_UTF8, quote);
+            }
+            ienc = CE_UTF8;
         }
         else
         {
@@ -755,12 +776,12 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
         q_len = (size_t)w;
     q = R_AllocStringBuffer(q_len, buffer);
 
-    b = w - i - (quote ? 2 : 0); /* total amount of padding */
+    int b = w - i - (quote ? 2 : 0); /* total amount of padding */
     if (justify == Rprt_adj_none)
         b = 0;
     if (b > 0 && justify != Rprt_adj_left)
     {
-        b0 = (justify == Rprt_adj_centre) ? b / 2 : b;
+        int b0 = (justify == Rprt_adj_centre) ? b / 2 : b;
         for (i = 0; i < b0; i++)
             *q++ = ' ';
         b -= b0;
@@ -769,14 +790,18 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
         *q++ = (char)quote;
     if (mbcslocale || ienc == CE_UTF8)
     {
-        int j, res;
+#ifdef __sun
+        /* Need to avoid mbtrowc on Solaris, where it only covers the BMP
+           so we set ienc for unmarked strings in a UTF-8 locale */
+        Rboolean useUTF8 = (ienc == CE_UTF8) || utf8locale;
+#else
+        Rboolean useUTF8 = (ienc == CE_UTF8);
+#endif
         mbstate_t mb_st;
-        wchar_t wc;
-        unsigned int k; /* not wint_t as it might be signed */
 #ifndef __STDC_ISO_10646__
         Rboolean Unicode_warning = FALSE;
 #endif
-        if (ienc != CE_UTF8)
+        if (!useUTF8)
             mbs_init(&mb_st);
 #ifdef Win32
         else if (WinUTF8out)
@@ -787,10 +812,12 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
 #endif
         for (i = 0; i < cnt; i++)
         {
-            res = (int)((ienc == CE_UTF8) ? utf8toucs(&wc, p) : mbrtowc(&wc, p, MB_CUR_MAX, NULL));
+            wchar_t wc;
+            int res = (int)(useUTF8 ? utf8toucs(&wc, p) : mbrtowc(&wc, p, MB_CUR_MAX, NULL));
             if (res >= 0)
-            { /* res = 0 is a terminator */
-                if (ienc == CE_UTF8 && IS_HIGH_SURROGATE(wc))
+            {                   /* res = 0 is a terminator */
+                unsigned int k; /* not wint_t as it might be signed */
+                if (useUTF8 && IS_HIGH_SURROGATE(wc))
                     k = utf8toucs32(wc, p);
                 else
                     k = wc;
@@ -800,8 +827,7 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
                     k = 0;
                     wc = L'\0';
                 }
-                // OK to cast as k is small
-                if (0x20 <= k && k < 0x7f && iswprint((wint_t)k))
+                if (0x20 <= k && k < 0x7f && iswprint(k))
                 {
                     switch (wc)
                     {
@@ -819,7 +845,7 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
                         break;
                     }
                     default:
-                        for (j = 0; j < res; j++)
+                        for (int j = 0; j < res; j++)
                             *q++ = *p++;
                         break;
                     }
@@ -866,7 +892,7 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
                         /* print in octal */
                         // gcc 7 requires cast here
                         snprintf(buf, 5, "\\%03o", (unsigned char)k);
-                        for (j = 0; j < 4; j++)
+                        for (int j = 0; j < 4; j++)
                             *q++ = buf[j];
                         break;
                     }
@@ -876,7 +902,9 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
                 {
                     /* wc could be an unpaired surrogate and this does
                      * not do the same as Rstrwid */
-                    if (iswprint(wc))
+                    /* no need to worry about truncation as iswprint
+                     * gets replaced on Windows */
+                    if (iswprint(k))
                     {
                         /* The problem here is that wc may be
                            printable according to the Unicode tables,
@@ -886,7 +914,7 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
                            And the system iswprintf may not correspond
                            to the latest Unicode tables.
                         */
-                        for (j = 0; j < res; j++)
+                        for (int j = 0; j < res; j++)
                             *q++ = *p++;
                     }
                     else
@@ -896,11 +924,10 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
                             Unicode_warning = TRUE;
 #endif
                         if (k > 0xffff)
-                            // This could conceivably use >6 hex digits
                             snprintf(buf, 13, "\\U{%06x}", k);
                         else
                             snprintf(buf, 11, "\\u%04x", k);
-                        j = (int)strlen(buf);
+                        int j = (int)strlen(buf);
                         memcpy(q, buf, j);
                         q += j;
                         p += res;
@@ -988,7 +1015,7 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
                     default:
                         /* print in octal */
                         snprintf(buf, 5, "\\%03o", (unsigned char)*p);
-                        for (j = 0; j < 4; j++)
+                        for (int j = 0; j < 4; j++)
                             *q++ = buf[j];
                         break;
                     }
@@ -1000,7 +1027,7 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
                 {
                     /* print in octal */
                     snprintf(buf, 5, "\\%03o", (unsigned char)*p);
-                    for (j = 0; j < 4; j++)
+                    for (int j = 0; j < 4; j++)
                         *q++ = buf[j];
                     p++;
                 }
