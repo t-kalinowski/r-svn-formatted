@@ -1696,6 +1696,9 @@ static void FT_getFont(pGEcontext gc, pDevDesc dd, double fs)
             family = hv;
         else if (fm[0])
             family = fm;
+        // none of the above, so ultimate fallback.
+        else
+            family = hv;
     }
 
     cairo_select_font_face(xd->cc, family, slant, wt);
