@@ -1009,10 +1009,10 @@ FUNTAB R_FunTab[] = {
    explicutly allowed in the pipe code. */
 
 static char *Spec_name[] = {
-    "if", "while", "repeat", "for", "break", "next", "return", "function", "(",    "{",  "+",  "-",
-    "*",  "/",     "^",      "%%",  "%/%",   "%*%",  ":",      "::",       ":::",  "?",  "|>", "~",
-    "@",  "==",    "!=",     "<",   ">",     "<=",   ">=",     "&",        "|",    "&&", "||", "!",
-    "<-", "<<-",   "=",      "$",   "[",     "[[",   "$<-",    "[<-",      "[[<-", 0};
+    "if", "while", "repeat", "for", "break", "next", "return", "function", "(",   "{",    "+",  "-",
+    "*",  "/",     "^",      "%%",  "%/%",   "%*%",  ":",      "::",       ":::", "?",    "|>", "~",
+    "@",  "=>",    "==",     "!=",  "<",     ">",    "<=",     ">=",       "&",   "|",    "&&", "||",
+    "!",  "<-",    "<<-",    "=",   "$",     "[",    "[[",     "$<-",      "[<-", "[[<-", 0};
 
 /* also used in eval.c */
 SEXP attribute_hidden R_Primitive(const char *primname)
