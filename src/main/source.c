@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2001--2020  The R Core Team
+ *  Copyright (C) 2001--2021  The R Core Team
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -178,10 +178,10 @@ void NORET parseError(SEXP call, int linenum)
             error("%s", R_ParseErrorMsg);
             break;
         case 1:
-            error("%s in \"%s\"", R_ParseErrorMsg, CHAR(STRING_ELT(context, 0)));
+            error(_("%s in \"%s\""), R_ParseErrorMsg, CHAR(STRING_ELT(context, 0)));
             break;
         default:
-            error("%s in:\n\"%s\n%s\"", R_ParseErrorMsg, CHAR(STRING_ELT(context, len - 2)),
+            error(_("%s in:\n\"%s\n%s\""), R_ParseErrorMsg, CHAR(STRING_ELT(context, len - 2)),
                   CHAR(STRING_ELT(context, len - 1)));
             break;
         }
