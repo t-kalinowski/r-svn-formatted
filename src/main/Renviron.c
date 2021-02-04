@@ -219,32 +219,34 @@ static void Putenv(char *a, char *b)
 #endif
 }
 
-#define MSG_SIZE 2000
+#define MSG_SIZE 2048
 static int process_Renviron(const char *filename)
 {
     FILE *fp;
-    char *s, *p, sm[BUF_SIZE], *lhs, *rhs, msg[MSG_SIZE + 50];
-    int errs = 0;
+    if (!filename || !(fp = R_fopen(filename, "r")))
+        return 0;
+
+    char sm[BUF_SIZE], msg[MSG_SIZE];
     const char *line_prefix = "\n      ";
     const char *ignored_msg = "\n   They were ignored\n";
     const char *truncated_msg = "[... truncated]";
-    Rboolean complete_line;
-
-    if (!filename || !(fp = R_fopen(filename, "r")))
-        return 0;
-    snprintf(msg, MSG_SIZE + 50, "\n   File %s contains invalid line(s)", filename);
+    Rboolean errs = FALSE;
 
     while (fgets(sm, BUF_SIZE, fp))
     {
         sm[BUF_SIZE - 1] = '\0'; /* should not be needed */
         /* embedded nulls are not supported */
-        complete_line = feof(fp) || Rf_strchr(sm, '\n');
-        s = rmspace(sm);
+        Rboolean complete_line = feof(fp) || Rf_strchr(sm, '\n');
+        char *s = rmspace(sm), *p;
         if (strlen(s) == 0 || s[0] == '#')
             continue;
         if (!(p = Rf_strchr(s, '=')) || !complete_line)
         {
-            errs++;
+            if (!errs)
+            {
+                errs = TRUE;
+                snprintf(msg, MSG_SIZE, "\n   File %s contains invalid line(s)", filename);
+            }
             if (strlen(msg) + strlen(line_prefix) + strlen(s) < MSG_SIZE)
             {
                 strcat(msg, line_prefix);
@@ -270,8 +272,7 @@ static int process_Renviron(const char *filename)
             continue;
         }
         *p = '\0';
-        lhs = rmspace(s);
-        rhs = findterm(rmspace(p + 1));
+        char *lhs = rmspace(s), *rhs = findterm(rmspace(p + 1));
         /* set lhs = rhs */
         if (strlen(lhs) && strlen(rhs))
             Putenv(lhs, rhs);
@@ -279,7 +280,7 @@ static int process_Renviron(const char *filename)
     fclose(fp);
     if (errs)
     {
-        if (strlen(msg) + strlen(ignored_msg) < MSG_SIZE + 50)
+        if (strlen(msg) + strlen(ignored_msg) < MSG_SIZE)
             strcat(msg, ignored_msg);
         R_ShowMessage(msg);
     }
