@@ -1189,8 +1189,7 @@ void NORET jump_to_toplevel()
 
 /* #define DEBUG_GETTEXT 1 */
 
-/* Called from do_gettext() and do_ngettext() .
-   The returned domain needs to be free()d later (if it contains anything). */
+/* Called from do_gettext() and do_ngettext() */
 static char *determine_domain_gettext(SEXP domain_, SEXP rho)
 {
     const char *domain = "";
@@ -1236,8 +1235,7 @@ static char *determine_domain_gettext(SEXP domain_, SEXP rho)
     if (strlen(domain))
     {
         size_t len = strlen(domain) + 3;
-        R_CheckStack2(len);
-        buf = (char *)malloc(len);
+        buf = R_alloc(len, sizeof(char));
 
         Rsnprintf_mbcs(buf, len, "R-%s", domain);
         domain = buf;
@@ -1256,8 +1254,7 @@ static char *determine_domain_gettext(SEXP domain_, SEXP rho)
     if (!strlen(domain))
         return NULL;
 
-    R_CheckStack2(strlen(domain) + 1);
-    buf = (char *)malloc(strlen(domain) + 1);
+    buf = R_alloc(strlen(domain) + 1, sizeof(char));
     strcpy(buf, domain);
 
     return buf;
@@ -1277,7 +1274,6 @@ SEXP attribute_hidden do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (!isString(string))
         error(_("invalid '%s' value"), "string");
 
-    // domain needs to be freed later if it contains anything
     char *domain = determine_domain_gettext(CAR(args), rho);
 
     if (domain && strlen(domain))
@@ -1337,7 +1333,6 @@ SEXP attribute_hidden do_gettext(SEXP call, SEXP op, SEXP args, SEXP rho)
                 SET_STRING_ELT(ans, i, mkChar(This));
         }
         UNPROTECT(1);
-        free(domain);
         return ans;
     }
     else
@@ -1362,7 +1357,6 @@ SEXP attribute_hidden do_ngettext(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 #ifdef ENABLE_NLS
     SEXP sdom = CADDDR(args);
-    // domain needs to be freed later if it contains anything
     char *domain = determine_domain_gettext(sdom, rho);
 
     if (domain && strlen(domain))
@@ -1371,10 +1365,8 @@ SEXP attribute_hidden do_ngettext(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (length(STRING_ELT(msg1, 0)))
         {
             char *fmt = dngettext(domain, translateChar(STRING_ELT(msg1, 0)), translateChar(STRING_ELT(msg2, 0)), n);
-            free(domain);
             return mkString(fmt);
         }
-        free(domain);
     }
 #endif
     return n == 1 ? msg1 : msg2;
