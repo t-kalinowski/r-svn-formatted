@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2020  The R Core Team
+ *  Copyright (C) 1997--2021  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -892,7 +892,7 @@ char *PrintUsage(void)
          msg5[] = "\nAn argument ending in .RData (in any case) is taken as the path\nto the workspace to be restored "
                   "(and implies --restore)";
     if (CharacterMode == RTerm)
-        strcpy(msg, "Usage: Rterm [options] [< infile] [> outfile] [EnvVars]\n\n");
+        strcpy(msg, "Usage: Rterm [options] [EnvVars]\n\n");
     else
         strcpy(msg, "Usage: Rgui [options] [EnvVars]\n\n");
     strcat(msg, msg0);
