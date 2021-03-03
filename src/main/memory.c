@@ -5073,11 +5073,12 @@ int attribute_hidden(IS_LATIN1)(SEXP x)
 {
     return IS_LATIN1(CHK(x));
 }
-int attribute_hidden(IS_ASCII)(SEXP x)
+/* Next two are used in package utils */
+int(IS_ASCII)(SEXP x)
 {
     return IS_ASCII(CHK(x));
 }
-int attribute_hidden(IS_UTF8)(SEXP x)
+int(IS_UTF8)(SEXP x)
 {
     return IS_UTF8(CHK(x));
 }
