@@ -6271,6 +6271,7 @@ again:
     case OR2:
     case AND2:
     case PIPE:
+    case PIPEBIND:
     case SPECIAL:
     case FUNCTION:
     case WHILE:
