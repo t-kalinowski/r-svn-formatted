@@ -478,6 +478,9 @@ attribute_hidden int Rstrwid(const char *str, int slen, cetype_t ienc, int quote
         /* Need to avoid mbtrowc on Solaris, where it only covers the BMP
            so we set ienc for unmarked strings in a UTF-8 locale */
         Rboolean useUTF8 = (ienc == CE_UTF8) || utf8locale;
+        if (ienc == CE_LATIN1)
+            /* Future-proof, cannot happen now. */
+            warning("unexpected encoding (%d) in Rstrwid", ienc);
 #else
         Rboolean useUTF8 = (ienc == CE_UTF8);
 #endif
@@ -730,6 +733,7 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
                 ienc = CE_UTF8;
             }
 #endif
+#ifdef __sun
         }
         else if (ienc == CE_LATIN1)
         {
@@ -745,6 +749,7 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
                 i = Rstrwid(p, cnt, CE_UTF8, quote);
             }
             ienc = CE_UTF8;
+#endif
         }
         else
         {
@@ -806,6 +811,7 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
 #ifdef __sun
         /* Need to avoid mbtrowc on Solaris, where it only covers the BMP
            so we set ienc for unmarked strings in a UTF-8 locale */
+        /* Latin-1 string would have been converted to UTF-8 above. */
         Rboolean useUTF8 = (ienc == CE_UTF8) || utf8locale;
 #else
         Rboolean useUTF8 = (ienc == CE_UTF8);
