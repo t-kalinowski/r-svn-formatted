@@ -1312,6 +1312,8 @@ SEXP attribute_hidden do_encoding(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
+#define IS_NATIVE(tmp) (!IS_LATIN1(tmp) && !IS_UTF8(tmp) && !IS_BYTES(tmp))
+
 SEXP attribute_hidden do_setencoding(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, enc, tmp;
@@ -1345,7 +1347,7 @@ SEXP attribute_hidden do_setencoding(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (tmp == NA_STRING)
             continue;
         if (!((ienc == CE_LATIN1 && IS_LATIN1(tmp)) || (ienc == CE_UTF8 && IS_UTF8(tmp)) ||
-              (ienc == CE_BYTES && IS_BYTES(tmp)) || (ienc == CE_NATIVE && !IS_LATIN1(tmp) && !IS_UTF8(tmp))))
+              (ienc == CE_BYTES && IS_BYTES(tmp)) || (ienc == CE_NATIVE && IS_NATIVE(tmp))))
             SET_STRING_ELT(x, i, mkCharLenCE(CHAR(tmp), LENGTH(tmp), ienc));
     }
     UNPROTECT(1);
