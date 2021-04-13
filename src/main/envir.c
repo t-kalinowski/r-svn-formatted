@@ -3474,7 +3474,7 @@ void R_LockEnvironment(SEXP env, Rboolean bindings)
                     if (SYMVALUE(CAR(s)) != R_UnboundValue)
                         LOCK_BINDING(CAR(s));
         }
-#ifdef NOT_YET
+#ifndef NOT_YET
         /* causes problems with Matrix */
         LOCK_FRAME(env);
 #endif
