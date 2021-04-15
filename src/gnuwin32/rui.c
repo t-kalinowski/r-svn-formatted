@@ -1159,19 +1159,25 @@ int setupui(void)
                 a valid locale */
     if ((p = getenv("LC_ALL")))
         strncpy(Rlocale, p, sizeof(Rlocale) - 1);
-    else if((p = getenv("LC_CTYPE"))
-	strncpy(Rlocale, p, sizeof(Rlocale)-1);
-    if (strcmp(Rlocale, "C") == 0) strcpy(Rlocale, "en");
+    else if ((p = getenv("LC_CTYPE")))
+        strncpy(Rlocale, p, sizeof(Rlocale) - 1);
+    if (strcmp(Rlocale, "C") == 0)
+        strcpy(Rlocale, "en");
     setlocale(LC_CTYPE, Rlocale);
     mbcslocale = MB_CUR_MAX > 1;
     ctype = setlocale(LC_CTYPE, NULL);
     p = strrchr(ctype, '.');
-    if(p && isdigit(p[1])) localeCP = atoi(p+1); else localeCP = 1252;
+    if (p && isdigit(p[1]))
+        localeCP = atoi(p + 1);
+    else
+        localeCP = 1252;
 
     readconsolecfg();
     int flags = StandardWindow | Document | Menubar;
-    if(mbcslocale) flags |= UseUnicode;
-    if (RguiMDI & RW_MDI) {
+    if (mbcslocale)
+        flags |= UseUnicode;
+    if (RguiMDI & RW_MDI)
+    {
         TRACERUI("Rgui");
         RFrame = newwindow(
 #ifdef _WIN64
@@ -1187,7 +1193,9 @@ int setupui(void)
         if (!(RConsole = newconsole("R Console", flags)))
             return 0;
         TRACERUI("Console done");
-    } else {
+    }
+    else
+    {
         TRACERUI("Console");
 #ifdef _WIN64
         if (!(RConsole = newconsole("R Console (64-bit)", flags)))
@@ -1198,8 +1206,9 @@ int setupui(void)
 #endif
         TRACERUI("Console done");
     }
-    
-    if (ismdi()) {
+
+    if (ismdi())
+    {
         int btsize = 24;
         rect r = rect(2, 2, btsize, btsize);
         control tb, bt;
@@ -1238,13 +1247,15 @@ int setupui(void)
         MCHECK(bt = newtoolbutton(print_image, r, menuprint));
         MCHECK(addtooltip(bt, G_("Print")));
     }
-    if (ismdi() && (RguiMDI & RW_STATUSBAR)) {
+    if (ismdi() && (RguiMDI & RW_STATUSBAR))
+    {
         TRACERUI("status bar");
         addstatusbar();
         addto(RConsole);
         TRACERUI("status bar done");
     }
-    if (ismdi()) {
+    if (ismdi())
+    {
         char s[256];
         PrintVersionString(s, 256);
         setstatus(s);
@@ -1263,10 +1274,8 @@ int setupui(void)
     MCHECK(mload = newmenuitem(G_("Load Workspace..."), 0, menuloadimage));
     MCHECK(msave = newmenuitem(G_("Save Workspace..."), 'S', menusaveimage));
     MCHECK(newmenuitem("-", 0, NULL));
-    MCHECK(mloadhistory = newmenuitem(G_("Load History..."), 0,
-				      menuloadhistory));
-    MCHECK(msavehistory = newmenuitem(G_("Save History..."), 0,
-				      menusavehistory));
+    MCHECK(mloadhistory = newmenuitem(G_("Load History..."), 0, menuloadhistory));
+    MCHECK(msavehistory = newmenuitem(G_("Save History..."), 0, menusavehistory));
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(newmenuitem(G_("Change dir..."), 0, menuchangedir));
     MCHECK(newmenuitem("-", 0, NULL));
@@ -1278,8 +1287,7 @@ int setupui(void)
     MCHECK(newmenu(G_("Edit")));
     MCHECK(mcopy = newmenuitem(G_("Copy"), 'C', menucopy));
     MCHECK(mpaste = newmenuitem(G_("Paste"), 'V', menupaste));
-    MCHECK(mpastecmds = newmenuitem(G_("Paste commands only"), 0,
-				    menupastecmds));
+    MCHECK(mpastecmds = newmenuitem(G_("Paste commands only"), 0, menupastecmds));
     MCHECK(mcopypaste = newmenuitem(G_("Copy and Paste"), 'X', menucopypaste));
     MCHECK(newmenuitem(G_("Select all"), 0, menuselectall));
     MCHECK(newmenuitem(G_("Clear console"), 'L', menuclear));
@@ -1287,7 +1295,8 @@ int setupui(void)
     MCHECK(mde = newmenuitem(G_("Data editor..."), 0, menude));
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(mconfig = newmenuitem(G_("GUI preferences..."), 0, menuconfig));
-    if (ismdi()) {
+    if (ismdi())
+    {
         MCHECK(newmenu(G_("View")));
         MCHECK(mtools = newmenuitem(G_("Toolbar"), 0, menutools));
         MCHECK(mstatus = newmenuitem(G_("Statusbar"), 0, menustatus));
@@ -1297,39 +1306,39 @@ int setupui(void)
             check(mstatus);
     }
     MCHECK(newmenu(G_("Misc")));
-    MCHECK(newmenuitem(G_("Stop current computation           \tESC"), 0,
-		       menukill));
+    MCHECK(newmenuitem(G_("Stop current computation           \tESC"), 0, menukill));
     MCHECK(newmenuitem(G_("Stop all computations"), 0, menukillall));
     if (DebugMenuitem || isdebuggerpresent())
-	MCHECK(newmenuitem(G_("Break to debugger"), 0, menudebug));
+        MCHECK(newmenuitem(G_("Break to debugger"), 0, menudebug));
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(mlazy = newmenuitem(G_("Buffered output"), 'W', menulazy));
     MCHECK(mcomplete = newmenuitem(G_("Word completion"), 0, menucomplete));
     check(mcomplete);
-    MCHECK(mfncomplete = newmenuitem(G_("Filename completion"), 0,
-				     menufncomplete));
-    if(check_file_completion())
-	check(mfncomplete);
+    MCHECK(mfncomplete = newmenuitem(G_("Filename completion"), 0, menufncomplete));
+    if (check_file_completion())
+        check(mfncomplete);
     else
-	uncheck(mfncomplete);
+        uncheck(mfncomplete);
     MCHECK(newmenuitem("-", 0, NULL));
     MCHECK(mls = newmenuitem(G_("List objects"), 0, menuls));
     MCHECK(mrm = newmenuitem(G_("Remove all objects"), 0, menurm));
     MCHECK(msearch = newmenuitem(G_("List search &path"), 0, menusearch));
 
-    pmenu = (PkgMenuItems) malloc(sizeof(struct structPkgMenuItems));
+    pmenu = (PkgMenuItems)malloc(sizeof(struct structPkgMenuItems));
     RguiPackageMenu(pmenu);
     RguiWindowMenu();
     MCHECK(m = newmenu(G_("Help")));
     MCHECK(newmenuitem(G_("Console"), 0, menuconsolehelp));
     MCHECK(newmenuitem("-", 0, NULL));
     CheckForManuals();
-    hmenu = (HelpMenuItems) malloc(sizeof(struct structHelpMenuItems));
+    hmenu = (HelpMenuItems)malloc(sizeof(struct structHelpMenuItems));
     RguiCommonHelp(m, hmenu);
     consolesetbrk(RConsole, menukill, ESC, 0);
     wgl_hist_init(R_HistorySize, 0);
-    if (R_RestoreHistory) wgl_loadhistory(R_HistoryFile);
-    if (ismdi() && !(RguiMDI & RW_TOOLBAR)) toolbar_hide();
+    if (R_RestoreHistory)
+        wgl_loadhistory(R_HistoryFile);
+    if (ismdi() && !(RguiMDI & RW_TOOLBAR))
+        toolbar_hide();
     show(RConsole);
     return 1;
 }
