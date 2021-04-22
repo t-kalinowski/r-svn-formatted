@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1999--2020  The R Core Team.
+ *  Copyright (C) 1999--2021  The R Core Team.
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -1249,7 +1249,10 @@ static R_INLINE SEXP findGlobalVar(SEXP symbol)
     case SYMSXP:
         return SYMBOL_BINDING_VALUE(symbol);
     default:
-        return BINDING_VALUE(loc);
+        PROTECT(loc);
+        SEXP ans = BINDING_VALUE(loc);
+        UNPROTECT(1); /* loc */
+        return ans;
     }
 }
 #endif
@@ -1520,6 +1523,7 @@ SEXP attribute_hidden do_dotsNames(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     SEXP vl = findVar(R_DotsSymbol, env);
+    PROTECT(vl);
     if (vl == R_UnboundValue)
         error(_("incorrect context: the current call has no '...' to look in"));
     // else
@@ -1531,7 +1535,7 @@ SEXP attribute_hidden do_dotsNames(SEXP call, SEXP op, SEXP args, SEXP env)
         vl = CDR(vl);
     }
 
-    UNPROTECT(1);
+    UNPROTECT(2); /* ans, vl */
     return out;
 }
 
