@@ -1249,10 +1249,8 @@ static R_INLINE SEXP findGlobalVar(SEXP symbol)
     case SYMSXP:
         return SYMBOL_BINDING_VALUE(symbol);
     default:
-        PROTECT(loc);
-        SEXP ans = BINDING_VALUE(loc);
-        UNPROTECT(1); /* loc */
-        return ans;
+        return BINDING_VALUE(loc);
+        /* loc is protected by callee when needed */
     }
 }
 #endif
