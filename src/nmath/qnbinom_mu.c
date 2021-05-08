@@ -1,8 +1,7 @@
 /*
  *  Mathlib : A C Library of Special Functions
- *  Copyright (C) 1999-2021 The R Core Team
- *  Copyright (C) 2003-2021 The R Foundation
- *  Copyright (C) 1998 Ross Ihaka
+ *  Copyright (C) 2000-2021 The R Core Team
+ *  Copyright (C) 2005-2021 The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,9 +17,16 @@
  *  along with this program; if not, a copy is available at
  *  https://www.R-project.org/Licenses/
  *
+ *  SYNOPSIS
+ *
+ *	#include <Rmath.h>
+ *      double qnbinom_mu(double p, double size, double mu,
+ *                     int lower_tail, int log_p)
+ *
  *  DESCRIPTION
  *
- *	The quantile function of the binomial distribution.
+ *	The quantile function of the negative binomial distribution,
+ *      for the (size, mu) parametrizations
  *
  *  METHOD
  *
@@ -30,53 +36,47 @@
  *	1 or 2.	 A search is then conducted of values close to
  *	this initial start point.
  */
+
 #include "nmath.h"
 #include "dpq.h"
 
-#ifdef DEBUG_qbinom
+#ifdef DEBUG_qnbinom
 #define R_DBG_printf(...) REprintf(__VA_ARGS__)
 #else
 #define R_DBG_printf(...)
 #endif
 
-#define _thisDIST_ binom
-#define _dist_PARS_DECL_ double n, double pr
-#define _dist_PARS_ n, pr
-#define _dist_MAX_y n
-//                  ===  Binomial  Y <= n
+#define _thisDIST_ nbinom_mu
+#define _dist_PARS_DECL_ double size, double mu
+#define _dist_PARS_ size, mu
 
 #include "qDiscrete_search.h"
 //        ------------------>  do_search() and all called by q_DISCRETE_*() below
 
-double qbinom(double p, double n, double pr, int lower_tail, int log_p)
+double qnbinom_mu(double p, double size, double mu, int lower_tail, int log_p)
 {
+    if (size == ML_POSINF) // limit case: Poisson
+        return (qpois(p, mu, lower_tail, log_p));
+
 #ifdef IEEE_754
-    if (ISNAN(p) || ISNAN(n) || ISNAN(pr))
-        return p + n + pr;
+    if (ISNAN(p) || ISNAN(size) || ISNAN(mu))
+        return p + size + mu;
 #endif
-    if (!R_FINITE(n) || !R_FINITE(pr))
-        ML_WARN_return_NAN;
-    /* if log_p is true, p = -Inf is a legitimate value */
-    if (!R_FINITE(p) && !log_p)
-        ML_WARN_return_NAN;
 
-    n = R_forceint(n);
-
-    if (pr < 0 || pr > 1 || n < 0)
+    if (mu == 0 || size == 0)
+        return 0;
+    if (mu < 0 || size < 0)
         ML_WARN_return_NAN;
 
-    R_Q_P01_boundaries(p, 0, n);
+    R_Q_P01_boundaries(p, 0, ML_POSINF);
 
-    if (pr == 0. || n == 0)
-        return 0.;
-    if (pr == 1.)
-        return n; /* covers the full range of the distribution */
+    double Q = 1 + mu / size, // (size+mu)/size = 1 / prob
+        P = mu / size,        // = (1 - prob) * Q = (1 - prob) / prob  =  Q - 1
+        sigma = sqrt(size * P * Q), gamma = (Q + P) / sigma;
 
-    // (NB: unavoidable cancellation for pr ~= 1)
-    double q = 1 - pr, mu = n * pr, sigma = sqrt(n * pr * q), gamma = (q - pr) / sigma;
-
-    R_DBG_printf("qbinom(p=%.12g, n=%.15g, pr=%.7g, l.t.=%d, log=%d): sigma=%g, gamma=%g;\n", p, n, pr, lower_tail,
-                 log_p, sigma, gamma);
+    R_DBG_printf("qnbinom_mu(p=%.12g, size=%.15g, mu=%g, l.t.=%d, log=%d):"
+                 " mu=%g, sigma=%g, gamma=%g;\n",
+                 p, size, mu, lower_tail, log_p, mu, sigma, gamma);
 
     q_DISCRETE_01_CHECKS();
     q_DISCRETE_BODY();
