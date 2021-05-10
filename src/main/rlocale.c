@@ -128,10 +128,11 @@ static int wcwidthsearch(int wint, const struct interval_wcwidth *table, int max
     int mid;
     max--;
 
-    /* This quickly gives one for ASCII characters since the table
-       starts at 0xa1 */
-    if (wint < table[0].first || wint > table[max].last)
+    /* This quickly gives one for printing ASCII characters */
+    if (wint > 0x1F && wint < 0x7F)
         return 1;
+    else if (wint < table[min].first || wint > table[max].last)
+        return -1;
     while (max >= min)
     {
         mid = (min + max) / 2;
