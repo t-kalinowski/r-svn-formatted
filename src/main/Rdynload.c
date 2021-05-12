@@ -121,7 +121,9 @@ static int CountDLL = 0;
 #include <R_ext/Rdynload.h>
 
 /* Allocated in initLoadedDLL at R session start. Never free'd */
-static DllInfo *LoadedDLL = NULL;
+static DllInfo **LoadedDLL = NULL;
+static SEXP DLLInfoEptrs = NULL; /* cache of external pointers to DllInfo */
+static SEXP SymbolEptrs = NULL;  /* (weak) list of symbol external pointers */
 
 static int addDLL(char *dpath, char *name, HINSTANCE handle);
 static SEXP Rf_MakeDLLInfo(DllInfo *info);
@@ -141,7 +143,7 @@ void attribute_hidden InitDynload()
 {
     initLoadedDLL();
     int which = addDLL(Rstrdup("base"), "base", NULL);
-    DllInfo *dll = &LoadedDLL[which];
+    DllInfo *dll = LoadedDLL[which];
     R_init_base(dll);
     InitFunctionHashing();
 }
@@ -226,9 +228,34 @@ static void initLoadedDLL()
     }
 
     /* memory is set to zero */
-    LoadedDLL = (DllInfo *)calloc(MaxNumDLLs, sizeof(DllInfo));
+    LoadedDLL = (DllInfo **)calloc(MaxNumDLLs, sizeof(DllInfo *));
     if (LoadedDLL == NULL)
         R_Suicide(_("could not allocate space for DLL table"));
+    DLLInfoEptrs = allocVector(VECSXP, MaxNumDLLs);
+    R_PreserveObject(DLLInfoEptrs);
+    SymbolEptrs = CONS(R_NilValue, R_NilValue);
+    R_PreserveObject(SymbolEptrs);
+}
+
+static void R_registerSymbolEptr(SEXP eptr, SEXP einfo)
+{
+    const int MAXCOUNT = 10;
+    static int cleancount = MAXCOUNT;
+
+    /* remove unneeded entries from the list */
+    if (--cleancount <= 0)
+    {
+        cleancount = MAXCOUNT;
+        for (SEXP last = SymbolEptrs, next = CDR(SymbolEptrs); next != R_NilValue; next = CDR(next))
+            if (R_WeakRefKey(CAR(next)) == R_NilValue)
+                SETCDR(last, CDR(next));
+            else
+                last = next;
+    }
+
+    /* Add eptr to the head of the list, with weakref value identifying the
+       DllInfo. The identification is needed when deleting the DLL. */
+    SETCDR(SymbolEptrs, CONS(R_MakeWeakRef(eptr, einfo, R_NilValue, FALSE), CDR(SymbolEptrs)));
 }
 
 /* returns DllInfo used by the embedding application.
@@ -239,7 +266,7 @@ DllInfo *R_getEmbeddingDllInfo()
     if (dll == NULL)
     {
         int which = addDLL(Rstrdup("(embedding)"), "(embedding)", NULL);
-        dll = &LoadedDLL[which];
+        dll = LoadedDLL[which];
         /* make sure we don't attempt dynamic lookup */
         R_useDynamicSymbols(dll, FALSE);
     }
@@ -282,10 +309,21 @@ DllInfo *R_getDllInfo(const char *path)
     int i;
     for (i = 0; i < CountDLL; i++)
     {
-        if (strcmp(LoadedDLL[i].path, path) == 0)
-            return (&LoadedDLL[i]);
+        if (strcmp(LoadedDLL[i]->path, path) == 0)
+            return (LoadedDLL[i]);
     }
     return (DllInfo *)NULL;
+}
+
+static int R_getDllIndex(DllInfo *info)
+{
+    int i;
+    for (i = 0; i < CountDLL; i++)
+    {
+        if (LoadedDLL[i] == info)
+            return i;
+    }
+    return -1;
 }
 
 /*
@@ -430,6 +468,8 @@ static void Rf_freeFortranSymbol(Rf_DotFortranSymbol *sym)
 static void Rf_freeDllInfo(DllInfo *info)
 {
     int i;
+    if (!info)
+        return;
     free(info->name);
     free(info->path);
     if (info->CSymbols)
@@ -456,6 +496,7 @@ static void Rf_freeDllInfo(DllInfo *info)
             Rf_freeFortranSymbol(info->FortranSymbols + i);
         free(info->FortranSymbols);
     }
+    free(info);
 }
 
 typedef void (*DllInfoUnloadCall)(DllInfo *);
@@ -476,6 +517,8 @@ static Rboolean R_callDLLUnload(DllInfo *dllInfo)
     return (TRUE);
 }
 
+static void freeRegisteredNativeSymbolCopy(SEXP);
+
 /* Remove the specified DLL from the current DLL list */
 /* Returns 1 if the DLL was found and removed from */
 /* the list and returns 0 otherwise. */
@@ -486,7 +529,7 @@ static int DeleteDLL(const char *path)
 
     for (i = 0; i < CountDLL; i++)
     {
-        if (!strcmp(path, LoadedDLL[i].path))
+        if (!strcmp(path, LoadedDLL[i]->path))
         {
             loc = i;
             goto found;
@@ -496,43 +539,88 @@ static int DeleteDLL(const char *path)
 found:
 #ifdef CACHE_DLL_SYM
     if (R_osDynSymbol->deleteCachedSymbols)
-        R_osDynSymbol->deleteCachedSymbols(&LoadedDLL[loc]);
+        R_osDynSymbol->deleteCachedSymbols(LoadedDLL[loc]);
 #endif
-    R_reinit_altrep_classes(&LoadedDLL[loc]);
-    R_callDLLUnload(&LoadedDLL[loc]);
-    R_osDynSymbol->closeLibrary(LoadedDLL[loc].handle);
-    Rf_freeDllInfo(LoadedDLL + loc);
-    /* FIXME: why not use memcpy here? */
+    R_reinit_altrep_classes(LoadedDLL[loc]);
+    R_callDLLUnload(LoadedDLL[loc]);
+    R_osDynSymbol->closeLibrary(LoadedDLL[loc]->handle);
+    Rf_freeDllInfo(LoadedDLL[loc]);
+
+    /* zero pointers to DllInfo and the handle */
+    SEXP e = VECTOR_ELT(DLLInfoEptrs, loc);
+    if (!isNull(e))
+        R_ClearExternalPtr(e);
+    SEXP sRegisteredNativeSymbol = install("registered native symbol");
+    for (SEXP last = SymbolEptrs, next = CDR(SymbolEptrs); next != R_NilValue; next = CDR(next))
+        if (R_WeakRefValue(CAR(next)) == e)
+        {
+            SETCDR(last, CDR(next)); /* remove from list */
+            SEXP p = R_WeakRefKey(CAR(next));
+            if (TYPEOF(p) == EXTPTRSXP && R_ExternalPtrAddr(p))
+            {
+                if (R_ExternalPtrTag(p) == sRegisteredNativeSymbol)
+                    freeRegisteredNativeSymbolCopy(p);
+                R_ClearExternalPtr(p);
+            }
+        }
+        else
+            last = next;
+
     for (i = loc + 1; i < CountDLL; i++)
     {
-        LoadedDLL[i - 1].path = LoadedDLL[i].path;
-        LoadedDLL[i - 1].name = LoadedDLL[i].name;
-        LoadedDLL[i - 1].handle = LoadedDLL[i].handle;
-        LoadedDLL[i - 1].useDynamicLookup = LoadedDLL[i].useDynamicLookup;
-        LoadedDLL[i - 1].numCSymbols = LoadedDLL[i].numCSymbols;
-        LoadedDLL[i - 1].numCallSymbols = LoadedDLL[i].numCallSymbols;
-        LoadedDLL[i - 1].numFortranSymbols = LoadedDLL[i].numFortranSymbols;
-        LoadedDLL[i - 1].numExternalSymbols = LoadedDLL[i].numExternalSymbols;
-        LoadedDLL[i - 1].CSymbols = LoadedDLL[i].CSymbols;
-        LoadedDLL[i - 1].CallSymbols = LoadedDLL[i].CallSymbols;
-        LoadedDLL[i - 1].FortranSymbols = LoadedDLL[i].FortranSymbols;
-        LoadedDLL[i - 1].ExternalSymbols = LoadedDLL[i].ExternalSymbols;
-        LoadedDLL[i - 1].forceSymbols = LoadedDLL[i].forceSymbols;
+        LoadedDLL[i - 1] = LoadedDLL[i];
+        SET_VECTOR_ELT(DLLInfoEptrs, i - 1, VECTOR_ELT(DLLInfoEptrs, i));
     }
     CountDLL--;
+    LoadedDLL[CountDLL] = NULL;
+    SET_VECTOR_ELT(DLLInfoEptrs, CountDLL, R_NilValue);
     return 1;
 }
 
-attribute_hidden DL_FUNC Rf_lookupCachedSymbol(const char *name, const char *pkg, int all)
+attribute_hidden DL_FUNC Rf_lookupCachedSymbol(const char *name, const char *pkg, int all, DllInfo **dll)
 {
 #ifdef CACHE_DLL_SYM
     int i;
     for (i = 0; i < nCPFun; i++)
         if (!strcmp(name, CPFun[i].name) && (all || !strcmp(pkg, CPFun[i].pkg)))
+        {
+
+            if (dll)
+                *dll = CPFun[i].dll;
             return CPFun[i].func;
+        }
 #endif
 
     return ((DL_FUNC)NULL);
+}
+
+/*
+  If we are caching the native level symbols, this routine
+  discards the ones from the DLL identified by loc.
+  This is called as the initial action of DeleteDLL().
+ */
+attribute_hidden void Rf_deleteCachedSymbols(DllInfo *dll)
+{
+#ifdef CACHE_DLL_SYM
+    int i;
+    /* Wouldn't a linked list be easier here?
+       Potentially ruin the contiguity of the memory.
+    */
+    for (i = nCPFun - 1; i >= 0; i--)
+        if (!strcmp(CPFun[i].pkg, dll->name))
+        {
+            if (i < nCPFun - 1)
+            {
+                nCPFun--;
+                strcpy(CPFun[i].name, CPFun[nCPFun].name);
+                strcpy(CPFun[i].pkg, CPFun[nCPFun].pkg);
+                CPFun[i].func = CPFun[nCPFun].func;
+                CPFun[i].dll = CPFun[nCPFun].dll;
+            }
+            else
+                nCPFun--;
+        }
+#endif /* CACHE_DLL_SYM */
 }
 
 #ifdef Win32
@@ -555,7 +643,44 @@ static DllInfo *AddDLL(const char *path, int asLocal, int now, const char *DLLse
     HINSTANCE handle;
     DllInfo *info = NULL;
 
-    DeleteDLL(path);
+    int i, loc;
+
+    loc = -1;
+    for (i = 0; i < CountDLL; i++)
+        if (!strcmp(path, LoadedDLL[i]->path))
+        {
+            loc = i;
+            break;
+        }
+
+    if (loc >= 0)
+    {
+        /* The DLL is already loaded, so move it to the head of the list
+           and exit. We assume that the same path means the DLL file is
+           also the same: the user should always unload a DLL file before
+           modifying it (on Windows, it is locked, on Unix, modifying while
+           loaded may cause a crash on function call or even dlsym()). */
+
+        /* FIXME: it might make sense to implement a reference count of how
+           many times a DLL has been loaded, and only delete it when the count
+           reaches zero, but that would break code relying on the existing
+           behavior */
+
+        DllInfo *info = LoadedDLL[loc];
+        SEXP eptrs = PROTECT(VECTOR_ELT(DLLInfoEptrs, loc));
+
+        for (i = loc + 1; i < CountDLL; i++)
+        {
+            LoadedDLL[i - 1] = LoadedDLL[i];
+            SET_VECTOR_ELT(DLLInfoEptrs, i - 1, VECTOR_ELT(DLLInfoEptrs, i));
+        }
+
+        LoadedDLL[CountDLL - 1] = info;
+        SET_VECTOR_ELT(DLLInfoEptrs, CountDLL - 1, eptrs);
+        UNPROTECT(1); /* eptrs */
+        return info;
+    }
+
     if (CountDLL == MaxNumDLLs)
     {
         strcpy(DLLerror, _("`maximal number of DLLs reached..."));
@@ -646,7 +771,7 @@ static DllInfo *R_RegisterDLL(HINSTANCE handle, const char *path)
 
     if (addDLL(dpath, DLLname, handle))
     {
-        info = &LoadedDLL[CountDLL - 1];
+        info = LoadedDLL[CountDLL - 1];
         /* default is to use old-style dynamic lookup.  The object's
            initialization routine can limit access by setting this to FALSE.
         */
@@ -655,6 +780,7 @@ static DllInfo *R_RegisterDLL(HINSTANCE handle, const char *path)
         return info;
     }
     else
+        /* dpath freed in addDLL */
         return NULL;
 }
 
@@ -670,20 +796,33 @@ static int addDLL(char *dpath, char *DLLname, HINSTANCE handle)
         free(dpath);
         return 0;
     }
-
     strcpy(name, DLLname);
-    LoadedDLL[CountDLL].path = dpath;
-    LoadedDLL[CountDLL].name = name;
-    LoadedDLL[CountDLL].handle = handle;
 
-    LoadedDLL[CountDLL].numCSymbols = 0;
-    LoadedDLL[CountDLL].numCallSymbols = 0;
-    LoadedDLL[CountDLL].numFortranSymbols = 0;
-    LoadedDLL[CountDLL].numExternalSymbols = 0;
-    LoadedDLL[CountDLL].CSymbols = NULL;
-    LoadedDLL[CountDLL].CallSymbols = NULL;
-    LoadedDLL[CountDLL].FortranSymbols = NULL;
-    LoadedDLL[CountDLL].ExternalSymbols = NULL;
+    DllInfo *info = (DllInfo *)malloc(sizeof(DllInfo));
+    if (info == NULL)
+    {
+        strcpy(DLLerror, _("could not allocate space for 'DllInfo'"));
+        if (handle)
+            R_osDynSymbol->closeLibrary(handle);
+        free(name);
+        free(dpath);
+        return 0;
+    }
+
+    info->path = dpath;
+    info->name = name;
+    info->handle = handle;
+
+    info->numCSymbols = 0;
+    info->numCallSymbols = 0;
+    info->numFortranSymbols = 0;
+    info->numExternalSymbols = 0;
+    info->CSymbols = NULL;
+    info->CallSymbols = NULL;
+    info->FortranSymbols = NULL;
+    info->ExternalSymbols = NULL;
+    LoadedDLL[CountDLL] = info;
+    SET_VECTOR_ELT(DLLInfoEptrs, CountDLL, R_NilValue);
     CountDLL++;
 
     return (ans);
@@ -849,6 +988,8 @@ DL_FUNC attribute_hidden R_dlsym(DllInfo *info, char const *name, R_RegisteredNa
     }
 #endif
 
+    if (f && symbol)
+        symbol->dll = info;
     return f;
 }
 
@@ -863,10 +1004,14 @@ DL_FUNC R_FindSymbol(char const *name, char const *pkg, R_RegisteredNativeSymbol
     int i, all = (strlen(pkg) == 0), doit;
 
     if (R_osDynSymbol->lookupCachedSymbol)
-        fcnptr = R_osDynSymbol->lookupCachedSymbol(name, pkg, all);
-
-    if (fcnptr)
-        return (fcnptr);
+    {
+        DllInfo *dll = NULL;
+        fcnptr = R_osDynSymbol->lookupCachedSymbol(name, pkg, all, &dll);
+        if (fcnptr && symbol && dll)
+            symbol->dll = dll;
+        if (fcnptr)
+            return (fcnptr);
+    }
 
     /* The following is not legal ANSI C. */
     /* It is only meant to be used in systems supporting */
@@ -877,23 +1022,25 @@ DL_FUNC R_FindSymbol(char const *name, char const *pkg, R_RegisteredNativeSymbol
     for (i = CountDLL - 1; i >= 0; i--)
     {
         doit = all;
-        if (!doit && !strcmp(pkg, LoadedDLL[i].name))
+        if (!doit && !strcmp(pkg, LoadedDLL[i]->name))
             doit = 2;
-        if (doit && LoadedDLL[i].forceSymbols)
+        if (doit && LoadedDLL[i]->forceSymbols)
             doit = 0;
         if (doit)
         {
-            fcnptr = R_dlsym(&LoadedDLL[i], name, symbol); /* R_osDynSymbol->dlsym */
+            fcnptr = R_dlsym(LoadedDLL[i], name, symbol); /* R_osDynSymbol->dlsym */
             if (fcnptr != (DL_FUNC)NULL)
             {
                 if (symbol)
-                    symbol->dll = LoadedDLL + i;
+                    symbol->dll = LoadedDLL[i];
 #ifdef CACHE_DLL_SYM
                 if (strlen(pkg) <= 20 && strlen(name) <= 40 && nCPFun < MAX_CACHE && (!symbol || !symbol->symbol.c))
                 {
-                    strcpy(CPFun[nCPFun].pkg, LoadedDLL[i].name);
+                    strcpy(CPFun[nCPFun].pkg, LoadedDLL[i]->name);
                     strcpy(CPFun[nCPFun].name, name);
-                    CPFun[nCPFun++].func = fcnptr;
+                    CPFun[nCPFun].func = fcnptr;
+                    CPFun[nCPFun].dll = LoadedDLL[i];
+                    nCPFun++;
                 }
 #endif
                 return fcnptr;
@@ -1054,12 +1201,22 @@ static SEXP Rf_makeDllObject(HINSTANCE inst)
     return (ans);
 }
 
-static SEXP Rf_makeDllInfoReference(HINSTANCE inst)
+static SEXP Rf_makeDllInfoReference(DllInfo *info)
 {
     SEXP ans;
 
-    PROTECT(ans = R_MakeExternalPtr(inst, install("DLLInfo"), install("DLLInfo")));
+    int i = R_getDllIndex(info);
+    if (i >= 0)
+    {
+        ans = VECTOR_ELT(DLLInfoEptrs, i);
+        if (!isNull(ans))
+            return ans;
+    }
+
+    PROTECT(ans = R_MakeExternalPtr((HINSTANCE)info, install("DLLInfo"), R_NilValue));
     setAttrib(ans, R_ClassSymbol, mkString("DLLInfoReference"));
+    if (i >= 0)
+        SET_VECTOR_ELT(DLLInfoEptrs, i, ans);
     UNPROTECT(1);
 
     return (ans);
@@ -1088,9 +1245,11 @@ static SEXP Rf_MakeDLLInfo(DllInfo *info)
         SET_STRING_ELT(tmp, 0, mkChar(info->path));
     SET_VECTOR_ELT(ref, 2, ScalarLogical(info->useDynamicLookup));
 
-    SET_VECTOR_ELT(ref, 3, Rf_makeDllObject(info->handle));
-
-    SET_VECTOR_ELT(ref, 4, Rf_makeDllInfoReference((HINSTANCE)info));
+    SEXP ehandle = Rf_makeDllObject(info->handle);
+    SET_VECTOR_ELT(ref, 3, ehandle);
+    SEXP einfo = Rf_makeDllInfoReference(info);
+    SET_VECTOR_ELT(ref, 4, einfo);
+    R_registerSymbolEptr(ehandle, einfo);
 
     PROTECT(elNames = allocVector(STRSXP, n));
     for (i = 0; i < n; i++)
@@ -1138,7 +1297,10 @@ SEXP attribute_hidden R_getSymbolInfo(SEXP sname, SEXP spackage, SEXP withRegist
             package = translateCharFP(STRING_ELT(spackage, 0));
         else if (TYPEOF(spackage) == EXTPTRSXP && R_ExternalPtrTag(spackage) == install("DLLInfo"))
         {
-            f = R_dlsym((DllInfo *)R_ExternalPtrAddr(spackage), name, &symbol);
+            DllInfo *dll = (DllInfo *)R_ExternalPtrAddr(spackage);
+            if (!dll)
+                error(_("NULL value passed for DllInfo"));
+            f = R_dlsym(dll, name, &symbol);
             package = NULL;
         }
         else
@@ -1163,7 +1325,7 @@ SEXP attribute_hidden R_getDllTable()
 again:
     PROTECT(ans = allocVector(VECSXP, CountDLL));
     for (i = 0; i < CountDLL; i++)
-        SET_VECTOR_ELT(ans, i, Rf_MakeDLLInfo(&(LoadedDLL[i])));
+        SET_VECTOR_ELT(ans, i, Rf_MakeDLLInfo(LoadedDLL[i]));
 
     setAttrib(ans, R_ClassSymbol, mkString("DLLInfoList"));
     UNPROTECT(1);
@@ -1207,13 +1369,18 @@ static SEXP createRSymbolObject(SEXP sname, DL_FUNC f, R_RegisteredNativeSymbol 
     SET_VECTOR_ELT(sym, 0, sname);
     SET_STRING_ELT(names, 0, mkChar("name"));
 
-    SET_VECTOR_ELT(sym, 1,
-                   withRegistrationInfo && symbol && symbol->symbol.c && symbol->dll
-                       ? Rf_MakeRegisteredNativeSymbol(symbol)
-                       : Rf_MakeNativeSymbolRef(f));
+    SEXP eaddress = withRegistrationInfo && symbol && symbol->symbol.c && symbol->dll
+                        ? Rf_MakeRegisteredNativeSymbol(symbol)
+                        : Rf_MakeNativeSymbolRef(f);
+    SET_VECTOR_ELT(sym, 1, eaddress);
     SET_STRING_ELT(names, 1, mkChar("address"));
     if (symbol->dll)
-        SET_VECTOR_ELT(sym, 2, Rf_MakeDLLInfo(symbol->dll));
+    { /* now always */
+        SEXP rinfo = Rf_MakeDLLInfo(symbol->dll);
+        SET_VECTOR_ELT(sym, 2, rinfo);
+        SEXP einfo = VECTOR_ELT(rinfo, 4 /* info */);
+        R_registerSymbolEptr(eaddress, einfo);
+    }
     SET_STRING_ELT(names, 2, mkChar("dll"));
 
     PROTECT(klass = allocVector(STRSXP, (symbol->type != R_ANY_SYM ? 2 : 1)));
@@ -1398,6 +1565,8 @@ static SEXP get_package_CEntry_table(const char *package)
     return penv;
 }
 
+/* FIXME: clear the callables when unloading DLLs. May require changing
+   the interface or approximating. */
 void R_RegisterCCallable(const char *package, const char *name, DL_FUNC fptr)
 {
     SEXP penv = get_package_CEntry_table(package);
