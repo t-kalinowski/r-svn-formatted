@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1997--2020  The R Core Team
+ *  Copyright (C) 1997--2021  The R Core Team
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -347,6 +347,8 @@ SEXP deparse1line_(SEXP call, Rboolean abbrev, int opts)
         *buf = '\0';
         for (i = 0; i < length(temp); i++)
         {
+            if (i % 1000 == 999)
+                R_CheckUserInterrupt();
             strcat(buf, CHAR(STRING_ELT(temp, i)));
             if (i < lines - 1)
                 strcat(buf, "\n");
