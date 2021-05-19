@@ -6088,10 +6088,10 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     const char *cmeth = CHAR(asChar(CAD4R(args)));
     meth = streql(cmeth, "libcurl"); // 1 if "libcurl", else 0
     defmeth = streql(cmeth, "default");
-#ifndef Win32
+    //#ifndef Win32
     if (defmeth)
-        meth = 1; // default to libcurl except on Windows.
-#endif
+        meth = 1; // default to libcurl
+                  //#endif
     if (streql(cmeth, "wininet"))
     {
 #ifdef Win32
