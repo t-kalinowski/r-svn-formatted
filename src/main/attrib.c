@@ -323,6 +323,7 @@ void copyMostAttrib(SEXP inp, SEXP ans)
 void copyMostAttribNoTs(SEXP inp, SEXP ans)
 {
     SEXP s;
+    int isobject = OBJECT(inp);
 
     if (ans == R_NilValue)
         error(_("attempt to set an attribute on NULL"));
@@ -351,6 +352,8 @@ void copyMostAttribNoTs(SEXP inp, SEXP ans)
                 installAttrib(ans, TAG(s), cl);
             else if (LENGTH(cl) <= 1)
             {
+                /* FIXME: handle S4 as well*/
+                isobject = 0; /* dropping class attribute */
             }
             else
             {
@@ -365,7 +368,7 @@ void copyMostAttribNoTs(SEXP inp, SEXP ans)
             }
         }
     }
-    SET_OBJECT(ans, OBJECT(inp));
+    SET_OBJECT(ans, isobject);
     IS_S4_OBJECT(inp) ? SET_S4_OBJECT(ans) : UNSET_S4_OBJECT(ans);
     UNPROTECT(2);
 }
