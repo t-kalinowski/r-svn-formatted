@@ -939,8 +939,7 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
                     else
                     {
 #if !defined(__STDC_ISO_10646__) && !defined(Win32)
-                        if (!use_ucs)
-                            Unicode_warning = TRUE;
+                        Unicode_warning = TRUE;
 #endif
                         if (k > 0xffff)
                             snprintf(buf, 13, "\\U{%06x}", k);
