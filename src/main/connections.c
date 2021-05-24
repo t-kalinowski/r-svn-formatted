@@ -6023,7 +6023,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     const char *url, *open;
     int ncon, block, raw = 0, defmeth,
                      meth = 0, // 0: "internal" | "wininet", 1: "libcurl"
-        winmeth;               // 0: "internal", 1: "wininet" (Windows only)
+        winmeth = 0;           // 0: "internal", 1: "wininet" (Windows only)
     cetype_t ienc = CE_NATIVE;
     Rconnection con = NULL;
 
@@ -6095,7 +6095,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     if (streql(cmeth, "wininet"))
     {
 #ifdef Win32
-        winmeth = 1; // it already was as this is the default
+        winmeth = 1;
 #else
         error(_("method = \"wininet\" is only supported on Windows"));
 #endif
@@ -6182,8 +6182,13 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         else
         {
+            if (!winmeth)
+                error(_("the 'internal' method of url() is defunct for http:// and ftp:// URLs"));
+#ifdef Win32
+            // so for "wininet' only
             con = R_newurl(url, strlen(open) ? open : "r", headers_flat, winmeth);
             ((Rurlconn)con->private)->type = type;
+#endif
         }
     }
     else
