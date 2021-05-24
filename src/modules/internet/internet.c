@@ -81,91 +81,94 @@ static void *in_R_FTPOpen2(const char *url);
 
 static Rboolean IDquiet = TRUE;
 
+#if 0
 static Rboolean url_open(Rconnection con)
 {
-    void *ctxt;
+//    void *ctxt;
     char *url = con->description;
     UrlScheme type = ((Rurlconn)(con->private))->type;
-    int mlen;
+//    int mlen;
 
-    if (con->mode[0] != 'r')
-    {
-        REprintf("can only open URLs for reading");
-        return FALSE;
+    if(con->mode[0] != 'r') {
+	REprintf("can only open URLs for reading");
+	return FALSE;
     }
 
-    switch (type)
-    {
+    switch(type) {
 #ifdef Win32
     case HTTPSsh:
-        warning(_("for https:// URLs use method = \"libcurl\" or \"wininet\""));
-        return FALSE;
+	    warning(_("for https:// URLs use method = \"libcurl\" or \"wininet\""));
+	    return FALSE;
 #endif
-    case HTTPsh: {
-        SEXP sagent, agentFun;
-        const char *agent;
-        SEXP s_makeUserAgent = install("makeUserAgent");
-        agentFun = PROTECT(lang1(s_makeUserAgent)); // defaults to ,TRUE
-        SEXP utilsNS = PROTECT(R_FindNamespace(mkString("utils")));
-        struct urlconn *uc = con->private;
+    case HTTPsh:
+	warning(_("the 'internal' method for ftp:// URLs is defunct"));
+	return FALSE;
+#if 0
+    {
+	warning(_("the 'internal' method for ftp:// URLs is defunct"));
+	return FALSE;
+	SEXP sagent, agentFun;
+	const char *agent;
+	SEXP s_makeUserAgent = install("makeUserAgent");
+	agentFun = PROTECT(lang1(s_makeUserAgent)); // defaults to ,TRUE
+	SEXP utilsNS = PROTECT(R_FindNamespace(mkString("utils")));
+	struct urlconn *uc = con->private;
 
-        warning(_("the 'internal' method of url() is deprecated for http:// URLs"));
-        sagent = eval(agentFun, utilsNS);
-        UNPROTECT(1); /* utilsNS */
-        PROTECT(sagent);
-        if (TYPEOF(sagent) == NILSXP)
-            agent = NULL;
-        else
-            agent = CHAR(STRING_ELT(sagent, 0));
-        ctxt = in_R_HTTPOpen(url, agent, uc->headers, 0);
-        UNPROTECT(2);
-        if (ctxt == NULL)
-        {
-            /* if we call error() we get a connection leak*/
-            /* so do_url has to raise the error*/
-            /* error("cannot open URL '%s'", url); */
-            return FALSE;
-        }
-        ((Rurlconn)(con->private))->ctxt = ctxt;
+	warning(_("the 'internal' method of url() is deprecated for http:// URLs"));
+	sagent = eval(agentFun, utilsNS);
+	UNPROTECT(1); /* utilsNS */
+	PROTECT(sagent);
+	if(TYPEOF(sagent) == NILSXP)
+	    agent = NULL;
+	else
+	    agent = CHAR(STRING_ELT(sagent, 0));
+	ctxt = in_R_HTTPOpen(url, agent, uc->headers, 0);
+	UNPROTECT(2);
+	if(ctxt == NULL) {
+	  /* if we call error() we get a connection leak*/
+	  /* so do_url has to raise the error*/
+	  /* error("cannot open URL '%s'", url); */
+	    return FALSE;
+	}
+	((Rurlconn)(con->private))->ctxt = ctxt;
     }
-    break;
+#endif
+	break;
     case FTPsh:
-        warning(_("the 'internal' method for ftp:// URLs is defunct"));
-        return FALSE;
-        break;
+	warning(_("the 'internal' method for ftp:// URLs is defunct"));
+	return FALSE;
+	break;
 
     default:
-        warning(_("scheme not supported in URL '%s'"), url);
-        return FALSE;
+	warning(_("scheme not supported in URL '%s'"), url);
+	return FALSE;
     }
 
+#if 0
     con->isopen = TRUE;
     con->canwrite = (con->mode[0] == 'w' || con->mode[0] == 'a');
     con->canread = !con->canwrite;
-    mlen = (int)strlen(con->mode);
-    if (mlen >= 2 && con->mode[mlen - 1] == 'b')
-        con->text = FALSE;
-    else
-        con->text = TRUE;
+    mlen = (int) strlen(con->mode);
+    if(mlen >= 2 && con->mode[mlen - 1] == 'b') con->text = FALSE;
+    else con->text = TRUE;
     con->save = -1000;
     set_iconv(con);
     return TRUE;
+#endif
 }
 
 static void url_close(Rconnection con)
 {
     UrlScheme type = ((Rurlconn)(con->private))->type;
     struct urlconn *uc = con->private;
-    switch (type)
-    {
+    switch(type) {
     case HTTPsh:
     case HTTPSsh:
-        if (uc && uc->headers)
-            free(uc->headers);
-        in_R_HTTPClose(uc->ctxt);
-        break;
+	if (uc && uc->headers) free(uc->headers);
+	in_R_HTTPClose(uc->ctxt);
+	break;
     default:
-        break;
+	break;
     }
     con->isopen = FALSE;
 }
@@ -173,39 +176,39 @@ static void url_close(Rconnection con)
 static int url_fgetc_internal(Rconnection con)
 {
     UrlScheme type = ((Rurlconn)(con->private))->type;
-    void *ctxt = ((Rurlconn)(con->private))->ctxt;
+    void * ctxt = ((Rurlconn)(con->private))->ctxt;
     unsigned char c;
     size_t n = 0; /* -Wall */
 
-    switch (type)
-    {
+    switch(type) {
     case HTTPsh:
     case HTTPSsh:
-        n = in_R_HTTPRead(ctxt, (char *)&c, 1);
-        break;
+	n = in_R_HTTPRead(ctxt, (char *)&c, 1);
+	break;
     default:
-        break;
+	break;
     }
     return (n == 1) ? c : R_EOF;
 }
 
-static size_t url_read(void *ptr, size_t size, size_t nitems, Rconnection con)
+static size_t url_read(void *ptr, size_t size, size_t nitems,
+		       Rconnection con)
 {
     UrlScheme type = ((Rurlconn)(con->private))->type;
-    void *ctxt = ((Rurlconn)(con->private))->ctxt;
+    void * ctxt = ((Rurlconn)(con->private))->ctxt;
     size_t n = 0; /* -Wall */
 
-    switch (type)
-    {
+    switch(type) {
     case HTTPsh:
     case HTTPSsh:
-        n = in_R_HTTPRead(ctxt, ptr, (int)(size * nitems));
-        break;
+	n = in_R_HTTPRead(ctxt, ptr, (int)(size*nitems));
+	break;
     default:
-        break;
+	break;
     }
-    return n / size;
+    return n/size;
 }
+#endif
 
 #ifdef Win32
 static Rboolean url_open2(Rconnection con)
@@ -367,11 +370,18 @@ static Rconnection in_R_newurl(const char *description, const char *const mode, 
     else
 #endif
     {
-        new->open = &url_open;
-        new->read = &url_read;
-        new->close = &url_close;
-        new->fgetc_internal = &url_fgetc_internal;
-        strcpy(new->class, "url");
+        free(new->description);
+        free(new->class);
+        free(new);
+        error(_("the 'internal' method of url() is defunct for http:// and ftp:// URLs"));
+        /* for Solaris 12.5 */ new = NULL;
+#if 0	
+	new->open = &url_open;
+	new->read = &url_read;
+	new->close = &url_close;
+	new->fgetc_internal = &url_fgetc_internal;
+	strcpy(new->class, "url");
+#endif
     }
     new->fgetc = &dummy_fgetc;
     struct urlconn *uc = new->private = (void *)malloc(sizeof(struct urlconn));
@@ -551,11 +561,11 @@ static SEXP in_do_download(SEXP args)
         fclose(out);
         fclose(in);
     }
-    else if (strncmp(url, "http://", 7) == 0
-#ifdef Win32
-             || ((strncmp(url, "https://", 8) == 0) && meth)
-#endif
-    )
+    else if (!meth && strncmp(url, "http://", 7) == 0)
+    {
+        error(_("the 'internal' method for http:// URLs is defunct"));
+    }
+    else if (meth && (strncmp(url, "http://", 7) == 0 || (strncmp(url, "https://", 8) == 0)))
     {
 
         FILE *out;
