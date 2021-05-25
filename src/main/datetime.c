@@ -854,7 +854,7 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!isgmt)
         {
             char *p = "";
-            // or ptm->tm_zone
+            // or ptm->tm_zone (but not specified by POSIX)
             if (valid && ptm->tm_isdst >= 0)
                 p = R_tzname[ptm->tm_isdst];
             SET_STRING_ELT(VECTOR_ELT(ans, 9), i, mkChar(p));
