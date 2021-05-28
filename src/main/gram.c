@@ -373,7 +373,7 @@ static int mbcs_get_next(int c, wchar_t *wc)
     else
     {
         /* This is not necessarily correct for stateful MBCS */
-        while (clen <= MB_CUR_MAX)
+        while (clen <= R_MB_CUR_MAX)
         {
             mbs_init(&mb_st);
             res = (int)mbrtowc(wc, s, clen, &mb_st);
@@ -3037,7 +3037,7 @@ static void finish_mbcs_in_parse_context()
         return;
 
     /* copy the context to a linear buffer */
-    char buf[nbytes + MB_CUR_MAX];
+    char buf[nbytes + R_MB_CUR_MAX];
 
     for (i = 0; i < nbytes; i++)
         buf[i] = R_ParseContext[(first + i) % PARSE_CONTEXT_SIZE];
@@ -5098,7 +5098,7 @@ static int mbcs_get_next2(int c, ucs_t *wc)
     else
     {
         /* This is not necessarily correct for stateful MBCS */
-        while (clen <= MB_CUR_MAX)
+        while (clen <= R_MB_CUR_MAX)
         {
             res = mbtoucs(wc, s, clen);
             if (res >= 0)

@@ -72,7 +72,7 @@
  * Add __OpenBSD__ and  __NetBSD__ ?
  */
 #if !defined(__STDC_ISO_10646__) && (defined(__APPLE__) || defined(__FreeBSD__) || defined(__sun))
-/* This may not be 100% true (see the comment in rlocales.h),
+/* This may not be 100% true (see the comment in rlocale.h),
    but it seems true in normal locales */
 #define __STDC_ISO_10646__
 #endif
@@ -476,16 +476,7 @@ attribute_hidden int Rstrwid(const char *str, int slen, cetype_t ienc, int quote
         warning("unsupported encoding (%d) in Rstrwid", ienc);
     if (mbcslocale || ienc == CE_UTF8)
     {
-#ifdef __sun
-        /* Need to avoid mbtrowc on Solaris, where it only covers the BMP
-           so we set ienc for unmarked strings in a UTF-8 locale */
-        Rboolean useUTF8 = (ienc == CE_UTF8) || utf8locale;
-        if (ienc == CE_LATIN1)
-            /* Future-proof, cannot happen now. */
-            warning("unexpected encoding (%d) in Rstrwid", ienc);
-#else
         Rboolean useUTF8 = (ienc == CE_UTF8);
-#endif
         mbstate_t mb_st;
 
         if (!useUTF8)
@@ -494,7 +485,7 @@ attribute_hidden int Rstrwid(const char *str, int slen, cetype_t ienc, int quote
         {
             unsigned int k; /* not wint_t as it might be signed */
             wchar_t wc;
-            int res = useUTF8 ? (int)utf8toucs(&wc, p) : (int)mbrtowc(&wc, p, MB_CUR_MAX, NULL);
+            int res = useUTF8 ? (int)utf8toucs(&wc, p) : (int)mbrtowc(&wc, p, R_MB_CUR_MAX, NULL);
             if (res >= 0)
             {
                 if (useUTF8 && IS_HIGH_SURROGATE(wc))
@@ -735,23 +726,6 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
                 ienc = CE_UTF8;
             }
 #endif
-#ifdef __sun
-        }
-        else if (ienc == CE_LATIN1)
-        {
-            p = translateCharUTF8(s);
-            if (p == CHAR(s))
-            {
-                i = Rstrlen(s, quote);
-                cnt = LENGTH(s);
-            }
-            else
-            {
-                cnt = (int)strlen(p);
-                i = Rstrwid(p, cnt, CE_UTF8, quote);
-            }
-            ienc = CE_UTF8;
-#endif
         }
         else
         {
@@ -810,14 +784,7 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
         *q++ = (char)quote;
     if (mbcslocale || ienc == CE_UTF8)
     {
-#ifdef __sun
-        /* Need to avoid mbtrowc on Solaris, where it only covers the BMP
-           so we set ienc for unmarked strings in a UTF-8 locale */
-        /* Latin-1 string would have been converted to UTF-8 above. */
-        Rboolean useUTF8 = (ienc == CE_UTF8) || utf8locale;
-#else
         Rboolean useUTF8 = (ienc == CE_UTF8);
-#endif
         mbstate_t mb_st;
 #ifndef __STDC_ISO_10646__
         Rboolean Unicode_warning = FALSE;
@@ -834,7 +801,7 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
         for (i = 0; i < cnt; i++)
         {
             wchar_t wc;
-            int res = (int)(useUTF8 ? utf8toucs(&wc, p) : mbrtowc(&wc, p, MB_CUR_MAX, NULL));
+            int res = (int)(useUTF8 ? utf8toucs(&wc, p) : mbrtowc(&wc, p, R_MB_CUR_MAX, NULL));
             if (res >= 0)
             {                   /* res = 0 is a terminator */
                 unsigned int k; /* not wint_t as it might be signed */

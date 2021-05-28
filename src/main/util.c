@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1997--2020  The R Core Team
+ *  Copyright (C) 1997--2021  The R Core Team
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -429,7 +429,7 @@ Rboolean isBlankString(const char *s)
         mbstate_t mb_st;
         mbs_init(&mb_st);
         // This does not allow for surrogate pairs, but all blanks are in BMP
-        while ((used = Mbrtowc(&wc, s, MB_CUR_MAX, &mb_st)))
+        while ((used = Mbrtowc(&wc, s, R_MB_CUR_MAX, &mb_st)))
         {
             if (!iswspace((wint_t)wc))
                 return FALSE;
@@ -1820,7 +1820,7 @@ char *Rf_strchr(const char *s, int c)
     if (!mbcslocale || utf8locale)
         return strchr(s, c);
     mbs_init(&mb_st);
-    while ((used = Mbrtowc(NULL, p, MB_CUR_MAX, &mb_st)))
+    while ((used = Mbrtowc(NULL, p, R_MB_CUR_MAX, &mb_st)))
     {
         if (*p == c)
             return p;
@@ -1838,7 +1838,7 @@ char *Rf_strrchr(const char *s, int c)
     if (!mbcslocale || utf8locale)
         return strrchr(s, c);
     mbs_init(&mb_st);
-    while ((used = Mbrtowc(NULL, p, MB_CUR_MAX, &mb_st)))
+    while ((used = Mbrtowc(NULL, p, R_MB_CUR_MAX, &mb_st)))
     {
         if (*p == c)
             plast = p;
@@ -1857,7 +1857,7 @@ void R_fixslash(char *s)
         mbstate_t mb_st;
         int used;
         mbs_init(&mb_st);
-        while ((used = Mbrtowc(NULL, p, MB_CUR_MAX, &mb_st)))
+        while ((used = Mbrtowc(NULL, p, R_MB_CUR_MAX, &mb_st)))
         {
             if (*p == '\\')
                 *p = '/';
@@ -1906,7 +1906,7 @@ void R_fixbackslash(char *s)
         mbstate_t mb_st;
         int used;
         mbs_init(&mb_st);
-        while ((used = Mbrtowc(NULL, p, MB_CUR_MAX, &mb_st)))
+        while ((used = Mbrtowc(NULL, p, R_MB_CUR_MAX, &mb_st)))
         {
             if (*p == '/')
                 *p = '\\';

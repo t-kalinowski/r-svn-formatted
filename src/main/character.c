@@ -441,11 +441,11 @@ static void substr(const char *str, int len, int ienc, int sa, int so, R_xlen_t 
         mbs_init(&mb_st);
         for (i = 0; i < sa - 1 && str < end; i++)
             /* throws error on invalid multi-byte string */
-            str += Mbrtowc(NULL, str, MB_CUR_MAX, &mb_st);
+            str += Mbrtowc(NULL, str, R_MB_CUR_MAX, &mb_st);
         *rfrom = str;
         for (; i < so && str < end; i++)
             /* throws error on invalid multi-byte string */
-            str += (int)Mbrtowc(NULL, str, MB_CUR_MAX, &mb_st);
+            str += (int)Mbrtowc(NULL, str, R_MB_CUR_MAX, &mb_st);
         *rlen = (int)(str - *rfrom);
     }
     else
@@ -690,12 +690,12 @@ static void substrset(char *buf, const char *const str, cetype_t ienc, int sa, i
         if (mbcslocale)
         {
             for (i = 1; i < sa; i++)
-                buf += Mbrtowc(NULL, buf, MB_CUR_MAX, NULL);
+                buf += Mbrtowc(NULL, buf, R_MB_CUR_MAX, NULL);
             /* now work out how many bytes to replace by how many */
             for (i = sa; i <= so && in < strlen(str); i++)
             {
-                in += (int)Mbrtowc(NULL, str + in, MB_CUR_MAX, NULL);
-                out += (int)Mbrtowc(NULL, buf + out, MB_CUR_MAX, NULL);
+                in += (int)Mbrtowc(NULL, str + in, R_MB_CUR_MAX, NULL);
+                out += (int)Mbrtowc(NULL, buf + out, R_MB_CUR_MAX, NULL);
                 if (!str[in])
                     break;
             }
@@ -1123,14 +1123,14 @@ SEXP attribute_hidden do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
             mbstate_t mb_st;
             const char *pp = This;
             mbs_init(&mb_st);
-            used = (int)Mbrtowc(&wc, pp, MB_CUR_MAX, &mb_st);
+            used = (int)Mbrtowc(&wc, pp, R_MB_CUR_MAX, &mb_st);
             pp += used;
             nc -= used;
             if (wc == L'.')
             {
                 if (nc > 0)
                 {
-                    Mbrtowc(&wc, pp, MB_CUR_MAX, &mb_st);
+                    Mbrtowc(&wc, pp, R_MB_CUR_MAX, &mb_st);
                     if (iswdigit(wc))
                         need_prefix = TRUE;
                 }
@@ -1975,7 +1975,7 @@ SEXP attribute_hidden do_strtrim(SEXP call, SEXP op, SEXP args, SEXP env)
             for (p = This, w0 = 0, q = buf; *p;)
             {
                 wchar_t wc;
-                nb = (int)Mbrtowc(&wc, p, MB_CUR_MAX, &mb_st);
+                nb = (int)Mbrtowc(&wc, p, R_MB_CUR_MAX, &mb_st);
 #ifdef USE_RI18N_WIDTH
                 w0 = Ri18n_wcwidth((R_wchar_t)wc);
 #else
