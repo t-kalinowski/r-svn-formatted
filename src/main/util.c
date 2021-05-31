@@ -1420,10 +1420,14 @@ size_t attribute_hidden utf8toucs(wchar_t *wc, const char *s)
         *w = (wchar_t)0;
         return 0;
     }
-    else if (byte < 0xC0)
+    else if (byte < 0x80)
     {
         *w = (wchar_t)byte;
         return 1;
+    }
+    else if (byte < 0xC0)
+    {
+        return (size_t)-1;
     }
     else if (byte < 0xE0)
     {
