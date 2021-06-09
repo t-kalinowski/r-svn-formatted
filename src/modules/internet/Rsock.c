@@ -169,18 +169,6 @@ void in_Rsockwrite(int *sockp, char **buf, int *start, int *end, int *len)
 
 #ifdef Win32
 #include <io.h>
-#ifndef ECONNABORTED
-#define ECONNABORTED WSAECONNABORTED
-#endif
-#ifndef EINPROGRESS
-#define EINPROGRESS WSAEINPROGRESS
-#endif
-#ifndef EINTR
-#define EINTR WSAEINTR
-#endif
-#ifndef EWOULDBLOCK
-#define EWOULDBLOCK WSAEWOULDBLOCK
-#endif
 #else
 #include <netdb.h>
 #include <sys/socket.h>
@@ -464,10 +452,15 @@ int R_SockConnect(int port, char *host, int timeout)
 
         switch (R_socket_errno())
         {
+#if !defined(Win32)
         case EINPROGRESS:
         case EWOULDBLOCK:
-#if !defined(Win32) && EAGAIN != EWOULDBLOCK
+#if EAGAIN != EWOULDBLOCK
         case EAGAIN:
+#endif
+#else
+        case WSAEINPROGRESS:
+        case WSAEWOULDBLOCK:
 #endif
             break;
         default:
@@ -586,9 +579,13 @@ ssize_t R_SockRead(int sockp, void *buf, size_t len, int blocking, int timeout)
         {
             switch (R_socket_errno())
             {
+#if !defined(Win32)
             case EWOULDBLOCK:
-#if !defined(Win32) && EAGAIN != EWOULDBLOCK
+#if EAGAIN != EWOULDBLOCK
             case EAGAIN:
+#endif
+#else
+            case WSAEWOULDBLOCK:
 #endif
                 if (blocking)
                     /* spurious readability, can happen on Linux */
@@ -672,14 +669,18 @@ int R_SockListen(int sockp, char *buf, int len, int timeout)
             {
                 switch (perr.error)
                 {
+#ifndef Win32
                 case EINPROGRESS:
                 case EWOULDBLOCK:
                 case ECONNABORTED:
-#ifndef Win32
 #if EAGAIN != EWOULDBLOCK
                 case EAGAIN:
 #endif
                 case EPROTO:
+#else
+                case WSAEINPROGRESS:
+                case WSAEWOULDBLOCK:
+                case WSAECONNABORTED:
 #endif
                     continue;
                 default:
@@ -725,9 +726,13 @@ ssize_t R_SockWrite(int sockp, const void *buf, size_t len, int timeout)
         {
             switch (R_socket_errno())
             {
+#if !defined(Win32)
             case EWOULDBLOCK:
-#if !defined(Win32) && EAGAIN != EWOULDBLOCK
+#if EAGAIN != EWOULDBLOCK
             case EAGAIN:
+#endif
+#else
+            case WSAEWOULDBLOCK:
 #endif
                 /* Spurious writability to the socket, should not happen. */
                 continue;
