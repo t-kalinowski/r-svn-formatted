@@ -219,8 +219,8 @@ static void set_timeval(struct timeval *tv, int timeout)
 #ifdef Unix
     if (R_wait_usec > 0)
     {
-        tv->tv_sec = 0;
-        tv->tv_usec = R_wait_usec;
+        tv->tv_sec = R_wait_usec / 1000000;
+        tv->tv_usec = R_wait_usec - tv->tv_sec * 1000000;
     }
     else
     {
@@ -316,8 +316,8 @@ int R_SocketWaitMultiple(int nsock, int *insockfd, int *ready, int *write, doubl
                 delta = R_wait_usec;
             else
                 delta = (int)ceil(1e6 * (mytimeout - used));
-            tv.tv_sec = 0;
-            tv.tv_usec = delta;
+            tv.tv_sec = delta / 1000000;
+            tv.tv_usec = delta - tv.tv_sec * 1000000;
         }
         else if (mytimeout >= 0)
         {
@@ -340,7 +340,7 @@ int R_SocketWaitMultiple(int nsock, int *insockfd, int *ready, int *write, doubl
         }
         else
         { /* always poll occasionally--not really necessary */
-            tv.tv_sec = timeout;
+            tv.tv_sec = 60;
             tv.tv_usec = 0;
         }
 #endif
