@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1998-2020  The R Core Team.
+ *  Copyright (C) 1998-2021  The R Core Team.
  *  Copyright (C) 1995-1998  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -901,10 +901,8 @@ SEXP attribute_hidden do_rep(SEXP call, SEXP op, SEXP args, SEXP rho)
 SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans = R_NilValue /* -Wall */, from, to, by, len, along;
-    int nargs = length(args), lf;
-    Rboolean One = (nargs == 1);
     R_xlen_t i, lout = NA_INTEGER;
-    static SEXP do_seq_formals = NULL;
+    Rboolean One = (length(args) == 1); // *before* messing with args ..
 
     /* DispatchOrEval internal generic: seq.int */
     if (DispatchOrEval(call, op, "seq", args, rho, &ans, 0, 1))
@@ -914,6 +912,7 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
        We pretend this is
        seq(from, to, by, length.out, along.with, ...)
     */
+    static SEXP do_seq_formals = NULL;
     if (do_seq_formals == NULL)
         do_seq_formals = allocFormalsList6(install("from"), install("to"), install("by"), install("length.out"),
                                            install("along.with"), R_DotsSymbol);
@@ -929,10 +928,9 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
     args = CDR(args);
     along = CAR(args);
     Rboolean miss_from = (from == R_MissingArg), miss_to = (to == R_MissingArg);
-
     if (One && !miss_from)
     {
-        lf = length(from);
+        int lf = length(from);
         if (lf == 1 && (TYPEOF(from) == INTSXP || TYPEOF(from) == REALSXP))
         {
             double rfrom = asReal(from);
@@ -967,7 +965,7 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (lout == NA_INTEGER)
     {
-        double rfrom, rto, rby = asReal(by);
+        double rfrom, rto;
         if (miss_from)
             rfrom = 1.0;
         else
@@ -991,7 +989,7 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (by == R_MissingArg)
             ans = seq_colon(rfrom, rto, call);
         else
-        {
+        { // 'by' specified
             if (length(by) != 1)
                 errorcall(call, _("'%s' must be of length 1"), "by");
             double del = rto - rfrom;
@@ -1000,8 +998,16 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
                 ans = to; // is *not* missing in this case
                 goto done;
             }
-            /* printf("from = %f, to = %f, by = %f\n", rfrom, rto, rby); */
-            double n = del / rby;
+            double n, rby = asReal(by);
+            Rboolean finite_del = R_FINITE(del);
+            if (finite_del)
+            {
+                n = del / rby;
+            }
+            else
+            { // overflow in  (to - from)  when both are finite
+                n = rto / rby - rfrom / rby;
+            }
             if (!R_FINITE(n))
             {
                 if (del == 0.0 && rby == 0.0)
@@ -1012,8 +1018,8 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
                 else
                     errorcall(call, _("invalid '(to - from)/by'"));
             }
-            double dd = fabs(del) / fmax2(fabs(rto), fabs(rfrom));
-            if (dd < 100 * DBL_EPSILON)
+            // inherited from seq.default() but "fudgy"
+            if (finite_del && fabs(del) / fmax2(fabs(rto), fabs(rfrom)) < 100 * DBL_EPSILON)
             {
                 ans = miss_from ? ScalarReal(rfrom) : from;
                 goto done;
@@ -1048,8 +1054,16 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
                 nn = (int)(n + FEPS);
                 ans = allocVector(REALSXP, nn + 1);
                 double *ra = REAL(ans);
-                for (i = 0; i <= nn; i++)
-                    ra[i] = rfrom + (double)i * rby;
+                if (finite_del)
+                    for (i = 0; i <= nn; i++)
+                        ra[i] = rfrom + (double)i * rby;
+                else
+                { // |from - to| is infinite, but n = (from-to)/by is not
+                    rfrom /= 4.;
+                    rby /= 4.;
+                    for (i = 0; i <= nn; i++) // ldexp(Y, 2) := Y * 2^2 = 4 Y
+                        ra[i] = ldexp(rfrom + (double)i * rby, 2);
+                }
                 /* Added in 2.9.0 */
                 if (nn > 0)
                     if ((rby > 0 && ra[nn] > rto) || (rby < 0 && ra[nn] < rto))
@@ -1066,7 +1080,7 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
         ans = seq_colon(1.0, (double)lout, call);
     }
     else if (by == R_MissingArg)
-    {                                                           // and  len := length.out  specified
+    {                                                           // and  len := length.out  specified, >= 1
         double rfrom = asReal(from), rto = asReal(to), rby = 0; // -Wall
         if (miss_to)
             rto = rfrom + (double)lout - 1;
@@ -1076,14 +1090,20 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
             errorcall(call, _("'%s' must be a finite number"), "from");
         if (!R_FINITE(rto))
             errorcall(call, _("'%s' must be a finite number"), "to");
+        Rboolean finite_del = 0;
         if (lout > 2)
-            rby = (rto - rfrom) / (double)(lout - 1);
+        { // only then, use 'by'
+            double nint = (double)(lout - 1);
+            if ((finite_del = R_FINITE(rby = (rto - rfrom))))
+                rby /= nint;
+            else // overflow in (to - from), nint >= 2  => finite 'by'
+                rby = (rto / nint - rfrom / nint);
+        }
         if (rfrom <= INT_MAX && rfrom >= INT_MIN && rto <= INT_MAX && rto >= INT_MIN && rfrom == (int)rfrom &&
             (lout <= 1 || rto == (int)rto) && (lout <= 2 || rby == (int)rby))
         {
             ans = allocVector(INTSXP, lout);
-            if (lout > 0)
-                INTEGER(ans)[0] = (int)rfrom;
+            INTEGER(ans)[0] = (int)rfrom;
             if (lout > 1)
                 INTEGER(ans)[lout - 1] = (int)rto;
             if (lout > 2)
@@ -1096,17 +1116,26 @@ SEXP attribute_hidden do_seq(SEXP call, SEXP op, SEXP args, SEXP rho)
         else
         {
             ans = allocVector(REALSXP, lout);
-            if (lout > 0)
-                REAL(ans)[0] = rfrom;
+            REAL(ans)[0] = rfrom;
             if (lout > 1)
                 REAL(ans)[lout - 1] = rto;
             if (lout > 2)
             {
-                rby = (rto - rfrom) / (double)(lout - 1);
-                for (i = 1; i < lout - 1; i++)
-                {
-                    //		if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
-                    REAL(ans)[i] = rfrom + (double)i * rby;
+                if (finite_del)
+                    for (i = 1; i < lout - 1; i++)
+                    {
+                        // 		        if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
+                        REAL(ans)[i] = rfrom + (double)i * rby;
+                    }
+                else
+                {                // del:=(from - to) is infinite, but n = del/by is not
+                    rfrom /= 4.; // or ldexp(*, -2) for speed
+                    rby /= 4.;
+                    for (i = 1; i < lout - 1; i++)
+                    {
+                        // 		        if ((i+1) % NINTERRUPT == 0) R_CheckUserInterrupt();
+                        REAL(ans)[i] = ldexp(rfrom + (double)i * rby, 2); // ldexp(y,2) = y * 4
+                    }
                 }
             }
         }
