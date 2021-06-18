@@ -6017,10 +6017,7 @@ extern Rconnection R_newCurlUrl(const char *description, const char *const mode,
 */
 SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP scmd, sopen, ans, class, enc, headers = R_NilValue;
-#ifdef Win32
-    SEXP headers_flat = R_NilValue;
-#endif
+    SEXP scmd, sopen, ans, class, enc, headers = R_NilValue, headers_flat = R_NilValue;
     char *class2 = "url";
     const char *url, *open;
     int ncon, block, raw = 0, defmeth,
@@ -6056,7 +6053,6 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     url = translateCharFP(STRING_ELT(scmd, 0));
 #endif
 
-#ifdef Win32
     UrlScheme type = HTTPsh; /* -Wall */
     Rboolean inet = TRUE;
     if (strncmp(url, "http://", 7) == 0)
@@ -6065,14 +6061,13 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
         type = FTPsh;
     else if (strncmp(url, "https://", 8) == 0)
         type = HTTPSsh;
-    // ftps:// is ruled out later.
+    // ftps:// is available via most libcurl, only
+    // The internal and wininet methods will create a connection
+    // but refuse to open it so as from R 3.2.0 we switch to libcurl
     else if (strncmp(url, "ftps://", 7) == 0)
         type = FTPSsh;
     else
         inet = FALSE; // file:// URL or a file path
-#else
-    Rboolean inet = FALSE;
-#endif
 
     // --------- open
     sopen = CADR(args);
@@ -6124,9 +6119,7 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!isNull(lheaders))
         {
             headers = VECTOR_ELT(lheaders, 0);
-#ifdef Win32
             headers_flat = VECTOR_ELT(lheaders, 1);
-#endif
         }
     }
 
