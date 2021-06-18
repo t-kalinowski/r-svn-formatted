@@ -218,7 +218,7 @@ static void set_timeval(struct timeval *tv, int timeout)
     if (R_wait_usec > 0)
     {
         tv->tv_sec = R_wait_usec / 1000000;
-        tv->tv_usec = R_wait_usec - tv->tv_sec * 1000000;
+        tv->tv_usec = (suseconds_t)(R_wait_usec - tv->tv_sec * 1000000);
     }
     else
     {
@@ -315,7 +315,7 @@ int R_SocketWaitMultiple(int nsock, int *insockfd, int *ready, int *write, doubl
             else
                 delta = (int)ceil(1e6 * (mytimeout - used));
             tv.tv_sec = delta / 1000000;
-            tv.tv_usec = delta - tv.tv_sec * 1000000;
+            tv.tv_usec = (suseconds_t)(delta - tv.tv_sec * 1000000);
         }
         else if (mytimeout >= 0)
         {
