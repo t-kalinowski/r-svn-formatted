@@ -6017,7 +6017,10 @@ extern Rconnection R_newCurlUrl(const char *description, const char *const mode,
 */
 SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP scmd, sopen, ans, class, enc, headers = R_NilValue, headers_flat = R_NilValue;
+    SEXP scmd, sopen, ans, class, enc, headers = R_NilValue;
+#ifdef Win32
+    SEXP headers_flat = R_NilValue;
+#endif
     char *class2 = "url";
     const char *url, *open;
     int ncon, block, raw = 0, defmeth,
@@ -6119,7 +6122,9 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
         if (!isNull(lheaders))
         {
             headers = VECTOR_ELT(lheaders, 0);
+#ifdef Win32
             headers_flat = VECTOR_ELT(lheaders, 1);
+#endif
         }
     }
 
