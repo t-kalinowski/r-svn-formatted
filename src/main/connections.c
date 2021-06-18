@@ -6056,19 +6056,37 @@ SEXP attribute_hidden do_url(SEXP call, SEXP op, SEXP args, SEXP env)
     url = translateCharFP(STRING_ELT(scmd, 0));
 #endif
 
+    // curl-based url() does not need to know the type. so
+    // only set for use by the wininet method.
+#ifdef Win32
     UrlScheme type = HTTPsh; /* -Wall */
+#endif
     Rboolean inet = TRUE;
     if (strncmp(url, "http://", 7) == 0)
+    {
+#ifdef Win32
         type = HTTPsh;
+#endif
+    }
     else if (strncmp(url, "ftp://", 6) == 0)
+    {
+#ifdef Win32
         type = FTPsh;
+#endif
+    }
     else if (strncmp(url, "https://", 8) == 0)
+    {
+#ifdef Win32
         type = HTTPSsh;
-    // ftps:// is available via most libcurl, only
-    // The internal and wininet methods will create a connection
-    // but refuse to open it so as from R 3.2.0 we switch to libcurl
+#endif
+        // ftps:// is available via most libcurl, only
+    }
     else if (strncmp(url, "ftps://", 7) == 0)
+    {
+#ifdef Win32
         type = FTPSsh;
+#endif
+    }
     else
         inet = FALSE; // file:// URL or a file path
 
