@@ -1010,13 +1010,13 @@ SEXP mc_select_children(SEXP sTimeout, SEXP sWhich)
             if (R_wait_usec > 0)
             {
                 tv.tv_sec = R_wait_usec / 1000000;
-                tv.tv_usec = R_wait_usec - tv.tv_sec * 1000000;
+                tv.tv_usec = (suseconds_t)(R_wait_usec - tv.tv_sec * 1000000);
                 /* FIXME: ?Rg_wait_usec */
             }
             else if (timeout > 0)
             {
                 tv.tv_sec = (int)remains;
-                tv.tv_usec = (int)((remains - ((double)tv.tv_sec)) * 1e6);
+                tv.tv_usec = (suseconds_t)((remains - ((double)tv.tv_sec)) * 1e6);
             }
             else
             {
@@ -1155,7 +1155,7 @@ SEXP mc_read_children(SEXP sTimeout)
         else
         {
             tv.tv_sec = (int)tov;
-            tv.tv_usec = (int)((tov - ((double)tv.tv_sec)) * 1000000.0);
+            tv.tv_usec = (suseconds_t)((tov - ((double)tv.tv_sec)) * 1000000.0);
         }
     }
     {
