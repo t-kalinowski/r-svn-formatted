@@ -779,7 +779,7 @@ SEXP eval(SEXP e, SEXP rho)
             ENSURE_NAMEDMAX(tmp);
         }
         else
-            ENSURE_NAMED(tmp); /* should not really be needed - LT */
+            ENSURE_NAMED(tmp); /* needed for .Last.value - LT */
         break;
     case PROMSXP:
         if (PRVALUE(e) == R_UnboundValue)
@@ -5566,7 +5566,7 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho, Rboolean dd, Rboolean keepmis
         }
     }
     else
-        ENSURE_NAMED(value); /* should not really be needed - LT */
+        ENSURE_NAMED(value); /* needed for .Last.value - LT */
     return value;
 }
 
