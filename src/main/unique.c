@@ -1349,7 +1349,7 @@ static SEXP asUTF8(SEXP x)
     for (R_xlen_t i = 0; i < nx; i++)
     {
         SEXP xi = STRING_ELT(x, i);
-        if (!IS_ASCII(xi) && !IS_UTF8(xi))
+        if ((xi != NA_STRING) && !IS_ASCII(xi) && !IS_UTF8(xi))
         {
             if (!ux)
             {
