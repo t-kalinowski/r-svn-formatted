@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1997--2020  The R Core Team
+ *  Copyright (C) 1997--2021  The R Core Team
  *  Copyright (C) 2002--2009  The R Foundation
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
@@ -23,11 +23,11 @@
 #include <config.h>
 #endif
 
-#include <Defn.h>
+#include <Defn.h>  // Rexp10 et al
 #include <float.h> /* for DBL_MAX */
 #include <Graphics.h>
 #include <Print.h>
-#include <Rmath.h> // Rexp10, fmin2, fmax2, imax2
+#include <Rmath.h> // fmin2, fmax2, imax2
 
 #include "graphics.h"
 
@@ -502,7 +502,7 @@ SEXP C_plot_new(SEXP call, SEXP op, SEXP args, SEXP rho)
 /*
  *  SYNOPSIS
  *
- *	plot.window(xlim, ylim, log="", asp=NA)
+ *	plot.window(xlim, ylim, log="", asp=NA, ...)
  *
  *  DESCRIPTION
  *
@@ -521,7 +521,6 @@ SEXP C_plot_new(SEXP call, SEXP op, SEXP args, SEXP rho)
  *	interpreted function.  It has to be internal so that the
  *	full computation is captured in the display list.
  */
-
 SEXP C_plot_window(SEXP args)
 {
     SEXP xlim, ylim, logarg;
@@ -670,6 +669,8 @@ static void GetAxisLimits(double left, double right, Rboolean logflag,
     eps = right - left;
     if (eps == 0.)
         eps = 0.5 * FLT_EPSILON;
+    /* or better?
+     *  eps = 0.5 * (left == 0.) ? FLT_EPSILON : fmin2(FLT_EPSILON, fabs(left)); */
     else
         eps *= FLT_EPSILON;
     *low = left - eps;
@@ -680,6 +681,9 @@ static void GetAxisLimits(double left, double right, Rboolean logflag,
         *low = exp(*low);
         *high = exp(*high);
     }
+#ifdef DEBUG_axis
+    REprintf(" GetAxisLimits(%g,%g, log=%d) --> low=%g, high=%g)\n", left, right, logflag, *low, *high);
+#endif
 }
 
 SEXP labelformat(SEXP labels)
@@ -1113,6 +1117,7 @@ SEXP C_axis(SEXP args)
         getxlimits(limits, dd);
         /* Now override par("xpd") and force clipping to device region. */
         gpptr(dd)->xpd = 2;
+        // (low, high) := Lim(limits[], log)
         GetAxisLimits(limits[0], limits[1], logflag, &low, &high);
         double axis_base, tck_offset, axis_low = GConvertX(fmin2(high, fmax2(low, REAL(at)[0])), USER, NFC, dd),
                                       axis_high = GConvertX(fmin2(high, fmax2(low, REAL(at)[n - 1])), USER, NFC, dd);
@@ -1236,7 +1241,7 @@ SEXP C_axis(SEXP args)
                     continue;
                 double padjval = REAL(padj)[i % npadj];
                 padjval = ComputePAdjValue(padjval, side, gpptr(dd)->las);
-                /* Clip tick labels to user coordinates. */
+                // Clip tick labels to user coordinates: draw only if  x = at[i] is in (low, high)
                 if (low < x && x < high)
                 {
                     if (isExpression(lab))
@@ -1276,6 +1281,7 @@ SEXP C_axis(SEXP args)
         getylimits(limits, dd);
         /* Now override par("xpd") and force clipping to device region. */
         gpptr(dd)->xpd = 2;
+        // (low, high) := Lim(limits[], log)
         GetAxisLimits(limits[0], limits[1], logflag, &low, &high);
         double axis_base, tck_offset, axis_low = GConvertY(fmin2(high, fmax2(low, REAL(at)[0])), USER, NFC, dd),
                                       axis_high = GConvertY(fmin2(high, fmax2(low, REAL(at)[n - 1])), USER, NFC, dd);
