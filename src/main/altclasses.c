@@ -1128,7 +1128,7 @@ static SEXP mmap_Unserialize(SEXP class, SEXP state)
     return val;
 }
 
-Rboolean mmap_Inspect(SEXP x, int pre, int deep, int pvec, void (*inspect_subtree)(SEXP, int, int, int))
+static Rboolean mmap_Inspect(SEXP x, int pre, int deep, int pvec, void (*inspect_subtree)(SEXP, int, int, int))
 {
     Rboolean ptrOK = MMAP_PTROK(x);
     Rboolean wrtOK = MMAP_WRTOK(x);
@@ -1497,7 +1497,7 @@ static SEXP wrapper_Duplicate(SEXP x, Rboolean deep)
     return ans;
 }
 
-Rboolean wrapper_Inspect(SEXP x, int pre, int deep, int pvec, void (*inspect_subtree)(SEXP, int, int, int))
+static Rboolean wrapper_Inspect(SEXP x, int pre, int deep, int pvec, void (*inspect_subtree)(SEXP, int, int, int))
 {
     Rboolean srt = WRAPPER_SORTED(x);
     Rboolean no_na = WRAPPER_NO_NA(x);
@@ -1967,7 +1967,7 @@ SEXP attribute_hidden do_wrap_meta(SEXP call, SEXP op, SEXP args, SEXP env)
     return wrap_meta(x, srt, no_na);
 }
 
-SEXP R_tryWrap(SEXP x)
+SEXP attribute_hidden R_tryWrap(SEXP x)
 {
     return wrap_meta(x, UNKNOWN_SORTEDNESS, FALSE);
 }
@@ -1991,7 +1991,7 @@ SEXP attribute_hidden do_tryWrap(SEXP call, SEXP op, SEXP args, SEXP env)
    operation. It could be used in other places, but extreme caution is
    needed to make sure there is no possibliity that the wrapper object
    will be referenced from C code after it is cleared. */
-SEXP R_tryUnwrap(SEXP x)
+SEXP attribute_hidden R_tryUnwrap(SEXP x)
 {
     if (!MAYBE_SHARED(x) && is_wrapper(x) && WRAPPER_SORTED(x) == UNKNOWN_SORTEDNESS && !WRAPPER_NO_NA(x))
     {
