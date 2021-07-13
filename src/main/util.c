@@ -3058,17 +3058,31 @@ SEXP attribute_hidden do_pretty(SEXP call, SEXP op, SEXP args, SEXP rho)
     args = CDR(args); /* bounds */
     if (return_bounds == NA_LOGICAL)
         error(_("'bounds' must be TRUE or FALSE"));
-    R_pretty(&l, &u, &n, min_n, shrink, REAL(hi), eps, return_bounds);
-    //------ (returns 'unit' which we do not need)
-    PROTECT(ans = allocVector(VECSXP, 3));
+    double unit;
+    if (return_bounds)
+        R_pretty(&l, &u, &n, min_n, shrink, REAL(hi), eps, 1);
+    else // unit  and (ns,nu)
+        unit = R_pretty(&l, &u, &n, min_n, shrink, REAL(hi), eps, 0);
+    int l_ans = return_bounds ? 3 : 4;
+    PROTECT(ans = allocVector(VECSXP, l_ans));
     SET_VECTOR_ELT(ans, 0, ScalarReal(l));
     SET_VECTOR_ELT(ans, 1, ScalarReal(u));
     SET_VECTOR_ELT(ans, 2, ScalarInteger(n));
-    nm = allocVector(STRSXP, 3);
+    nm = allocVector(STRSXP, l_ans);
     setAttrib(ans, R_NamesSymbol, nm);
-    SET_STRING_ELT(nm, 0, mkChar("l"));
-    SET_STRING_ELT(nm, 1, mkChar("u"));
     SET_STRING_ELT(nm, 2, mkChar("n"));
+    if (return_bounds)
+    {
+        SET_STRING_ELT(nm, 0, mkChar("l"));
+        SET_STRING_ELT(nm, 1, mkChar("u"));
+    }
+    else
+    {
+        SET_STRING_ELT(nm, 0, mkChar("ns"));
+        SET_STRING_ELT(nm, 1, mkChar("nu"));
+        SET_STRING_ELT(nm, 3, mkChar("unit"));
+        SET_VECTOR_ELT(ans, 3, ScalarReal(unit));
+    }
     UNPROTECT(2);
     return ans;
 }
