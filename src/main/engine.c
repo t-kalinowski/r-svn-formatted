@@ -2678,7 +2678,6 @@ void GEPretty(double *lo, double *up, int *ndiv)
     double ns = *lo, nu = *up;
 #ifdef DEBUG_axis
     double x1 = ns, x2 = nu;
-    int nd = *ndiv;
 #endif
     double unit, high_u_fact[3] = {.8, 1.7, 1.125};
     // =   (h, h5 , f_min) = (high.u.bias, u5.bias, f_min)
