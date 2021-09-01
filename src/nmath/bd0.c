@@ -266,7 +266,7 @@ void attribute_hidden ebd0(double x, double M, double *yh, double *yl)
         return;
     }
 
-    int i = floor((r - 0.5) * (2 * N) + 0.5);
+    int i = (int)floor((r - 0.5) * (2 * N) + 0.5);
     // now,  0 <= i <= N
     double f = floor(S / (0.5 + i / (2.0 * N)) + 0.5);
     double fg = ldexp(f, -(e + Sb)); // ldexp(f, E) := f * 2^E
