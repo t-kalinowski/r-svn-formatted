@@ -66,9 +66,9 @@ double dnbinom(double x, double size, double prob, int give_log)
     }
     else
     {
-        /* log( size/(size+x) ) is much less accurate than log1p(- x/(size+x) )
-           for |x| << size */
-        double p = give_log ? log1p(-x / (size + x)) : size / (size + x),
+        /* log( size/(size+x) ) is much less accurate than log1p(- x/(size+x))
+           for |x| << size (and actually when x < size): */
+        double p = give_log ? (x < size ? log1p(-x / (size + x)) : log(size / (size + x))) : size / (size + x),
                ans = dbinom_raw(size, x + size, prob, 1 - prob, give_log);
         return ((give_log) ? p + ans : p * ans);
     }
@@ -112,9 +112,10 @@ double dnbinom_mu(double x, double size, double mu, int give_log)
     else
     {
         /* no unnecessary cancellation inside dbinom_raw, when
-         * x_ = size and n_ = x+size are so close that n_ - x_ loses accuracy */
-        // but  log( size/(size+x) ) is much less accurate than log1p(- x/(size+x) ) for |x| << size :
-        double p = give_log ? log1p(-x / (size + x)) : size / (size + x),
+          x_ = size and n_ = x+size are so close that n_ - x_ loses accuracy
+          but log( size/(size+x) ) is much less accurate than log1p(- x/(size+x))
+          for |x| << size (and actually when x < size): */
+        double p = give_log ? (x < size ? log1p(-x / (size + x)) : log(size / (size + x))) : size / (size + x),
                ans = dbinom_raw(size, x + size, size / (size + mu), mu / (size + mu), give_log);
         return ((give_log) ? p + ans : p * ans);
     }
