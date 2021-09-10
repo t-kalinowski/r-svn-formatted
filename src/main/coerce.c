@@ -156,11 +156,10 @@ int attribute_hidden IntegerFromComplex(Rcomplex x, int *warn)
 
 int attribute_hidden IntegerFromString(SEXP x, int *warn)
 {
-    double xdouble;
-    char *endp;
     if (x != R_NaString && !isBlankString(CHAR(x)))
-    {                                       /* ASCII */
-        xdouble = R_strtod(CHAR(x), &endp); /* ASCII */
+    { /* ASCII */
+        char *endp;
+        double xdouble = R_strtod(CHAR(x), &endp); /* ASCII */
         if (isBlankString(endp))
         {
 #ifdef _R_pre_Version_3_3_0
@@ -198,19 +197,12 @@ double attribute_hidden RealFromLogical(int x, int *warn)
 
 double attribute_hidden RealFromInteger(int x, int *warn)
 {
-    if (x == NA_INTEGER)
-        return NA_REAL;
-    else
-        return x;
+    return (x == NA_INTEGER) ? NA_REAL : x;
 }
 
 double attribute_hidden RealFromComplex(Rcomplex x, int *warn)
 {
     if (ISNAN(x.r) || ISNAN(x.i))
-        return NA_REAL;
-    if (ISNAN(x.r))
-        return x.r;
-    if (ISNAN(x.i))
         return NA_REAL;
     if (x.i != 0)
         *warn |= WARN_IMAG;
