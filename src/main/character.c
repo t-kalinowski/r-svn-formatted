@@ -306,7 +306,7 @@ int R_nchar(SEXP string, nchar_type type_, Rboolean allowNA, Rboolean keepNA, co
                 vmaxset(vmax);
                 return (nci18n < 1) ? nc : nci18n;
             }
-            else if (allowNA)
+            else if (!allowNA)
             {
                 if (msg_name)
                     error(_("invalid multibyte string, %s"), msg_name);
