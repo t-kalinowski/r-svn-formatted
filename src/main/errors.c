@@ -211,7 +211,7 @@ void onintrNoResume()
    These do far more processing than is allowed in a signal handler ....
 */
 
-RETSIGTYPE attribute_hidden onsigusr1(int dummy)
+void attribute_hidden onsigusr1(int dummy)
 {
     if (R_interrupts_suspended)
     {
@@ -247,7 +247,7 @@ RETSIGTYPE attribute_hidden onsigusr1(int dummy)
     R_CleanUp(SA_SAVE, 2, 1); /* quit, save,  .Last, status=2 */
 }
 
-RETSIGTYPE attribute_hidden onsigusr2(int dummy)
+void attribute_hidden onsigusr2(int dummy)
 {
     inError = 1;
 
