@@ -1336,6 +1336,14 @@ static SEXP match_transform(SEXP s, SEXP env)
             UNPROTECT(1);
             return r;
         }
+        else
+        {
+            SEXP call, r;
+            PROTECT(call = lang2(install("mtfrm"), s));
+            r = eval(call, env);
+            UNPROTECT(1);
+            return r;
+        }
     }
     /* else */
     return duplicate(s);
