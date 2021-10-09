@@ -1069,7 +1069,7 @@ SEXP findVarInFrame3(SEXP rho, SEXP symbol, Rboolean doGet)
 
 /* This variant of findVarinFrame3 is needed to avoid running active
    binding functions in calls to exists() with mode = "any" */
-static Rboolean existsVarInFrame(SEXP rho, SEXP symbol)
+Rboolean R_existsVarInFrame(SEXP rho, SEXP symbol)
 {
     int hashcode;
     SEXP frame, c;
@@ -1390,7 +1390,7 @@ static SEXP findVar1mode(SEXP symbol, SEXP rho, SEXPTYPE mode, int inherits, Rbo
     while (rho != R_EmptyEnv)
     {
         if (!doGet && mode == ANYSXP)
-            vl = existsVarInFrame(rho, symbol) ? R_NilValue : R_UnboundValue;
+            vl = R_existsVarInFrame(rho, symbol) ? R_NilValue : R_UnboundValue;
         else
             vl = findVarInFrame3(rho, symbol, doGet);
 
@@ -4560,7 +4560,7 @@ SEXP topenv(SEXP target, SEXP envir)
     while (env != R_EmptyEnv)
     {
         if (env == target || env == R_GlobalEnv || env == R_BaseEnv || env == R_BaseNamespace || R_IsPackageEnv(env) ||
-            R_IsNamespaceEnv(env) || existsVarInFrame(env, R_dot_packageName))
+            R_IsNamespaceEnv(env) || R_existsVarInFrame(env, R_dot_packageName))
         {
             return env;
         }
@@ -4595,7 +4595,7 @@ Rboolean attribute_hidden isUnmodifiedSpecSym(SEXP sym, SEXP env)
     if (!IS_SPECIAL_SYMBOL(sym))
         return FALSE;
     for (; env != R_EmptyEnv; env = ENCLOS(env))
-        if (!NO_SPECIAL_SYMBOLS(env) && env != R_BaseEnv && env != R_BaseNamespace && existsVarInFrame(env, sym))
+        if (!NO_SPECIAL_SYMBOLS(env) && env != R_BaseEnv && env != R_BaseNamespace && R_existsVarInFrame(env, sym))
             return FALSE;
     return TRUE;
 }
