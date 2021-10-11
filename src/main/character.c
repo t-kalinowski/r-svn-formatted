@@ -304,7 +304,7 @@ int R_nchar(SEXP string, nchar_type type_, Rboolean allowNA, Rboolean keepNA, co
                 if (msg_name)
                     R_FreeStringBufferL(&cbuff);
                 vmaxset(vmax);
-                return (nci18n < 1) ? nc : nci18n;
+                return (nci18n < 0) ? nc : nci18n;
             }
             else if (!allowNA)
             {
