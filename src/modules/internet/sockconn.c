@@ -200,7 +200,7 @@ static size_t sock_read(void *ptr, size_t size, size_t nitems, Rconnection con)
 static size_t sock_write(const void *ptr, size_t size, size_t nitems, Rconnection con)
 {
     Rsockconn this = (Rsockconn)con->private;
-    ssize_t n = R_SockWrite(this->fd, ptr, (int)(size * nitems), this->timeout) / ((ssize_t)size);
+    ssize_t n = R_SockWrite(this->fd, ptr, (size_t)(size * nitems), this->timeout) / ((ssize_t)size);
     return n > 0 ? n : 0;
 }
 
