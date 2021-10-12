@@ -785,9 +785,13 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
     if (mbcslocale || ienc == CE_UTF8)
     {
         Rboolean useUTF8 = (ienc == CE_UTF8);
+        Rboolean wchar_is_ucs_or_utf16 = TRUE;
         mbstate_t mb_st;
 #ifndef __STDC_ISO_10646__
         Rboolean Unicode_warning = FALSE;
+#endif
+#if !defined(__STDC_ISO_10646__) && !defined(Win32)
+        wchar_is_ucs_or_utf16 = FALSE;
 #endif
         if (!useUTF8)
             mbs_init(&mb_st);
@@ -802,8 +806,10 @@ attribute_hidden const char *EncodeString(SEXP s, int w, int quote, Rprt_adj jus
         {
             wchar_t wc;
             int res = (int)(useUTF8 ? utf8toucs(&wc, p) : mbrtowc(&wc, p, R_MB_CUR_MAX, &mb_st));
-            if (res >= 0)
-            {                   /* res = 0 is a terminator */
+            /* res = 0 is a terminator
+             * some mbrtowc implementations return wc past end of UCS */
+            if (res >= 0 && ((0 <= wc && wc <= 0x10FFFF) || !wchar_is_ucs_or_utf16))
+            {
                 unsigned int k; /* not wint_t as it might be signed */
                 if (useUTF8 && IS_HIGH_SURROGATE(wc))
                     k = utf8toucs32(wc, p);
