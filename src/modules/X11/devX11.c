@@ -1766,6 +1766,7 @@ Rboolean X11_Open(pDevDesc dd, pX11Desc xd, const char *dsp, double w, double h,
             CairoInitPatterns(xd);
             CairoInitClipPaths(xd);
             CairoInitMasks(xd);
+            CairoInitGroups(xd);
             xd->appending = 0;
 #endif
         }
@@ -2181,6 +2182,7 @@ static void X11_Close(pDevDesc dd)
 #ifdef HAVE_WORKING_X11_CAIRO
         if (xd->useCairo)
         {
+            CairoDestroyGroups(xd);
             CairoDestroyMasks(xd);
             CairoDestroyClipPaths(xd);
             CairoDestroyPatterns(xd);
@@ -3088,6 +3090,14 @@ int Rf_setX11DeviceData(pDevDesc dd, double gamma_fac, pX11Desc xd)
         dd->releaseClipPath = Cairo_ReleaseClipPath;
         dd->setMask = Cairo_SetMask;
         dd->releaseMask = Cairo_ReleaseMask;
+        dd->defineGroup = Cairo_DefineGroup;
+        dd->useGroup = Cairo_UseGroup;
+        dd->releaseGroup = Cairo_ReleaseGroup;
+        dd->stroke = Cairo_Stroke;
+        dd->fill = Cairo_Fill;
+        dd->fillStroke = Cairo_FillStroke;
+
+        dd->deviceVersion = R_GE_group;
     }
     else
 #endif
@@ -3119,6 +3129,8 @@ int Rf_setX11DeviceData(pDevDesc dd, double gamma_fac, pX11Desc xd)
         dd->releaseClipPath = X11_releaseClipPath;
         dd->setMask = X11_setMask;
         dd->releaseMask = X11_releaseMask;
+
+        dd->deviceVersion = R_GE_definitions;
     }
 
     dd->eventHelper = X11_eventHelper;
@@ -3220,7 +3232,6 @@ int Rf_setX11DeviceData(pDevDesc dd, double gamma_fac, pX11Desc xd)
     dd->deviceSpecific = (void *)xd;
 
     dd->displayListOn = TRUE;
-    dd->deviceVersion = R_GE_definitions;
 
     return TRUE;
 }

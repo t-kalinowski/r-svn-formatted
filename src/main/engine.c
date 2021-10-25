@@ -3131,6 +3131,7 @@ void GEStrMetric(const char *str, cetype_t enc, const pGEcontext gc, double *asc
 
 void GENewPage(const pGEcontext gc, pGEDevDesc dd)
 {
+    dd->appending = FALSE;
     dd->dev->newPage(gc, dd->dev);
 }
 
@@ -4126,6 +4127,61 @@ void R_GE_rasterRotate(unsigned int *sraster, int w, int h, double angle, unsign
                 aval = (int)fmax2(fmax2(R_ALPHA(word00), R_ALPHA(word10)), fmax2(R_ALPHA(word01), R_ALPHA(word11)));
             }
             *(dline + j) = R_RGBA(rval, gval, bval, aval);
+        }
+    }
+}
+
+/****************************************************************
+ * Path-drawing
+ ****************************************************************/
+
+void GEStroke(SEXP path, const pGEcontext gc, pGEDevDesc dd)
+{
+    if (dd->dev->deviceVersion >= R_GE_group)
+    {
+        if (dd->appending)
+        {
+            warning(_("Stroke ignored (device is appending path)"));
+        }
+        else
+        {
+            dd->appending = TRUE;
+            dd->dev->stroke(path, gc, dd->dev);
+            dd->appending = FALSE;
+        }
+    }
+}
+
+void GEFill(SEXP path, int rule, const pGEcontext gc, pGEDevDesc dd)
+{
+    if (dd->dev->deviceVersion >= R_GE_group)
+    {
+        if (dd->appending)
+        {
+            warning(_("Fill ignored (device is appending path)"));
+        }
+        else
+        {
+            dd->appending = TRUE;
+            dd->dev->fill(path, rule, gc, dd->dev);
+            dd->appending = FALSE;
+        }
+    }
+}
+
+void GEFillStroke(SEXP path, int rule, const pGEcontext gc, pGEDevDesc dd)
+{
+    if (dd->dev->deviceVersion >= R_GE_group)
+    {
+        if (dd->appending)
+        {
+            warning(_("FillStroke ignored (device is appending path)"));
+        }
+        else
+        {
+            dd->appending = TRUE;
+            dd->dev->fillStroke(path, rule, gc, dd->dev);
+            dd->appending = FALSE;
         }
     }
 }

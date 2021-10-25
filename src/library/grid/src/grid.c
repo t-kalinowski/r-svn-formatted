@@ -188,15 +188,15 @@ SEXP doSetViewport(SEXP vp,
     /*
      * Establish the clipping region for this viewport
      */
-    if (LOGICAL(gridStateElement(dd, GSS_RESOLVINGCLIP))[0])
+    if (LOGICAL(gridStateElement(dd, GSS_RESOLVINGPATH))[0])
     {
         /*
          * Clipping settings are (silently) ignored during resolution of
-         * a clipping path
+         * a (clipping) path
          */
         if (!isClipPath(viewportClipSXP(vp)) && (viewportClip(vp) == NA_LOGICAL || viewportClip(vp)))
         {
-            warning(_("Turning clipping on or off within a clipping path is no honoured"));
+            warning(_("Turning clipping on or off within a (clipping) path is no honoured"));
         }
     }
     else if (isClipPath(viewportClipSXP(vp)))
@@ -362,7 +362,7 @@ SEXP doSetViewport(SEXP vp,
     /*
      * Establish the mask for this viewport
      */
-    if (LOGICAL(gridStateElement(dd, GSS_RESOLVINGCLIP))[0])
+    if (LOGICAL(gridStateElement(dd, GSS_RESOLVINGPATH))[0])
     {
         /* Masks are (silently) ignored during resolution of a
          * clipping path
@@ -465,9 +465,9 @@ SEXP L_setviewport(SEXP invp, SEXP hasParent)
         PROTECT(clip = viewportClipSXP(pushedvp));
         if (isClipPath(clip))
         {
-            if (LOGICAL(gridStateElement(dd, GSS_RESOLVINGCLIP))[0])
+            if (LOGICAL(gridStateElement(dd, GSS_RESOLVINGPATH))[0])
             {
-                warning(_("Clipping paths within a clipping path are not honoured"));
+                warning(_("Clipping paths within a (clipping) path are not honoured"));
                 SET_VECTOR_ELT(pushedvp, PVP_CLIPPATH, R_NilValue);
             }
             else
@@ -488,9 +488,9 @@ SEXP L_setviewport(SEXP invp, SEXP hasParent)
         PROTECT(mask = viewportMaskSXP(pushedvp));
         if (isMask(mask))
         {
-            if (LOGICAL(gridStateElement(dd, GSS_RESOLVINGCLIP))[0])
+            if (LOGICAL(gridStateElement(dd, GSS_RESOLVINGPATH))[0])
             {
-                warning(_("Masks within a clipping path are not honoured"));
+                warning(_("Masks within a (clipping) path are not honoured"));
                 SET_VECTOR_ELT(pushedvp, PVP_MASK, R_NilValue);
             }
             else
@@ -1002,7 +1002,7 @@ SEXP L_unsetviewport(SEXP n)
     setGridStateElement(dd, GSS_VP, newvp);
     /* Set the clipping region to the parent's cur.clip
      */
-    if (LOGICAL(gridStateElement(dd, GSS_RESOLVINGCLIP))[0])
+    if (LOGICAL(gridStateElement(dd, GSS_RESOLVINGPATH))[0])
     {
         /* Clipping is (silently) ignored during resolution of
          * a clipping path
@@ -1029,7 +1029,7 @@ SEXP L_unsetviewport(SEXP n)
         }
         UNPROTECT(2);
     }
-    if (LOGICAL(gridStateElement(dd, GSS_RESOLVINGCLIP))[0])
+    if (LOGICAL(gridStateElement(dd, GSS_RESOLVINGPATH))[0])
     {
         /* Masks are (silently) ignored during resolution of
          * a clipping path
@@ -1108,7 +1108,7 @@ SEXP L_upviewport(SEXP n)
     setGridStateElement(dd, GSS_VP, newvp);
     /* Set the clipping region to the parent's cur.clip
      */
-    if (LOGICAL(gridStateElement(dd, GSS_RESOLVINGCLIP))[0])
+    if (LOGICAL(gridStateElement(dd, GSS_RESOLVINGPATH))[0])
     {
         /* Clipping is (silently) ignored during resolution of
          * a clipping path
@@ -1135,7 +1135,7 @@ SEXP L_upviewport(SEXP n)
         }
         UNPROTECT(2);
     }
-    if (LOGICAL(gridStateElement(dd, GSS_RESOLVINGCLIP))[0])
+    if (LOGICAL(gridStateElement(dd, GSS_RESOLVINGPATH))[0])
     {
         /* Masks are (silently) ignored during resolution of
          * a clipping path
@@ -1345,14 +1345,24 @@ SEXP L_newpage()
         GENewPage(&gc, dd);
     }
 
+    return R_NilValue;
+}
+
+SEXP L_clearDefinitions(SEXP clearGroups)
+{
+    pGEDevDesc dd = getDevice();
     /* Clear all device patterns */
     dd->dev->releasePattern(R_NilValue, dd->dev);
     /* Clear all clip paths */
-    setGridStateElement(dd, GSS_RESOLVINGCLIP, ScalarLogical(FALSE));
+    setGridStateElement(dd, GSS_RESOLVINGPATH, ScalarLogical(FALSE));
     dd->dev->releaseClipPath(R_NilValue, dd->dev);
     /* Clear all masks */
     dd->dev->releaseMask(R_NilValue, dd->dev);
-
+    if (LOGICAL(clearGroups)[0] && dd->dev->deviceVersion > R_GE_group)
+    {
+        /* Clear all groups */
+        dd->dev->releaseGroup(R_NilValue, dd->dev);
+    }
     return R_NilValue;
 }
 

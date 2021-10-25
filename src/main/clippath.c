@@ -1,7 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1997-2014  The R Core Team
- *  Copyright (C) 2003	     The R Foundation
+ *  Copyright (C) 2019	     The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,21 +26,13 @@
 #include <Defn.h>
 #include <R_ext/GraphicsEngine.h>
 
-#include "grDevices.h"
+/*
+ * C API for graphics devices to interrogate gradient SEXPs
+ *
+ * MUST match R structures in ../library/grDevices/R/clippath.R
+ */
 
-SEXP setMask(SEXP args)
+int R_GE_clipPathFillRule(SEXP path)
 {
-    pGEDevDesc dd = GEcurrentDevice();
-    SEXP mask = CADR(args);
-    if (dd->appending && mask != R_NilValue)
-    {
-        warning(_("Mask ignored (device is appending path)"));
-        return R_NilValue;
-    }
-    else
-    {
-        SEXP ref = CADDR(args);
-        ref = dd->dev->setMask(mask, ref, dd->dev);
-        return ref;
-    }
+    return INTEGER(getAttrib(path, install("rule")))[0];
 }
