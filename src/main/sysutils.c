@@ -1444,6 +1444,7 @@ const wchar_t *wtransChar(SEXP x)
 #endif
     }
 
+    /* R_AllocStringBuffer returns correctly aligned for wchar_t */
     R_AllocStringBuffer(0, &cbuff);
 top_of_loop:
     inbuf = ans;
@@ -1462,14 +1463,14 @@ next_char:
     }
     else if (res == -1 && (errno == EILSEQ || errno == EINVAL))
     {
-        if (outb < 5)
+        if (outb < 5 * sizeof(wchar_t))
         {
             R_AllocStringBuffer(2 * cbuff.bufsize, &cbuff);
             goto top_of_loop;
         }
-        snprintf(outbuf, 5, "<%02x>", (unsigned char)*inbuf);
-        outbuf += 4;
-        outb -= 4;
+        swprintf((wchar_t *)outbuf, 5, L"<%02x>", (unsigned char)*inbuf);
+        outbuf += 4 * sizeof(wchar_t);
+        outb -= 4 * sizeof(wchar_t);
         inbuf++;
         inb--;
         goto next_char;
