@@ -1969,10 +1969,12 @@ static void NORET gotoExitingHandler(SEXP cond, SEXP call, SEXP entry)
 
 static void vsignalError(SEXP call, const char *format, va_list ap)
 {
+    /* This function does not protect or restore the old handler
+       stack. On return R_HandlerStack will be R_NilValue (unless
+       R_RestartToken is encountered). */
     char localbuf[BUFSIZE];
-    SEXP list, oldstack;
+    SEXP list;
 
-    PROTECT(oldstack = R_HandlerStack);
     Rvsnprintf_mbcs(localbuf, BUFSIZE - 1, format, ap);
     while ((list = findSimpleErrorHandler()) != R_NilValue)
     {
@@ -1986,7 +1988,7 @@ static void vsignalError(SEXP call, const char *format, va_list ap)
             if (ENTRY_HANDLER(entry) == R_RestartToken)
             {
                 UNPROTECT(1); /* oldstack */
-                return;       /* go to default error handling; do not reset stack */
+                break;        /* go to default error handling */
             }
             else
             {
@@ -1995,10 +1997,7 @@ static void vsignalError(SEXP call, const char *format, va_list ap)
                 if (R_OldCStackLimit)
                     continue;
                 SEXP hooksym, hcall, qcall, qfun;
-                /* protect oldstack here, not outside loop, so handler
-                   stack gets unwound in case error is protect stack
-                   overflow */
-                PROTECT(oldstack);
+                PROTECT(entry); /* protect since no longer on the stack */
                 hooksym = install(".handleSimpleError");
                 qfun = lang3(R_DoubleColonSymbol, R_BaseSymbol, R_QuoteSymbol);
                 PROTECT(qfun);
@@ -2014,8 +2013,6 @@ static void vsignalError(SEXP call, const char *format, va_list ap)
         else
             gotoExitingHandler(R_NilValue, call, entry);
     }
-    R_HandlerStack = oldstack;
-    UNPROTECT(1); /* oldstack */
 }
 
 static SEXP findConditionHandler(SEXP cond)
