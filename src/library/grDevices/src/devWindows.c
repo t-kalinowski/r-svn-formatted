@@ -2567,6 +2567,30 @@ static void GA_Deactivate(pDevDesc dd)
 /* locations to DEVICE coordinates using GConvert	*/
 /********************************************************/
 
+/* Get a rect based on the current clip rect, but make
+ * sure it does not lie outside device extent.
+ */
+static rect getClipRect(gadesc *xd)
+{
+    rect r1 = getregion(xd);
+    rect r2 = xd->clip;
+    if (r2.x < r1.x)
+    {
+        r2.width = r1.x - r2.x;
+        r2.x = r1.x;
+    }
+    if (r2.y < r1.y)
+    {
+        r2.height = r1.y - r2.y;
+        r2.y = r1.y;
+    }
+    if (r2.x + r2.width > r1.x + r1.width)
+        r2.width = (r1.x + r1.width) - r2.x;
+    if (r2.y + r2.height > r1.y + r1.height)
+        r2.height = (r1.y + r1.height) - r2.y;
+    return r2;
+}
+
 static void GA_Rect(double x0, double y0, double x1, double y1, const pGEcontext gc, pDevDesc dd)
 {
     int tmp;
@@ -2610,7 +2634,7 @@ static void GA_Rect(double x0, double y0, double x1, double y1, const pGEcontext
     {
         if (xd->have_alpha)
         {
-            rect cp = xd->clip;
+            rect cp = getClipRect(xd);
             /* We are only working with the screen device here, so
                we can assume that x->bm is the current state.
                Copying from the screen window does not work. */
@@ -2651,7 +2675,7 @@ static void GA_Rect(double x0, double y0, double x1, double y1, const pGEcontext
         if (xd->have_alpha)
         {
             int adj, tol = xd->lwd; /* only half needed */
-            rect cp = xd->clip;
+            rect cp = getClipRect(xd);
             rr = r;
             r.x -= tol;
             r.y -= tol;
@@ -2723,7 +2747,7 @@ static void GA_Circle(double x, double y, double radius, const pGEcontext gc, pD
     {
         if (xd->have_alpha)
         {
-            rect cp = xd->clip;
+            rect cp = getClipRect(xd);
             /* Clip to the device region */
             if (r.x < 0)
             {
@@ -2760,7 +2784,7 @@ static void GA_Circle(double x, double y, double radius, const pGEcontext gc, pD
         if (xd->have_alpha)
         {
             int adj, tol = xd->lwd; /* only half needed */
-            rect cp = xd->clip;
+            rect cp = getClipRect(xd);
             r.x -= tol;
             r.y -= tol;
             r.width += 2 * tol;
@@ -2824,7 +2848,22 @@ static void GA_Line(double x1, double y1, double x2, double y2, const pGEcontext
     {
         if (xd->have_alpha)
         {
-            rect r = xd->clip;
+            rect r, rr, cp = getClipRect(xd);
+            r = rr = cp;
+            if (r.x < 0)
+            {
+                r.x = 0;
+                r.width = r.width + rr.x;
+            }
+            if (r.y < 0)
+            {
+                r.y = 0;
+                r.height = r.height + rr.y;
+            }
+            if (r.x + r.width > cp.x + cp.width)
+                r.width = cp.x + cp.width - r.x;
+            if (r.y + r.height > cp.y + cp.height)
+                r.height = cp.y + cp.height - r.y;
             gsetcliprect(xd->bm, xd->clip);
             gcopy(xd->bm2, xd->bm, r);
             gdrawline(xd->bm2, xd->lwd, xd->lty, xd->fgcolor, pt(xx1, yy1), pt(xx2, yy2), 0, xd->lend, xd->ljoin,
@@ -2873,7 +2912,23 @@ static void GA_Polyline(int n, double *x, double *y, const pGEcontext gc, pDevDe
     {
         if (xd->have_alpha)
         {
-            rect r = xd->clip; /* lines can go well outside bbox of points */
+            /* lines can go well outside bbox of points */
+            rect r, rr, cp = getClipRect(xd);
+            r = rr = cp;
+            if (r.x < 0)
+            {
+                r.x = 0;
+                r.width = r.width + rr.x;
+            }
+            if (r.y < 0)
+            {
+                r.y = 0;
+                r.height = r.height + rr.y;
+            }
+            if (r.x + r.width > cp.x + cp.width)
+                r.width = cp.x + cp.width - r.x;
+            if (r.y + r.height > cp.y + cp.height)
+                r.height = cp.y + cp.height - r.y;
             gsetcliprect(xd->bm, xd->clip);
             gcopy(xd->bm2, xd->bm, r);
             gdrawpolyline(xd->bm2, xd->lwd, xd->lty, xd->fgcolor, p, n, 0, 0, xd->lend, xd->ljoin, xd->lmitre);
@@ -2942,6 +2997,22 @@ static void GA_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDes
     {
         if (xd->have_alpha)
         {
+            rect rr, cp = getClipRect(xd);
+            rr = r;
+            if (r.x < 0)
+            {
+                r.x = 0;
+                r.width = r.width + rr.x;
+            }
+            if (r.y < 0)
+            {
+                r.y = 0;
+                r.height = r.height + rr.y;
+            }
+            if (r.x + r.width > cp.x + cp.width)
+                r.width = cp.x + cp.width - r.x;
+            if (r.y + r.height > cp.y + cp.height)
+                r.height = cp.y + cp.height - r.y;
             gsetcliprect(xd->bm, xd->clip);
             gcopy(xd->bm2, xd->bm, r);
             gfillpolygon(xd->bm2, xd->fgcolor, points, n);
@@ -2961,7 +3032,22 @@ static void GA_Polygon(int n, double *x, double *y, const pGEcontext gc, pDevDes
     {
         if (xd->have_alpha)
         {
-            r = xd->clip;
+            rect r, rr, cp = getClipRect(xd);
+            rr = r = cp;
+            if (r.x < 0)
+            {
+                r.x = 0;
+                r.width = r.width + rr.x;
+            }
+            if (r.y < 0)
+            {
+                r.y = 0;
+                r.height = r.height + rr.y;
+            }
+            if (r.x + r.width > cp.x + cp.width)
+                r.width = cp.x + cp.width - r.x;
+            if (r.y + r.height > cp.y + cp.height)
+                r.height = cp.y + cp.height - r.y;
             gsetcliprect(xd->bm, xd->clip);
             gcopy(xd->bm2, xd->bm, r);
             gdrawpolygon(xd->bm2, xd->lwd, xd->lty, xd->fgcolor, points, n, 0, xd->lend, xd->ljoin, xd->lmitre);
@@ -3028,6 +3114,22 @@ static void GA_Path(double *x, double *y, int npoly, int *nper, Rboolean winding
     {
         if (xd->have_alpha)
         {
+            rect rr, cp = getClipRect(xd);
+            rr = r;
+            if (r.x < 0)
+            {
+                r.x = 0;
+                r.width = r.width + rr.x;
+            }
+            if (r.y < 0)
+            {
+                r.y = 0;
+                r.height = r.height + rr.y;
+            }
+            if (r.x + r.width > cp.x + cp.width)
+                r.width = cp.x + cp.width - r.x;
+            if (r.y + r.height > cp.y + cp.height)
+                r.height = cp.y + cp.height - r.y;
             gsetcliprect(xd->bm, xd->clip);
             gcopy(xd->bm2, xd->bm, r);
             gfillpolypolygon(xd->bm2, xd->fgcolor, points, npoly, nper);
@@ -3053,7 +3155,22 @@ static void GA_Path(double *x, double *y, int npoly, int *nper, Rboolean winding
     {
         if (xd->have_alpha)
         {
-            r = xd->clip;
+            rect r, rr, cp = getClipRect(xd);
+            r = rr = cp;
+            if (r.x < 0)
+            {
+                r.x = 0;
+                r.width = r.width + rr.x;
+            }
+            if (r.y < 0)
+            {
+                r.y = 0;
+                r.height = r.height + rr.y;
+            }
+            if (r.x + r.width > cp.x + cp.width)
+                r.width = cp.x + cp.width - r.x;
+            if (r.y + r.height > cp.y + cp.height)
+                r.height = cp.y + cp.height - r.y;
             gsetcliprect(xd->bm, xd->clip);
             gcopy(xd->bm2, xd->bm, r);
             pointIndex = points;
@@ -3361,8 +3478,22 @@ static void GA_Text0(double x, double y, const char *str, int enc, double rot, d
         /*  it is too hard to get a correct bounding box */
         if (xd->have_alpha)
         {
-            rect r = xd->clip;
-            r = getregion(xd);
+            rect r, rr, cp = getClipRect(xd);
+            r = rr = cp;
+            if (r.x < 0)
+            {
+                r.x = 0;
+                r.width = r.width + rr.x;
+            }
+            if (r.y < 0)
+            {
+                r.y = 0;
+                r.height = r.height + rr.y;
+            }
+            if (r.x + r.width > cp.x + cp.width)
+                r.width = cp.x + cp.width - r.x;
+            if (r.y + r.height > cp.y + cp.height)
+                r.height = cp.y + cp.height - r.y;
             gsetcliprect(xd->bm, xd->clip);
             gcopy(xd->bm2, xd->bm, r);
             if (gc->fontface != 5)
