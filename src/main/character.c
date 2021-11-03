@@ -765,7 +765,7 @@ SEXP attribute_hidden do_substrgets(SEXP call, SEXP op, SEXP args, SEXP env)
             slen = strlen(ss);
             if (start < 1)
                 start = 1;
-            if (stop > slen)
+            if (stop > (int)slen)
                 stop = (int)slen; /* SBCS optimization */
             if (start > stop)
             {
