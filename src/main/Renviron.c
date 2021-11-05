@@ -23,18 +23,78 @@
  *  Formerly part of ../unix/sys-common.c.
  */
 
+#include <ctype.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+/* RENVIRON_WIN32_STANDALONE is set when compiling for use in Rcmd Windows
+   front-end, which is not linked against the R library. The locale is not
+   initialized in the front-end.
+
+   When RENVIRON_WIN32_STANDALONE is not set, the code below can be used
+   both when R is starting up (to read standard Renviron files) as well
+   as when R is already running (e.g. to read custom Renviron files).
+   In the former case, the locale is not yet initialized and R warnings/errors
+   can not be emitted, yet.
+
+   When the locale is not initialized, the MBCS-aware functions below will
+   behave as MBCS-unaware, because mbcslocale will not be set. The reading of
+   Renviron when R is starting up (on all platforms) would hence have issues
+   with some characters in non-UTF-8 MBCS locale (when bytes can be confused
+   for ASCII). Error messages may be imperfectly truncated also in UTF-8.
+*/
+#ifdef RENVIRON_WIN32_STANDALONE
+
+/* #undef HAVE_SETENV */
+#define HAVE_PUTENV 1
+
+#define Renviron_strchr strchr
+#define Renviron_snprintf snprintf
+
+static void Renviron_warning(const char *msg)
+{
+    fprintf(stderr, "%s\n", msg);
+}
+
+static void Renviron_error(const char *msg)
+{
+    fprintf(stderr, "FATAL ERROR:%s\n", msg);
+    exit(2);
+}
+
+#else /* not RENVIRON_WIN32_STANDALONE */
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-#include <stdlib.h> /* for setenv or putenv */
-#include <Defn.h>   /* for PATH_MAX */
-#include <Rinterface.h>
+#include <Defn.h>
 #include <Fileio.h>
-#include <ctype.h> /* for isspace */
+#include <Rinterface.h>
 
 #ifdef Win32
 #include <trioremap.h> /* to ensure snprintf result is null terminated */
+#endif
+
+#define Renviron_strchr Rf_strchr
+#define Renviron_snprintf Rsnprintf_mbcs
+
+static void Renviron_warning(const char *msg)
+{
+    if (R_Is_Running > 1)
+        warningcall(R_NilValue, msg);
+    else
+        R_ShowMessage(msg);
+}
+
+static void Renviron_error(const char *msg)
+{
+    if (R_Is_Running > 1)
+        errorcall(R_NilValue, msg);
+    else
+        R_Suicide(msg);
+}
+
 #endif
 
 /* remove leading and trailing space */
@@ -68,7 +128,7 @@ static char *subterm(char *s)
     s = rmspace(s);
     if (!strlen(s))
         return "";
-    p = Rf_strchr(s, '-');
+    p = Renviron_strchr(s, '-');
     if (p)
     {
         q = p + 1; /* start of value */
@@ -104,8 +164,8 @@ static char *findRbrace(char *s)
 
     while (nr <= nl)
     {
-        pl = Rf_strchr(p, '{');
-        pr = Rf_strchr(p, '}');
+        pl = Renviron_strchr(p, '{');
+        pr = Renviron_strchr(p, '}');
         if (!pr)
             return NULL;
         if (!pl || pr < pl)
@@ -134,7 +194,7 @@ static char *findterm(char *s)
     while (1)
     {
         /* Look for ${...}, taking care to look for inner matches */
-        p = Rf_strchr(s, '$');
+        p = Renviron_strchr(s, '$');
         if (!p || p[1] != '{')
             break;
         q = findRbrace(p + 2);
@@ -166,16 +226,17 @@ static void Putenv(char *a, char *b)
 {
     char *buf, *value, *p, *q, quote = '\0';
     int inquote = 0;
+    int failed = 0;
 
 #ifdef HAVE_SETENV
     buf = (char *)malloc((strlen(b) + 1) * sizeof(char));
     if (!buf)
-        R_Suicide("allocation failure in reading Renviron");
+        Renviron_error("allocation failure in reading Renviron");
     value = buf;
 #else
     buf = (char *)malloc((strlen(a) + strlen(b) + 2) * sizeof(char));
     if (!buf)
-        R_Suicide("allocation failure in reading Renviron");
+        Renviron_error("allocation failure in reading Renviron");
     strcpy(buf, a);
     strcat(buf, "=");
     value = buf + strlen(buf);
@@ -212,23 +273,48 @@ static void Putenv(char *a, char *b)
     *q = '\0';
 #ifdef HAVE_SETENV
     if (setenv(a, buf, 1))
-        warningcall(R_NilValue, _("problem in setting variable '%s' in Renviron"), a);
+        failed = 1;
     free(buf);
 #elif defined(HAVE_PUTENV)
     if (putenv(buf))
-        warningcall(R_NilValue, _("problem in setting variable '%s' in Renviron"), a);
+        failed = 1;
         /* no free here: storage remains in use */
 #else
     /* pretty pointless, and was not tested prior to 2.3.0 */
     free(buf);
 #endif
+    if (failed)
+    {
+        char buf[1024];
+        Renviron_snprintf(buf, 1024,
+#ifdef RENVIRON_WIN32_STANDALONE
+                          "Problem in setting variable '%s' in Renviron",
+#else
+                          _("problem in setting variable '%s' in Renviron"),
+#endif
+                          a);
+        Renviron_warning(buf);
+    }
 }
 
 #define MSG_SIZE 2048
+
+#ifdef RENVIRON_WIN32_STANDALONE
+int process_Renviron(const char *filename)
+#else
 static int process_Renviron(const char *filename)
+#endif
 {
     FILE *fp;
-    if (!filename || !(fp = R_fopen(filename, "r")))
+
+    if (!filename)
+        return 0;
+#ifdef RENVIRON_WIN32_STANDALONE
+    fp = fopen(filename, "rt");
+#else
+    fp = R_fopen(filename, "r");
+#endif
+    if (!fp)
         return 0;
 
     char sm[BUF_SIZE], msg[MSG_SIZE];
@@ -236,22 +322,22 @@ static int process_Renviron(const char *filename)
     const char *ignored_msg = "\n   They were ignored\n";
     const char *truncated_msg = "[... truncated]";
     const char *too_long = " (too long)";
-    Rboolean errs = FALSE;
+    int errs = 0;
 
     while (fgets(sm, BUF_SIZE, fp))
     {
         sm[BUF_SIZE - 1] = '\0'; /* should not be needed */
         /* embedded nulls are not supported */
-        Rboolean complete_line = feof(fp) || Rf_strchr(sm, '\n');
+        int complete_line = feof(fp) || Renviron_strchr(sm, '\n');
         char *s = rmspace(sm), *p;
         if (strlen(s) == 0 || s[0] == '#')
             continue;
-        if (!(p = Rf_strchr(s, '=')) || !complete_line)
+        if (!(p = Renviron_strchr(s, '=')) || !complete_line)
         {
             if (!errs)
             {
-                errs = TRUE;
-                Rsnprintf_mbcs(msg, MSG_SIZE, "\n   File %s contains invalid line(s)", filename);
+                errs = 1;
+                Renviron_snprintf(msg, MSG_SIZE, "\n   File %s contains invalid line(s)", filename);
             }
             if (strlen(msg) + strlen(line_prefix) + strlen(s) + strlen(ignored_msg) < MSG_SIZE)
             {
@@ -263,7 +349,9 @@ static int process_Renviron(const char *filename)
             {
                 strcat(msg, line_prefix);
                 strncat(msg, s, 45);
+#ifndef RENVIRON_WIN32_STANDALONE
                 mbcsTruncateToValid(msg);
+#endif
                 strcat(msg, truncated_msg);
             }
             if (!complete_line)
@@ -277,7 +365,7 @@ static int process_Renviron(const char *filename)
                 while (!complete_line && fgets(sm, BUF_SIZE, fp))
                 {
                     sm[BUF_SIZE - 1] = '\0'; /* should not be needed */
-                    complete_line = feof(fp) || Rf_strchr(sm, '\n');
+                    complete_line = feof(fp) || Renviron_strchr(sm, '\n');
                 }
                 if (!complete_line)
                     break; /* error or EOF at line start */
@@ -295,10 +383,12 @@ static int process_Renviron(const char *filename)
     {
         if (strlen(msg) + strlen(ignored_msg) < MSG_SIZE)
             strcat(msg, ignored_msg);
-        R_ShowMessage(msg);
+        Renviron_warning(msg);
     }
     return 1;
 }
+
+#ifndef RENVIRON_WIN32_STANDALONE
 
 /* try system Renviron: R_HOME/etc/Renviron.  Unix only. */
 void process_system_Renviron()
@@ -308,7 +398,7 @@ void process_system_Renviron()
 #ifdef R_ARCH
     if (strlen(R_Home) + strlen("/etc/Renviron") + strlen(R_ARCH) + 1 > PATH_MAX - 1)
     {
-        R_ShowMessage("path to system Renviron is too long: skipping");
+        Renviron_warning("path to system Renviron is too long: skipping");
         return;
     }
     strcpy(buf, R_Home);
@@ -318,14 +408,14 @@ void process_system_Renviron()
 #else
     if (strlen(R_Home) + strlen("/etc/Renviron") > PATH_MAX - 1)
     {
-        R_ShowMessage("path to system Renviron is too long: skipping");
+        Renviron_warning("path to system Renviron is too long: skipping");
         return;
     }
     strcpy(buf, R_Home);
     strcat(buf, "/etc/Renviron");
 #endif
     if (!process_Renviron(buf))
-        R_ShowMessage("cannot find system Renviron");
+        Renviron_warning("cannot find system Renviron");
 }
 
 #ifdef HAVE_UNISTD_H
@@ -346,7 +436,7 @@ void process_site_Renviron()
 #ifdef R_ARCH
     if (strlen(R_Home) + strlen("/etc/Renviron.site") + strlen(R_ARCH) > PATH_MAX - 2)
     {
-        R_ShowMessage("path to arch-specific Renviron.site is too long: skipping");
+        Renviron_warning("path to arch-specific Renviron.site is too long: skipping");
     }
     else
     {
@@ -360,7 +450,7 @@ void process_site_Renviron()
 #endif
     if (strlen(R_Home) + strlen("/etc/Renviron.site") > PATH_MAX - 1)
     {
-        R_ShowMessage("path to Renviron.site is too long: skipping");
+        Renviron_warning("path to Renviron.site is too long: skipping");
         return;
     }
     snprintf(buf, PATH_MAX, "%s/etc/Renviron.site", R_Home);
@@ -423,3 +513,5 @@ SEXP attribute_hidden do_readEnviron(SEXP call, SEXP op, SEXP args, SEXP env)
         warning(_("file '%s' cannot be opened for reading"), fn);
     return ScalarLogical(res != 0);
 }
+
+#endif /* ^^^ not RENVIRON_WIN32_STANDALONE */
