@@ -3540,9 +3540,19 @@ void NORET R_signal_protect_error(void)
     cntxt.cend = &reset_pp_stack;
     cntxt.cenddata = &oldpps;
 
+    /* condiiton is pre-allocated and protected with R_PreserveObject */
+    SEXP cond = R_getProtectStackOverflowError();
+
     if (R_PPStackSize < R_RealPPStackSize)
+    {
         R_PPStackSize = R_RealPPStackSize;
-    errorcall(R_NilValue, _("protect(): protection stack overflow"));
+        /* allow calling handlers */
+        R_signalErrorCondition(cond, R_NilValue);
+    }
+
+    /* calling handlers at this point might produce a C stack
+       overflow/SEGFAULT so treat them as failed and skip them */
+    R_signalErrorConditionEx(cond, R_NilValue, TRUE);
 
     endcontext(&cntxt); /* not reached */
 }
