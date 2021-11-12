@@ -488,7 +488,7 @@ SEXP attribute_hidden mat2indsub(SEXP dims, SEXP s, SEXP call, SEXP x)
                     }
                     if (k > pdims[j])
                     {
-                        ECALL_OutOfBounds(x, j, k, call);
+                        ECALL_OutOfBounds(x, j, (R_xlen_t)k, call);
                     }
                     rv[i] += (k - 1.) * tdim;
                     tdim *= pdims[j];
