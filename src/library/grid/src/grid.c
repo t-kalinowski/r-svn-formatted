@@ -3633,7 +3633,7 @@ static SEXP gridText(SEXP label, SEXP x, SEXP y, SEXP hjust, SEXP vjust, SEXP ro
         }
         if (ntxt > 0)
         {
-            result = allocVector(REALSXP, 4);
+            result = allocVector(REALSXP, 6);
             /*
              * If there is more than one text, just produce edge
              * based on bounding rect of all text
@@ -3653,6 +3653,8 @@ static SEXP gridText(SEXP label, SEXP x, SEXP y, SEXP hjust, SEXP vjust, SEXP ro
             REAL(result)[1] = edgey / REAL(gridStateElement(dd, GSS_SCALE))[0];
             REAL(result)[2] = (xmax - xmin) / REAL(gridStateElement(dd, GSS_SCALE))[0];
             REAL(result)[3] = (ymax - ymin) / REAL(gridStateElement(dd, GSS_SCALE))[0];
+            REAL(result)[4] = xmin / REAL(gridStateElement(dd, GSS_SCALE))[0];
+            REAL(result)[5] = ymin / REAL(gridStateElement(dd, GSS_SCALE))[0];
         }
     }
     vmaxset(vmax);
@@ -3671,7 +3673,7 @@ SEXP L_text(SEXP label, SEXP x, SEXP y, SEXP hjust, SEXP vjust, SEXP rot, SEXP c
  * of multiple pieces of text, unaligned, and/or rotated)
  * in INCHES.
  *
- * Result is (xmin, xmax, ymin, ymax)
+ * Result is (edgex, edgey, width, height, xmin, ymax)
  *
  * Return NULL if no text to draw;  R code will generate unit from that
  */
