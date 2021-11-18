@@ -194,6 +194,13 @@ attribute_hidden const char *EncodeEnvironment(SEXP x)
     return ch;
 }
 
+attribute_hidden const char *EncodeExtptr(SEXP x)
+{
+    static char buf[1000];
+    sprintf(buf, "<pointer: %p>", R_ExternalPtrAddr(x));
+    return buf;
+}
+
 const char *EncodeReal(double x, int w, int d, int e, char cdec)
 {
     char dec[2];

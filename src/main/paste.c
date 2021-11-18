@@ -536,6 +536,8 @@ SEXP attribute_hidden do_format(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         return mkString(EncodeEnvironment(x));
     }
+    else if (TYPEOF(x) == EXTPTRSXP)
+        return mkString(EncodeExtptr(x));
     else if (!isVector(x))
         error(_("first argument must be atomic or environment"));
     args = CDR(args);
