@@ -41,7 +41,7 @@ static SEXP checkArgIsSymbol(SEXP x)
 */
 SEXP attribute_hidden do_lapply(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    PROTECT_INDEX pidx;
+    PROTECT_INDEX pidx, cidx;
 
     checkArity(op, args);
     SEXP X, XX, FUN;
@@ -68,6 +68,7 @@ SEXP attribute_hidden do_lapply(SEXP call, SEXP op, SEXP args, SEXP rho)
     defineVar(isym, ind, rho);
     INCREMENT_NAMED(ind);
     R_varloc_t loc = R_findVarLocInFrame(rho, isym);
+    PROTECT_WITH_INDEX(loc.cell, &cidx);
 
     for (R_xlen_t i = 0; i < n; i++)
     {
@@ -86,10 +87,11 @@ SEXP attribute_hidden do_lapply(SEXP call, SEXP op, SEXP args, SEXP rho)
             defineVar(isym, ind, rho);
             INCREMENT_NAMED(ind);
             loc = R_findVarLocInFrame(rho, isym);
+            REPROTECT(loc.cell, cidx);
         }
     }
 
-    UNPROTECT(5);
+    UNPROTECT(6);
     return ans;
 }
 
