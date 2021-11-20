@@ -75,6 +75,7 @@ struct _HashData
     int nomatch;
     Rboolean useUTF8;
     Rboolean useCache;
+    Rboolean useCloEnv;
 };
 
 #define HTDATA_INT(d) (INTEGER0((d)->HashTable))
@@ -400,6 +401,9 @@ static hlen vhash_one(SEXP _this, HashData *d)
         /* all attributes are ignored */
         key ^= vhash_one(BODY_EXPR(_this), d);
         key *= 97;
+        if (d->useCloEnv)
+            key ^= vhash_one(CLOENV(_this), d);
+        key *= 97;
         break;
     case SYMSXP:
         /* at this point a symbol name should be guaranteed to have a
@@ -657,7 +661,7 @@ static void removeEntry(SEXP table, SEXP x, R_xlen_t indx, HashData *d)
 }
 
 #define DUPLICATED_INIT                                                                                                \
-    HashData data;                                                                                                     \
+    HashData data = {0};                                                                                               \
     HashTableSetup(x, &data, nmax);                                                                                    \
     data.useUTF8 = FALSE;                                                                                              \
     data.useCache = TRUE;                                                                                              \
@@ -1589,7 +1593,7 @@ SEXP match5(SEXP itable, SEXP ix, int nmatch, SEXP incomp, SEXP env)
     }
     else
     { // regular case
-        HashData data;
+        HashData data = {0};
         if (incomp)
         {
             PROTECT(incomp = coerceVector(incomp, type));
@@ -1829,7 +1833,7 @@ SEXP attribute_hidden do_pmatch(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     else
     {
-        HashData data;
+        HashData data = {0};
         HashTableSetup(target, &data, NA_INTEGER);
         data.useUTF8 = useUTF8;
         data.nomatch = 0;
@@ -2204,7 +2208,7 @@ static SEXP rowsum(SEXP x, SEXP g, SEXP uniqueg, SEXP snarm, SEXP rn)
     SEXP matches, ans;
     int n, p, ng, narm;
     R_xlen_t offset = 0, offsetg = 0;
-    HashData data;
+    HashData data = {0};
     data.nomatch = 0;
 
     n = LENGTH(g);
@@ -2292,7 +2296,7 @@ static SEXP rowsum_df(SEXP x, SEXP g, SEXP uniqueg, SEXP snarm, SEXP rn)
 {
     SEXP matches, ans, col, xcol;
     int p, narm;
-    HashData data;
+    HashData data = {0};
     data.nomatch = 0;
 
     R_xlen_t n = XLENGTH(g);
@@ -2422,7 +2426,7 @@ SEXP attribute_hidden do_makeunique(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP names, sep, ans, dup, newx;
     int i, cnt, *cnts, dp;
     int n, len, maxlen = 0;
-    HashData data;
+    HashData data = {0};
     const char *csep, *ss;
     const void *vmax;
 
@@ -2519,7 +2523,7 @@ SEXP Rf_csduplicated(SEXP x)
     if (TYPEOF(x) != STRSXP)
         error("C function 'csduplicated' not called on a STRSXP");
     R_xlen_t n = XLENGTH(x);
-    HashData data;
+    HashData data = {0};
     HashTableSetup1(x, &data);
     PROTECT(data.HashTable);
     SEXP ans = PROTECT(allocVector(LGLSXP, n));
@@ -2547,7 +2551,7 @@ SEXP attribute_hidden do_sample2(SEXP call, SEXP op, SEXP args, SEXP env)
         error(_("invalid '%s' argument"), "size");
     if (k > dn / 2)
         error("This algorithm is for size <= n/2");
-    HashData data;
+    HashData data = {0};
     GetRNGstate();
     if (dn > INT_MAX)
     {
@@ -2598,13 +2602,14 @@ SEXP attribute_hidden do_sample2(SEXP call, SEXP op, SEXP args, SEXP env)
  * Low Level Functions
  */
 
-static int hash_identical(SEXP x, int K)
+static int hash_identical(SEXP x, int useCloEnv, int K)
 {
     /* using 31 seems to work reasonably */
     if (K == 0 || K > 31)
         K = 31;
 
     HashData d = {.K = K, .useUTF8 = FALSE, .useCache = TRUE};
+    d.useCloEnv = useCloEnv;
 
     int val = (int)vhash_one(x, &d);
     if (val == NA_INTEGER)
@@ -2655,7 +2660,7 @@ static R_INLINE int HT_HASH(R_hashtab_t h, SEXP key)
     switch (HT_TYPE(h))
     {
     case HT_TYPE_IDENTICAL:
-        return hash_identical(key, 0) % LENGTH(table);
+        return hash_identical(key, TRUE, 0) % LENGTH(table);
     case HT_TYPE_ADDRESS:
         return hash_address(key, 0) % LENGTH(table);
     default:
