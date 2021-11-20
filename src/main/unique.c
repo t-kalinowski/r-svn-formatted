@@ -402,8 +402,10 @@ static hlen vhash_one(SEXP _this, HashData *d)
         key ^= vhash_one(BODY_EXPR(_this), d);
         key *= 97;
         if (d->useCloEnv)
+        {
             key ^= vhash_one(CLOENV(_this), d);
-        key *= 97;
+            key *= 97;
+        }
         break;
     case SYMSXP:
         /* at this point a symbol name should be guaranteed to have a
