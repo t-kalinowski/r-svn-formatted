@@ -713,6 +713,12 @@ static SEXP CairoSetMask(SEXP mask, SEXP ref, pX11Desc xd)
         /* Set NO mask */
         index = -1;
     }
+    else if (R_GE_maskType(mask) == R_GE_luminanceMask)
+    {
+        warning(_("Ignored luminance mask (not supported on this device)"));
+        /* Set NO mask */
+        index = -1;
+    }
     else
     {
         if (isNull(ref))
