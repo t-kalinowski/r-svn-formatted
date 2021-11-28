@@ -1689,7 +1689,6 @@ SEXP attribute_hidden do_asvector(SEXP call, SEXP op, SEXP args, SEXP rho)
             CLEAR_ATTRIB(ans);
             return ans;
         case EXPRSXP:
-            return x;
         case VECSXP:
             if (ATTRIB(x) == R_NilValue)
                 return x;
