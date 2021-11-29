@@ -170,43 +170,43 @@ SEXP attribute_hidden ExtractSubset(SEXP x, SEXP indx, SEXP call)
    matrix indexing of arrays */
 static SEXP VectorSubset(SEXP x, SEXP s, SEXP call)
 {
-    R_xlen_t stretch = 1;
-    SEXP indx, result, attrib, nattrib;
-
     if (s == R_MissingArg)
         return duplicate(x);
-
-    PROTECT(s);
-    attrib = getAttrib(x, R_DimSymbol);
 
     /* Check to see if we have special matrix subscripting. */
     /* If we do, make a real subscript vector and protect it. */
 
-    if (isMatrix(s) && isArray(x) && ncols(s) == length(attrib))
-    {
-        if (isString(s))
+    PROTECT(s);
+    if (ATTRIB(s) != R_NilValue)
+    { /* pretest to speed up simple case */
+        SEXP dim = getAttrib(x, R_DimSymbol);
+        if (isMatrix(s) && isArray(x) && ncols(s) == length(dim))
         {
-            s = strmat2intmat(s, GetArrayDimnames(x), call, x);
-            UNPROTECT(1);
-            PROTECT(s);
-        }
-        if (isInteger(s) || isReal(s))
-        {
-            s = mat2indsub(attrib, s, call, x);
-            UNPROTECT(1);
-            PROTECT(s);
+            if (isString(s))
+            {
+                SEXP dnames = PROTECT(GetArrayDimnames(x));
+                s = strmat2intmat(s, dnames, call, x);
+                UNPROTECT(2); /* dnames, s */
+                PROTECT(s);
+            }
+            if (isInteger(s) || isReal(s))
+            {
+                s = mat2indsub(dim, s, call, x);
+                UNPROTECT(1);
+                PROTECT(s);
+            }
         }
     }
 
     /* Convert to a vector of integer subscripts */
     /* in the range 1:length(x). */
-
-    PROTECT(indx = makeSubscript(x, s, &stretch, call));
+    R_xlen_t stretch = 1;
+    SEXP indx = PROTECT(makeSubscript(x, s, &stretch, call));
 
     /* Allocate the result. */
 
     int mode = TYPEOF(x);
-    PROTECT(result = ExtractSubset(x, indx, call));
+    SEXP result = PROTECT(ExtractSubset(x, indx, call));
     if (mode == VECSXP || mode == EXPRSXP)
         /* we do not duplicate the values when extracting the subset,
            so to be conservative mark the result as NAMED = NAMEDMAX */
@@ -214,6 +214,7 @@ static SEXP VectorSubset(SEXP x, SEXP s, SEXP call)
 
     if (result != R_NilValue)
     {
+        SEXP attrib, nattrib;
         if (((attrib = getAttrib(x, R_NamesSymbol)) != R_NilValue) ||
             (/* here we might have an array.  Use row names if 1D */
              isArray(x) && length(getAttrib(x, R_DimNamesSymbol)) == 1 &&
@@ -262,6 +263,7 @@ static void NORET errorcallOutOfBoundsSEXP(SEXP x, int subscript, SEXP sindex, S
     UNPROTECT(1); /* cond; not reached */
 }
 
+// in ./subscript.c :
 SEXP int_arraySubscript(int dim, SEXP s, SEXP dims, SEXP x, SEXP call);
 
 /* The MATRIX_SUBSET_LOOP macro allows the branches based on index
@@ -623,8 +625,7 @@ static SEXP ExtractArg(SEXP args, SEXP arg_sym)
    The object being subsetted must be the first argument. */
 static void ExtractDropArg(SEXP el, int *drop)
 {
-    SEXP dropArg = ExtractArg(el, R_DropSymbol);
-    *drop = asLogical(dropArg);
+    *drop = asLogical(ExtractArg(el, R_DropSymbol));
     if (*drop == NA_LOGICAL)
         *drop = 1;
 }
@@ -639,10 +640,9 @@ static void ExtractDropArg(SEXP el, int *drop)
 static int ExtractExactArg(SEXP args)
 {
     SEXP argval = ExtractArg(args, R_ExactSymbol);
-    int exact;
     if (isNull(argval))
         return 1; /* Default is true as from R 2.7.0 */
-    exact = asLogical(argval);
+    int exact = asLogical(argval);
     if (exact == NA_LOGICAL)
         exact = -1;
     return exact;
@@ -735,13 +735,11 @@ static R_INLINE R_xlen_t scalarIndex(SEXP s)
 // called from (R `[` => ) do_subset, but also from R .subset() :
 SEXP attribute_hidden do_subset_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP ans, ax, px, x, subs;
-    int drop, i, nsubs, type;
-
     /* By default we drop extents of length 1 */
 
     /* Handle cases of extracting a single element from a simple vector
        or matrix directly to improve speed for these simple cases. */
+    SEXP x = CAR(args);
     SEXP cdrArgs = CDR(args);
     SEXP cddrArgs = CDR(cdrArgs);
     if (cdrArgs != R_NilValue && cddrArgs == R_NilValue && TAG(cdrArgs) == R_NilValue)
@@ -835,9 +833,8 @@ SEXP attribute_hidden do_subset_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     PROTECT(args);
 
-    drop = 1;
+    int drop = 1;
     ExtractDropArg(args, &drop);
-    x = CAR(args);
 
     /* This was intended for compatibility with S, */
     /* but in fact S does not do this. */
@@ -848,14 +845,15 @@ SEXP attribute_hidden do_subset_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
         UNPROTECT(1);
         return x;
     }
-    subs = CDR(args);
-    nsubs = length(subs); /* Will be short */
-    type = TYPEOF(x);
+
+    SEXP subs = CDR(args);
+    int nsubs = length(subs); /* Will be short */
+    int type = TYPEOF(x);
 
     /* Here coerce pair-based objects into generic vectors. */
     /* All subsetting takes place on the generic vector form. */
 
-    ax = x;
+    SEXP ax = x;
     if (isVector(x))
         PROTECT(ax);
     else if (type == LISTSXP || type == LANGSXP)
@@ -873,6 +871,8 @@ SEXP attribute_hidden do_subset_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
             PROTECT(ax = allocVector(VECSXP, length(x)));
             setAttrib(ax, R_NamesSymbol, getAttrib(x, R_NamesSymbol));
         }
+        SEXP px;
+        int i;
         for (px = x, i = 0; px != R_NilValue; px = CDR(px))
             SET_VECTOR_ELT(ax, i++, CAR(px));
     }
@@ -882,6 +882,7 @@ SEXP attribute_hidden do_subset_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
     /* This is the actual subsetting code. */
     /* The separation of arrays and matrices is purely an optimization. */
 
+    SEXP ans;
     if (nsubs < 2)
     {
         SEXP dim = getAttrib(x, R_DimSymbol);
@@ -937,6 +938,8 @@ SEXP attribute_hidden do_subset_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (LENGTH(ax) > 0)
         {
             SET_TYPEOF(ans, LANGSXP);
+            SEXP px;
+            int i;
             for (px = ans, i = 0; px != R_NilValue; px = CDR(px))
                 SETCAR(px, VECTOR_ELT(ax, i++));
             setAttrib(ans, R_DimSymbol, getAttrib(ax, R_DimSymbol));
@@ -1331,14 +1334,12 @@ SEXP attribute_hidden do_subset3(SEXP call, SEXP op, SEXP args, SEXP env)
 /* also used in eval.c */
 SEXP attribute_hidden R_subset3_dflt(SEXP x, SEXP input, SEXP call)
 {
-    SEXP y, nlist;
-    size_t slen;
-
+    SEXP y;
     PROTECT(input);
     PROTECT(x);
 
     /* Optimisation to prevent repeated recalculation */
-    slen = strlen(translateChar(input));
+    size_t slen = strlen(translateChar(input));
     /* The mechanism to allow a class extending "environment" */
     if (IS_S4_OBJECT(x) && TYPEOF(x) == S4SXP)
     {
@@ -1406,7 +1407,7 @@ SEXP attribute_hidden R_subset3_dflt(SEXP x, SEXP input, SEXP call)
     {
         R_xlen_t i, n, imatch = -1;
         int havematch;
-        nlist = getAttrib(x, R_NamesSymbol);
+        SEXP nlist = getAttrib(x, R_NamesSymbol);
 
         n = xlength(nlist);
         havematch = 0;
