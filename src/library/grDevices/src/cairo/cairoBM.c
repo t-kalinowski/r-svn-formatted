@@ -541,6 +541,7 @@ static Rboolean BMDeviceDriver(pDevDesc dd, int kind, SEXP filename, int quality
     dd->stroke = Cairo_Stroke;
     dd->fill = Cairo_Fill;
     dd->fillStroke = Cairo_FillStroke;
+    dd->capabilities = Cairo_Capabilities;
 
     dd->left = 0;
     dd->right = width;
