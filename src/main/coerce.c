@@ -1692,6 +1692,8 @@ SEXP attribute_hidden do_asvector(SEXP call, SEXP op, SEXP args, SEXP rho)
         case VECSXP:
             if (ATTRIB(x) == R_NilValue)
                 return x;
+            if (OBJECT(x))
+                return x; // protect e.g.  setClass(., contains="list")
             SEXP nms = getAttrib(x, R_NamesSymbol);
             if (nms != R_NilValue && CDR(ATTRIB(x)) == R_NilValue)
                 return x;
@@ -2323,22 +2325,20 @@ SEXP attribute_hidden do_is(SEXP call, SEXP op, SEXP args, SEXP rho)
 // is.vector(x, mode) :
 SEXP attribute_hidden do_isvector(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
-    SEXP ans, a, x;
-    const char *stype;
-
     checkArity(op, args);
-    x = CAR(args);
+    SEXP x = CAR(args);
     if (!isString(CADR(args)) || LENGTH(CADR(args)) != 1)
         error_return(R_MSG_mode);
 
-    stype = CHAR(STRING_ELT(CADR(args), 0)); /* ASCII */
+    const char *stype = CHAR(STRING_ELT(CADR(args), 0)); // 'mode' in R ; ASCII
 
     /* "name" and "symbol" are synonymous */
     if (streql(stype, "name"))
         stype = "symbol";
 
-    PROTECT(ans = allocVector(LGLSXP, 1));
-    if (streql(stype, "any"))
+    SEXP ans = PROTECT(allocVector(LGLSXP, 1));
+    Rboolean any = streql(stype, "any");
+    if (any)
     {
         /* isVector is inlined, means atomic or VECSXP or EXPRSXP */
         LOGICAL0(ans)[0] = isVector(x);
@@ -2356,18 +2356,25 @@ SEXP attribute_hidden do_isvector(SEXP call, SEXP op, SEXP args, SEXP rho)
     else
         LOGICAL0(ans)[0] = 0;
 
-    /* We allow a "names" attribute on any vector. */
-    if (LOGICAL0(ans)[0] && ATTRIB(CAR(args)) != R_NilValue)
+    if (LOGICAL0(ans)[0])
     {
-        a = ATTRIB(CAR(args));
-        while (a != R_NilValue)
+        if (any && isVectorList(x) && OBJECT(x))
         {
-            if (TAG(a) != R_NamesSymbol)
+            // list or expression w/ is.object(): allow all
+        }
+        else if (ATTRIB(x) != R_NilValue)
+        {
+            /* We allow a "names" attribute on any vector. */
+            SEXP a = ATTRIB(x);
+            while (a != R_NilValue)
             {
-                LOGICAL0(ans)[0] = 0;
-                break;
+                if (TAG(a) != R_NamesSymbol)
+                {
+                    LOGICAL0(ans)[0] = 0;
+                    break;
+                }
+                a = CDR(a);
             }
-            a = CDR(a);
         }
     }
     UNPROTECT(1);
