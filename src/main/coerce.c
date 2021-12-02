@@ -336,7 +336,7 @@ SEXP attribute_hidden StringFromInteger(int x, int *warn)
         }
         SEXP cval = STRING_ELT(sficache, x);
         if (cval == R_BlankString)
-        {
+        { // ""
             int w;
             formatInteger(&x, 1, &w);
             cval = mkChar(EncodeInteger(x, w));
@@ -2358,9 +2358,20 @@ SEXP attribute_hidden do_isvector(SEXP call, SEXP op, SEXP args, SEXP rho)
 
     if (LOGICAL0(ans)[0])
     {
-        if (any && isVectorList(x) && OBJECT(x))
+        Rboolean IS_vector = any && isVectorList(x) && OBJECT(x);
+        if (IS_vector)
         {
-            // list or expression w/ is.object(): allow all
+            // use of is.vector(.) to check for non-matrix/array => try dim(.) :
+            static SEXP op_dim = NULL;
+            if (op_dim == NULL)
+                op_dim = R_Primitive("dim");
+            SEXP args = PROTECT(list1(x));
+            IS_vector = isNull(do_dim(call, op_dim, args, rho));
+            UNPROTECT(1);
+        }
+        if (IS_vector)
+        {
+            // list or expression w/ is.object() and no dim(): stay TRUE
         }
         else if (ATTRIB(x) != R_NilValue)
         {
@@ -2913,7 +2924,7 @@ SEXP attribute_hidden do_docall(SEXP call, SEXP op, SEXP args, SEXP rho)
     envir = CADDR(args);
     args = CADR(args);
 
-    /* must be a string or a function:
+    /* must be a string or a function
        zero-length string check used to be here but install gives
        better error message.
      */
