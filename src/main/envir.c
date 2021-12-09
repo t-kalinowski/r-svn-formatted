@@ -1525,27 +1525,24 @@ SEXP attribute_hidden do_dotsNames(SEXP call, SEXP op, SEXP args, SEXP env)
     if (vl == R_UnboundValue)
         error(_("incorrect context: the current call has no '...' to look in"));
     // else
-    SEXP v_ = vl, out;
+    SEXP out;
     int n = length_DOTS(vl);
     Rboolean named = FALSE;
     for (int i = 0; i < n; i++)
     {
-        if (TAG(v_) != R_NilValue)
+        if (TAG(vl) != R_NilValue)
         {
-            named = TRUE;
-            break;
+            if (!named)
+            {
+                named = TRUE;
+                PROTECT(out = allocVector(STRSXP, n)); // and is filled with "" already
+            }
+            SET_STRING_ELT(out, i, PRINTNAME(TAG(vl)));
         }
-        v_ = CDR(v_);
+        vl = CDR(vl);
     }
     if (named)
     {
-        PROTECT(out = allocVector(STRSXP, n)); // and is filled with "" already
-        for (int i = 0; i < n; i++)
-        {
-            if (TAG(vl) != R_NilValue)
-                SET_STRING_ELT(out, i, PRINTNAME(TAG(vl)));
-            vl = CDR(vl);
-        }
         UNPROTECT(1);
     }
     else
