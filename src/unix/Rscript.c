@@ -215,7 +215,11 @@ int main(int argc_, char *argv_[])
             exit(1);
         }
         *p = '\0';
-        snprintf(cmd, PATH_MAX + 1, "%s\\Rterm.exe", rhome);
+        if (snprintf(cmd, PATH_MAX + 1, "%s\\Rterm.exe", rhome) > PATH_MAX)
+        {
+            fprintf(stderr, "impossibly long path for Rterm.exe\n");
+            exit(1);
+        }
     }
 #else
     if (!(p && *p))
