@@ -2808,8 +2808,12 @@ SEXP R_sethash(R_hashtab_t h, SEXP key, SEXP value)
     {
         int new_count = HT_COUNT(h) + 1;
         if (new_count > 0.5 * HT_TABLE_SIZE(h))
+        {
             /* rehash() will fail if new_count would be too large */
             rehash(h, TRUE);
+            /* recalculate the hash bin, cell will still be R_NilValue */
+            (void)getcell(h, key, &idx);
+        }
         SEXP table = HT_TABLE(h);
         SEXP chain = CONS(INC_NMD(value), VECTOR_ELT(table, idx));
         SET_TAG(chain, INC_NMD(key));
