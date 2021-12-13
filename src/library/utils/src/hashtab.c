@@ -63,7 +63,7 @@ SEXP hashtab_Ext(SEXP args)
 attribute_hidden SEXP gethash_Ext(SEXP args)
 {
     args = checkArgCountPop(args, 3);
-    R_hashtab_t h = R_asHashtable(CAR(args));
+    R_hashtab_type h = R_asHashtable(CAR(args));
     SEXP key = CADR(args);
     SEXP nomatch = CADDR(args);
     return R_gethash(h, key, nomatch);
@@ -72,7 +72,7 @@ attribute_hidden SEXP gethash_Ext(SEXP args)
 attribute_hidden SEXP sethash_Ext(SEXP args)
 {
     args = checkArgCountPop(args, 3);
-    R_hashtab_t h = R_asHashtable(CAR(args));
+    R_hashtab_type h = R_asHashtable(CAR(args));
     SEXP key = CADR(args);
     SEXP value = CADDR(args);
     return R_sethash(h, key, value);
@@ -81,7 +81,7 @@ attribute_hidden SEXP sethash_Ext(SEXP args)
 attribute_hidden SEXP remhash_Ext(SEXP args)
 {
     args = checkArgCountPop(args, 2);
-    R_hashtab_t h = R_asHashtable(CAR(args));
+    R_hashtab_type h = R_asHashtable(CAR(args));
     SEXP key = CADR(args);
     return ScalarLogical(R_remhash(h, key));
 }
@@ -89,14 +89,14 @@ attribute_hidden SEXP remhash_Ext(SEXP args)
 attribute_hidden SEXP numhash_Ext(SEXP args)
 {
     args = checkArgCountPop(args, 1);
-    R_hashtab_t h = R_asHashtable(CAR(args));
+    R_hashtab_type h = R_asHashtable(CAR(args));
     return ScalarInteger(R_numhash(h));
 }
 
 attribute_hidden SEXP typhash_Ext(SEXP args)
 {
     args = checkArgCountPop(args, 1);
-    R_hashtab_t h = R_asHashtable(CAR(args));
+    R_hashtab_type h = R_asHashtable(CAR(args));
     switch (R_typhash(h))
     {
     case HT_TYPE_IDENTICAL:
@@ -111,7 +111,7 @@ attribute_hidden SEXP typhash_Ext(SEXP args)
 attribute_hidden SEXP maphash_Ext(SEXP args)
 {
     args = checkArgCountPop(args, 2);
-    R_hashtab_t h = R_asHashtable(CAR(args));
+    R_hashtab_type h = R_asHashtable(CAR(args));
     SEXP FUN = CADR(args);
     return R_maphash(h, FUN);
 }
@@ -119,7 +119,7 @@ attribute_hidden SEXP maphash_Ext(SEXP args)
 attribute_hidden SEXP clrhash_Ext(SEXP args)
 {
     args = checkArgCountPop(args, 1);
-    R_hashtab_t h = R_asHashtable(CAR(args));
+    R_hashtab_type h = R_asHashtable(CAR(args));
     R_clrhash(h);
     return R_NilValue;
 }
