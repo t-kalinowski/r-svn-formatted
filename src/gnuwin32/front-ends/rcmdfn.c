@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2000-2020  R Core Team
+ *  Copyright (C) 2000-2021  R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -110,7 +110,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
        read R_HOME\etc\Rcmd_environ
        launch %R_HOME%\bin\$*
     */
-    int i, iused, status = 0;
+    int i, iused;
     char *p, cmd[CMD_LEN];
     char RCMD[] = "R CMD";
     int len = strlen(argv[0]);
@@ -158,23 +158,9 @@ int rcmdfn(int cmdarg, int argc, char **argv)
             return (0);
         }
         snprintf(cmd, CMD_LEN, "\"\"%s/%s/Rterm.exe\"", getRHOME(3), BINDIR);
-        for (i = cmdarg + 1; i < argc; i++)
-        {
-            strcat(cmd, " ");
-            if (strlen(cmd) + strlen(argv[i]) > 9900)
-            {
-                fprintf(stderr, "command line too long\n");
-                return (27);
-            }
-            strcat(cmd, "\"");
-            strcat(cmd, argv[i]);
-            strcat(cmd, "\"");
-        }
-        /* the outermost double quotes are needed for cmd.exe */
-        strcat(cmd, "\"");
         /* R.exe should ignore Ctrl-C, and let Rterm.exe handle it */
         SetConsoleCtrlHandler(NULL, TRUE);
-        return system(cmd);
+        PROCESS_CMD(" ");
     }
 
     /* From here on down, this was called as Rcmd or R CMD */
@@ -427,22 +413,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
             cmd, CMD_LEN,
             "\"\"%s/%s/Rterm.exe\" -f \"%s/share/R/REMOVE.R\" R_DEFAULT_PACKAGES=NULL --no-restore --no-echo --args",
             getRHOME(3), BINDIR, getRHOME(3));
-        for (i = cmdarg + 1; i < argc; i++)
-        {
-            strcat(cmd, " ");
-            if (strlen(cmd) + strlen(argv[i]) > 9900)
-            {
-                fprintf(stderr, "command line too long\n");
-                return (27);
-            }
-            /* Library names could contain spaces and other special characters */
-            strcat(cmd, "\"");
-            strcat(cmd, argv[i]);
-            strcat(cmd, "\"");
-        }
-        /* the outermost double quotes are needed for cmd.exe */
-        strcat(cmd, "\"");
-        return (system(cmd));
+        PROCESS_CMD(" ");
     }
     else if (!strcmp(argv[cmdarg], "build"))
     {
@@ -548,23 +519,7 @@ int rcmdfn(int cmdarg, int argc, char **argv)
                 strcpy(cmd, "\"");
             strcat(cmd, p);
         }
-
-        for (i = cmdarg + 1; i < argc; i++)
-        {
-            strcat(cmd, " ");
-            if (strlen(cmd) + strlen(argv[i]) > 9900)
-            {
-                fprintf(stderr, "command line too long\n");
-                return (27);
-            }
-            strcat(cmd, "\"");
-            strcat(cmd, argv[i]);
-            strcat(cmd, "\"");
-        }
-        /* the outermost double quotes are needed for cmd.exe */
-        strcat(cmd, "\"");
-        /* printf("cmd is %s\n", cmd); */
-        status = system(cmd);
+        PROCESS_CMD(" ");
     }
-    return (status);
+    /* not reachable */
 }
