@@ -514,19 +514,18 @@ SEXP attribute_hidden do_fileshow(SEXP call, SEXP op, SEXP args, SEXP rho)
  *  the second set of files to be appended to the first.
  */
 
-#if defined(BUFSIZ) && (BUFSIZ > 512)
-/* OS's buffer size in stdio.h, probably.
-   Windows has 512, Solaris 1024, glibc 8192
- */
-#define APPENDBUFSIZE BUFSIZ
+/* Coreutils use 128K (with some adjustments based on st_blksize
+   and file size). Python uses 1M for Windows and 64K for other platforms.
+   R 4.1 and earlier used min(BUFSIZ, 512), increased in R 4.2 (PR#18245). */
+#ifdef Win32
+#define APPENDBUFSIZE (1024 * 1024)
 #else
-#define APPENDBUFSIZE 512
+#define APPENDBUFSIZE (128 * 1024)
 #endif
 
 static int R_AppendFile(SEXP file1, SEXP file2)
 {
     FILE *fp1, *fp2;
-    char buf[APPENDBUFSIZE];
     size_t nchar;
     int status = 0;
     if ((fp1 = RC_fopen(file1, "ab", TRUE)) == NULL)
@@ -536,6 +535,13 @@ static int R_AppendFile(SEXP file1, SEXP file2)
         fclose(fp1);
         return 0;
     }
+    char *buf = (char *)malloc(APPENDBUFSIZE);
+    if (!buf)
+    {
+        fclose(fp1);
+        fclose(fp2);
+        error("could not allocate copy buffer");
+    }
     while ((nchar = fread(buf, 1, APPENDBUFSIZE, fp2)) == APPENDBUFSIZE)
         if (fwrite(buf, 1, APPENDBUFSIZE, fp1) != APPENDBUFSIZE)
             goto append_error;
@@ -543,6 +549,7 @@ static int R_AppendFile(SEXP file1, SEXP file2)
         goto append_error;
     status = 1;
 append_error:
+    free(buf);
     if (status == 0)
         warning(_("write error during file append"));
     fclose(fp1);
@@ -575,7 +582,6 @@ SEXP attribute_hidden do_fileappend(SEXP call, SEXP op, SEXP args, SEXP rho)
     if (n1 == 1)
     { /* common case */
         FILE *fp1, *fp2;
-        char buf[APPENDBUFSIZE];
         int status = 0;
         size_t nchar;
         if (STRING_ELT(f1, 0) == NA_STRING || !(fp1 = RC_fopen(STRING_ELT(f1, 0), "ab", TRUE)))
@@ -585,11 +591,25 @@ SEXP attribute_hidden do_fileappend(SEXP call, SEXP op, SEXP args, SEXP rho)
             status = 0;
             if (STRING_ELT(f2, i) == NA_STRING || !(fp2 = RC_fopen(STRING_ELT(f2, i), "rb", TRUE)))
                 continue;
+            char *buf = (char *)malloc(APPENDBUFSIZE);
+            if (!buf)
+            {
+                fclose(fp1);
+                fclose(fp2);
+                error("could not allocate copy buffer");
+            }
             while ((nchar = fread(buf, 1, APPENDBUFSIZE, fp2)) == APPENDBUFSIZE)
                 if (fwrite(buf, 1, APPENDBUFSIZE, fp1) != APPENDBUFSIZE)
+                {
+                    free(buf);
                     goto append_error;
+                }
             if (fwrite(buf, 1, nchar, fp1) != nchar)
+            {
+                free(buf);
                 goto append_error;
+            }
+            free(buf);
             status = 1;
         append_error:
             if (status == 0)
@@ -2753,7 +2773,6 @@ static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, 
     else
     { /* a file */
         FILE *fp1 = NULL, *fp2 = NULL;
-        wchar_t buf[APPENDBUFSIZE];
 
         nfail = 0;
         int nc = wcslen(to);
@@ -2772,17 +2791,27 @@ static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, 
                 nfail++;
                 goto copy_error;
             }
+            wchar_t *buf = (wchar_t *)malloc(APPENDBUFSIZE * sizeof(wchar_t));
+            if (!buf)
+            {
+                fclose(fp1);
+                fclose(fp2);
+                error("could not allocate copy buffer");
+            }
             while ((nc = fread(buf, 1, APPENDBUFSIZE, fp1)) == APPENDBUFSIZE)
                 if (fwrite(buf, 1, APPENDBUFSIZE, fp2) != APPENDBUFSIZE)
                 {
                     nfail++;
+                    free(buf);
                     goto copy_error;
                 }
             if (fwrite(buf, 1, nc, fp2) != nc)
             {
                 nfail++;
+                free(buf);
                 goto copy_error;
             }
+            free(buf);
         }
         else if (!over)
         {
@@ -3057,7 +3086,6 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
     else
     { /* a file */
         FILE *fp1 = NULL, *fp2 = NULL;
-        char buf[APPENDBUFSIZE];
 
         nfail = 0;
         size_t nc = strlen(to);
@@ -3077,17 +3105,27 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
                 nfail++;
                 goto copy_error;
             }
+            char *buf = (char *)malloc(APPENDBUFSIZE);
+            if (!buf)
+            {
+                fclose(fp1);
+                fclose(fp2);
+                error("could not allocate copy buffer");
+            }
             while ((nc = fread(buf, 1, APPENDBUFSIZE, fp1)) == APPENDBUFSIZE)
                 if (fwrite(buf, 1, APPENDBUFSIZE, fp2) != APPENDBUFSIZE)
                 {
                     nfail++;
+                    free(buf);
                     goto copy_error;
                 }
             if (fwrite(buf, 1, nc, fp2) != nc)
             {
                 nfail++;
+                free(buf);
                 goto copy_error;
             }
+            free(buf);
         }
         else if (!over)
         {
