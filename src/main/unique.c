@@ -77,6 +77,7 @@ struct _HashData
     Rboolean useCache;
     Rboolean useCloEnv;
     Rboolean extptrAsRef;
+    Rboolean inHashtab;
 };
 
 #define HTDATA_INT(d) (INTEGER0((d)->HashTable))
@@ -214,6 +215,21 @@ static R_INLINE hlen shash(SEXP x, R_xlen_t indx, HashData *d)
 {
     unsigned int k;
     const char *p;
+    if (d->inHashtab)
+    {
+        SEXP xi = STRING_ELT(x, indx);
+        int noTrans = (IS_BYTES(xi) || IS_ASCII(xi)) ? TRUE : FALSE;
+        if (d->useCache && noTrans)
+            return scatter(PTRHASH(xi), d);
+        const void *vmax = vmaxget();
+        p = noTrans ? CHAR(xi) : translateCharUTF8(xi);
+        k = 0;
+        while (*p++)
+            /* multiplier was 8 but 11 isn't a power of 2 */
+            k = 11 * k + (unsigned int)*p;
+        vmaxset(vmax); /* discard any memory used by translateChar */
+        return scatter(k, d);
+    }
     if (!d->useUTF8 && d->useCache)
         return cshash(x, indx, d);
     const void *vmax = vmaxget();
@@ -2626,6 +2642,7 @@ static int hash_identical(SEXP x, int K, int useCloEnv)
     HashData d = {.K = K, .useUTF8 = FALSE, .useCache = TRUE};
     d.useCloEnv = useCloEnv;
     d.extptrAsRef = TRUE;
+    d.inHashtab = TRUE;
 
     int val = (int)vhash_one(x, &d);
     if (val == NA_INTEGER)
