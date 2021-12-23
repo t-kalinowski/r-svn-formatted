@@ -1747,10 +1747,13 @@ static int R_unlink(const wchar_t *name, int recursive, int force)
     /* We cannot use R_WFileExists here since it is false for broken
        symbolic links
        if (!R_WFileExists(name)) return 0; */
-    if (force)
+    int name_exists = (GetFileAttributesW(name) != INVALID_FILE_ATTRIBUTES);
+    if (name_exists && force)
         _wchmod(name, _S_IWRITE);
+    if (name_exists && isReparsePoint(name))
+        return delReparsePoint(name);
 
-    if (recursive)
+    if (name_exists && recursive)
     {
         _WDIR *dir;
         struct _wdirent *de;
@@ -1761,9 +1764,7 @@ static int R_unlink(const wchar_t *name, int recursive, int force)
         _wstati64(name, &sb);
         /* We need to test for a junction first, as junctions
            are detected as directories. */
-        if (isReparsePoint(name))
-            ans += delReparsePoint(name);
-        else if ((sb.st_mode & S_IFDIR) > 0)
+        if ((sb.st_mode & S_IFDIR) > 0)
         { /* a directory */
             if ((dir = _wopendir(name)) != NULL)
             {
@@ -1813,10 +1814,10 @@ static int R_unlink(const wchar_t *name, int recursive, int force)
         }
         /* drop through */
     }
-    else if (isReparsePoint(name))
-        return delReparsePoint(name);
 
-    return _wunlink(name) == 0 ? 0 : 1;
+    int unlink_succeeded = (_wunlink(name) == 0);
+    /* We want to return 0 if either unlink succeeded or 'name' did not exist */
+    return (unlink_succeeded || !name_exists) ? 0 : 1;
 }
 
 void R_CleanTempDir(void)
