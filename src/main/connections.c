@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2000-2021   The R Core Team.
+ *  Copyright (C) 2000-2022   The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -2819,14 +2819,7 @@ static size_t clp_write(const void *ptr, size_t size, size_t nitems, Rconnection
     /* NOTE: not reachable as clipboard is not writeable on Unix */
     /* copy byte-by-byte */
     int space = this->len - this->pos;
-
-    if (space < len)
-    {
-        truncated = 1;
-        used = space;
-    }
-    else
-        used = len;
+    used = (space < len) ? space : len;
     memcpy(this->buff + this->pos, ptr, used);
     this->pos += used;
 #endif
@@ -2845,7 +2838,7 @@ static Rconnection newclp(const char *url, const char *inmode)
 {
     Rconnection new;
     const char *description;
-    int sizeKB = 32;
+    int sizeKB = 64;
     char mode[4];
 
     mode[3] = '\0';
@@ -2908,8 +2901,8 @@ static Rconnection newclp(const char *url, const char *inmode)
     if (strncmp(url, "clipboard-", 10) == 0)
     {
         sizeKB = atoi(url + 10);
-        if (sizeKB < 32)
-            sizeKB = 32;
+        if (sizeKB < 64)
+            sizeKB = 64;
         /* Rprintf("setting clipboard size to %dKB\n", sizeKB); */
     }
     ((Rclpconn) new->private)->sizeKB = sizeKB;
