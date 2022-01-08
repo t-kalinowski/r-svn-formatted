@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1998-2021  The R Core Team.
+ *  Copyright (C) 1998-2022  The R Core Team.
  *  Copyright (C) 1995-1998  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -37,6 +37,10 @@
 #include "Defn.h"
 #include "Print.h"
 #include <R_ext/Itermacros.h> /* for ITERATE_BY_REGION */
+
+#ifdef Win32
+#include <trioremap.h> /* for %lld */
+#endif
 
 #define DO_first_lab                                                                                                   \
     if (indx)                                                                                                          \
@@ -348,7 +352,7 @@ void printVector(SEXP x, int indx, int quote)
             break;
         }
         if (n_pr < n)
-            Rprintf(" [ reached getOption(\"max.print\") -- omitted %d entries ]\n", n - n_pr);
+            Rprintf(" [ reached getOption(\"max.print\") -- omitted %lld entries ]\n", (long long)n - n_pr);
     }
     else
 #define PRINT_V_0                                                                                                      \
@@ -479,14 +483,14 @@ static void printNamedLogicalVectorS(SEXP x, int n, SEXP names) PRINT_N_VECTOR_S
                                             attribute_hidden
     void printNamedVector(SEXP x, SEXP names, int quote, const char *title)
 {
-    int n;
 
     if (title != NULL)
         Rprintf("%s\n", title);
 
-    if ((n = LENGTH(x)) != 0)
+    R_xlen_t n = XLENGTH(x);
+    if (n != 0)
     {
-        int n_pr = (n <= R_print.max + 1) ? n : R_print.max;
+        R_xlen_t n_pr = (n <= R_print.max + 1) ? n : R_print.max;
         /* '...max +1'  ==> will omit at least 2 ==> plural in msg below */
         switch (TYPEOF(x))
         {
@@ -512,7 +516,7 @@ static void printNamedLogicalVectorS(SEXP x, int n, SEXP names) PRINT_N_VECTOR_S
             break;
         }
         if (n_pr < n)
-            Rprintf(" [ reached getOption(\"max.print\") -- omitted %d entries ]\n", n - n_pr);
+            Rprintf(" [ reached getOption(\"max.print\") -- omitted %lld entries ]\n", (long long)n - n_pr);
     }
     else
     {
