@@ -393,7 +393,8 @@ void printVector(SEXP x, int indx, int quote)
 
 #define PRINT_N_VECTOR_SEXP(INI_FORMAT, PRINT_1)                                                                       \
     {                                                                                                                  \
-        int i, j, k, nlines, nperline, w, wn;                                                                          \
+        int nperline, w, wn;                                                                                           \
+        R_xlen_t i, j, k, nlines;                                                                                      \
         INI_FORMAT;                                                                                                    \
                                                                                                                        \
         formatStringS(names, n, &wn, 0);                                                                               \
@@ -419,10 +420,10 @@ void printVector(SEXP x, int indx, int quote)
         Rprintf("\n");                                                                                                 \
     }
 
-static void printNamedLogicalVectorS(SEXP x, int n, SEXP names) PRINT_N_VECTOR_SEXP(
+static void printNamedLogicalVectorS(SEXP x, R_xlen_t n, SEXP names) PRINT_N_VECTOR_SEXP(
     formatLogicalS(x, n, &w), Rprintf("%s%*s", EncodeLogical(LOGICAL_ELT(x, k), w), R_print.gap, ""))
 
-    static void printNamedIntegerVectorS(SEXP x, int n, SEXP names)
+    static void printNamedIntegerVectorS(SEXP x, R_xlen_t n, SEXP names)
         PRINT_N_VECTOR_SEXP(formatIntegerS(x, n, &w),
                             Rprintf("%s%*s", EncodeInteger(INTEGER_ELT(x, k), w), R_print.gap, ""))
 
@@ -431,7 +432,7 @@ static void printNamedLogicalVectorS(SEXP x, int n, SEXP names) PRINT_N_VECTOR_S
     int d, e;                                                                                                          \
     formatRealS(x, n, &w, &d, &e, 0)
 
-            static void printNamedRealVectorS(SEXP x, int n, SEXP names)
+            static void printNamedRealVectorS(SEXP x, R_xlen_t n, SEXP names)
                 PRINT_N_VECTOR_SEXP(INI_F_REAL_S,
                                     Rprintf("%s%*s", EncodeReal0(REAL_ELT(x, k), w, d, e, OutDec), R_print.gap, ""))
 
@@ -448,7 +449,7 @@ static void printNamedLogicalVectorS(SEXP x, int n, SEXP names) PRINT_N_VECTOR_S
         Rprintf("+%si", "NaN");                                                                                        \
     else
 
-                    static void printNamedComplexVectorS(SEXP x, int n, SEXP names)
+                    static void printNamedComplexVectorS(SEXP x, R_xlen_t n, SEXP names)
                         PRINT_N_VECTOR_SEXP(INI_F_CPLX_S,
                                             { /* PRINT_1 */
                                               tmp = COMPLEX_ELT(x, k);
@@ -469,13 +470,13 @@ static void printNamedLogicalVectorS(SEXP x, int n, SEXP names) PRINT_N_VECTOR_S
                                               }
                                             })
 
-                            static void printNamedStringVectorS(SEXP x, int n, int quote, SEXP names)
+                            static void printNamedStringVectorS(SEXP x, R_xlen_t n, int quote, SEXP names)
                                 PRINT_N_VECTOR_SEXP(formatStringS(x, n, &w, quote),
                                                     Rprintf("%s%*s",
                                                             EncodeString(STRING_ELT(x, k), w, quote, Rprt_adj_right),
                                                             R_print.gap, ""))
 
-                                    static void printNamedRawVectorS(SEXP x, int n, SEXP names)
+                                    static void printNamedRawVectorS(SEXP x, R_xlen_t n, SEXP names)
                                         PRINT_N_VECTOR_SEXP(formatRawS(x, n, &w),
                                                             Rprintf("%*s%s%*s", w - 2, "", EncodeRaw(RAW_ELT(x, k), ""),
                                                                     R_print.gap, ""))
