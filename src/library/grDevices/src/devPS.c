@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1998--2020  The R Core Team
+ *  Copyright (C) 1998--2022  The R Core Team
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -7446,7 +7446,7 @@ static void writeRasterXObject(rasterImage raster, int n, int mask, int maskObj,
     if (streql(pd->colormodel, "gray"))
     {
         inlen = raster.w * raster.h;
-        p = buf = Calloc(inlen, Bytef);
+        p = buf = R_Calloc(inlen, Bytef);
         for (int i = 0; i < raster.w * raster.h; i++)
         {
             double r =
@@ -7457,7 +7457,7 @@ static void writeRasterXObject(rasterImage raster, int n, int mask, int maskObj,
     else
     {
         inlen = 3 * raster.w * raster.h;
-        p = buf = Calloc(inlen, Bytef);
+        p = buf = R_Calloc(inlen, Bytef);
         for (int i = 0; i < raster.w * raster.h; i++)
         {
             *p++ = R_RED(raster.raster[i]);
@@ -7469,11 +7469,11 @@ static void writeRasterXObject(rasterImage raster, int n, int mask, int maskObj,
     if (pd->useCompression)
     {
         outlen = (int)(1.001 * inlen + 20);
-        buf2 = Calloc(outlen, Bytef);
+        buf2 = R_Calloc(outlen, Bytef);
         int res = compress(buf2, &outlen, buf, inlen);
         if (res != Z_OK)
             error("internal error %d in writeRasterXObject", res);
-        Free(buf);
+        R_Free(buf);
         buf = buf2;
     }
     fprintf(pd->pdffp, "%d 0 obj <<\n", n);
@@ -7510,7 +7510,7 @@ static void writeRasterXObject(rasterImage raster, int n, int mask, int maskObj,
             fprintf(pd->pdffp, "%02x", buf[i]);
         fprintf(pd->pdffp, ">\n");
     }
-    Free(buf);
+    R_Free(buf);
     fprintf(pd->pdffp, "endstream\nendobj\n");
 }
 
@@ -7518,17 +7518,17 @@ static void writeMaskXObject(rasterImage raster, int n, PDFDesc *pd)
 {
     Bytef *buf, *buf2, *p;
     uLong inlen = raster.w * raster.h, outlen = inlen;
-    p = buf = Calloc(outlen, Bytef);
+    p = buf = R_Calloc(outlen, Bytef);
     for (int i = 0; i < raster.w * raster.h; i++)
         *p++ = R_ALPHA(raster.raster[i]);
     if (pd->useCompression)
     {
         outlen = (uLong)(1.001 * inlen + 20);
-        buf2 = Calloc(outlen, Bytef);
+        buf2 = R_Calloc(outlen, Bytef);
         int res = compress(buf2, &outlen, buf, inlen);
         if (res != Z_OK)
             error("internal error %d in writeRasterXObject", res);
-        Free(buf);
+        R_Free(buf);
         buf = buf2;
     }
     fprintf(pd->pdffp, "%d 0 obj <<\n", n);
@@ -7559,7 +7559,7 @@ static void writeMaskXObject(rasterImage raster, int n, PDFDesc *pd)
             fprintf(pd->pdffp, "%02x", buf[i]);
         fprintf(pd->pdffp, ">\n");
     }
-    Free(buf);
+    R_Free(buf);
     fprintf(pd->pdffp, "endstream\nendobj\n");
 }
 
@@ -9157,9 +9157,9 @@ static void PDF_endpage(PDFDesc *pd)
         fseek(pd->pdffp, 0, SEEK_END);
         unsigned int len = (unsigned int)ftell(pd->pdffp);
         fseek(pd->pdffp, 0, SEEK_SET);
-        Bytef *buf = Calloc(len, Bytef);
+        Bytef *buf = R_Calloc(len, Bytef);
         uLong outlen = (uLong)(1.001 * len + 20);
-        Bytef *buf2 = Calloc(outlen, Bytef);
+        Bytef *buf2 = R_Calloc(outlen, Bytef);
         size_t res = fread(buf, 1, len, pd->pdffp);
         if (res < len)
             error("internal read error in PDF_endpage");
@@ -9173,8 +9173,8 @@ static void PDF_endpage(PDFDesc *pd)
         size_t nwrite = fwrite(buf2, 1, outlen, pd->pdffp);
         if (nwrite != outlen)
             error(_("write failed"));
-        Free(buf);
-        Free(buf2);
+        R_Free(buf);
+        R_Free(buf2);
         fprintf(pd->pdffp, "endstream\nendobj\n");
     }
     else
@@ -10063,7 +10063,7 @@ static void PDFWriteT1KerningString(const char *str, FontMetricInfo *metrics, co
     if (n < 1)
         return;
     if (n > sizeof(ary_buf) / sizeof(int))
-        ary = Calloc(n, int);
+        ary = R_Calloc(n, int);
     else
         ary = ary_buf;
 
@@ -10127,7 +10127,7 @@ static void PDFWriteT1KerningString(const char *str, FontMetricInfo *metrics, co
     }
 
     if (ary != ary_buf)
-        Free(ary);
+        R_Free(ary);
 }
 
 static void PDFSetTextGraphicsState(const pGEcontext gc, pDevDesc dd)

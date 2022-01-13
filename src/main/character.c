@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1997--2021  The R Core Team
+ *  Copyright (C) 1997--2022  The R Core Team
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -85,7 +85,7 @@ abbreviate chartr make.names strtrim tolower toupper give error.
 #include <Defn.h>
 #include <Internal.h>
 #include <errno.h>
-#include <R_ext/RS.h> // for Calloc/Free
+#include <R_ext/RS.h> // for R_Calloc/R_Free
 #include <R_ext/Itermacros.h>
 #include <rlocale.h> // overrides iswxxxx on some platforms.
 
@@ -1028,7 +1028,7 @@ donewsc :
     char *cbuf = CallocCharBuf(nb);
     wcstoutf8(cbuf, wc, nb);
     SEXP ans = mkCharCE(cbuf, CE_UTF8);
-    Free(cbuf);
+    R_Free(cbuf);
     return ans;
 }
 
@@ -1156,13 +1156,13 @@ SEXP attribute_hidden do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         if (need_prefix)
         {
-            tmp = Calloc(l + 2, char);
+            tmp = R_Calloc(l + 2, char);
             strcpy(tmp, "X");
             strcat(tmp, translateChar(STRING_ELT(arg, i)));
         }
         else
         {
-            tmp = Calloc(l + 1, char);
+            tmp = R_Calloc(l + 1, char);
             strcpy(tmp, translateChar(STRING_ELT(arg, i)));
         }
         if (mbcslocale)
@@ -1171,7 +1171,7 @@ SEXP attribute_hidden do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
             int nc = (int)mbstowcs(NULL, tmp, 0);
             if (nc >= 0)
             {
-                wchar_t *wstr = Calloc(nc + 1, wchar_t);
+                wchar_t *wstr = R_Calloc(nc + 1, wchar_t);
                 mbstowcs(wstr, tmp, nc + 1);
                 for (wchar_t *wc = wstr; *wc; wc++)
                 {
@@ -1181,7 +1181,7 @@ SEXP attribute_hidden do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
                         *wc = L'.';
                 }
                 wcstombs(tmp, wstr, strlen(tmp) + 1);
-                Free(wstr);
+                R_Free(wstr);
             }
             else
                 error(_("invalid multibyte string %d"), i + 1);
@@ -1206,9 +1206,9 @@ SEXP attribute_hidden do_makenames(SEXP call, SEXP op, SEXP args, SEXP env)
             strcpy(cbuf, tmp);
             strcat(cbuf, ".");
             SET_STRING_ELT(ans, i, mkChar(cbuf));
-            Free(cbuf);
+            R_Free(cbuf);
         }
-        Free(tmp);
+        R_Free(tmp);
         vmaxset(vmax);
     }
     UNPROTECT(1);
@@ -1330,7 +1330,7 @@ SEXP attribute_hidden do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
                         wcstombs(cbuf, wc, nb + 1);
                         SET_STRING_ELT(y, i, markKnown(cbuf, el));
                     }
-                    Free(cbuf);
+                    R_Free(cbuf);
                 }
                 else
                 {
@@ -1356,7 +1356,7 @@ SEXP attribute_hidden do_tolower(SEXP call, SEXP op, SEXP args, SEXP env)
                 for (p = xi; *p != '\0'; p++)
                     *p = (char)(ul ? toupper(*p) : tolower(*p));
                 SET_STRING_ELT(y, i, markKnown(xi, STRING_ELT(x, i)));
-                Free(xi);
+                R_Free(xi);
             }
             vmaxset(vmax);
         }
@@ -1396,7 +1396,7 @@ static void wtr_build_spec(const wchar_t *s, struct wtr_spec *trs)
     This = trs;
     for (i = 0; i < len - 2;)
     {
-        _new = Calloc(1, struct wtr_spec);
+        _new = R_Calloc(1, struct wtr_spec);
         _new->next = NULL;
         if (s[i + 1] == L'-')
         {
@@ -1417,7 +1417,7 @@ static void wtr_build_spec(const wchar_t *s, struct wtr_spec *trs)
     }
     for (; i < len; i++)
     {
-        _new = Calloc(1, struct wtr_spec);
+        _new = R_Calloc(1, struct wtr_spec);
         _new->next = NULL;
         _new->type = WTR_CHAR;
         _new->u.c = s[i];
@@ -1432,7 +1432,7 @@ static void wtr_free_spec(struct wtr_spec *trs)
     while (This)
     {
         next = This->next;
-        Free(This);
+        R_Free(This);
         This = next;
     }
 }
@@ -1498,7 +1498,7 @@ static void tr_build_spec(const char *s, struct tr_spec *trs)
     This = trs;
     for (i = 0; i < len - 2;)
     {
-        _new = Calloc(1, struct tr_spec);
+        _new = R_Calloc(1, struct tr_spec);
         _new->next = NULL;
         if (s[i + 1] == '-')
         {
@@ -1519,7 +1519,7 @@ static void tr_build_spec(const char *s, struct tr_spec *trs)
     }
     for (; i < len; i++)
     {
-        _new = Calloc(1, struct tr_spec);
+        _new = R_Calloc(1, struct tr_spec);
         _new->next = NULL;
         _new->type = TR_CHAR;
         _new->u.c = s[i];
@@ -1534,7 +1534,7 @@ static void tr_free_spec(struct tr_spec *trs)
     while (This)
     {
         next = This->next;
-        Free(This);
+        R_Free(This);
         This = next;
     }
 }
@@ -1702,10 +1702,10 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
         struct wtr_spec *trs_new, **trs_new_ptr;
 
         /* Initialize the old and new wtr_spec lists. */
-        trs_old = Calloc(1, struct wtr_spec);
+        trs_old = R_Calloc(1, struct wtr_spec);
         trs_old->type = WTR_INIT;
         trs_old->next = NULL;
-        trs_new = Calloc(1, struct wtr_spec);
+        trs_new = R_Calloc(1, struct wtr_spec);
         trs_new->type = WTR_INIT;
         trs_new->next = NULL;
         /* Build the old and new wtr_spec lists. */
@@ -1737,7 +1737,7 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
             mbstowcs(wc, s, nc + 1);
         }
         wtr_build_spec(wc, trs_old);
-        trs_cnt = Calloc(1, struct wtr_spec);
+        trs_cnt = R_Calloc(1, struct wtr_spec);
         trs_cnt->type = WTR_INIT;
         trs_cnt->next = NULL;
         wtr_build_spec(wc, trs_cnt); /* use count only */
@@ -1775,17 +1775,17 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
            wtr_spec lists and retrieving the next chars from the lists.
         */
 
-        trs_cnt_ptr = Calloc(1, struct wtr_spec *);
+        trs_cnt_ptr = R_Calloc(1, struct wtr_spec *);
         *trs_cnt_ptr = trs_cnt->next;
         for (xtable_cnt = 0; wtr_get_next_char_from_spec(trs_cnt_ptr); xtable_cnt++)
             ;
         wtr_free_spec(trs_cnt);
-        Free(trs_cnt_ptr);
+        R_Free(trs_cnt_ptr);
         xtable = (xtable_t *)R_alloc(xtable_cnt + 1, sizeof(xtable_t));
 
-        trs_old_ptr = Calloc(1, struct wtr_spec *);
+        trs_old_ptr = R_Calloc(1, struct wtr_spec *);
         *trs_old_ptr = trs_old->next;
-        trs_new_ptr = Calloc(1, struct wtr_spec *);
+        trs_new_ptr = R_Calloc(1, struct wtr_spec *);
         *trs_new_ptr = trs_new->next;
         for (i = 0;; i++)
         {
@@ -1805,8 +1805,8 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
         /* Free the memory occupied by the wtr_spec lists. */
         wtr_free_spec(trs_old);
         wtr_free_spec(trs_new);
-        Free(trs_old_ptr);
-        Free(trs_new_ptr);
+        R_Free(trs_old_ptr);
+        R_Free(trs_new_ptr);
 
         ISORT(xtable, xtable_cnt, xtable_t, xtable_comp);
         COMPRESS(xtable, &xtable_cnt, xtable_t, xtable_comp);
@@ -1859,7 +1859,7 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
                     wcstombs(cbuf, wc, nb + 1);
                     SET_STRING_ELT(y, i, markKnown(cbuf, el));
                 }
-                Free(cbuf);
+                R_Free(cbuf);
             }
             vmaxset(vmax);
         }
@@ -1875,10 +1875,10 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
             xtable[ii] = (unsigned char)ii;
 
         /* Initialize the old and new tr_spec lists. */
-        trs_old = Calloc(1, struct tr_spec);
+        trs_old = R_Calloc(1, struct tr_spec);
         trs_old->type = TR_INIT;
         trs_old->next = NULL;
-        trs_new = Calloc(1, struct tr_spec);
+        trs_new = R_Calloc(1, struct tr_spec);
         trs_new->type = TR_INIT;
         trs_new->next = NULL;
         /* Build the old and new tr_spec lists. */
@@ -1887,9 +1887,9 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
         /* Initialize the pointers for walking through the old and new
            tr_spec lists and retrieving the next chars from the lists.
         */
-        trs_old_ptr = Calloc(1, struct tr_spec *);
+        trs_old_ptr = R_Calloc(1, struct tr_spec *);
         *trs_old_ptr = trs_old->next;
-        trs_new_ptr = Calloc(1, struct tr_spec *);
+        trs_new_ptr = R_Calloc(1, struct tr_spec *);
         *trs_new_ptr = trs_new->next;
         for (;;)
         {
@@ -1905,8 +1905,8 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
         /* Free the memory occupied by the tr_spec lists. */
         tr_free_spec(trs_old);
         tr_free_spec(trs_new);
-        Free(trs_old_ptr);
-        Free(trs_new_ptr);
+        R_Free(trs_old_ptr);
+        R_Free(trs_new_ptr);
 
         n = LENGTH(x);
         PROTECT(y = allocVector(STRSXP, n));
@@ -1923,7 +1923,7 @@ SEXP attribute_hidden do_chartr(SEXP call, SEXP op, SEXP args, SEXP env)
                 for (p = (unsigned char *)cbuf; *p != '\0'; p++)
                     *p = xtable[*p];
                 SET_STRING_ELT(y, i, markKnown(cbuf, STRING_ELT(x, i)));
-                Free(cbuf);
+                R_Free(cbuf);
             }
         }
         vmaxset(vmax);
@@ -2126,7 +2126,7 @@ SEXP attribute_hidden do_strrep(SEXP call, SEXP op, SEXP args, SEXP env)
                 buf += nc;
             }
             SET_STRING_ELT(s, is, mkCharCE(cbuf, getCharCE(el)));
-            Free(cbuf);
+            R_Free(cbuf);
             vmaxset(vmax);
         }
         ix = (++ix == nx) ? 0 : ix;

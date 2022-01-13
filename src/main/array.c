@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1998-2021   The R Core Team
+ *  Copyright (C) 1998-2022   The R Core Team
  *  Copyright (C) 2002-2015   The R Foundation
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
@@ -26,7 +26,7 @@
 #include <Defn.h>
 #include <Internal.h>
 #include <Rmath.h>
-#include <R_ext/RS.h> /* for Calloc/Free, F77_CALL */
+#include <R_ext/RS.h> /* for R_Calloc/R_Free, F77_CALL */
 #include <R_ext/BLAS.h>
 #include <R_ext/Itermacros.h>
 
@@ -2178,9 +2178,9 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
             Memzero(rans, n);
         }
         else
-            rans = Calloc(n, LDOUBLE);
+            rans = R_Calloc(n, LDOUBLE);
         if (!keepNA && OP == 3)
-            Cnt = Calloc(n, int);
+            Cnt = R_Calloc(n, int);
 
         for (R_xlen_t j = 0; j < p; j++)
         {
@@ -2253,9 +2253,9 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
             REAL(ans)[i] = (double)rans[i];
 
         if (!keepNA && OP == 3)
-            Free(Cnt);
+            R_Free(Cnt);
         if (n > 10000)
-            Free(rans);
+            R_Free(rans);
     }
 
     UNPROTECT(1);

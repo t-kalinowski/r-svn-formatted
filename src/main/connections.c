@@ -79,7 +79,7 @@
 #include <Fileio.h>
 #include <Rconnections.h>
 #include <R_ext/Complex.h>
-#include <R_ext/RS.h> /* R_chk_calloc and Free */
+#include <R_ext/RS.h> /* R_chk_calloc and R_Free */
 #include <R_ext/Riconv.h>
 #include <R_ext/Print.h> // REprintf, REvprintf
 #undef ERROR             /* for compilation on Windows */
@@ -4644,7 +4644,7 @@ static SEXP rawOneString(Rbyte *bytes, R_xlen_t nbytes, R_xlen_t *np)
     buf = R_chk_calloc(nbytes - (*np) + 1, 1);
     memcpy(buf, bytes + (*np), nbytes - (*np));
     res = mkChar(buf);
-    Free(buf);
+    R_Free(buf);
     *np = nbytes;
     return res;
 }
@@ -5238,7 +5238,7 @@ SEXP attribute_hidden do_writebin(SEXP call, SEXP op, SEXP args, SEXP env)
             if (nwrite < len)
                 warning(_("problem writing to connection"));
         }
-        Free(buf);
+        R_Free(buf);
     }
 
     if (!wasopen)
@@ -5365,7 +5365,7 @@ static SEXP rawFixedString(Rbyte *bytes, int len, int nbytes, int *np, int useBy
         memcpy(buf, bytes + (*np), len);
         *np += len;
         res = mkCharLenCE(buf, len, CE_NATIVE);
-        Free(buf);
+        R_Free(buf);
     }
     vmaxset(vmax);
     return res;

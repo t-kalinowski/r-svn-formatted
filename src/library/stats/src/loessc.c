@@ -85,8 +85,8 @@ static double *v = NULL;
 /* these are set in an earlier call to loess_workspace or loess_grow */
 static void loess_free(void)
 {
-    Free(v);
-    Free(iv);
+    R_Free(v);
+    R_Free(iv);
 }
 
 void loess_raw(double *y, double *x, double *weights, double *robust, int *d, int *n, double *span, int *degree,
@@ -246,8 +246,8 @@ void loess_workspace(int D, int N, double span, int degree, int nonparametric, c
               setLf ? _(" probably because of setting 'se = TRUE'") : "");
     }
 
-    iv = Calloc(liv, int);
-    v = Calloc(lv, double);
+    iv = R_Calloc(liv, int);
+    v = R_Calloc(lv, double);
 
     F77_CALL(lowesd)(iv, &liv, &lv, v, &D, &N, &span, &degree, &nf, &nvmax, (int *)&setLf);
     iv[32] = nonparametric;
@@ -300,8 +300,8 @@ static void loess_grow(int *parameter, int *a, double *xi, double *vert, double 
     nv = parameter[4];
     liv = parameter[5];
     lv = parameter[6];
-    iv = Calloc(liv, int);
-    v = Calloc(lv, double);
+    iv = R_Calloc(liv, int);
+    v = R_Calloc(lv, double);
 
     iv[1] = d;
     iv[2] = parameter[1];

@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1997--2021  The R Core Team
+ *  Copyright (C) 1997--2022  The R Core Team
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -58,7 +58,7 @@ As from R 4.1.0 we translate latin1 strings in a non-latin1-locale to UTF-8.
 
 #include <Defn.h>
 #include <Internal.h>
-#include <R_ext/RS.h> /* for Calloc/Free */
+#include <R_ext/RS.h> /* for R_Calloc/R_Free */
 #include <ctype.h>
 #include <wchar.h>
 #include <wctype.h> /* for wctrans_t */
@@ -177,11 +177,11 @@ static SEXP mkCharWLen(const wchar_t *wc, int nc)
 static SEXP mkCharW(const wchar_t *wc)
 {
     size_t nb = wcstoutf8(NULL, wc, INT_MAX);
-    char *xi = (char *)Calloc(nb, char);
+    char *xi = (char *)R_Calloc(nb, char);
     SEXP ans;
     wcstoutf8(xi, wc, nb);
     ans = mkCharCE(xi, CE_UTF8);
-    Free(xi);
+    R_Free(xi);
     return ans;
 }
 
@@ -422,7 +422,7 @@ static void set_pcre_recursion_limit(pcre_extra **re_pe_ptr, const long limit)
         pcre_extra *re_pe = *re_pe_ptr;
         if (!re_pe)
         {
-            // this will be freed by pcre_free_study so cannot use Calloc
+            // this will be freed by pcre_free_study so cannot use R_Calloc
             re_pe = (pcre_extra *)calloc(1, sizeof(pcre_extra));
             if (!re_pe)
             {
@@ -745,7 +745,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                 SET_VECTOR_ELT(ans, i, t = allocVector(STRSXP, ntok + (*bufp ? 1 : 0)));
                 /* and fill with the splits */
                 laststart = bufp = buf;
-                pt = Realloc(pt, strlen(buf) + 1, char);
+                pt = R_Realloc(pt, strlen(buf) + 1, char);
                 for (size_t j = 0; j < ntok; j++)
                 {
                     /* This is UTF-8 safe since it compares whole
@@ -881,7 +881,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                 SET_VECTOR_ELT(ans, i, t = allocVector(STRSXP, ntok + (*bufp ? 1 : 0)));
                 /* and fill with the splits */
                 bufp = buf;
-                pt = Realloc(pt, strlen(buf) + 1, char);
+                pt = R_Realloc(pt, strlen(buf) + 1, char);
                 for (j = 0; j < ntok; j++)
                 {
 #ifdef HAVE_PCRE2
@@ -980,7 +980,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                 SET_VECTOR_ELT(ans, i, t = allocVector(STRSXP, ntok + (*wbufp ? 1 : 0)));
                 /* and fill with the splits */
                 wbufp = wbuf;
-                wpt = Realloc(wpt, wcslen(wbuf) + 1, wchar_t);
+                wpt = R_Realloc(wpt, wcslen(wbuf) + 1, wchar_t);
                 for (j = 0; j < ntok; j++)
                 {
                     tre_regwexec(&reg, wbufp, 1, regmatch, 0);
@@ -1095,7 +1095,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                 SET_VECTOR_ELT(ans, i, t = allocVector(STRSXP, ntok + (*bufp ? 1 : 0)));
                 /* and fill with the splits */
                 bufp = buf;
-                pt = Realloc(pt, strlen(buf) + 1, char);
+                pt = R_Realloc(pt, strlen(buf) + 1, char);
                 for (j = 0; j < ntok; j++)
                 {
                     int rc;
@@ -1144,8 +1144,8 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
     if (getAttrib(x, R_NamesSymbol) != R_NilValue)
         namesgets(ans, getAttrib(x, R_NamesSymbol));
     UNPROTECT(1);
-    Free(pt);
-    Free(wpt);
+    R_Free(pt);
+    R_Free(wpt);
 #ifdef HAVE_PCRE2
     if (tables)
         free((void *)tables);
@@ -2463,7 +2463,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
                 else
                     nr = 1;
-                cbuf = u = Calloc(ns + nr * (replen - patlen) + 1, char);
+                cbuf = u = R_Calloc(ns + nr * (replen - patlen) + 1, char);
                 *u = '\0';
                 slen = ns;
                 do
@@ -2482,7 +2482,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     SET_STRING_ELT(ans, i, mkCharCE(cbuf, CE_UTF8));
                 else
                     SET_STRING_ELT(ans, i, markKnown(cbuf, STRING_ELT(text, i)));
-                Free(cbuf);
+                R_Free(cbuf);
             }
         }
         else if (perl_opt)
@@ -2514,7 +2514,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             else
                 nns = ns + maxrep + 1000;
-            u = cbuf = Calloc(nns, char);
+            u = cbuf = R_Calloc(nns, char);
             offset = 0;
             nmatch = 0;
             eflag = 0;
@@ -2571,7 +2571,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     if (nns > INT_MAX / 2)
                         error(_("result string is too long"));
                     nns *= 2;
-                    tmp = Realloc(cbuf, nns, char);
+                    tmp = R_Realloc(cbuf, nns, char);
                     u = tmp + (u - cbuf);
                     cbuf = tmp;
                 }
@@ -2595,7 +2595,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     if (nns > INT_MAX / 2)
                         error(_("result string is too long"));
                     nns *= 2;
-                    tmp = Realloc(cbuf, nns, char);
+                    tmp = R_Realloc(cbuf, nns, char);
                     u = tmp + (u - cbuf);
                     cbuf = tmp;
                 }
@@ -2609,7 +2609,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                 else
                     SET_STRING_ELT(ans, i, markKnown(cbuf, STRING_ELT(text, i)));
             }
-            Free(cbuf);
+            R_Free(cbuf);
         }
         else if (!use_WC)
         {
@@ -2630,7 +2630,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             else
                 nns = ns + maxrep + 1000;
-            u = cbuf = Calloc(nns, char);
+            u = cbuf = R_Calloc(nns, char);
             offset = 0;
             nmatch = 0;
             eflags = 0;
@@ -2658,7 +2658,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     if (nns > INT_MAX / 2)
                         error(_("result string is too long"));
                     nns *= 2;
-                    tmp = Realloc(cbuf, nns, char);
+                    tmp = R_Realloc(cbuf, nns, char);
                     u = tmp + (u - cbuf);
                     cbuf = tmp;
                 }
@@ -2681,7 +2681,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     if (nns > INT_MAX / 2)
                         error(_("result string is too long"));
                     nns *= 2;
-                    tmp = Realloc(cbuf, nns, char);
+                    tmp = R_Realloc(cbuf, nns, char);
                     u = tmp + (u - cbuf);
                     cbuf = tmp;
                 }
@@ -2693,7 +2693,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                 else
                     SET_STRING_ELT(ans, i, markKnown(cbuf, STRING_ELT(text, i)));
             }
-            Free(cbuf);
+            R_Free(cbuf);
         }
         else
         {
@@ -2715,7 +2715,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             else
                 nns = ns + maxrep + 1000;
-            u = cbuf = Calloc(nns, wchar_t);
+            u = cbuf = R_Calloc(nns, wchar_t);
             offset = 0;
             nmatch = 0;
             eflags = 0;
@@ -2743,7 +2743,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     if (nns > INT_MAX / 2)
                         error(_("result string is too long"));
                     nns *= 2;
-                    tmp = Realloc(cbuf, nns, wchar_t);
+                    tmp = R_Realloc(cbuf, nns, wchar_t);
                     u = tmp + (u - cbuf);
                     cbuf = tmp;
                 }
@@ -2762,7 +2762,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     if (nns > INT_MAX / 2)
                         error(_("result string is too long"));
                     nns *= 2;
-                    tmp = Realloc(cbuf, nns, wchar_t);
+                    tmp = R_Realloc(cbuf, nns, wchar_t);
                     u = tmp + (u - cbuf);
                     cbuf = tmp;
                 }
@@ -2771,7 +2771,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                 *u = L'\0';
                 SET_STRING_ELT(ans, i, mkCharW(cbuf));
             }
-            Free(cbuf);
+            R_Free(cbuf);
         }
         vmaxset(vmax);
     }

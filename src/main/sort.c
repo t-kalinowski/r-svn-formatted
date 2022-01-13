@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1998-2020   The R Core Team
+ *  Copyright (C) 1998-2022   The R Core Team
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 2004        The R Foundation
  *
@@ -26,7 +26,7 @@
 #include <Defn.h> /* => Utils.h with the protos from here; Rinternals.h */
 #include <Internal.h>
 #include <Rmath.h>
-#include <R_ext/RS.h>         /* for Calloc/Free */
+#include <R_ext/RS.h>         /* for R_Calloc/R_Free */
 #include <float.h>            /* for DBL_MAX */
 #include <R_ext/Itermacros.h> /* for ITERATE_BY_REGION */
 
@@ -1327,7 +1327,7 @@ void attribute_hidden orderVector1(int *indx, int n, SEXP key, Rboolean nalast, 
     if (isNull(rho))
     {
         /* First sort NAs to one end */
-        isna = Calloc(n, int);
+        isna = R_Calloc(n, int);
         switch (TYPEOF(key))
         {
         case LGLSXP:
@@ -1371,7 +1371,7 @@ void attribute_hidden orderVector1(int *indx, int n, SEXP key, Rboolean nalast, 
 #undef less
                     if (n - numna < 2)
                 {
-                    Free(isna);
+                    R_Free(isna);
                     return;
                 }
                 if (nalast)
@@ -1457,7 +1457,7 @@ void attribute_hidden orderVector1(int *indx, int n, SEXP key, Rboolean nalast, 
         }
     }
     if (isna)
-        Free(isna);
+        R_Free(isna);
 }
 
 /* version for long vectors */
@@ -1494,7 +1494,7 @@ static void orderVector1l(R_xlen_t *indx, R_xlen_t n, SEXP key, Rboolean nalast,
     if (isNull(rho))
     {
         /* First sort NAs to one end */
-        isna = Calloc(n, int);
+        isna = R_Calloc(n, int);
         switch (TYPEOF(key))
         {
         case LGLSXP:
@@ -1538,7 +1538,7 @@ static void orderVector1l(R_xlen_t *indx, R_xlen_t n, SEXP key, Rboolean nalast,
 #undef less
                     if (n - numna < 2)
                 {
-                    Free(isna);
+                    R_Free(isna);
                     return;
                 }
                 if (nalast)
@@ -1624,7 +1624,7 @@ static void orderVector1l(R_xlen_t *indx, R_xlen_t n, SEXP key, Rboolean nalast,
         }
     }
     if (isna)
-        Free(isna);
+        R_Free(isna);
 }
 #endif
 
