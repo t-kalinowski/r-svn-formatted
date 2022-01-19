@@ -505,6 +505,8 @@ SEXP attribute_hidden do_sample(SEXP call, SEXP op, SEXP args, SEXP rho)
     args = CDR(args);
     sk = CAR(args);
     args = CDR(args); /* size */
+    if (length(sk) != 1)
+        error(_("invalid '%s' argument"), "size");
     sreplace = CAR(args);
     args = CDR(args);
     if (length(sreplace) != 1)
@@ -555,7 +557,7 @@ SEXP attribute_hidden do_sample(SEXP call, SEXP op, SEXP args, SEXP rho)
         if (!R_FINITE(dn) || dn < 0 || dn > 4.5e15 || (k > 0 && dn == 0))
             error(_("invalid first argument"));
         if (k < 0)
-            error(_("invalid '%s' argument"), "size");
+            error(_("invalid '%s' argument"), "size"); // includes NA
         if (!replace && k > dn)
             error(_("cannot take a sample larger than the population when 'replace = FALSE'"));
         if (dn > INT_MAX || k > INT_MAX)
