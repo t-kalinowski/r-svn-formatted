@@ -1553,8 +1553,11 @@ size_t utf8towcs4(R_wchar_t *wc, const char *s, size_t n)
     if (wc)
         for (p = wc, t = s;; p++, t += m)
         {
-            // FIXME this gives a warning on Windows.
-            m = (ssize_t)utf8toucs(p, t);
+            wchar_t local;
+            m = (ssize_t)utf8toucs(&local, t);
+            /* Needed to write all of R_wchar_t even on Windows where it is bigger
+               than wchar_t */
+            *p = (R_wchar_t)local;
             if (m < 0)
                 error(_("invalid input '%s' in 'utf8towcs32'"), s);
             if (m == 0)
