@@ -79,6 +79,7 @@ __declspec(dllexport) Rboolean UserBreak = FALSE;
 
 /* callbacks */
 static void (*R_CallBackHook)(void);
+static void (*R_ResetConsoleHook)(void);
 static void R_DoNothing(void)
 {
 }
@@ -151,7 +152,8 @@ void R_ProcessEvents(void)
         UserBreak = FALSE;
         onintr();
     }
-    R_CallBackHook();
+    if (R_CallBackHook)
+        R_CallBackHook();
     if (R_Tcl_do)
         R_Tcl_do();
 }
@@ -397,6 +399,8 @@ static void TermWriteConsole(const char *buf, int len)
 
 void R_ResetConsole(void)
 {
+    if (R_ResetConsoleHook)
+        R_ResetConsoleHook();
 }
 
 /* Stdio support to ensure the console file buffer is flushed */
@@ -435,7 +439,8 @@ static void CharBusy(int which)
 
 void R_Busy(int which)
 {
-    my_R_Busy(which);
+    if (my_R_Busy)
+        my_R_Busy(which);
 }
 
 /*
@@ -815,6 +820,7 @@ void R_SetWin32(Rstart Rp)
     TrueWriteConsole = Rp->WriteConsole;
     TrueWriteConsoleEx = Rp->WriteConsoleEx;
     R_CallBackHook = Rp->CallBack;
+    R_ResetConsoleHook = Rp->ResetConsole;
     pR_ShowMessage = Rp->ShowMessage;
     R_YesNoCancel = Rp->YesNoCancel;
     my_R_Busy = Rp->Busy;
@@ -1082,6 +1088,7 @@ int cmdlineoptions(int ac, char **av)
     /* Rp->WriteConsole is guaranteed to be set above,
        so we know WriteConsoleEx is not used */
     R_CallBackHook = Rp->CallBack;
+    R_ResetConsoleHook = Rp->ResetConsole;
 
     /* process environment variables
      * precedence:  command-line, .Renviron, inherited
