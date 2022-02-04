@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1998--2021 The R Core Team
+ *  Copyright (C) 1998--2022 The R Core Team
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -1339,11 +1339,11 @@ static void list_files(const char *dnp, const char *stem, int *count, SEXP *pans
                         warning(_("over-long path"));
 
 #ifdef Windows
-                    _stati64(p, &sb);
+                    res = _stati64(p, &sb);
 #else
-                    stat(p, &sb);
+                    res = stat(p, &sb);
 #endif
-                    if ((sb.st_mode & S_IFDIR) > 0)
+                    if (!res && (sb.st_mode & S_IFDIR) > 0)
                     {
                         if (not_dot)
                         {
@@ -1500,11 +1500,11 @@ static void list_dirs(const char *dnp, const char *nm, Rboolean full, int *count
             if (res >= PATH_MAX)
                 warning(_("over-long path"));
 #ifdef Windows
-            _stati64(p, &sb);
+            res = _stati64(p, &sb);
 #else
-            stat(p, &sb);
+            res = stat(p, &sb);
 #endif
-            if ((sb.st_mode & S_IFDIR) > 0)
+            if (!res && (sb.st_mode & S_IFDIR) > 0)
             {
                 if (strcmp(de->d_name, ".") && strcmp(de->d_name, ".."))
                 {
