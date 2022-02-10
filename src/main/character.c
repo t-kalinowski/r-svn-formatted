@@ -588,8 +588,8 @@ SEXP attribute_hidden do_startsWith(SEXP call, SEXP op, SEXP args, SEXP env)
         cp *x0 = (cp *)R_alloc(n1, sizeof(char *));
         cp *y0 = (cp *)R_alloc(n2, sizeof(char *));
         // and record lengths, -1 for NA
-        int *x1 = (int *)R_alloc(n1, sizeof(int *));
-        int *y1 = (int *)R_alloc(n2, sizeof(int *));
+        int *x1 = (int *)R_alloc(n1, sizeof(int));
+        int *y1 = (int *)R_alloc(n2, sizeof(int));
         for (R_xlen_t i = 0; i < n1; i++)
         {
             SEXP el = STRING_ELT(x, i);
