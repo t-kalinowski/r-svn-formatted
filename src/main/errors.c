@@ -2394,6 +2394,11 @@ void attribute_hidden R_BadValueInRCode(SEXP value, SEXP call, SEXP rho, const c
             }
         if (spkg != R_NilValue)
             pkgname = translateChar(STRING_ELT(spkg, 0));
+        /* Sometimes pkgname is like
+              package:MoTBFs,
+           so we need tp strip it off */
+        if (strstr(pkgname, "package:"))
+            pkgname += 8;
 
         while (check[0] != '\0')
         {
@@ -2446,7 +2451,8 @@ void attribute_hidden R_BadValueInRCode(SEXP value, SEXP call, SEXP rho, const c
             }
             else
                 error("invalid value of %s", varname);
-        }
+        } // end of while (check[0] != '\0')
+
         if (ignore)
         {
             abort = FALSE; /* err is FALSE */
