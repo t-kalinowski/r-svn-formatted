@@ -2431,7 +2431,6 @@ void attribute_hidden R_BadValueInRCode(SEXP value, SEXP call, SEXP rho, const c
                     // "all_base" , that is all standard packages.
                     else if (!strncmp(check, "all_base", arglen) && arglen == 8)
                     {
-                        REprintf("package:all_base\n");
                         char *std[] = {"base", "compiler",
                                        // datasets has no code
                                        "grDevies", "graphics", "grid", "methods", "parallel", "splines", "stats",
@@ -2440,7 +2439,6 @@ void attribute_hidden R_BadValueInRCode(SEXP value, SEXP call, SEXP rho, const c
                         for (int i = 0; i < nstd; i++)
                             if (!strcmp(std[i], pkgname))
                             {
-                                REprintf("package:%s\n", std[i]);
                                 ignore = FALSE;
                                 break;
                             }
