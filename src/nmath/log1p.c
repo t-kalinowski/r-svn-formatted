@@ -81,7 +81,7 @@ double Rlog1p(double x)
 
     if (xmin == 0.0)
         xmin = -1 + sqrt(DBL_EPSILON);                         /*was sqrt(d1mach(4)); */
-    if (nlnrel == 0)                                           /* initialize chebychev coefficients */
+    if (nlnrel == 0)                                           /* initialize chebyshev coefficients */
         nlnrel = chebyshev_init(alnrcs, 43, DBL_EPSILON / 20); /*was .1*d1mach(3)*/
 #else
 #define nlnrel 22

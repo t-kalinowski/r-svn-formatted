@@ -1,7 +1,7 @@
 /*
  *  Mathlib : A C Library of Special Functions
+ *  Copyright (C) 2000-2021 The R Core Team
  *  Copyright (C) 1998 Ross Ihaka
- *  Copyright (C) 2000-2001 The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -45,7 +45,8 @@
 
 double attribute_hidden lgammacor(double x)
 {
-    const static double algmcs[15] = {+.1666389480451863247205729650822e+0,  -.1384948176067563840732986059135e-4,
+    const static double algmcs[15] = {// below, nalgm = 5 ==> only the first 5 are used!
+                                      +.1666389480451863247205729650822e+0,  -.1384948176067563840732986059135e-4,
                                       +.9810825646924729426157171547487e-8,  -.1809129475572494194263306266719e-10,
                                       +.6221098041892605227126015543416e-13, -.3399615005417721944303330599666e-15,
                                       +.2683181998482698748957538846666e-17, -.2868042435334643284144622399999e-19,

@@ -58,7 +58,7 @@ attribute_hidden int Rf_i1mach(int i)
         return FLT_MAX_EXP;
 
     case 14:
-        return DBL_MANT_DIG;
+        return DBL_MANT_DIG; // 53
     case 15:
         return DBL_MIN_EXP;
     case 16:
