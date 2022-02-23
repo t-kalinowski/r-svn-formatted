@@ -1965,7 +1965,7 @@ int asLogical2(SEXP x, int checking, SEXP call, SEXP rho)
             char msg[128];
             snprintf(msg, 128, _("'length(x) = %lld > 1' in coercion to '%s'"), (long long)XLENGTH(x), "logical(1)");
             R_BadValueInRCode(x, call, rho, "length > 1 in coercion to logical", msg, msg, "_R_CHECK_LENGTH_1_LOGIC2_",
-                              FALSE /* by default do nothing */);
+                              TRUE /* by default warn */);
         }
         switch (TYPEOF(x))
         {
