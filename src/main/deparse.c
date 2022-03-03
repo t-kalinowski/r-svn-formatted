@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1997--2021  The R Core Team
+ *  Copyright (C) 1997--2022  The R Core Team
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -664,9 +664,6 @@ static Rboolean needsparens(PPinfo mainop, SEXP arg, unsigned int left, unsigned
                 case PP_ASSIGN:
                 case PP_ASSIGN2:
                 case PP_DOLLAR:
-                    /* Same as other unary operators above */
-                    if (arginfo.precedence == PREC_NOT && !left)
-                        return FALSE;
                     if (mainop.precedence > arginfo.precedence ||
                         (mainop.precedence == arginfo.precedence && left == mainop.rightassoc))
                     {
@@ -674,7 +671,8 @@ static Rboolean needsparens(PPinfo mainop, SEXP arg, unsigned int left, unsigned
                     }
                     break;
                 case PP_UNARY:
-                    return left && mainop.precedence > arginfo.precedence;
+                    return (left && mainop.precedence > arginfo.precedence) ||
+                           (deepLeft && deepLeft > arginfo.precedence);
                 case PP_FOR:
                 case PP_IF:
                 case PP_WHILE:
@@ -1426,7 +1424,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
                         print2buff("(", d);
                     if ((parens = needsparens(fop, CAR(s), 1, prevLeft)))
                         print2buff("(", d);
-                    d->left = !parens;
+                    d->left = parens ? 0 : fop.precedence;
                     deparse2buff(CAR(s), d);
                     if (parens)
                         print2buff(")", d);
@@ -1435,7 +1433,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
                     print2buff(" ", d);
                     if ((parens = needsparens(fop, CADR(s), 0, prevLeft)))
                         print2buff("(", d);
-                    d->left = prevLeft && !parens;
+                    d->left = parens ? 0 : prevLeft;
                     deparse2buff(CADR(s), d);
                     if (parens)
                         print2buff(")", d);
@@ -1447,7 +1445,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
                 case PP_DOLLAR:
                     if ((parens = needsparens(fop, CAR(s), 1, prevLeft)))
                         print2buff("(", d);
-                    d->left = !parens;
+                    d->left = parens ? 0 : fop.precedence;
                     deparse2buff(CAR(s), d);
                     if (parens)
                         print2buff(")", d);
@@ -1459,7 +1457,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
                     {
                         if ((parens = needsparens(fop, CADR(s), 0, prevLeft)))
                             print2buff("(", d);
-                        d->left = prevLeft && !parens;
+                        d->left = parens ? 0 : prevLeft;
                         deparse2buff(CADR(s), d);
                         if (parens)
                             print2buff(")", d);
@@ -1469,7 +1467,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
                 case PP_BINARY:
                     if ((parens = needsparens(fop, CAR(s), 1, prevLeft)))
                         print2buff("(", d);
-                    d->left = !parens;
+                    d->left = parens ? 0 : fop.precedence;
                     deparse2buff(CAR(s), d);
                     if (parens)
                         print2buff(")", d);
@@ -1480,7 +1478,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
 
                     if ((parens = needsparens(fop, CADR(s), 0, prevLeft)))
                         print2buff("(", d);
-                    d->left = prevLeft && !parens;
+                    d->left = parens ? 0 : prevLeft;
                     deparse2buff(CADR(s), d);
                     if (parens)
                         print2buff(")", d);
@@ -1494,7 +1492,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
                 case PP_BINARY2: /* no space between op and args */
                     if ((parens = needsparens(fop, CAR(s), 1, prevLeft)))
                         print2buff("(", d);
-                    d->left = !parens;
+                    d->left = parens ? 0 : fop.precedence;
                     deparse2buff(CAR(s), d);
                     if (parens)
                         print2buff(")", d);
@@ -1502,7 +1500,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
                     print2buff(CHAR(PRINTNAME(op)), d); /* ASCII */
                     if ((parens = needsparens(fop, CADR(s), 0, prevLeft)))
                         print2buff("(", d);
-                    d->left = prevLeft && !parens;
+                    d->left = parens ? 0 : prevLeft;
                     deparse2buff(CADR(s), d);
                     if (parens)
                         print2buff(")", d);
@@ -1512,7 +1510,7 @@ static void deparse2buff(SEXP s, LocalParseData *d)
                     print2buff(CHAR(PRINTNAME(op)), d); /* ASCII */
                     if ((parens = needsparens(fop, CAR(s), 0, prevLeft)))
                         print2buff("(", d);
-                    d->left = prevLeft;
+                    d->left = parens ? 0 : prevLeft;
                     deparse2buff(CAR(s), d);
                     if (parens)
                         print2buff(")", d);
