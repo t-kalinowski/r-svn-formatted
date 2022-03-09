@@ -4955,13 +4955,7 @@ static struct
                  {"lgamma", NULL, lgammafn},   {"gamma", NULL, gammafn}, {"digamma", NULL, digamma},
                  {"trigamma", NULL, trigamma},
 
-                 {"cospi", NULL, cospi},       {"sinpi", NULL, sinpi},
-#ifndef HAVE_TANPI
-                 {"tanpi", NULL, tanpi}
-#else
-                 {"tanpi", NULL, Rtanpi}
-#endif
-};
+                 {"cospi", NULL, cospi},       {"sinpi", NULL, sinpi},   {"tanpi", NULL, Rtanpi}};
 
 static R_INLINE double (*getMath1Fun(int i, SEXP call))(double)
 {

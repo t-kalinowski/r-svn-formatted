@@ -1464,13 +1464,8 @@ SEXP attribute_hidden do_math1(SEXP call, SEXP op, SEXP args, SEXP env)
         return MATH1(cospi);
     case 48:
         return MATH1(sinpi);
-#if defined(HAVE_TANPI) || defined(HAVE___TANPI)
     case 49:
-        return MATH1(Rtanpi);
-#else
-    case 49:
-        return MATH1(tanpi);
-#endif
+        return MATH1(Rtanpi); // our own in any case
 
     default:
         errorcall(call, _("unimplemented real function of 1 argument"));
