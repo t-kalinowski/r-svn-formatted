@@ -217,6 +217,9 @@ attribute_hidden void qbeta_raw(double alpha, double p, double q, int lower_tail
     logbeta = lbeta(p, q);
 
     swap_tail = (swap_choose) ? (p_ > 0.5) : swap_01;
+
+    int n_maybe_swaps = 0;
+maybe_swap:
     // change tail; default (swap_01 = NA): afterwards 0 < a <= 1/2
     if (swap_tail)
     {                        /* change tail, swap  p <-> q :*/
@@ -233,6 +236,7 @@ attribute_hidden void qbeta_raw(double alpha, double p, double q, int lower_tail
         pp = p;
         qq = q;
     }
+    n_maybe_swaps++;
 
     /* calculate the initial approximation */
 
@@ -254,7 +258,9 @@ attribute_hidden void qbeta_raw(double alpha, double p, double q, int lower_tail
 
     t = 0.2;
     // FIXME: Factor 0.2 is a bit arbitrary;  '1' is clearly much too much.
-
+    Rboolean u0_maybe = (M_LN2 * DBL_MIN_EXP < u0 && u0 < -0.01);
+    /* 1. cannot allow exp(u0) = 0 ==> exp(u1) = exp(u0) = 0
+     * 2. must: u0 < 0, but too close to 0 <==> x = exp(u0) = 0.99.. */
     R_ifDEBUG_printf("qbeta(%g, %g, %g, lower_t=%d, log_p=%d):%s\n"
                      "  swap_tail=%d, la=%#8g, u0=%#8g (bnd: %g (%g)) ",
                      alpha, p, q, lower_tail, log_p,
@@ -262,8 +268,8 @@ attribute_hidden void qbeta_raw(double alpha, double p, double q, int lower_tail
                      (t * log_eps_c - log(fabs(pp * (1. - qq) * (2. - qq) / (2. * (pp + 2.))))) / 2.,
                      t * log_eps_c - log(fabs(rp)));
 
-    if (M_LN2 * DBL_MIN_EXP < u0 && // cannot allow exp(u0) = 0 ==> exp(u1) = exp(u0) = 0
-        u0 < -0.01 &&               // (must: u0 < 0, but too close to 0 <==> x = exp(u0) = 0.99..)
+    double u_n = 1.; // to be  log(xinbta) <==> xinbta = exp(u_n).  1 is impossible
+    if (u0_maybe &&
         // qq <= 2 && // <--- "arbitrary"
         // u0 <  t*log_eps_c - log(fabs(rp)) &&
         u0 < (t * log_eps_c - log(fabs(pp * (1. - qq) * (2. - qq) / (2. * (pp + 2.))))) / 2.)
@@ -417,8 +423,7 @@ attribute_hidden void qbeta_raw(double alpha, double p, double q, int lower_tail
                      (bad_u ? ", ** bad u **" : ""), ((bad_init && !bad_u) ? ", ** bad_init **" : ""),
                      (use_log_x ? ", on u = LOG(x) SCALE" : ""));
 
-    double u_n = 1.; // -Wall
-    tx = xinbta;     // keeping "original initial x" (for now)
+    tx = xinbta; // keeping "original initial x" (for now)
 
     if (bad_u || u < log_q_cut)
     {
@@ -509,8 +514,19 @@ L_Newton:
             w = (y == ML_NEGINF) // y = -Inf  well possible: we are on log scale!
                     ? 0.
                     : (y - la) * exp(y - u + logbeta + r * u + t * R_Log1_Exp(u));
+            R_ifDEBUG_printf("N(i=%2d): u=%#20.16g, lnpb(e^u)=%#15.11g, w=%#12.7g", i_pb, u, y, w);
             if (!R_FINITE(w))
-                break;
+            {
+                // what we should do is ==> go back, get better starting value
+                R_ifDEBUG_printf(" -- not finite --> %s\n", (n_maybe_swaps <= 1) ? "goto maybe_swap" : "give up");
+                if (n_maybe_swaps <= 1)
+                    goto maybe_swap;
+                /* else  was 'break;' ...
+                   but rather give up returning NaN directly as in "normal scale" Newton */
+                ML_WARNING(ME_DOMAIN, "");
+                qb[0] = qb[1] = ML_NAN;
+                return;
+            }
             if (i_pb >= n_N && w * wprev <= 0.)
                 prev = fmax2(fabs(adj), fpu);
             R_ifDEBUG_printf("N(i=%2d): u=%#20.16g, pb(e^u)=%#15.9g, w=%#15.9g, %s prev=%g,", i_pb, u, y, w,
@@ -555,22 +571,30 @@ L_Newton:
         {
             y = pbeta_raw(xinbta, pp, qq, /*lower_tail = */ TRUE, log_p);
             // delta{y} :   d_y = y - (log_p ? la : a);
-#ifdef IEEE_754
-            if (!R_FINITE(y) && !(log_p && y == ML_NEGINF)) // y = -Inf  is ok if(log_p)
-#else
-            if (errno)
-#endif
-            { // ML_WARN_return_NAN :
-                ML_WARNING(ME_DOMAIN, "");
-                qb[0] = qb[1] = ML_NAN;
-                return;
-            }
 
             /* w := Newton step size  (F(.) - a) / F'(.)  or,
              * --   log: (lF - la) / (F' / F) = exp(lF) * (lF - la) / F'
              */
             w = log_p ? (y - la) * exp(y + logbeta + r * log(xinbta) + t * log1p(-xinbta))
                       : (y - a) * exp(logbeta + r * log(xinbta) + t * log1p(-xinbta));
+            if (!R_FINITE(w))
+            {
+                // what we should do is ==> go back, get better starting value
+                R_ifDEBUG_printf("N(i=%2d): x0=%#19.15g, pb(x0)=%#15.11g, w=%#12.7g -- is not finite --> %s\n", i_pb,
+                                 xinbta, y, w, (n_maybe_swaps <= 2) ? "goto maybe_swap" : "give up");
+                if (n_maybe_swaps <= 2)
+                {
+                    if (!log_p && n_maybe_swaps == 2)
+                        use_log_x = TRUE; // try now
+                    if (!log_p || n_maybe_swaps <= 1)
+                        goto maybe_swap;
+                }
+                /* else  was 'break;' ...
+                   but rather give up returning NaN directly as in "normal scale" Newton */
+                ML_WARNING(ME_DOMAIN, "");
+                qb[0] = qb[1] = ML_NAN;
+                return;
+            }
             if (i_pb >= n_N && w * wprev <= 0.)
                 prev = fmax2(fabs(adj), fpu);
             R_ifDEBUG_printf("N(i=%2d): x0=%#17.15g, pb(x0)=%#15.9g, w=%#15.9g, %s prev=%g,", i_pb, xinbta, y, w,
@@ -662,15 +686,26 @@ L_return:
             {
                 /* add one last Newton step on original x scale, e.g., for
                    qbeta(2^-98, 0.125, 2^-96) */
-                xinbta = exp(u_n);
+                if (u_n != 1.) // u_n has been computed above
+                    xinbta = exp(u_n);
                 y = pbeta_raw(xinbta, pp, qq, /*lower_tail = */ TRUE, log_p);
                 w = log_p ? (y - la) * exp(y + logbeta + r * log(xinbta) + t * log1p(-xinbta))
                           : (y - a) * exp(logbeta + r * log(xinbta) + t * log1p(-xinbta));
-                tx = xinbta - w;
-                R_ifDEBUG_printf(" Final Newton correction(non-log scale):\n"
-                                 //   \n  xinbta=%.16g
-                                 "  xinbta=%.16g, y=%g, w=-Delta(x)=%g. \n=> new x=%.16g\n",
-                                 xinbta, y, w, tx);
+                if (R_FINITE(w))
+                {
+                    tx = xinbta - w;
+                    R_ifDEBUG_printf(" Final Newton correction(non-log scale):\n"
+                                     //   \n  xinbta=%.16g
+                                     "  xinbta=%.16g, y=%g, w=-Delta(x)=%g. \n=> new x=%.16g\n",
+                                     xinbta, y, w, tx);
+                }
+                else
+                { // Newton step w  cannot be used
+                    R_ifDEBUG_printf(" Final Newton correction(non-log scale), canNOT use step 'w':\n"
+                                     "  xinbta=%.16g, y=%g, w=-Delta(x)=%g\n=> keep x=xinbta\n",
+                                     xinbta, y, w);
+                    tx = xinbta;
+                }
             }
             else
             {
