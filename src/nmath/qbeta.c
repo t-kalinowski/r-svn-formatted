@@ -33,10 +33,8 @@
 /**----------- DEBUGGING -------------
  *
  *	make CFLAGS='-DDEBUG_qbeta  ...'
- *MM (w/ Debug, w/o Optimization):
- (cd `R-devel RHOME`/src/nmath ; gcc -I. -I../../src/include -I../../../R/src/include  -DHAVE_CONFIG_H -fopenmp -g
- -pedantic -Wall --std=gnu99 -DDEBUG_q -DDEBUG_qbeta -Wcast-align -Wclobbered  -c ../../../R/src/nmath/qbeta.c -o
- qbeta.o; cd ../..; make R)
+ *MM (w/ Debug, w/o Optimization): if not manually adding   -dDEBUG_qbeta  , use
+ (cd `R-devel-qbeta-dbg RHOME`/src/nmath ; make qbeta.o; cd ../..; make R)
 */
 #ifdef DEBUG_qbeta
 #define R_ifDEBUG_printf(...) REprintf(__VA_ARGS__)
@@ -70,7 +68,9 @@ double qbeta(double alpha, double p, double q, int lower_tail, int log_p)
     // allowing p==0 and q==0  <==> treat as one- or two-point mass
 
     double qbet[2]; // = { qbeta(), 1 - qbeta() }
-    qbeta_raw(alpha, p, q, lower_tail, log_p, MLOGICAL_NA, USE_LOG_X_CUTOFF, n_NEWTON_FREE, qbet);
+    qbeta_raw(alpha, p, q, lower_tail, log_p,
+              // swap_01 ,  log_q_cut ,      n_N
+              MLOGICAL_NA, USE_LOG_X_CUTOFF, n_NEWTON_FREE, qbet);
     return qbet[0];
 }
 
@@ -82,7 +82,7 @@ static const double
     // Too extreme: inaccuracy in pbeta(); e.g for  qbeta(0.95, 1e-9, 20):
     // -> in pbeta() --> bgrat(..... b*z == 0 underflow, hence inaccurate pbeta()
     /* DBL_very_MIN  = 0x0.0000001p-1022, // = 2^-1050 = 2^(-1022 - 28) */
-    /* DBL_log_v_MIN = -1050. * M_LN2, // = log(DBL_very_MIN) */
+    /* DBL_log_v_MIN = -1050. * M_LN2, // = log(DBL_very_MIN) ~= -727.8045 */
     // the most extreme -- not ok, as pbeta() then behaves strangely,
     // e.g., for  qbeta(0.95, 1e-8, 20):
     /* DBL_very_MIN  = 0x0.0000000000001p-1022, // = 2^-1074 = 2^(-1022 -52) */
@@ -218,12 +218,18 @@ attribute_hidden void qbeta_raw(double alpha, double p, double q, int lower_tail
 
     swap_tail = (swap_choose) ? (p_ > 0.5) : swap_01;
 
+    R_ifDEBUG_printf("qbeta(%g, %g, %g, lower_t=%d, log_p=%d, swap_01=%d, log_q_cut=%g, n_N=%d):%s\n"
+                     "  swap_tail=%s :",
+                     alpha, p, q, lower_tail, log_p, swap_01, log_q_cut, n_N,
+                     (log_p && (p_ == 0. || p_ == 1.)) ? (p_ == 0. ? " p_=0" : " p_=1") : "",
+                     (swap_tail ? "TRUE" : "F"));
+
     int n_maybe_swaps = 0;
 maybe_swap:
     // change tail; default (swap_01 = NA): afterwards 0 < a <= 1/2
     if (swap_tail)
-    {                        /* change tail, swap  p <-> q :*/
-        a = R_DT_CIv(alpha); // = 1 - p_ < 1/2
+    {                        /* change tail, swap copies of {p,q}:  p <-> q :*/
+        a = R_DT_CIv(alpha); // = 1 - p_ , is < 1/2 if(swap_choose)
         /* la := log(a), but without numerical cancellation: */
         la = R_DT_Clog(alpha);
         pp = q;
@@ -261,12 +267,10 @@ maybe_swap:
     Rboolean u0_maybe = (M_LN2 * DBL_MIN_EXP < u0 && u0 < -0.01);
     /* 1. cannot allow exp(u0) = 0 ==> exp(u1) = exp(u0) = 0
      * 2. must: u0 < 0, but too close to 0 <==> x = exp(u0) = 0.99.. */
-    R_ifDEBUG_printf("qbeta(%g, %g, %g, lower_t=%d, log_p=%d):%s\n"
-                     "  swap_tail=%d, la=%#8g, u0=%#8g (bnd: %g (%g)) ",
-                     alpha, p, q, lower_tail, log_p,
-                     (log_p && (p_ == 0. || p_ == 1.)) ? (p_ == 0. ? " p_=0" : " p_=1") : "", swap_tail, la, u0,
-                     (t * log_eps_c - log(fabs(pp * (1. - qq) * (2. - qq) / (2. * (pp + 2.))))) / 2.,
-                     t * log_eps_c - log(fabs(rp)));
+    R_ifDEBUG_printf("  n_maybe_swaps=%d, la=%#8g, u0=%#8g -> u0_maybe=%s (bnd: %g (%g)); ", n_maybe_swaps, la, u0,
+                     (u0_maybe ? "TRUE" : "F"),
+                     u0_maybe ? (t * log_eps_c - log(fabs(pp * (1. - qq) * (2. - qq) / (2. * (pp + 2.))))) / 2. : -0.,
+                     u0_maybe ? t * log_eps_c - log(fabs(rp)) : -0.);
 
     double u_n = 1.; // to be  log(xinbta) <==> xinbta = exp(u_n).  1 is impossible
     if (u0_maybe &&
@@ -281,7 +285,7 @@ maybe_swap:
         if (rp > -1.)
         {
             u = u0 - log1p(rp) / pp;
-            R_ifDEBUG_printf("u1-u0=%9.3g --> choosing u = u1\n", u - u0);
+            R_ifDEBUG_printf("u1-u0=%9.3g --> choosing u = u1 = %g\n", u - u0, u);
         }
         else
         {
@@ -296,7 +300,7 @@ maybe_swap:
     // y := y_\alpha in AS 64 := Hastings(1955) approximation of qnorm(1 - a) :
     r = sqrt(-2 * la);
     y = r - (const1 + const2 * r) / (1. + (const3 + const4 * r) * r);
-
+    R_ifDEBUG_printf("y_a(AS64)=%g\n  ", y);
     if (pp > 1 && qq > 1)
     { // use  Carter(1947), see AS 109, remark '5.'
         r = (y * y - 3.) / 6.;
@@ -304,7 +308,7 @@ maybe_swap:
         t = 1. / (qq + qq - 1.);
         h = 2. / (s + t);
         w = y * sqrt(h + r) / h - (t - s) * (r + 5. / 6. - 2. / (3. * h));
-        R_ifDEBUG_printf("p,q > 1 => w=%g", w);
+        R_ifDEBUG_printf("p,q > 1 => w=%g <= 300 ? ", w);
         if (w > 300)
         {                                  // exp(w+w) is huge or overflows
             t = w + w + log(qq) - log(pp); // = argument of log1pexp(.)
@@ -324,27 +328,28 @@ maybe_swap:
         r = qq + qq;
         /* A slightly more stable version of  t := \chi^2_{alpha} of AS 64
          * t = 1. / (9. * qq); t = r * R_pow_di(1. - t + y * sqrt(t), 3);  */
-        t = 1. / (3. * sqrt(qq));
+        t = 1. / (3. * sqrt(qq));               // = sqrt(t) of formula above
         t = r * R_pow_di(1. + t * (-t + y), 3); // = \chi^2_{alpha} of AS 64
-        s = 4. * pp + r - 2.;                   // 4p + 2q - 2 = numerator of new t = (...) / chi^2
-        R_ifDEBUG_printf("min(p,q) <= 1: t=%g", t);
+        s = 4. * pp + r - 2.;                   // 4p + 2q - 2 = numerator of new t' = s / t = s / chi^2
+        R_ifDEBUG_printf("min(p,q) <= 1: t=%g, s=%g", t, s);
         if (t == 0 || (t < 0. && s >= t))
         { // cannot use chisq approx
             // x0 = 1 - { (1-a)*q*B(p,q) } ^{1/q}    {AS 65}
             // xinbta = 1. - exp((log(1-a)+ log(qq) + logbeta) / qq);
-            double l1ma; /* := log(1-a), directly from alpha (as 'la' above);
-                    though only seen very small improvements */
-            if (swap_tail)
-                l1ma = R_DT_log(alpha);
-            else
-                l1ma = R_DT_Clog(alpha);
-            R_ifDEBUG_printf(" t <= 0 : log1p(-a)=%.15g, better l1ma=%.15g\n", log1p(-a), l1ma);
+            double l1ma = /* := log(1-a), directly from alpha (as 'la' above);
+                   though only seen very small improvements */
+                swap_tail ? R_DT_log(alpha) : R_DT_Clog(alpha);
+
+            R_ifDEBUG_printf(" t <= 0  => AS65: log1p(-a)=%7g, better l1ma=%.15g, relD=%g\n", log1p(-a), l1ma,
+                             log1p(-a) / l1ma - 1);
+
             double xx = (l1ma + log(qq) + logbeta) / qq;
             R_ifDEBUG_printf("  xx = (l1ma + log(qq) + logbeta) / qq = %.10g; ", xx);
             if (xx <= 0.)
             {
                 xinbta = -expm1(xx);
                 u = R_Log1_Exp(xx); // =  log(xinbta) = log(1 - exp(...A...))
+                R_ifDEBUG_printf(" xx <= 0 useful ==> u, xinbta\n");
             }
             else
             { // xx > 0 ==> 1 - e^xx < 0 .. is nonsense
@@ -367,7 +372,7 @@ maybe_swap:
         else
         {
             t = s / t;
-            R_ifDEBUG_printf(" t > 0 or s < t < 0:  new t = %g ( > 1 ?)\n", t);
+            R_ifDEBUG_printf(" t > 0 or s < t < 0:  new t := s/t = %g ( > 1 ?)\n", t);
             if (t <= 1.)
             { // cannot use chisq, either
                 u = u0;
@@ -382,13 +387,18 @@ maybe_swap:
     }
 
     // Problem: If initial u is completely wrong, we make a wrong decision here
-    if (swap_choose && ((swap_tail && u >= -exp(log_q_cut)) ||                      // ==> "swap back"
-                        (!swap_tail && u >= -exp(4 * log_q_cut) && pp / qq < 1000.) // ==> "swap now"
-                        ))
+    if (swap_choose && //   vvvv/ why -exp(*)? u  on log-x scale! Swapping can be very good, but needs smart if(..)
+        ((swap_tail && u >= -exp(log_q_cut)) ||                      // ==> "swap back"
+         (!swap_tail && u >= -exp(4 * log_q_cut) && pp / qq < 1000.) // ==> "swap now"
+         ))
     {
-        // "revert swap" -- and use_log_x
+        if (swap_tail)
+            R_ifDEBUG_printf("\"swap back\" as u = %g >= -exp(log_q_cut);", u);
+        else
+            R_ifDEBUG_printf("\"swap now\" as u = %g >= -exp(4*log_q_cut) && pp/qq = %g < 1000;", u, pp / qq);
+        // reverse swap (and typically use_log_x)
         swap_tail = !swap_tail;
-        R_ifDEBUG_printf(" u = %g (e^u = xinbta = %.16g) ==> ", u, xinbta);
+
         if (swap_tail)
         {                        // "swap now" (much less easily)
             a = R_DT_CIv(alpha); // needed ?
@@ -397,13 +407,13 @@ maybe_swap:
             qq = p;
         }
         else
-        { // swap back :
+        { // "swap back" :
             a = p_;
             la = R_DT_log(alpha);
             pp = p;
             qq = q;
         }
-        R_ifDEBUG_printf("\"%s\"; la = %g\n", (swap_tail ? "swap now" : "swap back"), la);
+        R_ifDEBUG_printf(" ==> la = %g\n", la);
         // we could redo computations above, but this should be stable
         u = R_Log1_Exp(u);
         xinbta = exp(u);
@@ -434,7 +444,7 @@ maybe_swap:
         w = pbeta_raw(DBL_very_MIN, pp, qq, TRUE, log_p);
         if (w > (log_p ? la : a))
         {
-            R_ifDEBUG_printf(" quantile is left of %g; \"convergence\"\n", DBL_very_MIN);
+            R_ifDEBUG_printf(" quantile is left of %g: boundary \"convergence\"\n", DBL_very_MIN);
             if (log_p || fabs(w - a) < fabs(0 - a))
             { // DBL_very_MIN is better than 0
                 tx = DBL_very_MIN;
@@ -451,8 +461,8 @@ maybe_swap:
         }
         else
         {
-            R_ifDEBUG_printf(" pbeta(%g, *) = %g <= %g (= %s) --> continuing\n", DBL_log_v_MIN, w, (log_p ? la : a),
-                             (log_p ? "la" : "a"));
+            R_ifDEBUG_printf(" pbeta(%g, %g, %g, T, log) = %g <= %g (= %s) --> continuing\n", DBL_very_MIN, pp, qq, w,
+                             (log_p ? la : a), (log_p ? "la" : "a"));
             if (u < DBL_log_v_MIN)
             {
                 u = DBL_log_v_MIN; // = log(DBL_very_MIN)
@@ -529,8 +539,7 @@ L_Newton:
             }
             if (i_pb >= n_N && w * wprev <= 0.)
                 prev = fmax2(fabs(adj), fpu);
-            R_ifDEBUG_printf("N(i=%2d): u=%#20.16g, pb(e^u)=%#15.9g, w=%#15.9g, %s prev=%g,", i_pb, u, y, w,
-                             (i_pb >= n_N && w * wprev <= 0.) ? "new" : "old", prev);
+            R_ifDEBUG_printf(", %s prev=%g,", (i_pb >= n_N && w * wprev <= 0.) ? "new" : "old", prev);
             g = 1;
             for (i_inn = 0; i_inn < 1000; i_inn++)
             {
@@ -556,7 +565,7 @@ L_Newton:
             // (cancellation in (u_n -u) => may differ from adj:
             double D = fmin2(fabs(adj), fabs(u_n - u));
             /* R_ifDEBUG_printf(" delta(u)=%g\n", u_n - u); */
-            R_ifDEBUG_printf(" it{in}=%d, delta(u)=%9.3g, D/|.|=%.3g\n", i_inn, u_n - u, D / fabs(u_n + u));
+            R_ifDEBUG_printf(" it{in}=%d, d.(u)=%6.3g, D/|.|=%.3g\n", i_inn, u_n - u, D / fabs(u_n + u));
             if (D <= 4e-16 * fabs(u_n + u))
                 goto L_converged;
             u = u_n;
@@ -597,7 +606,7 @@ L_Newton:
             }
             if (i_pb >= n_N && w * wprev <= 0.)
                 prev = fmax2(fabs(adj), fpu);
-            R_ifDEBUG_printf("N(i=%2d): x0=%#17.15g, pb(x0)=%#15.9g, w=%#15.9g, %s prev=%g,", i_pb, xinbta, y, w,
+            R_ifDEBUG_printf("N(i=%2d): x0=%#19.15g, pb(x0)=%#15.11g, w=%#12.7g, %s prev=%g,", i_pb, xinbta, y, w,
                              (i_pb >= n_N && w * wprev <= 0.) ? "new" : "old", prev);
             g = 1;
             for (i_inn = 0; i_inn < 1000; i_inn++)
@@ -637,7 +646,7 @@ L_Newton:
     ML_WARNING(ME_PRECISION, "qbeta");
 
 L_converged:
-    log_ = log_p || use_log_x; // only for printing
+    log_ = log_p || use_log_x;
     R_ifDEBUG_printf(" %s: Final delta(y) = %g%s\n", warned ? "_NO_ convergence" : "converged", y - (log_ ? la : a),
                      (log_ ? " (log_)" : ""));
     if ((log_ && y == ML_NEGINF) || (!log_ && y == 0))
@@ -662,8 +671,9 @@ L_converged:
                 fabs(y - (log_ ? la : a)));
     }
 L_return:
+    // use  if (use_log_x) u_n else tx   {and u_n is on log scale}
     if (give_log_q)
-    {                   // ==> use_log_x , too
+    {                   // {currently not used from R's qbeta()} ==> use_log_x , too
         if (!use_log_x) // (see if claim above is true)
             MATHLIB_WARNING("qbeta() L_return, u_n=%g;  give_log_q=TRUE but use_log_x=FALSE -- please report!", u_n);
         double r = R_Log1_Exp(u_n);
@@ -695,7 +705,6 @@ L_return:
                 {
                     tx = xinbta - w;
                     R_ifDEBUG_printf(" Final Newton correction(non-log scale):\n"
-                                     //   \n  xinbta=%.16g
                                      "  xinbta=%.16g, y=%g, w=-Delta(x)=%g. \n=> new x=%.16g\n",
                                      xinbta, y, w, tx);
                 }
