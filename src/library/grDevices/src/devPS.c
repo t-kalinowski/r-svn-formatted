@@ -9809,8 +9809,14 @@ static void PDF_Path(double *x, double *y, int npoly, int *nper, Rboolean windin
             textoff(pd);
         if (pd->appendingPath < 0)
         {
-            if (code & 2)
+            if (gc->patternFill != R_NilValue)
+            {
+                PDF_SetPatternFill(gc->patternFill, dd);
+            }
+            else if (code & 2)
+            {
                 PDF_SetFill(gc->fill, dd);
+            }
             if (code & 1)
             {
                 PDF_SetLineColor(gc->col, dd);
