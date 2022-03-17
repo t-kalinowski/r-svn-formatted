@@ -1187,8 +1187,11 @@ static void ReleaseLargeFreeVectors()
         while (s != R_GenHeap[node_class].New)
         {
             SEXP next = NEXT_NODE(s);
-            if (CHAR(s) != NULL)
+            if (1 /* CHAR(s) != NULL*/)
             {
+                /* Consecutive representation of large vectors with header followed
+                   by data. An alternative representation (currently not implemented)
+                   could have CHAR(s) == NULL. */
                 R_size_t size;
 #ifdef PROTECTCHECK
                 if (TYPEOF(s) == FREESXP)
@@ -2033,8 +2036,9 @@ again:
                     /**** could also leave this alone and restore the old
                       node type in ReleaseLargeFreeVectors before
                       calculating size */
-                    if (CHAR(s) != NULL)
+                    if (1 /* CHAR(s) != NULL*/)
                     {
+                        /* see comment in ReleaseLargeFreeVectors */
                         R_size_t size = getVecSizeInVEC(s);
                         SET_STDVEC_LENGTH(s, size);
                     }
