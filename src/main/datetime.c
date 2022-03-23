@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 2000-2021  The R Core Team.
+ *  Copyright (C) 2000-2022  The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -109,6 +109,7 @@ extern char *tzname[2];
 
 /* Substitute based on glibc code. */
 #include "Rstrptime.h"
+/* --> Def.  R_strptime()  etc */
 
 static const int days_in_month[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
@@ -683,7 +684,7 @@ static void reset_tz(char *tz)
     tzset();
 }
 
-static void glibc_fix(stm *tm, int *invalid)
+static void glibc_fix(stm *tm, Rboolean *invalid)
 {
     /* set mon and mday which glibc does not always set.
        Use current year/... if none has been specified.
@@ -725,7 +726,7 @@ static void glibc_fix(stm *tm, int *invalid)
         {
             if (tm->tm_mon != NA_INTEGER)
             {
-                *invalid = 1;
+                *invalid = TRUE;
                 return;
             }
             else
@@ -739,7 +740,7 @@ static void glibc_fix(stm *tm, int *invalid)
 static const char ltnames[][7] = {"sec",  "min",  "hour",  "mday", "mon",   "year",
                                   "wday", "yday", "isdst", "zone", "gmtoff"};
 
-static void makelt(stm *tm, SEXP ans, R_xlen_t i, int valid, double frac_secs)
+static void makelt(stm *tm, SEXP ans, R_xlen_t i, Rboolean valid, double frac_secs)
 {
     if (valid)
     {
@@ -755,7 +756,7 @@ static void makelt(stm *tm, SEXP ans, R_xlen_t i, int valid, double frac_secs)
     }
     else
     {
-        REAL(VECTOR_ELT(ans, 0))[i] = NA_REAL;
+        REAL(VECTOR_ELT(ans, 0))[i] = frac_secs;
         for (int j = 1; j < 8; j++)
             INTEGER(VECTOR_ELT(ans, j))[i] = NA_INTEGER;
         INTEGER(VECTOR_ELT(ans, 8))[i] = -1;
@@ -770,15 +771,14 @@ static void makelt(stm *tm, SEXP ans, R_xlen_t i, int valid, double frac_secs)
 SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP stz, x, ans, ansnames, klass, tzone;
-    int isgmt = 0, valid, settz = 0;
+    int isgmt = 0, settz = 0;
     char oldtz[1001] = "";
-    const char *tz = NULL;
 
     checkArity(op, args);
     PROTECT(x = coerceVector(CAR(args), REALSXP));
     if (!isString((stz = CADR(args))) || LENGTH(stz) != 1)
         error(_("invalid '%s' value"), "tz");
-    tz = CHAR(STRING_ELT(stz, 0));
+    const char *tz = CHAR(STRING_ELT(stz, 0));
     if (strlen(tz) == 0)
     {
         /* do a direct look up here as this does not otherwise
@@ -840,6 +840,7 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     {
         stm dummy, *ptm = &dummy;
         double d = REAL(x)[i];
+        Rboolean valid;
         if (R_FINITE(d))
         {
             ptm = localtime0(&d, !isgmt, &dummy);
@@ -849,8 +850,10 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
             valid = (ptm != NULL);
         }
         else
-            valid = 0;
-        makelt(ptm, ans, i, valid, d - floor(d));
+        {
+            valid = FALSE;
+        }
+        makelt(ptm, ans, i, valid, valid ? d - floor(d) : d);
         if (!isgmt)
         {
             char *p = "";
@@ -1090,8 +1093,14 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
             tm.tm_gmtoff = (tmp == NA_INTEGER) ? 0 : tmp;
 #endif
         }
-        if (!R_FINITE(secs) || tm.tm_min == NA_INTEGER || tm.tm_hour == NA_INTEGER || tm.tm_mday == NA_INTEGER ||
-            tm.tm_mon == NA_INTEGER || tm.tm_year == NA_INTEGER)
+        if (!R_FINITE(secs) && tm.tm_year == NA_INTEGER)
+        {
+            SET_STRING_ELT(ans, i,
+                           ISNA(secs) ? NA_STRING
+                                      : ISNAN(secs) ? mkChar("NaN") : (secs > 0) ? mkChar("Inf") : mkChar("-Inf"));
+        }
+        else if (!R_FINITE(secs) || tm.tm_min == NA_INTEGER || tm.tm_hour == NA_INTEGER || tm.tm_mday == NA_INTEGER ||
+                 tm.tm_mon == NA_INTEGER || tm.tm_year == NA_INTEGER)
         {
             SET_STRING_ELT(ans, i, NA_STRING);
         }
@@ -1207,10 +1216,9 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 // .Internal(strptime(as.character(x), format, tz))
 SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP x, sformat, ans, ansnames, klass, stz, tzone = R_NilValue;
-    int invalid, isgmt = 0, settz = 0, offset;
+    SEXP x, sformat, klass, stz, tzone = R_NilValue;
+    int isgmt = 0, settz = 0, offset;
     stm tm, tm2, *ptm = &tm;
-    const char *tz = NULL;
     char oldtz[1001] = "";
     double psecs = 0.0;
     R_xlen_t n, m, N;
@@ -1222,7 +1230,7 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
         error(_("invalid '%s' argument"), "format");
     if (!isString((stz = CADDR(args))) || LENGTH(stz) != 1)
         error(_("invalid '%s' value"), "tz");
-    tz = CHAR(STRING_ELT(stz, 0));
+    const char *tz = CHAR(STRING_ELT(stz, 0));
     if (strlen(tz) == 0)
     {
         /* do a direct look up here as this does not otherwise
@@ -1273,7 +1281,7 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
 #else
     int nans = 10 - isgmt;
 #endif
-    PROTECT(ans = allocVector(VECSXP, nans));
+    SEXP ans = PROTECT(allocVector(VECSXP, nans));
     for (int i = 0; i < 9; i++)
         SET_VECTOR_ELT(ans, i, allocVector(i > 0 ? INTSXP : REALSXP, N));
     if (!isgmt)
@@ -1284,7 +1292,7 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
     }
 
-    PROTECT(ansnames = allocVector(STRSXP, nans));
+    SEXP ansnames = PROTECT(allocVector(STRSXP, nans));
     for (int i = 0; i < nans; i++)
         SET_STRING_ELT(ansnames, i, mkChar(ltnames[i]));
 
@@ -1300,9 +1308,9 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
         tm.tm_isdst = -1;
 #endif
         offset = NA_INTEGER;
-        invalid = STRING_ELT(x, i % n) == NA_STRING ||
-                  !R_strptime(translateChar(STRING_ELT(x, i % n)), translateChar(STRING_ELT(sformat, i % m)), &tm,
-                              &psecs, &offset);
+        Rboolean invalid = STRING_ELT(x, i % n) == NA_STRING ||
+                           !R_strptime(translateChar(STRING_ELT(x, i % n)), translateChar(STRING_ELT(sformat, i % m)),
+                                       &tm, &psecs, &offset);
         if (!invalid)
         {
             /* Solaris sets missing fields to 0 */
@@ -1328,7 +1336,7 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
                     ptm = localtime0(&t0, 1 - isgmt, &tm2);
                 }
                 else
-                    invalid = 1;
+                    invalid = TRUE;
             }
             else
             {
@@ -1342,7 +1350,7 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             invalid = validate_tm(&tm) != 0;
         }
-        makelt(ptm, ans, i, !invalid, psecs - floor(psecs));
+        makelt(ptm, ans, i, !invalid, invalid ? NA_REAL : psecs - floor(psecs));
         if (!isgmt)
         {
             const char *p = "";
@@ -1378,13 +1386,11 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
 SEXP attribute_hidden do_D2POSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, ans, ansnames, klass;
-    R_xlen_t n;
-    int valid, day, y, tmp, mon;
     stm tm;
 
     checkArity(op, args);
     PROTECT(x = coerceVector(CAR(args), REALSXP));
-    n = XLENGTH(x);
+    R_xlen_t n = XLENGTH(x);
     PROTECT(ans = allocVector(VECSXP, 9));
     for (int i = 0; i < 9; i++)
         SET_VECTOR_ELT(ans, i, allocVector(i > 0 ? INTSXP : REALSXP, n));
@@ -1395,16 +1401,18 @@ SEXP attribute_hidden do_D2POSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 
     for (R_xlen_t i = 0; i < n; i++)
     {
-        if (R_FINITE(REAL(x)[i]))
+        double x_i = REAL(x)[i];
+        Rboolean valid = R_FINITE(x_i);
+        if (valid)
         {
-            day = (int)floor(REAL(x)[i]);
+            int day = (int)floor(x_i);
             tm.tm_hour = tm.tm_min = tm.tm_sec = 0;
             /* weekday: 1970-01-01 was a Thursday */
             if ((tm.tm_wday = ((4 + day) % 7)) < 0)
                 tm.tm_wday += 7;
 
             /* year & day within year */
-            y = 1970;
+            int y = 1970, tmp, mon;
             if (day >= 0)
                 for (; day >= (tmp = days_in_year(y)); day -= tmp, y++)
                     ;
@@ -1422,12 +1430,8 @@ SEXP attribute_hidden do_D2POSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
             tm.tm_mon = mon;
             tm.tm_mday = day + 1;
             tm.tm_isdst = 0; /* no dst in GMT */
-
-            valid = 1;
         }
-        else
-            valid = 0;
-        makelt(&tm, ans, i, valid, 0.0);
+        makelt(&tm, ans, i, valid, valid ? 0.0 : x_i);
     }
     setAttrib(ans, R_NamesSymbol, ansnames);
     PROTECT(klass = allocVector(STRSXP, 2));
