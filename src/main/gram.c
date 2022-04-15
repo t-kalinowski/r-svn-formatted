@@ -5345,13 +5345,11 @@ static int StringValue(int c, Rboolean forSymbol)
                     else
                     {
                         xxungetc(c);
-                        CTEXT_POP();
                     }
                 }
                 else
                 {
                     xxungetc(c);
-                    CTEXT_POP();
                 }
                 if (!octal)
                     error(_("nul character not allowed (line %d)"), ParseState.xxlineno);
