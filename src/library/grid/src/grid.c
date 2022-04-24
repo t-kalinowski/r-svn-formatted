@@ -986,9 +986,11 @@ SEXP L_unsetviewport(SEXP n)
     if (deviceChanged(devWidthCM, devHeightCM, newvp))
         calcViewportTransform(newvp, viewportParent(newvp), 1, dd);
     /*
-     * Enforce the current viewport settings
+     * Enforce the stored parent gpar settings
+     * (not necessarily the parent viewport settings if this viewport
+     *  is a childrenvp of a gTree, where the gTree has gpar settings)
      */
-    setGridStateElement(dd, GSS_GPAR, viewportgpar(newvp));
+    setGridStateElement(dd, GSS_GPAR, VECTOR_ELT(gvp, PVP_PARENTGPAR));
     /* Set the value of the current viewport for the current device
      * Need to do this in here so that redrawing via R BASE display
      * list works
@@ -2396,6 +2398,13 @@ SEXP gridXspline(SEXP x, SEXP y, SEXP s, SEXP o, SEXP a, SEXP rep, SEXP index, d
     {
         SET_VECTOR_ELT(currentgp, GP_FILL, mkString("black"));
     }
+    /* If recording a path, set gp$fill to black because only
+     * the path boundary matters.  This avoids unnecessary fill
+     * pattern resolution. */
+    if (LOGICAL(gridStateElement(dd, GSS_RESOLVINGPATH))[0])
+    {
+        SET_VECTOR_ELT(currentgp, GP_FILL, mkString("black"));
+    }
     /* If xspline is open ...
      * fill may be used by arrow head, but disallow pattern fill
      * within arrow head. */
@@ -2669,6 +2678,7 @@ SEXP L_segments(SEXP x0, SEXP y0, SEXP x1, SEXP y1, SEXP arrow)
         }
     }
     GEMode(0, dd);
+    UNPROTECT(1);
     return R_NilValue;
 }
 
@@ -2732,6 +2742,16 @@ SEXP L_arrows(SEXP x1, SEXP x2, SEXP xnm1, SEXP xn, SEXP y1, SEXP y2, SEXP ynm1,
     pGEDevDesc dd = getDevice();
     currentvp = gridStateElement(dd, GSS_VP);
     currentgp = gridStateElement(dd, GSS_GPAR);
+    /* This copy is used to modify gp$fill to avoid
+     * stupid amounts of pattern resolving WITHOUT touching current gp
+     * in 'grid' state. */
+    currentgp = PROTECT(duplicate(currentgp));
+    /* Fill may be used by arrow head, but disallow pattern fill
+     * within arrow head. */
+    if (Rf_inherits(gpFillSXP(currentgp), "GridPattern") || Rf_inherits(gpFillSXP(currentgp), "GridPatternList"))
+    {
+        SET_VECTOR_ELT(currentgp, GP_FILL, mkString("transparent"));
+    }
     getViewportTransform(currentvp, dd, &vpWidthCM, &vpHeightCM, transform, &rotationAngle);
     getViewportContext(currentvp, &vpc);
     maxn = getArrowN(x1, x2, xnm1, xn, y1, y2, ynm1, yn);
@@ -2807,6 +2827,7 @@ SEXP L_arrows(SEXP x1, SEXP x2, SEXP xnm1, SEXP xn, SEXP y1, SEXP y2, SEXP ynm1,
             UNPROTECT(1);
     }
     GEMode(0, dd);
+    UNPROTECT(1);
 
     return R_NilValue;
 }
@@ -2836,6 +2857,13 @@ SEXP L_polygon(SEXP x, SEXP y, SEXP index)
      * pattern is basically a no-op), WITHOUT touching current gp
      * in 'grid' state. */
     currentgp = PROTECT(duplicate(currentgp));
+    /* If recording a path, set gp$fill to black because only
+     * the path boundary matters.  This avoids unnecessary fill
+     * pattern resolution. */
+    if (LOGICAL(gridStateElement(dd, GSS_RESOLVINGPATH))[0])
+    {
+        SET_VECTOR_ELT(currentgp, GP_FILL, mkString("black"));
+    }
     getViewportTransform(currentvp, dd, &vpWidthCM, &vpHeightCM, transform, &rotationAngle);
     getViewportContext(currentvp, &vpc);
     initGContext(currentgp, &gc, dd, gpIsScalar, &gcCache);
@@ -2889,6 +2917,7 @@ SEXP L_polygon(SEXP x, SEXP y, SEXP index)
         vmaxset(vmax);
     }
     GEMode(0, dd);
+    UNPROTECT(1);
 
     return R_NilValue;
 }
@@ -2924,6 +2953,13 @@ static SEXP gridCircle(SEXP x, SEXP y, SEXP r, double theta, Rboolean draw)
      * to avoid infinite loop when gp$fill is a pattern
      * (resolving a pattern involves calculating size) */
     if (!draw)
+    {
+        SET_VECTOR_ELT(currentgp, GP_FILL, mkString("black"));
+    }
+    /* If recording a path, set gp$fill to black because only
+     * the path boundary matters.  This avoids unnecessary fill
+     * pattern resolution. */
+    if (LOGICAL(gridStateElement(dd, GSS_RESOLVINGPATH))[0])
     {
         SET_VECTOR_ELT(currentgp, GP_FILL, mkString("black"));
     }
@@ -3031,6 +3067,7 @@ static SEXP gridCircle(SEXP x, SEXP y, SEXP r, double theta, Rboolean draw)
         REAL(result)[2] = (xmax - xmin) / REAL(gridStateElement(dd, GSS_SCALE))[0];
         REAL(result)[3] = (ymax - ymin) / REAL(gridStateElement(dd, GSS_SCALE))[0];
     }
+    UNPROTECT(1);
     return result;
 }
 
@@ -3079,6 +3116,13 @@ static SEXP gridRect(SEXP x, SEXP y, SEXP w, SEXP h, SEXP hjust, SEXP vjust, dou
      * to avoid infinite loop when gp$fill is a pattern
      * (resolving a pattern involves calculating size) */
     if (!draw)
+    {
+        SET_VECTOR_ELT(currentgp, GP_FILL, mkString("black"));
+    }
+    /* If recording a path, set gp$fill to black because only
+     * the path boundary matters.  This avoids unnecessary fill
+     * pattern resolution. */
+    if (LOGICAL(gridStateElement(dd, GSS_RESOLVINGPATH))[0])
     {
         SET_VECTOR_ELT(currentgp, GP_FILL, mkString("black"));
     }
@@ -3252,6 +3296,7 @@ static SEXP gridRect(SEXP x, SEXP y, SEXP w, SEXP h, SEXP hjust, SEXP vjust, dou
         REAL(result)[2] = (xmax - xmin) / REAL(gridStateElement(dd, GSS_SCALE))[0];
         REAL(result)[3] = (ymax - ymin) / REAL(gridStateElement(dd, GSS_SCALE))[0];
     }
+    UNPROTECT(1);
     return result;
 }
 
@@ -3288,6 +3333,13 @@ SEXP L_path(SEXP x, SEXP y, SEXP index, SEXP rule)
      * pattern is basically a no-op), WITHOUT touching current gp
      * in 'grid' state. */
     currentgp = PROTECT(duplicate(currentgp));
+    /* If recording a path, set gp$fill to black because only
+     * the path boundary matters.  This avoids unnecessary fill
+     * pattern resolution. */
+    if (LOGICAL(gridStateElement(dd, GSS_RESOLVINGPATH))[0])
+    {
+        SET_VECTOR_ELT(currentgp, GP_FILL, mkString("black"));
+    }
     getViewportTransform(currentvp, dd, &vpWidthCM, &vpHeightCM, transform, &rotationAngle);
     getViewportContext(currentvp, &vpc);
     initGContext(currentgp, &gc, dd, gpIsScalar, &gcCache);
@@ -3339,7 +3391,7 @@ SEXP L_path(SEXP x, SEXP y, SEXP index, SEXP rule)
         vmaxset(vmax);
     }
     GEMode(0, dd);
-    UNPROTECT(1); /* resolvedFill */
+    UNPROTECT(1); /* currentgp */
     return R_NilValue;
 }
 
@@ -3459,6 +3511,7 @@ SEXP L_raster(SEXP raster, SEXP x, SEXP y, SEXP w, SEXP h, SEXP hjust, SEXP vjus
     }
     GEMode(0, dd);
     vmaxset(vmax);
+    UNPROTECT(1);
     return R_NilValue;
 }
 
@@ -5057,6 +5110,13 @@ static SEXP gridPoints(SEXP x, SEXP y, SEXP pch, SEXP size, Rboolean draw, Rbool
      * to avoid infinite loop when gp$fill is a pattern
      * (resolving a pattern involves calculating size) */
     if (!draw)
+    {
+        SET_VECTOR_ELT(currentgp, GP_FILL, mkString("black"));
+    }
+    /* If recording a path, set gp$fill to black because only
+     * the path boundary matters.  This avoids unnecessary fill
+     * pattern resolution. */
+    if (LOGICAL(gridStateElement(dd, GSS_RESOLVINGPATH))[0])
     {
         SET_VECTOR_ELT(currentgp, GP_FILL, mkString("black"));
     }
