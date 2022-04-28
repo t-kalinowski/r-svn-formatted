@@ -2799,7 +2799,7 @@ static size_t clp_write(const void *ptr, size_t size, size_t nitems, Rconnection
 #ifdef Win32
     /* clipboard requires CRLF termination, copy by wchar_t */
     int i;
-    wchar_t wc, *p = (wchar_t *)ptr, *q = (wchar_t *)this->buff + this->pos;
+    wchar_t wc, *p = (wchar_t *)ptr, *q = (wchar_t *)(this->buff + this->pos);
 
     for (i = 0; i < len; i += sizeof(wchar_t))
     {
