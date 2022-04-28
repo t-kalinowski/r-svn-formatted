@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1998-2021   The R Core Team
+ *  Copyright (C) 1998-2022   The R Core Team
  *  Copyright (C) 2002-2005  The R Foundation
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *
@@ -760,7 +760,9 @@ void attribute_hidden BindDomain(char *R_Home)
 {
 #ifdef ENABLE_NLS
     char localedir[PATH_MAX + 20];
+#if defined(LC_MESSAGES) && !defined(Win32)
     setlocale(LC_MESSAGES, "");
+#endif
     textdomain(PACKAGE);
     char *p = getenv("R_TRANSLATIONS");
     if (p)
@@ -890,7 +892,7 @@ void setup_Rmainloop(void)
         snprintf(deferred_warnings[ndeferred_warnings++], 250, "Setting LC_COLLATE failed, using \"C\"\n");
     if (!setlocale(LC_TIME, ""))
         snprintf(deferred_warnings[ndeferred_warnings++], 250, "Setting LC_TIME failed, using \"C\"\n");
-#ifdef ENABLE_NLS
+#if defined(ENABLE_NLS) && defined(LC_MESSAGES)
     if (!setlocale(LC_MESSAGES, ""))
         snprintf(deferred_warnings[ndeferred_warnings++], 250, "Setting LC_MESSAGES failed, using \"C\"\n");
 #endif
