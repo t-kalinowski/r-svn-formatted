@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1999-2021   The R Core Team.
+ *  Copyright (C) 1999-2022   The R Core Team.
  *
  *  Based on ACM TOMS643 (1993)
  *
@@ -17,6 +17,9 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, a copy is available at
  *  https://www.R-project.org/Licenses/
+ *
+ * Main ref.:  Mehta & Patel (1986) ALGORITHM 643 FEXACT: FORTRAN ... Fisher’s Exact Test .... ACM TOMS
+ *             >>>  ../man/fisher.test.Rd  for *all* references
  */
 
 /*
@@ -827,7 +830,7 @@ double f3xact(int nrow, const int irow[], int ncol, const int icol[], int ntot, 
 {
     /*
      -----------------------------------------------------------------------
-      Name:	      F3XACT
+      Name:	      F3XACT  --- aka  "LONGP"
       Purpose:    Computes the longest path length for a given table.
 
       Arguments:
@@ -862,15 +865,6 @@ double f3xact(int nrow, const int irow[], int ncol, const int icol[], int ntot, 
     /* Now an argument :
         const int ldst = 200;  half stack size */
 
-    /* Initialized data */
-    static int nst = 0;
-    static int nitc = 0;
-    /* Local variables */
-    int i, k, ii, nn, ks;
-    int nr1, nco, ipn, irl, key, lev, itp, nro, kyy, nc1s;
-    double LP, v, val, vmn;
-    Rboolean xmin;
-
     /* Parameter adjustments */
     --stv;
     --ist;
@@ -887,10 +881,10 @@ double f3xact(int nrow, const int irow[], int ncol, const int icol[], int ntot, 
 
     if (nrow <= 1)
     { /* nrow is 1 */
-        LP = 0.;
+        double LP = 0.;
         if (nrow > 0)
         {
-            for (i = 1; i <= ncol; ++i)
+            for (int i = 1; i <= ncol; ++i)
                 LP -= fact[icol[i]];
         }
         return LP;
@@ -898,10 +892,10 @@ double f3xact(int nrow, const int irow[], int ncol, const int icol[], int ntot, 
 
     if (ncol <= 1)
     { /* ncol is 1 */
-        LP = 0.;
+        double LP = 0.;
         if (ncol > 0)
         {
-            for (i = 1; i <= nrow; ++i)
+            for (int i = 1; i <= nrow; ++i)
                 LP -= fact[irow[i]];
         }
         return LP;
@@ -917,7 +911,16 @@ double f3xact(int nrow, const int irow[], int ncol, const int icol[], int ntot, 
     /* ELSE:  larger than 2 x 2 : */
 
     /* Test for optimal table */
-    val = 0.;
+
+    /* Initialized data */
+    static int nst = 0;
+    static int nitc = 0;
+    /* Local variables */
+    int i, ii, nn;
+    int nco, ipn, key, itp, nro;
+    Rboolean xmin;
+
+    double val = 0.;
     if (irow[nrow] <= irow[1] + ncol)
     {
         xmin = f10act(nrow, &irow[1], ncol, &icol[1], &val, fact, &lb[1], &nu[1], &nr[1]);
@@ -939,7 +942,7 @@ double f3xact(int nrow, const int irow[], int ncol, const int icol[], int ntot, 
         ist[i] = -1;
 
     nn = ntot;
-    /* Minimize ncol */
+    // "Minimize ncol" : nco :=  min(ncol, nrow) ; nro := max(nrow, ncol)
     if (nrow >= ncol)
     {
         nro = nrow;
@@ -955,7 +958,7 @@ double f3xact(int nrow, const int irow[], int ncol, const int icol[], int ntot, 
             iro[i] = irow[i];
     }
     else
-    {
+    { // nrow < ncol
         nro = ncol;
         nco = nrow;
         ico[1] = irow[1];
@@ -969,13 +972,11 @@ double f3xact(int nrow, const int irow[], int ncol, const int icol[], int ntot, 
             iro[i] = icol[i];
     }
 
-    nc1s = nco - 1;
-    kyy = ico[nco] + 1;
+    int nc1s = nco - 1;
+    int kyy = ico[nco] + 1;
     /* Initialize pointers */
-    vmn = 1e100; /* to contain min(v..) */
-    irl = 1;
-    ks = 0;
-    k = ldst;
+    int irl = 1, ks = 0, k = ldst, lev, nr1;
+    double vmn = 1e100; /* to contain min(v..) &  return(-vmc) */
 
 LnewNode: /* Setup to generate new node */
 
@@ -1015,7 +1016,7 @@ LoopNode: /* Generate a node */
     alen[nco] = alen[lev] + fact[nr[lev]];
     lb[nco] = nr[lev];
 
-    v = val + alen[nco];
+    double v = val + alen[nco];
 
     if (nro == 2)
     { /* Only 1 row left */
@@ -1023,7 +1024,7 @@ LoopNode: /* Generate a node */
         for (i = 3; i <= nco; ++i)
             v += fact[ico[i] - lb[i]];
 
-        if (v < vmn)
+        if (vmn > v)
             vmn = v;
     }
     else if (nro == 3 && nco == 2)
@@ -1031,7 +1032,7 @@ LoopNode: /* Generate a node */
         int nn1 = nn - iro[irl] + 2, ic1 = ico[1] - lb[1], ic2 = ico[2] - lb[2],
             n11 = (iro[irl + 1] + 1) * (ic1 + 1) / nn1, n12 = iro[irl + 1] - n11;
         v += fact[n11] + fact[n12] + fact[ic1 - n11] + fact[ic2 - n12];
-        if (v < vmn)
+        if (vmn > v)
             vmn = v;
     }
     else
@@ -1054,17 +1055,18 @@ LoopNode: /* Generate a node */
             isort(&nco, &it[1]);
 
         /* Compute hash value */
-        key = it[1] * kyy + it[2];
+        /* Check more carefully for integer overflow: */
+        double dky = (double)kyy, dkey = it[1] * dky + it[2];
         for (i = 3; i <= nco; ++i)
         {
-            key = it[i] + key * kyy;
+            dkey = it[i] + dkey * dky;
         }
-        if (key < -1)
-        {
-            nst = 0;
-            nitc = 0;
-            error(_("Bug in fexact3, it[i=%d]=%d: negative key %d (kyy=%d)\n"), i, it[i], key, kyy);
-        }
+        if (dkey > INT_MAX)
+            error(_("FEXACT[f3xact()] error: hash key %.0g > INT_MAX, kyy=%d, it[i (= nco = %d)]= %d.\n"
+                    "Rather set 'simulate.p.value=TRUE'\n"),
+                  dkey, kyy, i, it[i]);
+        else
+            key = (int)dkey;
         /* Table index */
         ipn = key % ldst + 1;
         /* Find empty position */
@@ -1096,9 +1098,9 @@ LoopNode: /* Generate a node */
             MAYBE_PUSH_AND_LOOP
         }
 
-        /* this happens less, now that we check for negative key above: */
-        nst = 0;
-        nitc = 0;
+        /* this happens less, now that we check for negative key above:
+           nst = 0;
+           nitc = 0; */
         error(_("FEXACT error 30.  Stack length exceeded in f3xact,\n"
                 "  (ldst=%d, key=%d, ipn=%d, itp=%d, ist[ii=%d]=%d).\n"
                 "Increase workspace or consider using 'simulate.p.value=TRUE'"),
@@ -1167,7 +1169,7 @@ double f4xact(int nrow, int *irow, int ncol, int *icol, double dspt, const doubl
 {
     /*
       -----------------------------------------------------------------------
-      Name:	      F4XACT
+      Name:	      F4XACT --- aka "SHORTP"
       Purpose:    Computes the shortest path length for a given table.
 
       Arguments:
@@ -1439,7 +1441,6 @@ void f5xact(double pastp, double tol, int *kval, int *key, int ldkey, int *ipoin
 
     /* Local variables */
     static int itmp, ird, ipn, itp; /* << *need* static, see PSH above */
-    double test1, test2;
 
     /* Parameter adjustments */
     --nl;
@@ -1504,8 +1505,7 @@ void f5xact(double pastp, double tol, int *kval, int *key, int ldkey, int *ipoin
 L40: /* Find location, if any, of pastp */
 
     ipn = ipoin[itp];
-    test1 = pastp - tol;
-    test2 = pastp + tol;
+    double test1 = pastp - tol, test2 = pastp + tol;
 
     do
     {
@@ -1567,6 +1567,8 @@ L60:
 
 Rboolean f6xact(int nrow, int *irow, const int kyy[], int *key, int ldkey, int *last, int *ipn)
 {
+    --key;
+
     /*
       -----------------------------------------------------------------------
       Name:	      F6XACT  aka "GET"
@@ -1588,9 +1590,6 @@ Rboolean f6xact(int nrow, int *irow, const int kyy[], int *key, int ldkey, int *
         TRUE if there are no additional nodes to process.           (Output)
       -----------------------------------------------------------------------
       */
-    int kval, j;
-
-    --key;
 
 L10:
     ++(*last);
@@ -1600,9 +1599,9 @@ L10:
             goto L10;
 
         /* Get KVAL from the stack */
-        kval = key[*last];
+        int kval = key[*last];
         key[*last] = -9999;
-        for (j = nrow - 1; j > 0; j--)
+        for (int j = nrow - 1; j > 0; j--)
         {
             irow[j] = kval / kyy[j];
             kval -= irow[j] * kyy[j];
