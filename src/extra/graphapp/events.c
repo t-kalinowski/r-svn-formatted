@@ -580,10 +580,12 @@ static long handle_message(HWND hwnd, UINT message, WPARAM wParam, LONG lParam, 
             wchar_t wcs[3];
             HKL dwhkl;
             static wchar_t deadkey = L'\0';
+            int result;
 
             dwhkl = GetKeyboardLayout((DWORD)0);
             GetKeyboardState(sta);
-            if (ToUnicodeEx(wParam, lParam, sta, wcs, /* 3 */ sizeof(wcs) / sizeof(wchar_t), 0, dwhkl) == 1)
+            result = ToUnicodeEx(wParam, lParam, sta, wcs, /* 3 */ sizeof(wcs) / sizeof(wchar_t), 0, dwhkl);
+            if (result == 1)
             {
                 if (deadkey != L'\0')
                 {
@@ -600,9 +602,11 @@ static long handle_message(HWND hwnd, UINT message, WPARAM wParam, LONG lParam, 
                         wcs_in[1] = 0x300;
                         break;
                     case 0xa8: /* diaeresis */
+                    case 0x22:
                         wcs_in[1] = 0x308;
                         break;
                     case 0xb4: /* acute accent */
+                    case 0x27:
                         wcs_in[1] = 0x301;
                         break;
                     case 0xb8: /* cedilla */
@@ -626,8 +630,11 @@ static long handle_message(HWND hwnd, UINT message, WPARAM wParam, LONG lParam, 
                     case 0x7e: /* tilde */
                         wcs_in[1] = 0x303;
                         break;
-                    case 0x2e: /* dot above */
+                    case 0x2d9: /* dot above */
                         wcs_in[1] = 0x307;
+                        break;
+                    case 0xb0: /* ring above */
+                        wcs_in[1] = 0x30a;
                         break;
                     default:
                         wcs_in[1] = deadkey;
@@ -654,17 +661,18 @@ static long handle_message(HWND hwnd, UINT message, WPARAM wParam, LONG lParam, 
                     handle_char(obj, wcs[0]);
                 deadkey = L'\0';
             }
-            else
+            else if (result != 0)
             {
-                if (deadkey == wcs[0])
+                if (deadkey == L'\0')
+                    deadkey = wcs[0];
+                else
                 {
-                    /* when an accent key is pressed twice, emit non-combining
-                       version of it */
+                    /* cancel the effect of previous dead key and print
+                       non-combining versions of both */
                     handle_char(obj, deadkey);
+                    handle_char(obj, wcs[0]);
                     deadkey = L'\0';
                 }
-                else
-                    deadkey = wcs[0];
             }
         }
         break;
