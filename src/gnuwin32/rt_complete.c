@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  file rt_complete.c
- *  Copyright (C) 2007-2017 The R Core Team.
+ *  Copyright (C) 2007-2022 The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -59,6 +59,7 @@ static int rt_completion(char *buf, int offset, int *loc)
     const char *additional_text;
     SEXP cmdSexp, cmdexpr, ans = R_NilValue;
     ParseStatus status;
+    const void *vmax = NULL;
 
     if (!completion_available)
         return gl_tab(buf, offset, loc);
@@ -123,6 +124,7 @@ static int rt_completion(char *buf, int offset, int *loc)
     for (i = 0; i < length(cmdexpr); i++)
         ans = eval(VECTOR_ELT(cmdexpr, i), R_GlobalEnv);
     UNPROTECT(2);
+    PROTECT(ans);
 
     /* ans has the form list(addition, possible), where 'addition' is
        unique additional text if any, and 'possible' is a character
@@ -135,6 +137,7 @@ static int rt_completion(char *buf, int offset, int *loc)
 #define ADDITION 0
 #define POSSIBLE 1
 
+    vmax = vmaxget();
     alen = length(VECTOR_ELT(ans, POSSIBLE));
     if (alen)
     {
@@ -142,13 +145,13 @@ static int rt_completion(char *buf, int offset, int *loc)
         printf("\n"); /* finish current line */
         for (i = 0; i < min(alen, max_show); i++)
         {
-            printf("%s\n", CHAR(STRING_ELT(VECTOR_ELT(ans, POSSIBLE), i)));
+            printf("%s\n", translateChar(STRING_ELT(VECTOR_ELT(ans, POSSIBLE), i)));
         }
         if (alen > max_show)
             printf("\n[...truncated]\n");
         cursor_position = -2; /* Need to redisplay whole line */
     }
-    additional_text = CHAR(STRING_ELT(VECTOR_ELT(ans, ADDITION), 0));
+    additional_text = translateChar(STRING_ELT(VECTOR_ELT(ans, ADDITION), 0));
     alen = strlen(additional_text);
     if (alen)
     {
@@ -156,6 +159,8 @@ static int rt_completion(char *buf, int offset, int *loc)
         memcpy(buf + cp, additional_text, alen + 1);
         *loc = cp + alen;
     }
+    vmaxset(vmax);
+    UNPROTECT(1); /* ans */
     return cursor_position;
 }
 
