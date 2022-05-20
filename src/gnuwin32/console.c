@@ -466,7 +466,7 @@ static int intersect_input(ConsoleData p, int apply)
 
 /* Here fch and lch are columns, and we have to cope with both MBCS
    and double-width chars. */
-
+/* caller must manage R_alloc stack */
 static void writelineHelper(ConsoleData p, int fch, int lch, rgb fgr, rgb bgr, int j, int len, wchar_t *s)
 {
     rect r;
@@ -569,7 +569,9 @@ static int writeline(control c, ConsoleData p, int i, int j)
     int c1, c2, c3, x0, y0, x1, y1;
     rect r;
     int bg, fg, highlight, base;
+    const void *vmax = NULL;
 
+    vmax = vmaxget();
     if (p->kind == CONSOLE)
         base = consolebg;
     else if (p->kind == PAGER)
@@ -582,7 +584,10 @@ static int writeline(control c, ConsoleData p, int i, int j)
     highlight = p->guiColors[base + 2];
 
     if ((i < 0) || (i >= NUMLINES))
+    {
+        vmaxset(vmax);
         return 0;
+    }
     stmp = s = LINE(i);
     len = wcswidth(stmp);
     /* If there is a \r in the line, we need to preprocess it */
@@ -590,7 +595,8 @@ static int writeline(control c, ConsoleData p, int i, int j)
     {
         int l, l1;
         stmp = LINE(i);
-        s = (wchar_t *)alloca((wcslen(stmp) + 1) * sizeof(wchar_t));
+        /* stmp may be large particularly when using txtProgressBar */
+        s = (wchar_t *)R_alloc(wcslen(stmp) + 1, sizeof(wchar_t));
         l = p0 - stmp;
         wcsncpy(s, stmp, l);
         stmp = p0 + 1;
@@ -622,6 +628,7 @@ static int writeline(control c, ConsoleData p, int i, int j)
     if (insel < 0)
     {
         WLHELPER(0, col1, bg, fg);
+        vmaxset(vmax);
         return len;
     }
     if ((USER(i) >= 0) && (USER(i) < FC + COLS))
@@ -703,7 +710,10 @@ static int writeline(control c, ConsoleData p, int i, int j)
         }
     }
     if (insel != 0)
+    {
+        vmaxset(vmax);
         return len;
+    }
     c1 = (p->my0 < p->my1);
     c2 = (p->my0 == p->my1);
     c3 = (p->mx0 < p->mx1);
@@ -724,7 +734,10 @@ static int writeline(control c, ConsoleData p, int i, int j)
     if (i == y0)
     {
         if (FC + COLS < x0)
+        {
+            vmaxset(vmax);
             return len;
+        }
         if (mbcslocale)
         {
             int w0, w1 = 1;
@@ -746,7 +759,10 @@ static int writeline(control c, ConsoleData p, int i, int j)
     if (i == y1)
     {
         if (FC > x1)
+        {
+            vmaxset(vmax);
             return len;
+        }
         if (mbcslocale)
         {
             int w0;
@@ -764,6 +780,7 @@ static int writeline(control c, ConsoleData p, int i, int j)
     else
         c2 = COLS - 1;
     WLHELPER(c1, c2, bg, fg);
+    vmaxset(vmax);
     return len;
 }
 
@@ -832,7 +849,7 @@ void setfirstvisible(control c, int fv)
     {
         ww = min(NUMLINES, ROWS) - 1;
         rw = FV + ww;
-        writeline(c, p, rw, ww);
+        WRITELINE(rw, ww);
         if (ds == 0)
         {
             RSHOW(RLINE(ww));
@@ -1064,12 +1081,15 @@ static void storekeys(control c, const char *str)
     if (isUnicodeWindow(c))
     {
         size_t sz = (strlen(str) + 1) * sizeof(wchar_t);
+        const void *vmax = NULL;
+        vmax = vmaxget();
         wchar_t *wcs = (wchar_t *)R_alloc(strlen(str) + 1, sizeof(wchar_t));
         memset(wcs, 0, sz);
         mbstowcs(wcs, str, sz - 1);
         int i;
         for (i = 0; wcs[i]; i++)
             storekey(c, wcs[i]);
+        vmaxset(vmax);
     }
     else
     {
