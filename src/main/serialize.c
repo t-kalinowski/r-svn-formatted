@@ -2026,6 +2026,7 @@ static SEXP ReadItem(SEXP ref_table, R_inpstream_t stream)
         }
         SETCAR(s, ReadItem(ref_table, stream));
         R_ReadItemDepth--; /* do this early because of the recursion. */
+        R_CheckStack();
         SETCDR(s, ReadItem(ref_table, stream));
         /* For reading closures and promises stored in earlier versions, convert NULL env to baseenv() */
         if (type == CLOSXP && CLOENV(s) == R_NilValue)
