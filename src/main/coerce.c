@@ -1949,10 +1949,8 @@ SEXP attribute_hidden do_ascall(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-/* call and rho are only needed for _R_CHECK_LENGTH_1_LOGIC2_ checking
-       and diagnostics; to be removed if length>1 value is made an error */
 /* return int, not Rboolean, for NA_LOGICAL : */
-int asLogical2(SEXP x, int checking, SEXP call, SEXP rho)
+int asLogical2(SEXP x, int checking, SEXP call)
 {
     int warn = 0;
 
@@ -1964,8 +1962,7 @@ int asLogical2(SEXP x, int checking, SEXP call, SEXP rho)
         {
             char msg[128];
             snprintf(msg, 128, _("'length = %lld' in coercion to '%s'"), (long long)XLENGTH(x), "logical(1)");
-            R_BadValueInRCode(x, call, rho, "length > 1 in coercion to logical", msg, msg, "_R_CHECK_LENGTH_1_LOGIC2_",
-                              TRUE /* by default error */);
+            errorcall(call, msg);
         }
         switch (TYPEOF(x))
         {
@@ -1994,7 +1991,7 @@ int asLogical2(SEXP x, int checking, SEXP call, SEXP rho)
 
 int asLogical(SEXP x)
 {
-    return asLogical2(x, /* checking = */ 0, R_NilValue, R_NilValue);
+    return asLogical2(x, /* checking = */ 0, R_NilValue);
 }
 
 int asInteger(SEXP x)

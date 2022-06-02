@@ -2346,14 +2346,11 @@ SEXP attribute_hidden do_interruptsSuspended(SEXP call, SEXP op, SEXP args, SEXP
     return ScalarLogical(orig_value);
 }
 
-/*
-  Currently called from
-
-  coerce.c
-  by asLogical2 with errByDefault = TRUE
- */
-void attribute_hidden R_BadValueInRCode(SEXP value, SEXP call, SEXP rho, const char *rawmsg, const char *errmsg,
-                                        const char *warnmsg, const char *varname, Rboolean errByDefault)
+#if 0
+void attribute_hidden
+R_BadValueInRCode(SEXP value, SEXP call, SEXP rho, const char *rawmsg,
+                  const char *errmsg, const char *warnmsg,
+                  const char *varname, Rboolean errByDefault)
 {
     /* disable GC so that use of this temporary checking code does not
        introduce new PROTECT errors e.g. in asLogical() use */
@@ -2365,172 +2362,163 @@ void attribute_hidden R_BadValueInRCode(SEXP value, SEXP call, SEXP rho, const c
     const void *vmax = vmaxget();
     Rboolean err = check && StringTrue(check);
     if (!err && check && StringFalse(check))
-        check = NULL;       /* disabled */
+	check = NULL; /* disabled */
     Rboolean abort = FALSE; /* R_Suicide/abort */
     Rboolean verbose = FALSE;
     Rboolean warn = FALSE;
     const char *pkgname = 0;
-    if (!err && check)
-    {
-        const char *pprefix = "package:";
-        const char *aprefix = "abort";
-        const char *vprefix = "verbose";
-        const char *wprefix = "warn";
-        const char *cpname = "_R_CHECK_PACKAGE_NAME_";
-        size_t lpprefix = strlen(pprefix);
-        size_t laprefix = strlen(aprefix);
-        size_t lvprefix = strlen(vprefix);
-        size_t lwprefix = strlen(wprefix);
-        size_t lcpname = strlen(cpname);
-        Rboolean ignore = FALSE;
+    if (!err && check) {
+	const char *pprefix = "package:";
+	const char *aprefix = "abort";
+	const char *vprefix = "verbose";
+	const char *wprefix = "warn";
+	const char *cpname = "_R_CHECK_PACKAGE_NAME_";
+	size_t lpprefix = strlen(pprefix);
+	size_t laprefix = strlen(aprefix);
+	size_t lvprefix = strlen(vprefix);
+	size_t lwprefix = strlen(wprefix);
+	size_t lcpname = strlen(cpname);
+	Rboolean ignore = FALSE;
 
-        SEXP spkg = R_NilValue;
-        for (; rho != R_EmptyEnv; rho = ENCLOS(rho))
-            if (R_IsPackageEnv(rho))
-            {
-                PROTECT(spkg = R_PackageEnvName(rho));
-                nprotect++;
-                break;
-            }
-            else if (R_IsNamespaceEnv(rho))
-            {
-                PROTECT(spkg = R_NamespaceEnvSpec(rho));
-                nprotect++;
-                break;
-            }
-        if (spkg != R_NilValue)
-            pkgname = translateChar(STRING_ELT(spkg, 0));
-        /* Sometimes pkgname is like
-              package:MoTBFs,
-           so we need tp strip it off.
-           This is independent of pprefix.
-        */
-        if (strstr(pkgname, "package:"))
-            pkgname += 8;
+	SEXP spkg = R_NilValue;
+	for(; rho != R_EmptyEnv; rho = ENCLOS(rho))
+	    if (R_IsPackageEnv(rho)) {
+		PROTECT(spkg = R_PackageEnvName(rho));
+		nprotect++;
+		break;
+	    } else if (R_IsNamespaceEnv(rho)) {
+		PROTECT(spkg = R_NamespaceEnvSpec(rho));
+		nprotect++;
+		break;
+	    }
+	if (spkg != R_NilValue)
+	    pkgname = translateChar(STRING_ELT(spkg, 0));
+	/* Sometimes pkgname is like 
+	      package:MoTBFs,
+	   so we need tp strip it off.
+	   This is independent of pprefix.
+	*/
+	if (strstr(pkgname, "package:"))  pkgname += 8;
 
-        while (check[0] != '\0')
-        {
-            if (!strncmp(pprefix, check, lpprefix))
-            {
-                /* check starts with "package:" */
-                check += lpprefix;
-                size_t arglen = 0;
-                const char *sep = strchr(check, ',');
-                if (sep)
-                    arglen = sep - check;
-                else
-                    arglen = strlen(check);
-                ignore = TRUE;
-                if (pkgname)
-                {
-                    // a named package
-                    if (!strncmp(check, pkgname, arglen) && strlen(pkgname) == arglen)
-                        ignore = FALSE;
-                    // 'this package'
-                    else if (!strncmp(check, cpname, arglen) && lcpname == arglen)
-                    {
-                        /* package name specified in _R_CHECK_PACKAGE_NAME */
-                        const char *envpname = getenv(cpname);
-                        if (envpname && !strcmp(envpname, pkgname))
-                            ignore = FALSE;
-                    }
-                    // "all_base" , that is all standard packages.
-                    else if (!strncmp(check, "all_base", arglen) && arglen == 8)
-                    {
-                        char *std[] = {"base", "compiler",
-                                       // datasets has no code
-                                       "grDevies", "graphics", "grid", "methods", "parallel", "splines", "stats",
-                                       "stats4", "utils", "tools"};
-                        int nstd = sizeof(std) / sizeof(char *);
-                        for (int i = 0; i < nstd; i++)
-                            if (!strcmp(std[i], pkgname))
-                            {
-                                ignore = FALSE;
-                                break;
-                            }
-                    }
-                }
-                check += arglen;
-            }
-            else if (!strncmp(aprefix, check, laprefix))
-            {
-                /* check starts with "abort" */
-                check += laprefix;
-                abort = TRUE;
-            }
-            else if (!strncmp(vprefix, check, lvprefix))
-            {
-                /* check starts with "verbose" */
-                check += lvprefix;
-                verbose = TRUE;
-            }
-            else if (!strncmp(wprefix, check, lwprefix))
-            {
-                /* check starts with "warn" */
-                check += lwprefix;
-                warn = TRUE;
-            }
-            else if (check[0] == ',')
-            {
-                check++;
-            }
-            else
-                error("invalid value of %s", varname);
-        } // end of while (check[0] != '\0')
-
-        if (ignore)
-        {
-            abort = FALSE; /* err is FALSE */
-            verbose = FALSE;
-            warn = FALSE;
-        }
-        else if (!abort && !warn)
-            err = TRUE;
+	while (check[0] != '\0') {
+	    if (!strncmp(pprefix, check, lpprefix)) {
+		/* check starts with "package:" */
+		check += lpprefix;
+		size_t arglen = 0;
+		const char *sep = strchr(check, ',');
+		if (sep)
+		    arglen = sep - check;
+		else
+		    arglen = strlen(check);
+		ignore = TRUE;
+		if (pkgname) {
+		    // a named package
+		    if (!strncmp(check, pkgname, arglen) && strlen(pkgname) == arglen)
+			ignore = FALSE;
+		    // 'this package' 
+		    else if (!strncmp(check, cpname, arglen) && lcpname == arglen) {
+			/* package name specified in _R_CHECK_PACKAGE_NAME */
+			const char *envpname = getenv(cpname);
+			if (envpname && !strcmp(envpname, pkgname))
+			    ignore = FALSE;
+		    }
+		    // "all_base" , that is all standard packages.
+		    else if (!strncmp(check, "all_base", arglen) && arglen == 8) {
+			char *std[] = {
+			    "base",
+			    "compiler",
+			    // datasets has no code
+			    "grDevies",
+			    "graphics",
+			    "grid",
+			    "methods",
+			    "parallel",
+			    "splines",
+			    "stats",
+			    "stats4",
+			    "utils",
+			    "tools"
+			};
+			int nstd = sizeof(std)/sizeof(char *);
+			for (int i = 0; i < nstd; i++)
+			    if(!strcmp(std[i], pkgname)) {
+				ignore = FALSE;
+				break;
+			    }
+		    }
+		}
+		check += arglen;
+	    } else if (!strncmp(aprefix, check, laprefix)) {
+		/* check starts with "abort" */
+		check += laprefix;
+		abort = TRUE;
+	    } else if (!strncmp(vprefix, check, lvprefix)) {
+		/* check starts with "verbose" */
+		check += lvprefix;
+		verbose = TRUE;
+	    } else if (!strncmp(wprefix, check, lwprefix)) {
+		/* check starts with "warn" */
+		check += lwprefix;
+		warn = TRUE;
+	    } else if (check[0] == ',') {
+		check++;
+	    } else
+		error("invalid value of %s", varname);
+	} // end of while (check[0] != '\0')
+ 
+	if (ignore) {
+	    abort = FALSE; /* err is FALSE */
+	    verbose = FALSE;
+	    warn = FALSE;
+	} else if (!abort && !warn)
+	    err = TRUE;
     }
-    if (verbose)
-    {
-        int oldout = R_OutputCon;
-        R_OutputCon = 2;
-        int olderr = R_ErrorCon;
-        R_ErrorCon = 2;
-        REprintf(" ----------- FAILURE REPORT -------------- \n");
-        REprintf(" --- failure: %s ---\n", rawmsg);
-        REprintf(" --- srcref --- \n");
-        SrcrefPrompt("", R_getCurrentSrcref());
-        REprintf("\n");
-        if (pkgname)
-        {
-            REprintf(" --- package (from environment) --- \n");
-            REprintf("%s\n", pkgname);
-        }
-        REprintf(" --- call from context --- \n");
-        PrintValue(R_GlobalContext->call);
-        REprintf(" --- call from argument --- \n");
-        PrintValue(call);
-        REprintf(" --- R stacktrace ---\n");
-        printwhere();
-        REprintf(" --- value of length: %d type: %s ---\n", length(value), type2char(TYPEOF(value)));
-        PrintValue(value);
-        REprintf(" --- function from context --- \n");
-        if (R_GlobalContext->callfun != NULL && TYPEOF(R_GlobalContext->callfun) == CLOSXP)
-            PrintValue(R_GlobalContext->callfun);
-        REprintf(" --- function search by body ---\n");
-        if (R_GlobalContext->callfun != NULL && TYPEOF(R_GlobalContext->callfun) == CLOSXP)
-            findFunctionForBody(R_ClosureExpr(R_GlobalContext->callfun));
-        REprintf(" ----------- END OF FAILURE REPORT -------------- \n");
-        R_OutputCon = oldout;
-        R_ErrorCon = olderr;
+    if (verbose) {
+	int oldout = R_OutputCon;
+	R_OutputCon = 2;
+	int olderr = R_ErrorCon;
+	R_ErrorCon = 2;
+	REprintf(" ----------- FAILURE REPORT -------------- \n");
+	REprintf(" --- failure: %s ---\n", rawmsg);
+	REprintf(" --- srcref --- \n");
+	SrcrefPrompt("", R_getCurrentSrcref());
+	REprintf("\n");
+	if (pkgname) {
+	    REprintf(" --- package (from environment) --- \n");
+	    REprintf("%s\n", pkgname);
+	}
+	REprintf(" --- call from context --- \n");
+	PrintValue(R_GlobalContext->call);
+	REprintf(" --- call from argument --- \n");
+	PrintValue(call);
+	REprintf(" --- R stacktrace ---\n");
+	printwhere();
+	REprintf(" --- value of length: %d type: %s ---\n",
+		 length(value), type2char(TYPEOF(value)));
+	PrintValue(value);
+	REprintf(" --- function from context --- \n");
+	if (R_GlobalContext->callfun != NULL &&
+	    TYPEOF(R_GlobalContext->callfun) == CLOSXP)
+	    PrintValue(R_GlobalContext->callfun);
+	REprintf(" --- function search by body ---\n");
+	if (R_GlobalContext->callfun != NULL &&
+	    TYPEOF(R_GlobalContext->callfun) == CLOSXP)
+	    findFunctionForBody(R_ClosureExpr(R_GlobalContext->callfun));
+	REprintf(" ----------- END OF FAILURE REPORT -------------- \n");
+	R_OutputCon = oldout;
+	R_ErrorCon = olderr;
     }
     if (abort)
-        R_Suicide(rawmsg);
+	R_Suicide(rawmsg);
     else if (warn)
-        warningcall(call, warnmsg);
+	warningcall(call, warnmsg);
     else if (err || errByDefault)
-        errorcall(call, errmsg);
+	errorcall(call, errmsg);
     vmaxset(vmax);
     UNPROTECT(nprotect);
     R_GCEnabled = enabled;
 }
+#endif
 
 /* These functions are to be used in error messages, and available for others to use in the API
    GetCurrentSrcref returns the first non-NULL srcref after skipping skip of them.  If it
