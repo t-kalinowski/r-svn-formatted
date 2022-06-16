@@ -1196,7 +1196,8 @@ const char *translateChar(SEXP x)
     return copyAndFreeStringBuffer(&cbuff);
 }
 
-/* Variant which must work, used for file paths, including devices */
+/* Variant which does not return escaped string (which must work, throwing
+   error when conversion fails). Used for file paths, including devices. */
 const char *translateCharFP(SEXP x)
 {
     CHECK_CHARSXP(x);
@@ -1210,7 +1211,8 @@ const char *translateCharFP(SEXP x)
     return copyAndFreeStringBuffer(&cbuff);
 }
 
-/* Variant which may return NULL, used for file paths */
+/* Variant which returns NULL (with a warning) when conversion fails,
+   used for file paths. */
 attribute_hidden const char *translateCharFP2(SEXP x)
 {
     CHECK_CHARSXP(x);
@@ -1259,7 +1261,6 @@ SEXP Rf_installChar(SEXP x)
    R_alloc stack.
 
    Use for writeLines/Bin/Char, the first only with useBytes = TRUE.
-
 */
 const char *translateChar0(SEXP x)
 {
@@ -1390,7 +1391,8 @@ const char *translateCharUTF8(SEXP x)
     return copyAndFreeStringBuffer(&cbuff);
 }
 
-/* Variant which does not return escaped string (which must work) */
+/* Variant which does not return escaped string (which must work, throwing
+   error when conversion fails). */
 attribute_hidden const char *trCharUTF8(SEXP x)
 {
     CHECK_CHARSXP(x);
@@ -1402,6 +1404,25 @@ attribute_hidden const char *trCharUTF8(SEXP x)
     R_StringBuffer cbuff = {NULL, 0, MAXELTSIZE};
     translateToUTF8(ans, &cbuff, t, 1);
     return copyAndFreeStringBuffer(&cbuff);
+}
+
+/* Variant which returns NULL (with a warning) when conversion fails. */
+attribute_hidden const char *trCharUTF82(SEXP x)
+{
+    CHECK_CHARSXP(x);
+    nttype_t t = needsTranslationUTF8(x);
+    const char *ans = CHAR(x);
+    if (t == NT_NONE)
+        return ans;
+
+    R_StringBuffer cbuff = {NULL, 0, MAXELTSIZE};
+    if (translateToUTF8(ans, &cbuff, t, 2))
+    {
+        R_FreeStringBuffer(&cbuff);
+        return NULL;
+    }
+    else
+        return copyAndFreeStringBuffer(&cbuff);
 }
 
 /* Decides type of translation needed to get wchar_t*. */
