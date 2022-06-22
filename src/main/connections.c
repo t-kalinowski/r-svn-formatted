@@ -207,7 +207,7 @@ static void conFinalizer(SEXP ptr)
         return;
     {
         Rconnection this = getConnection(ncon);
-        if (strcmp(this->class, "textConnection"))
+        if (this->isopen && strcmp(this->class, "textConnection"))
             warning(_("closing unused connection %d (%s)\n"), ncon, this->description);
     }
 
