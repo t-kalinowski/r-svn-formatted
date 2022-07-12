@@ -157,30 +157,43 @@ static void NORET reg_report(int rc, regex_t *reg, const char *pat)
         error(_("invalid regular expression, reason '%s'"), errbuf);
 }
 
-/* FIXME: make more robust, and public */
-static SEXP mkCharWLen(const wchar_t *wc, int nc)
+/* wc must be zero-terminated, nc = wsclen(wc), maybe_ascii is TRUE if the input
+   is probably pure ASCII. maybe_ascii is useful for regular expressions over
+   long vectors (lines of text) where most lines are ASCII, but not all, to
+   reduce the overhead of encoding conversions. */
+static SEXP mkCharWLenASCII(const wchar_t *wc, int nc, Rboolean maybe_ascii)
 {
-    size_t nb;
-    char *xi;
-    wchar_t *wt;
-    R_CheckStack2(sizeof(wchar_t) * (nc + 1));
-    wt = (wchar_t *)alloca((nc + 1) * sizeof(wchar_t));
-    wcsncpy(wt, wc, nc);
-    wt[nc] = 0;
-    nb = wcstoutf8(NULL, wt, INT_MAX);
-    R_CheckStack2(sizeof(char) * nb);
-    xi = (char *)alloca(nb * sizeof(char));
-    wcstoutf8(xi, wt, nb);
-    return mkCharLenCE(xi, (int)nb - 1, CE_UTF8);
-}
+    if (maybe_ascii)
+    {
+        char *xi = R_Calloc(nc, char);
+        for (int i = 0; i < nc; i++)
+        {
+            unsigned int u = (unsigned int)wc[i];
+            if (u > 127)
+            {
+                R_Free(xi);
+                return mkCharWLenASCII(wc, nc, FALSE);
+            }
+            xi[i] = (char)u;
+        }
+        SEXP ans = mkCharLenCE(xi, nc, CE_UTF8);
+        R_Free(xi);
+        return ans;
+    }
 
-static SEXP mkCharW(const wchar_t *wc)
-{
-    size_t nb = wcstoutf8(NULL, wc, INT_MAX);
-    char *xi = (char *)R_Calloc(nb, char);
-    SEXP ans;
-    wcstoutf8(xi, wc, nb);
-    ans = mkCharCE(xi, CE_UTF8);
+    /* possibly not ASCII */
+    size_t nb = (nc + 1) * 4;
+    if (nb <= 8192)
+    {
+        char xi[8192];
+        nb = wcstoutf8(xi, wc, nb);
+        return mkCharLenCE(xi, (int)nb - 1, CE_UTF8);
+    }
+
+    nb = wcstoutf8(NULL, wc, INT_MAX);
+    char *xi = R_Calloc(nb, char);
+    nb = wcstoutf8(xi, wc, nb);
+    SEXP ans = mkCharLenCE(xi, (int)nb - 1, CE_UTF8);
     R_Free(xi);
     return ans;
 }
@@ -814,6 +827,9 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
             uint32_t ovecsize = 10;
             R_pcre2_prepare(split, x, use_UTF8, FALSE, &tables, &re, &mcontext);
             pcre2_match_data *mdata = pcre2_match_data_create(ovecsize, NULL);
+            uint32_t eflag = 0;
+            if (use_UTF8)
+                eflag |= PCRE2_NO_UTF_CHECK;
 #else
             pcre *re_pcre = NULL;
             pcre_extra *re_pe = NULL;
@@ -863,7 +879,8 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                 {
                     int rc;
 #ifdef HAVE_PCRE2
-                    while ((rc = pcre2_match(re, (PCRE2_SPTR)bufp, PCRE2_ZERO_TERMINATED, 0, 0, mdata, mcontext)) >= 0)
+                    while ((rc = pcre2_match(re, (PCRE2_SPTR)bufp, PCRE2_ZERO_TERMINATED, 0, eflag, mdata, mcontext)) >=
+                           0)
                     {
                         ovector = pcre2_get_ovector_pointer(mdata);
 #else
@@ -885,7 +902,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                 for (j = 0; j < ntok; j++)
                 {
 #ifdef HAVE_PCRE2
-                    int rc = pcre2_match(re, (PCRE2_SPTR)bufp, PCRE2_ZERO_TERMINATED, 0, 0, mdata, mcontext);
+                    int rc = pcre2_match(re, (PCRE2_SPTR)bufp, PCRE2_ZERO_TERMINATED, 0, eflag, mdata, mcontext);
 #else
                     int rc = pcre_exec(re_pcre, re_pe, bufp, (int)strlen(bufp), 0, 0, ovector, ovecsize);
 #endif
@@ -953,6 +970,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                 error(_("'split' string %d is invalid"), itok + 1);
             if ((rc = tre_regwcomp(&reg, wsplit, cflags)))
                 reg_report(rc, &reg, translateChar(STRING_ELT(tok, itok)));
+            Rboolean ascii_split = IS_ASCII(STRING_ELT(tok, itok));
 
             vmax2 = vmaxget();
             for (i = itok; i < len; i += tlen)
@@ -964,6 +982,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                     continue;
                 }
                 wbuf = wtransChar2(STRING_ELT(x, i));
+                Rboolean ascii_xi = IS_ASCII(STRING_ELT(x, i));
                 if (!wbuf)
                 {
                     if (nwarn++ < NWARN)
@@ -1008,10 +1027,10 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
                         wpt[1] = 0;
                         wbufp++;
                     }
-                    SET_STRING_ELT(t, j, mkCharWLen(wpt, regmatch[0].rm_so));
+                    SET_STRING_ELT(t, j, mkCharWLenASCII(wpt, regmatch[0].rm_so, ascii_split && ascii_xi));
                 }
                 if (*wbufp)
-                    SET_STRING_ELT(t, ntok, mkCharWLen(wbufp, (int)wcslen(wbufp)));
+                    SET_STRING_ELT(t, ntok, mkCharWLenASCII(wbufp, (int)wcslen(wbufp), ascii_split && ascii_xi));
                 vmaxset(vmax2);
             }
             tre_regfree(&reg);
@@ -1169,7 +1188,8 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
 
 /* Used by grep[l] and [g]regexpr, with return value the match
    position in characters */
-/* This could be faster for plen > 1, but uses in R are for small strings */
+/* This could be faster for plen > 1 particularly in non-UTF8 mbcs, but
+   uses in R are for small strings and such mbcs should no longer be common */
 static int fgrep_one(const char *pat, const char *target, Rboolean useBytes, Rboolean use_UTF8, int *next)
 {
     int plen = (int)strlen(pat), len = (int)strlen(target);
@@ -1196,19 +1216,19 @@ static int fgrep_one(const char *pat, const char *target, Rboolean useBytes, Rbo
     }
     if (!useBytes && use_UTF8)
     {
-        int ib, used;
-        for (ib = 0, i = 0; ib <= len - plen; i++)
+        char *pos = strstr(target, pat);
+        if (pos)
         {
-            if (strncmp(pat, target + ib, plen) == 0)
-            {
-                if (next != NULL)
-                    *next = ib + plen;
-                return i;
-            }
-            used = utf8clen(target[ib]);
-            if (used <= 0)
-                break;
-            ib += used;
+            int ib = (int)(pos - target);
+            int jb;
+
+            if (next != NULL)
+                *next = ib + plen;
+            for (jb = 0, i = 0; jb < ib; jb++)
+                /* count leading UTF-8 bytes */
+                if ((target[jb] & 0xc0) != 0x80)
+                    i++;
+            return i;
         }
     }
     else if (!useBytes && mbcslocale)
@@ -1231,28 +1251,37 @@ static int fgrep_one(const char *pat, const char *target, Rboolean useBytes, Rbo
         }
     }
     else
-        for (i = 0; i <= len - plen; i++)
-            if (strncmp(pat, target + i, plen) == 0)
-            {
-                if (next != NULL)
-                    *next = i + plen;
-                return i;
-            }
+    {
+        char *pos = strstr(target, pat);
+        if (pos)
+        {
+            i = (int)(pos - target);
+            if (next != NULL)
+                *next = i + plen;
+            return i;
+        }
+    }
     return -1;
 }
 
 /* Returns the match position in bytes, for use in [g]sub.
-   len is the length of target.
+   len is the length (strlen) of target.
+   patlen is the length (strlen) of pat.
 */
 
-static int fgrep_one_bytes(const char *pat, const char *target, int len, Rboolean useBytes, Rboolean use_UTF8)
+static int fgrep_one_bytes(const char *pat, int patlen, const char *target, int len, Rboolean useBytes,
+                           Rboolean use_UTF8)
 {
-    int i = -1, plen = (int)strlen(pat);
+    int i = -1;
     const char *p;
 
-    if (plen == 0)
+    if (patlen == 0)
         return 0;
-    if (plen == 1 && (useBytes || !(mbcslocale || use_UTF8)))
+
+    /* UTF-8 allows for byte-based search of valid pattern string inside
+       valid target string, because lead and continuation bytes are taken
+       from distinct ranges. */
+    if (patlen == 1 && (useBytes || use_UTF8 || !mbcslocale))
     {
         /* a single byte is a common case */
         for (i = 0, p = target; *p; p++, i++)
@@ -1260,27 +1289,14 @@ static int fgrep_one_bytes(const char *pat, const char *target, int len, Rboolea
                 return i;
         return -1;
     }
-    if (!useBytes && use_UTF8)
-    { /* not really needed */
-        int ib, used;
-        for (ib = 0, i = 0; ib <= len - plen; i++)
-        {
-            if (strncmp(pat, target + ib, plen) == 0)
-                return ib;
-            used = utf8clen(target[ib]);
-            if (used <= 0)
-                break;
-            ib += used;
-        }
-    }
-    else if (!useBytes && mbcslocale)
+    if (!use_UTF8 && !useBytes && mbcslocale)
     { /* skip along by chars */
         mbstate_t mb_st;
         int ib, used;
         mbs_init(&mb_st);
-        for (ib = 0, i = 0; ib <= len - plen; i++)
+        for (ib = 0, i = 0; ib <= len - patlen; i++)
         {
-            if (strncmp(pat, target + ib, plen) == 0)
+            if (strncmp(pat, target + ib, patlen) == 0)
                 return ib;
             used = (int)Mbrtowc(NULL, target + ib, R_MB_CUR_MAX, &mb_st);
             if (used <= 0)
@@ -1289,9 +1305,11 @@ static int fgrep_one_bytes(const char *pat, const char *target, int len, Rboolea
         }
     }
     else
-        for (i = 0; i <= len - plen; i++)
-            if (strncmp(pat, target + i, plen) == 0)
-                return i;
+    {
+        char *pos = strstr(target, pat);
+        if (pos)
+            return (int)(pos - target);
+    }
     return -1;
 }
 
@@ -1506,7 +1524,11 @@ SEXP attribute_hidden do_grep(SEXP call, SEXP op, SEXP args, SEXP env)
             else if (perl_opt)
             {
 #ifdef HAVE_PCRE2
-                int rc = pcre2_match(re, (PCRE2_SPTR)s, PCRE2_ZERO_TERMINATED, 0, 0, mdata, mcontext);
+                uint32_t eflag = 0;
+                if (use_UTF8)
+                    eflag |= PCRE2_NO_UTF_CHECK;
+
+                int rc = pcre2_match(re, (PCRE2_SPTR)s, PCRE2_ZERO_TERMINATED, 0, eflag, mdata, mcontext);
 #else
                 int rc = pcre_exec(re_pcre, re_pe, s, (int)strlen(s), 0, 0, ov, 0);
 #endif
@@ -2275,6 +2297,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
     const char *spat = NULL, *srep = NULL, *s = NULL;
     size_t patlen = 0, replen = 0;
     Rboolean use_UTF8 = FALSE, use_WC = FALSE;
+    Rboolean ascii_patrep = FALSE;
     const wchar_t *wpat = NULL, *wrep = NULL, *ws = NULL;
     const unsigned char *tables = NULL;
 #ifdef HAVE_PCRE2
@@ -2380,6 +2403,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
         wrep = wtransChar2(STRING_ELT(rep, 0));
         if (!wrep)
             error(_("'replacement' is invalid"));
+        ascii_patrep = (IS_ASCII(STRING_ELT(pat, 0)) && IS_ASCII(STRING_ELT(rep, 0)));
     }
     else if (use_UTF8)
     {
@@ -2475,7 +2499,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
         {
             int st, nr, slen = (int)strlen(s);
             ns = slen;
-            st = fgrep_one_bytes(spat, s, ns, useBytes, use_UTF8);
+            st = fgrep_one_bytes(spat, patlen, s, ns, useBytes, use_UTF8);
             if (st < 0)
                 SET_STRING_ELT(ans, i, STRING_ELT(text, i));
             else if (STRING_ELT(rep, 0) == NA_STRING)
@@ -2492,7 +2516,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                         nr++;
                         ss += sst + patlen;
                         slen -= (int)(sst + patlen);
-                    } while ((sst = fgrep_one_bytes(spat, ss, slen, useBytes, use_UTF8)) >= 0);
+                    } while ((sst = fgrep_one_bytes(spat, patlen, ss, slen, useBytes, use_UTF8)) >= 0);
                 }
                 else
                     nr = 1;
@@ -2507,7 +2531,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                     slen -= (int)(st + patlen);
                     strncpy(u, srep, replen);
                     u += replen;
-                } while (global && (st = fgrep_one_bytes(spat, s, slen, useBytes, use_UTF8)) >= 0);
+                } while (global && (st = fgrep_one_bytes(spat, patlen, s, slen, useBytes, use_UTF8)) >= 0);
                 strcpy(u, s);
                 if (useBytes)
                     SET_STRING_ELT(ans, i, mkChar(cbuf));
@@ -2554,6 +2578,8 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             last_end = -1;
             /* ncap is one more than the number of capturing patterns */
 #ifdef HAVE_PCRE2
+            if (use_UTF8)
+                eflag |= PCRE2_NO_UTF_CHECK;
             /* PCRE2 has also pcre2_substitute */
             while ((ncap = pcre2_match(re, (PCRE2_SPTR)s, (PCRE2_SIZE)ns, (PCRE2_SIZE)offset, eflag, mdata,
                                        mcontext)) >= 0)
@@ -2610,6 +2636,8 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
 #ifdef HAVE_PCRE2
                 eflag = PCRE2_NOTBOL; /* probably not needed */
+                if (use_UTF8)
+                    eflag |= PCRE2_NO_UTF_CHECK;
 #else
                 eflag = PCRE_NOTBOL; /* probably not needed */
 #endif
@@ -2733,6 +2761,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             /* extended regexp in wchar_t */
             wchar_t *u, *cbuf;
             int maxrep;
+            Rboolean ascii_texti = IS_ASCII(STRING_ELT(text, i));
 
             ns = (int)wcslen(ws);
             maxrep = (int)(replen + (ns - 2) * wcount_subs(wrep));
@@ -2801,7 +2830,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                 for (j = offset; ws[j]; j++)
                     *u++ = ws[j];
                 *u = L'\0';
-                SET_STRING_ELT(ans, i, mkCharW(cbuf));
+                SET_STRING_ELT(ans, i, mkCharWLenASCII(cbuf, (u - cbuf), ascii_patrep && ascii_texti));
             }
             R_Free(cbuf);
         }
@@ -3149,7 +3178,10 @@ static SEXP R_pcre_gregexpr(const char *pattern, const char *string, pcre *re_pc
     while (!foundAll)
     {
 #ifdef HAVE_PCRE2
-        int rc = pcre2_match(re, (PCRE2_SPTR)string, slen, start, 0, mdata, mcontext);
+        uint32_t eflag = 0;
+        if (use_UTF8)
+            eflag |= PCRE2_NO_UTF_CHECK;
+        int rc = pcre2_match(re, (PCRE2_SPTR)string, slen, start, eflag, mdata, mcontext);
         PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(mdata);
 #else
         int rc = pcre_exec(re_pcre, re_pe, string, slen, start, 0, ovector, ovector_size);
@@ -3553,7 +3585,10 @@ SEXP attribute_hidden do_regexpr(SEXP call, SEXP op, SEXP args, SEXP env)
                 {
                     int rc;
 #ifdef HAVE_PCRE2
-                    rc = pcre2_match(re, (PCRE2_SPTR)s, PCRE2_ZERO_TERMINATED, 0, 0, mdata, mcontext);
+                    uint32_t eflag = 0;
+                    if (use_UTF8)
+                        eflag |= PCRE2_NO_UTF_CHECK;
+                    rc = pcre2_match(re, (PCRE2_SPTR)s, PCRE2_ZERO_TERMINATED, 0, eflag, mdata, mcontext);
                     ovector = pcre2_get_ovector_pointer(mdata);
 #else
                     rc = pcre_exec(re_pcre, re_pe, s, (int)strlen(s), 0, 0, ovector, ovector_size);
