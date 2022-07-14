@@ -198,6 +198,14 @@ static SEXP mkCharWLenASCII(const wchar_t *wc, int nc, Rboolean maybe_ascii)
     return ans;
 }
 
+static SEXP markBytes(SEXP x, Rboolean useBytes)
+{
+    if (!useBytes || IS_ASCII(x) || IS_BYTES(x) || x == NA_STRING)
+        return x;
+    else
+        return mkCharLenCE(CHAR(x), LENGTH(x), CE_BYTES);
+}
+
 #ifdef HAVE_PCRE2
 static void R_pcre_exec_error(int rc, R_xlen_t i)
 {
@@ -578,7 +586,7 @@ SEXP attribute_hidden do_strsplit(SEXP call, SEXP op, SEXP args, SEXP env)
         if (this == NA_STRING)
         { /* NA token doesn't split */
             for (i = itok; i < len; i += tlen)
-                SET_VECTOR_ELT(ans, i, ScalarString(STRING_ELT(x, i)));
+                SET_VECTOR_ELT(ans, i, ScalarString(markBytes(STRING_ELT(x, i), useBytes)));
             continue;
         }
         else if (!CHAR(this)[0])
@@ -2501,7 +2509,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             ns = slen;
             st = fgrep_one_bytes(spat, patlen, s, ns, useBytes, use_UTF8);
             if (st < 0)
-                SET_STRING_ELT(ans, i, STRING_ELT(text, i));
+                SET_STRING_ELT(ans, i, markBytes(STRING_ELT(text, i), useBytes));
             else if (STRING_ELT(rep, 0) == NA_STRING)
                 SET_STRING_ELT(ans, i, NA_STRING);
             else
@@ -2644,7 +2652,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             R_pcre_exec_error(ncap, i);
             if (nmatch == 0)
-                SET_STRING_ELT(ans, i, STRING_ELT(text, i));
+                SET_STRING_ELT(ans, i, markBytes(STRING_ELT(text, i), useBytes));
             else if (STRING_ELT(rep, 0) == NA_STRING)
                 SET_STRING_ELT(ans, i, NA_STRING);
             else
@@ -2730,7 +2738,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                 warning("Out-of-memory error in regexp matching for element %d", (int)i + 1);
 
             if (nmatch == 0)
-                SET_STRING_ELT(ans, i, STRING_ELT(text, i));
+                SET_STRING_ELT(ans, i, markBytes(STRING_ELT(text, i), useBytes));
             else if (STRING_ELT(rep, 0) == NA_STRING)
                 SET_STRING_ELT(ans, i, NA_STRING);
             else
@@ -2811,7 +2819,7 @@ SEXP attribute_hidden do_gsub(SEXP call, SEXP op, SEXP args, SEXP env)
                 eflags = REG_NOTBOL;
             }
             if (nmatch == 0)
-                SET_STRING_ELT(ans, i, STRING_ELT(text, i));
+                SET_STRING_ELT(ans, i, markBytes(STRING_ELT(text, i), useBytes));
             else if (STRING_ELT(rep, 0) == NA_STRING)
                 SET_STRING_ELT(ans, i, NA_STRING);
             else
