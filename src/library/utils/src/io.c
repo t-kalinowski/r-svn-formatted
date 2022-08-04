@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998-2021   The R Core Team.
+ *  Copyright (C) 1998-2022   The R Core Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1384,7 +1384,10 @@ SEXP writetable(SEXP call, SEXP op, SEXP args, SEXP env)
         for (int i = 0; i < nr; i++)
         {
             if (i % 1000 == 999)
+            {
                 R_CheckUserInterrupt();
+                R_print.digits = DBL_DIG; /* MAX precision, see PR#18384 */
+            }
             if (!isNull(rnames))
                 Rconn_printf(con, "%s%s", EncodeElement2(rnames, i, quote_rn, qmethod, &strBuf, sdec), csep);
             for (int j = 0; j < nc; j++)
@@ -1430,7 +1433,10 @@ SEXP writetable(SEXP call, SEXP op, SEXP args, SEXP env)
         for (int i = 0; i < nr; i++)
         {
             if (i % 1000 == 999)
+            {
                 R_CheckUserInterrupt();
+                R_print.digits = DBL_DIG; /* MAX precision, see PR#18384 */
+            }
             if (!isNull(rnames))
                 Rconn_printf(con, "%s%s", EncodeElement2(rnames, i, quote_rn, qmethod, &strBuf, sdec), csep);
             for (int j = 0; j < nc; j++)
