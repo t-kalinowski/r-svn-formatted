@@ -2727,7 +2727,8 @@ static int clp_fgetc_internal(Rconnection con)
 
     if (this->pos >= this->len)
         return R_EOF;
-    return this->buff[this->pos++];
+    /* the cast prevents sign extension of 0xFF to -1 (R_EOF) */
+    return (unsigned char)this->buff[this->pos++];
 }
 
 static double clp_seek(Rconnection con, double where, int origin, int rw)
