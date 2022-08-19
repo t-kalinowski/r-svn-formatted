@@ -4392,6 +4392,8 @@ SEXP attribute_hidden do_readLines(SEXP call, SEXP op, SEXP args, SEXP env)
         oenc = CE_UTF8;
     else if (streql(encoding, "latin1"))
         oenc = CE_LATIN1;
+    else if (streql(encoding, "bytes"))
+        oenc = CE_BYTES;
 
     buf = (char *)malloc(buf_size);
     if (!buf)
