@@ -314,7 +314,7 @@ reg_errcode_t tre_tnfa_run_parallel(const tre_tnfa_t *tnfa, const void *string, 
         else
         {
             if (num_tags == 0 || reach_next_i == reach_next)
-                /* We have found a match. */
+                /* We have found a match. */
                 break;
         }
 
