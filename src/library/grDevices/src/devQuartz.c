@@ -556,7 +556,7 @@ static QuartzFunctions_t qfn = {
     QuartzDevice_GetParameter};
 
 /* currrently unused: was used by R.app via aqua.c */
-QuartzFunctions_t *getQuartzAPI()
+QuartzFunctions_t *getQuartzAPI(void)
 {
     return &qfn;
 }

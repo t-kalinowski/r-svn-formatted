@@ -137,9 +137,9 @@ attribute_hidden OSDynSymbol *R_osDynSymbol = &Rf_osDynSymbol;
 
 void R_init_base(DllInfo *); /* In Registration.c */
 
-static void initLoadedDLL();
+static void initLoadedDLL(void);
 
-void attribute_hidden InitDynload()
+void attribute_hidden InitDynload(void)
 {
     initLoadedDLL();
     int which = addDLL(Rstrdup("base"), "base", NULL);
@@ -1317,7 +1317,7 @@ SEXP attribute_hidden R_getSymbolInfo(SEXP sname, SEXP spackage, SEXP withRegist
     return sym;
 }
 
-SEXP attribute_hidden R_getDllTable()
+SEXP attribute_hidden R_getDllTable(void)
 {
     int i;
     SEXP ans, nm;

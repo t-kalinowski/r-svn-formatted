@@ -155,7 +155,7 @@ void R_CheckUserInterrupt(void)
         onintr();
 }
 
-static SEXP getInterruptCondition();
+static SEXP getInterruptCondition(void);
 
 static void onintrEx(Rboolean resumeOK)
 {

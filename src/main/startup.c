@@ -124,7 +124,7 @@ attribute_hidden void set_workspace_name(const char *fn)
 }
 #endif
 
-attribute_hidden const char *get_workspace_name()
+attribute_hidden const char *get_workspace_name(void)
 {
     return workspace_name;
 }

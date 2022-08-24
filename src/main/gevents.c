@@ -109,7 +109,7 @@ SEXP do_getGraphicsEventEnv(SEXP call, SEXP op, SEXP args, SEXP env)
 /* helper function to check if there is at least one open graphics device listening for events. Returns TRUE if so,
  * FALSE if no listening devices are found */
 
-Rboolean haveListeningDev()
+Rboolean haveListeningDev(void)
 {
     Rboolean ret = FALSE;
     pDevDesc dd;
