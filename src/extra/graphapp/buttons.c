@@ -1006,7 +1006,8 @@ textbox newrichtextarea(const char *text, rect r)
         LoadLibrary("riched32.dll");  /* RichEdit version 1.0 */
 
     /* RichEdit20A uses the non-UTF-8 ANSI encoding even when Rgui uses UTF-8
-       as ACP via its manifest. */
+       as ACP via its manifest. Only Unicode strings may be sent to RichEdit20W
+       window via messages, e.g. EM_FINDTEXTTEXW. */
     obj = newchildwin("RichEdit20W", NULL,
                       WS_HSCROLL | ES_AUTOHSCROLL | WS_VSCROLL | ES_AUTOVSCROLL | ES_LEFT | ES_MULTILINE | ES_NOHIDESEL,
                       r, NULL);
