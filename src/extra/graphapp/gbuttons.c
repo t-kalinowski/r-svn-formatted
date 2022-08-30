@@ -99,7 +99,7 @@ button newtoolbutton(image img, rect r, actionfn fn)
 
 void scrolltext(textbox c, int lines)
 {
-    int linecount = sendmessage(c->handle, EM_GETLINECOUNT, 0, 0);
+    int linecount = (INT)sendmessage(c->handle, EM_GETLINECOUNT, 0, 0);
     sendmessage(c->handle, EM_LINESCROLL, 0, linecount - lines);
 }
 
@@ -126,11 +126,11 @@ int ggetkeystate()
 void scrollcaret(textbox t, int lines)
 {
     long currentline, charindex;
-    int linecount = sendmessage(t->handle, EM_GETLINECOUNT, 0, 0);
-    currentline = sendmessage(t->handle, EM_LINEFROMCHAR, -1, 0);
+    int linecount = (INT)sendmessage(t->handle, EM_GETLINECOUNT, 0, 0);
+    currentline = (INT)sendmessage(t->handle, EM_LINEFROMCHAR, -1, 0);
     lines = (currentline + lines > linecount - 1 ? linecount - currentline - 1 : lines);
     lines = (currentline + lines < 0 ? -currentline : lines);
-    charindex = sendmessage(t->handle, EM_LINEINDEX, currentline + lines, 0);
+    charindex = (INT)sendmessage(t->handle, EM_LINEINDEX, currentline + lines, 0);
     sendmessage(t->handle, EM_SETSEL, charindex, charindex);
 }
 
@@ -143,22 +143,22 @@ void gsetmodified(textbox t, int modified)
 
 int ggetmodified(textbox t)
 {
-    return sendmessage(t->handle, EM_GETMODIFY, 0, 0);
+    return (INT)sendmessage(t->handle, EM_GETMODIFY, 0, 0);
 }
 
 /* Get the length of the current line in an editing control */
 
 int getlinelength(textbox t)
 {
-    long charindex = sendmessage(t->handle, EM_LINEINDEX, -1, 0);
-    return sendmessage(t->handle, EM_LINELENGTH, charindex, 0);
+    long charindex = (INT)sendmessage(t->handle, EM_LINEINDEX, -1, 0);
+    return (INT)sendmessage(t->handle, EM_LINELENGTH, charindex, 0);
 }
 
 /* Copy the current line in the editor to a buffer */
 
 void getcurrentline(textbox t, char *line, int length)
 {
-    long currentline = sendmessage(t->handle, EM_LINEFROMCHAR, -1, 0);
+    long currentline = (INT)sendmessage(t->handle, EM_LINEFROMCHAR, -1, 0);
     /* set first word of buffer to line length in TCHARs as required by EM_GETLINE */
     WORD blength = length * MB_CUR_MAX + 1 + sizeof(WORD);
     *((LPWORD)line) = blength;
@@ -182,7 +182,7 @@ void setlimittext(textbox t, long limit)
 
 long getlimittext(textbox t)
 {
-    return sendmessage(t->handle, EM_GETLIMITTEXT, 0, 0);
+    return (INT)sendmessage(t->handle, EM_GETLIMITTEXT, 0, 0);
 }
 
 /* Test whether the text limit needs to be increased to accommodate
