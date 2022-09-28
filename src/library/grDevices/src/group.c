@@ -72,7 +72,7 @@ SEXP useGroup(SEXP args)
     return R_NilValue;
 }
 
-SEXP devUp()
+SEXP devUp(void)
 {
     pDevDesc dd = GEcurrentDevice()->dev;
     double left, right, bottom, top;

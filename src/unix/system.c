@@ -146,7 +146,7 @@ void R_FlushConsole(void)
 }
 #endif
 
-void R_setupHistory()
+void R_setupHistory(void)
 {
     int value, ierr;
     char *p;
@@ -680,7 +680,7 @@ int R_EditFiles(int nfile, const char **file, const char **title, const char *ed
 
 /* Returns the limit on the number of open files. On error or when no
    limit is known, returns a negative number. */
-int R_GetFDLimit()
+int R_GetFDLimit(void)
 {
 
 #if defined(HAVE_SYS_RESOURCE_H) && defined(HAVE_GETRLIMIT)

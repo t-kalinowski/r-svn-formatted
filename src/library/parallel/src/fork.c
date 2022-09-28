@@ -291,7 +291,7 @@ static int rm_child(int pid)
 }
 
 /* delete entries for waited-for children and children that are not of this process */
-static void compact_children()
+static void compact_children(void)
 {
     child_info_t *ci = children, *prev = NULL;
     pid_t ppid = getpid();
@@ -336,7 +336,7 @@ static void compact_children()
 }
 
 /* insert a cleanup mark into children */
-SEXP mc_prepare_cleanup()
+SEXP mc_prepare_cleanup(void)
 {
     child_info_t *ci;
 
@@ -539,7 +539,7 @@ static void parent_sig_handler(int sig)
     /* TODO: chain to old sig handler */
 }
 
-static void setup_sig_handler()
+static void setup_sig_handler(void)
 {
     if (!parent_handler_set)
     {
@@ -552,7 +552,7 @@ static void setup_sig_handler()
     }
 }
 
-static void restore_sig_handler()
+static void restore_sig_handler(void)
 {
     if (parent_handler_set)
     {
@@ -1276,12 +1276,12 @@ SEXP mc_fds(SEXP sFdi)
 }
 
 /* not used */
-SEXP mc_master_fd()
+SEXP mc_master_fd(void)
 {
     return ScalarInteger(master_fd);
 }
 
-SEXP mc_is_child()
+SEXP mc_is_child(void)
 {
     return ScalarLogical(is_master ? FALSE : TRUE);
 }

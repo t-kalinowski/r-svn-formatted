@@ -197,7 +197,7 @@ static LRESULT CALLBACK RhttpdWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LP
 #endif
 #endif
 
-static void first_init()
+static void first_init(void)
 {
     initsocks();
 #ifdef _WIN32

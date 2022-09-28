@@ -391,7 +391,7 @@ static int process_Renviron(const char *filename)
 #ifndef RENVIRON_WIN32_STANDALONE
 
 /* try system Renviron: R_HOME/etc/Renviron.  Unix only. */
-void process_system_Renviron()
+void process_system_Renviron(void)
 {
     char buf[PATH_MAX];
 
@@ -423,7 +423,7 @@ void process_system_Renviron()
 #endif
 
 /* try site Renviron: R_ENVIRON, then R_HOME/etc/Renviron.site. */
-void process_site_Renviron()
+void process_site_Renviron(void)
 {
     char buf[PATH_MAX], *p = getenv("R_ENVIRON");
 
@@ -462,7 +462,7 @@ extern char *getRUser(void);
 #endif
 
 /* try user Renviron: ./.Renviron, then ~/.Renviron */
-void process_user_Renviron()
+void process_user_Renviron(void)
 {
     const char *s = getenv("R_ENVIRON_USER");
 

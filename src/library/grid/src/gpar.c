@@ -466,7 +466,7 @@ SEXP L_getGPar(void)
     return gridStateElement(dd, GSS_GPAR);
 }
 
-SEXP L_getGPsaved()
+SEXP L_getGPsaved(void)
 {
     /* Get the current device
      */

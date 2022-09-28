@@ -445,7 +445,7 @@ invalid:
     return TRUE;
 }
 
-void GetRNGstate()
+void GetRNGstate(void)
 {
     /* Get  .Random.seed  into proper variables */
     int len_seed;
@@ -477,7 +477,7 @@ void GetRNGstate()
     }
 }
 
-void PutRNGstate()
+void PutRNGstate(void)
 {
     /* Copy out seeds to  .Random.seed  */
     int len_seed, j;
@@ -914,7 +914,7 @@ static void RNG_Init_R_KT(Int32 seed)
    Knuth-TAOCP, Knuth-TAOCP-2002, and possibly the user-supplied ones
    have 31 or 32 bits of precision; the others are assumed to
    have at least 25. */
-static R_INLINE double ru()
+static R_INLINE double ru(void)
 {
     double U = 33554432.0;
     return (floor(U * unif_rand()) + unif_rand()) / U;
@@ -970,7 +970,7 @@ double R_unif_index(double dn)
     return dv;
 }
 
-Sampletype R_sample_kind()
+Sampletype R_sample_kind(void)
 {
     return Sample_kind;
 }

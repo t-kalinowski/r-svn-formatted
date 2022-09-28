@@ -288,7 +288,7 @@ static SEXP compact_intseq_Sum(SEXP x, Rboolean narm)
 
 R_altrep_class_t R_compact_intseq_class;
 
-static void InitCompactIntegerClass()
+static void InitCompactIntegerClass(void)
 {
     R_altrep_class_t cls = R_make_altinteger_class("compact_intseq", "base", NULL);
     R_compact_intseq_class = cls;
@@ -520,7 +520,7 @@ static SEXP compact_realseq_Sum(SEXP x, Rboolean narm)
 
 R_altrep_class_t R_compact_realseq_class;
 
-static void InitCompactRealClass()
+static void InitCompactRealClass(void)
 {
     R_altrep_class_t cls = R_make_altreal_class("compact_realseq", "base", NULL);
     R_compact_realseq_class = cls;
@@ -846,7 +846,7 @@ static SEXP deferred_string_Extract_subset(SEXP x, SEXP indx, SEXP call)
 
 static R_altrep_class_t R_deferred_string_class;
 
-static void InitDefferredStringClass()
+static void InitDefferredStringClass(void)
 {
     R_altrep_class_t cls = R_make_altstring_class("deferred_string", "base", NULL);
     R_deferred_string_class = cls;
@@ -2031,7 +2031,7 @@ SEXP attribute_hidden R_tryUnwrap(SEXP x)
  ** Initialize ALTREP Classes
  **/
 
-void attribute_hidden R_init_altrep()
+void attribute_hidden R_init_altrep(void)
 {
     InitCompactIntegerClass();
     InitCompactRealClass();

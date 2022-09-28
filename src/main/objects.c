@@ -1626,7 +1626,7 @@ attribute_hidden Rboolean R_has_methods(SEXP op)
 
 static SEXP deferred_default_object;
 
-SEXP R_deferred_default_method()
+SEXP R_deferred_default_method(void)
 {
     if (!deferred_default_object)
         deferred_default_object = install("__Deferred_Default_Marker__");
