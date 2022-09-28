@@ -5940,7 +5940,7 @@ void WinCheckUTF8(void)
 
 /* ------------------- admin functions  --------------------- */
 
-void attribute_hidden InitConnections()
+void attribute_hidden InitConnections(void)
 {
     int i;
     Connections[0] = newterminal("stdin", "r");

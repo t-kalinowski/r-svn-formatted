@@ -1219,7 +1219,7 @@ SEXP mc_rm_child(SEXP sPid)
     return ScalarLogical(rm_child(pid));
 }
 
-SEXP mc_children()
+SEXP mc_children(void)
 {
     child_info_t *ci = children;
     unsigned int count = 0;

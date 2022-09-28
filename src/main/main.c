@@ -337,7 +337,7 @@ static void R_ReplConsole(SEXP rho, int savestack, int browselevel)
 
 static unsigned char DLLbuf[CONSOLE_BUFFER_SIZE + 1], *DLLbufp;
 
-static void check_session_exit()
+static void check_session_exit(void)
 {
     if (!R_Interactive)
     {
