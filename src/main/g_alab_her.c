@@ -298,11 +298,11 @@ attribute_hidden void R_GE_VText(double x, double y, const char *s, cetype_t enc
        arguments now in INCHES because _draw_stroke does rotation
        so it needs to use absolute coordinates
         */
-        _draw_stroke(&vc, gc, dd, false, fromDeviceWidth(x_offset * label_width, GE_INCHES, dd),
+        _draw_stroke(&vc, gc, dd, false_, fromDeviceWidth(x_offset * label_width, GE_INCHES, dd),
                      fromDeviceHeight(y_offset * label_height, GE_INCHES, dd));
         /* call stroker on the sequence of strokes obtained from each char (the
            stroker may manipulate the line width) */
-        /* _draw_hershey_stroke (dd, true, 0, HERSHEY_EM);     */
+        /* _draw_hershey_stroke (dd, true_, 0, HERSHEY_EM);     */
         _draw_hershey_string(&vc, gc, dd, codestring);
 
         /* Restore original values of relevant drawing attributes, free
@@ -525,7 +525,7 @@ static void _draw_hershey_penup_stroke(vfontContext *vc, const pGEcontext gc, pG
     double shear;
 
     shear = oblique ? (SHEAR) : 0.0;
-    _draw_hershey_stroke(vc, gc, dd, false, /* pen up */
+    _draw_hershey_stroke(vc, gc, dd, false_, /* pen up */
                          charsize * (dx + shear * dy), charsize * dy);
 }
 
@@ -537,7 +537,7 @@ static void _draw_hershey_glyph(vfontContext *vc, const pGEcontext gc, pGEDevDes
 {
     double xcurr, ycurr;
     double xfinal, yfinal;
-    bool0 pendown = false;
+    bool0 pendown = false_;
     const unsigned char *glyph;
     double dx, dy;
     double shear;
@@ -567,7 +567,7 @@ static void _draw_hershey_glyph(vfontContext *vc, const pGEcontext gc, pGEDevDes
             xnewint = (int)glyph[0];
 
             if (xnewint == (int)' ')
-                pendown = false;
+                pendown = false_;
             else
             {
                 double xnew, ynew;
@@ -578,7 +578,7 @@ static void _draw_hershey_glyph(vfontContext *vc, const pGEcontext gc, pGEDevDes
                 dy = ynew - ycurr;
                 _draw_hershey_stroke(vc, gc, dd, pendown, dx + shear * dy, dy);
                 xcurr = xnew, ycurr = ynew;
-                pendown = true;
+                pendown = true_;
             }
 
             glyph += 2; /* on to next pair */
@@ -587,7 +587,7 @@ static void _draw_hershey_glyph(vfontContext *vc, const pGEcontext gc, pGEDevDes
         /* final penup stroke, to end where we should */
         dx = xfinal - xcurr;
         dy = yfinal - ycurr;
-        _draw_hershey_stroke(vc, gc, dd, false, dx + shear * dy, dy);
+        _draw_hershey_stroke(vc, gc, dd, false_, dx + shear * dy, dy);
     }
 }
 
@@ -616,7 +616,7 @@ static void _draw_hershey_string(vfontContext *vc, const pGEcontext gc, pGEDevDe
                 gc->lwd = HERSHEY_LINE_WIDTH_TO_LWD(HERSHEY_STROKE_WIDTH);
                 line_width_type = 1;
             }
-            _draw_hershey_glyph(vc, gc, dd, c & GLYPH_SPEC, charsize, OCCIDENTAL, false);
+            _draw_hershey_glyph(vc, gc, dd, c & GLYPH_SPEC, charsize, OCCIDENTAL, false_);
         }
 
         else if (c & RAW_ORIENTAL_HERSHEY_GLYPH)
@@ -626,33 +626,33 @@ static void _draw_hershey_string(vfontContext *vc, const pGEcontext gc, pGEDevDe
                 gc->lwd = HERSHEY_LINE_WIDTH_TO_LWD(HERSHEY_STROKE_WIDTH);
                 line_width_type = 2;
             }
-            _draw_hershey_glyph(vc, gc, dd, c & GLYPH_SPEC, charsize, ORIENTAL, false);
+            _draw_hershey_glyph(vc, gc, dd, c & GLYPH_SPEC, charsize, ORIENTAL, false_);
         }
 
         else if (c & CONTROL_CODE)
             switch (c & ~CONTROL_CODE) /* parse control codes */
             {
             case C_BEGIN_SUPERSCRIPT:
-                _draw_hershey_stroke(vc, gc, dd, false, SUPERSCRIPT_DX * charsize * HERSHEY_EM,
+                _draw_hershey_stroke(vc, gc, dd, false_, SUPERSCRIPT_DX * charsize * HERSHEY_EM,
                                      SUPERSCRIPT_DY * charsize * HERSHEY_EM);
                 charsize *= SCRIPTSIZE;
                 break;
 
             case C_END_SUPERSCRIPT:
                 charsize /= SCRIPTSIZE;
-                _draw_hershey_stroke(vc, gc, dd, false, -SUPERSCRIPT_DX * charsize * HERSHEY_EM,
+                _draw_hershey_stroke(vc, gc, dd, false_, -SUPERSCRIPT_DX * charsize * HERSHEY_EM,
                                      -SUPERSCRIPT_DY * charsize * HERSHEY_EM);
                 break;
 
             case C_BEGIN_SUBSCRIPT:
-                _draw_hershey_stroke(vc, gc, dd, false, SUBSCRIPT_DX * charsize * HERSHEY_EM,
+                _draw_hershey_stroke(vc, gc, dd, false_, SUBSCRIPT_DX * charsize * HERSHEY_EM,
                                      SUBSCRIPT_DY * charsize * HERSHEY_EM);
                 charsize *= SCRIPTSIZE;
                 break;
 
             case C_END_SUBSCRIPT:
                 charsize /= SCRIPTSIZE;
-                _draw_hershey_stroke(vc, gc, dd, false, -SUBSCRIPT_DX * charsize * HERSHEY_EM,
+                _draw_hershey_stroke(vc, gc, dd, false_, -SUBSCRIPT_DX * charsize * HERSHEY_EM,
                                      -SUBSCRIPT_DY * charsize * HERSHEY_EM);
                 break;
 
@@ -669,43 +669,43 @@ static void _draw_hershey_string(vfontContext *vc, const pGEcontext gc, pGEDevDe
                 break;
 
             case C_RIGHT_ONE_EM:
-                _draw_hershey_stroke(vc, gc, dd, false, charsize * HERSHEY_EM, 0.0);
+                _draw_hershey_stroke(vc, gc, dd, false_, charsize * HERSHEY_EM, 0.0);
                 break;
 
             case C_RIGHT_HALF_EM:
-                _draw_hershey_stroke(vc, gc, dd, false, charsize * HERSHEY_EM / 2.0, 0.0);
+                _draw_hershey_stroke(vc, gc, dd, false_, charsize * HERSHEY_EM / 2.0, 0.0);
                 break;
 
             case C_RIGHT_QUARTER_EM:
-                _draw_hershey_stroke(vc, gc, dd, false, charsize * HERSHEY_EM / 4.0, 0.0);
+                _draw_hershey_stroke(vc, gc, dd, false_, charsize * HERSHEY_EM / 4.0, 0.0);
                 break;
 
             case C_RIGHT_SIXTH_EM:
-                _draw_hershey_stroke(vc, gc, dd, false, charsize * HERSHEY_EM / 6.0, 0.0);
+                _draw_hershey_stroke(vc, gc, dd, false_, charsize * HERSHEY_EM / 6.0, 0.0);
                 break;
 
             case C_RIGHT_EIGHTH_EM:
-                _draw_hershey_stroke(vc, gc, dd, false, charsize * HERSHEY_EM / 8.0, 0.0);
+                _draw_hershey_stroke(vc, gc, dd, false_, charsize * HERSHEY_EM / 8.0, 0.0);
                 break;
 
             case C_LEFT_ONE_EM:
-                _draw_hershey_stroke(vc, gc, dd, false, -charsize * HERSHEY_EM, 0.0);
+                _draw_hershey_stroke(vc, gc, dd, false_, -charsize * HERSHEY_EM, 0.0);
                 break;
 
             case C_LEFT_HALF_EM:
-                _draw_hershey_stroke(vc, gc, dd, false, -charsize * HERSHEY_EM / 2.0, 0.0);
+                _draw_hershey_stroke(vc, gc, dd, false_, -charsize * HERSHEY_EM / 2.0, 0.0);
                 break;
 
             case C_LEFT_QUARTER_EM:
-                _draw_hershey_stroke(vc, gc, dd, false, -charsize * HERSHEY_EM / 4.0, 0.0);
+                _draw_hershey_stroke(vc, gc, dd, false_, -charsize * HERSHEY_EM / 4.0, 0.0);
                 break;
 
             case C_LEFT_SIXTH_EM:
-                _draw_hershey_stroke(vc, gc, dd, false, -charsize * HERSHEY_EM / 6.0, 0.0);
+                _draw_hershey_stroke(vc, gc, dd, false_, -charsize * HERSHEY_EM / 6.0, 0.0);
                 break;
 
             case C_LEFT_EIGHTH_EM:
-                _draw_hershey_stroke(vc, gc, dd, false, -charsize * HERSHEY_EM / 8.0, 0.0);
+                _draw_hershey_stroke(vc, gc, dd, false_, -charsize * HERSHEY_EM / 8.0, 0.0);
                 break;
 
                 /* unrecognized control code, punt */
@@ -724,7 +724,7 @@ static void _draw_hershey_string(vfontContext *vc, const pGEcontext gc, pGEDevDe
             int char_width, accent_width;       /* for composite chars */
             const unsigned char *char_glyph, *accent_glyph;
             unsigned char composite, character = '\0', accent = '\0' /* -Wall */;
-            bool0 oblique, small_kana = false;
+            bool0 oblique, small_kana = false_;
 
             /* compute index of font, in font table in g_fontdb.c */
             raw_fontnum = (c >> FONT_SHIFT) & ONE_BYTE;
@@ -737,7 +737,7 @@ static void _draw_hershey_string(vfontContext *vc, const pGEcontext gc, pGEDevDe
             if (glyphnum & KS) /* a small kana? */
             {
                 glyphnum -= KS;
-                small_kana = true;
+                small_kana = true_;
             }
 
             switch (glyphnum)
@@ -866,14 +866,14 @@ static void _draw_hershey_string(vfontContext *vc, const pGEcontext gc, pGEDevDe
 static bool0 _composite_char(unsigned char *composite, unsigned char *character, unsigned char *accent)
 {
     const struct plHersheyAccentedCharInfoStruct *compchar = _hershey_accented_char_info;
-    bool0 found = false;
+    bool0 found = false_;
     unsigned char given = *composite;
 
     while (compchar->composite)
     {
         if (compchar->composite == given)
         {
-            found = true;
+            found = true_;
             /* return char and accent via pointers */
             *character = compchar->character;
             *accent = compchar->accent;
