@@ -894,7 +894,7 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
         error(_("invalid '%s' value"), "tz");
     const char *tz = CHAR(STRING_ELT(stz, 0));
     if (strlen(tz) == 0)
-    {
+    { // tz = ""
         /* do a direct look up here as this does not otherwise
            work on Windows */
         char *p = getenv("TZ");
@@ -977,7 +977,7 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
     if (nm != R_NilValue)
         setAttrib(ans, R_NamesSymbol, nm);
     SEXP klass = PROTECT(allocVector(STRSXP, 2));
-    SET_STRING_ELT(klass, 0, mkChar("POSIXlt"));
+    SET_STRING_ELT(klass, 0, mkChar("POSIXct"));
     SET_STRING_ELT(klass, 1, mkChar("POSIXt"));
     classgets(ans, klass);
 
@@ -985,7 +985,7 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
         reset_tz(oldtz);
     UNPROTECT(4);
     return ans;
-}
+} // as.POSIXct()
 
 // .Internal(format.POSIXlt(x, format, usetz))
 SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
