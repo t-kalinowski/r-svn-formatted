@@ -63,7 +63,8 @@ There are two implementation paths here.
 1) Use the system functions for mktime, gmtime[_r], localtime[_r], strftime.
    Use the system time_t, struct tm and time-zone tables.
 
-2) Use substitutes from src/extra/tzone for mktime, gmtime, localtime,
+2) USE_INTERNAL_MKTIME :
+   Use substitutes from src/extra/tzone for mktime, gmtime, localtime,
    strftime with a R_ prefix.  The system strftime is used for
    locale-dependent names in R_strptime and R_strftime.  This uses the
    time-zone tables shipped with R and installed into
@@ -111,15 +112,16 @@ extern char *tzname[2];
 #include "Rstrptime.h"
 /* --> Def.  R_strptime()  etc */
 
-static const int days_in_month[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+static const int month_days[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
 #define isleap(y) ((((y) % 4) == 0 && ((y) % 100) != 0) || ((y) % 400) == 0)
 #define days_in_year(year) (isleap(year) ? 366 : 365)
+#define days_in_month(mon, yr) ((mon == 1 && isleap(1900 + yr)) ? 29 : month_days[mon])
 
 /*
-  Adjust a struct tm to be a valid date-time.
+  Adjust a struct tm to be a valid scalar date-time.
   Return 0 if valid, -1 if invalid and uncorrectable, or a positive
-  integer approximating the number of corrections needed.
+  integer approximating the number of corrections done.
   */
 static int validate_tm(stm *tm)
 {
@@ -152,12 +154,12 @@ static int validate_tm(stm *tm)
     }
 
     if (tm->tm_hour == 24 && tm->tm_min == 0 && tm->tm_sec == 0)
-    { /*  24:00:00 */
+    { /* 24:00:00 */
         tm->tm_hour = 0;
         tm->tm_mday++;
         if (tm->tm_mon >= 0 && tm->tm_mon <= 11)
         {
-            if (tm->tm_mday > days_in_month[tm->tm_mon] + ((tm->tm_mon == 1 && isleap(1900 + tm->tm_year) ? 1 : 0)))
+            if (tm->tm_mday > days_in_month(tm->tm_mon, tm->tm_year))
             {
                 tm->tm_mon++;
                 tm->tm_mday = 1;
@@ -169,7 +171,7 @@ static int validate_tm(stm *tm)
             }
         }
     }
-    if (tm->tm_hour < 0 || tm->tm_hour > 23)
+    else if (tm->tm_hour < 0 || tm->tm_hour > 23)
     {
         res++;
         tmp = tm->tm_hour / 24;
@@ -207,7 +209,7 @@ static int validate_tm(stm *tm)
         while (tm->tm_mon > 0)
         {
             --tm->tm_mon;
-            tm->tm_mday += days_in_month[tm->tm_mon] + ((tm->tm_mon == 1 && isleap(1900 + tm->tm_year)) ? 1 : 0);
+            tm->tm_mday += days_in_month(tm->tm_mon, tm->tm_year);
         }
         /* then spin on/back by years */
         while (tm->tm_mday < 1)
@@ -230,10 +232,10 @@ static int validate_tm(stm *tm)
             tm->tm_mon += 12;
             tm->tm_year--;
         }
-        tm->tm_mday += days_in_month[tm->tm_mon] + ((tm->tm_mon == 1 && isleap(1900 + tm->tm_year)) ? 1 : 0);
+        tm->tm_mday += days_in_month(tm->tm_mon, tm->tm_year);
     }
 
-    while (tm->tm_mday > (tmp = days_in_month[tm->tm_mon] + ((tm->tm_mon == 1 && isleap(1900 + tm->tm_year)) ? 1 : 0)))
+    while (tm->tm_mday > (tmp = days_in_month(tm->tm_mon, tm->tm_year)))
     {
         res++;
         if (++tm->tm_mon > 11)
@@ -249,42 +251,56 @@ static int validate_tm(stm *tm)
 /* Substitute for mktime -- no checking, always in GMT */
 static double mktime00(stm *tm)
 {
-    int day = tm->tm_mday - 1, year0 = 1900 + tm->tm_year;
-    /* safety check for unbounded loops */
-    double excess = 0.0;
-    if (year0 > 3000)
-    {
-        excess = (int)(year0 / 2000) - 1;
-        year0 -= (int)(excess * 2000);
-    }
-    else if (year0 < 0)
-    {
-        excess = -1 - (int)(-year0 / 2000);
-        year0 -= (int)(excess * 2000);
-    }
+#define MKTIME_BODY                                                                                                    \
+    int day = tm->tm_mday - 1, year0 = 1900 + tm->tm_year;                                                             \
+    /* safety check for unbounded loops */                                                                             \
+    double excess = 0.0;                                                                                               \
+    if (year0 > 3000)                                                                                                  \
+    {                                                                                                                  \
+        excess = (int)(year0 / 2000) - 1;                                                                              \
+        year0 -= (int)(excess * 2000);                                                                                 \
+    }                                                                                                                  \
+    else if (year0 < 0)                                                                                                \
+    {                                                                                                                  \
+        excess = -1 - (int)(-year0 / 2000);                                                                            \
+        year0 -= (int)(excess * 2000);                                                                                 \
+    }                                                                                                                  \
+                                                                                                                       \
+    for (int i = 0; i < tm->tm_mon; i++)                                                                               \
+        day += month_days[i];                                                                                          \
+    if (tm->tm_mon > 1 && isleap(year0))                                                                               \
+        day++;                                                                                                         \
+    tm->tm_yday = day;                                                                                                 \
+                                                                                                                       \
+    if (year0 > 1970)                                                                                                  \
+    {                                                                                                                  \
+        for (int year = 1970; year < year0; year++)                                                                    \
+            day += days_in_year(year);                                                                                 \
+    }                                                                                                                  \
+    else if (year0 < 1970)                                                                                             \
+    {                                                                                                                  \
+        for (int year = 1969; year >= year0; year--)                                                                   \
+            day -= days_in_year(year);                                                                                 \
+    }                                                                                                                  \
+                                                                                                                       \
+    /* weekday: Epoch day was a Thursday */                                                                            \
+    if ((tm->tm_wday = ((day % 7) + 4) % 7) < 0)                                                                       \
+    tm->tm_wday += 7
 
-    for (int i = 0; i < tm->tm_mon; i++)
-        day += days_in_month[i];
-    if (tm->tm_mon > 1 && isleap(year0))
-        day++;
-    tm->tm_yday = day;
-
-    if (year0 > 1970)
-    {
-        for (int year = 1970; year < year0; year++)
-            day += days_in_year(year);
-    }
-    else if (year0 < 1970)
-    {
-        for (int year = 1969; year >= year0; year--)
-            day -= days_in_year(year);
-    }
-
-    /* weekday: Epoch day was a Thursday */
-    if ((tm->tm_wday = ((day % 7) + 4) % 7) < 0)
-        tm->tm_wday += 7;
-
+    MKTIME_BODY;
     return tm->tm_sec + (tm->tm_min * 60) + (tm->tm_hour * 3600) + (day + excess * 730485) * 86400.0;
+}
+
+static void set_w_yday(stm *tm)
+{
+    MKTIME_BODY;
+}
+
+// to be used in POSIXlt2D()
+static double mkdate00(stm *tm)
+{
+    MKTIME_BODY;
+    return (day + excess * 730485);
 }
 
 #ifdef USE_INTERNAL_MKTIME
@@ -387,7 +403,7 @@ static double guess_offset(stm *tm)
     tm->tm_mon = 6;
     tm->tm_mday = 1;
     tm->tm_isdst = -1;
-    mktime00(tm); /* to get wday valid */
+    set_w_yday(tm);
     wday = tm->tm_wday;
     if (oldtm.tm_year > 137)
     { /* in the unknown future */
@@ -558,7 +574,7 @@ static stm *localtime0(const double *tp, const int local, stm *ltm)
 
     /* month within year */
     int mon;
-    for (mon = 0; day >= (tmp = (days_in_month[mon]) + ((mon == 1 && isleap(y + 1900)) ? 1 : 0)); day -= tmp, mon++)
+    for (mon = 0; day >= (tmp = days_in_month(mon, y)); day -= tmp, mon++)
         ;
     res->tm_mon = mon;
     res->tm_mday = day + 1;
@@ -613,10 +629,10 @@ static stm *localtime0(const double *tp, const int local, stm *ltm)
 }
 #endif
 
-static int set_tz(const char *tz, char *oldtz)
+static Rboolean set_tz(const char *tz, char *oldtz)
 {
+    Rboolean settz = TRUE; // typical result
     char *p = NULL;
-    int settz = 0;
 
     strcpy(oldtz, "");
     p = getenv("TZ");
@@ -629,7 +645,6 @@ static int set_tz(const char *tz, char *oldtz)
 #ifdef HAVE_SETENV
     if (setenv("TZ", tz, 1))
         warning(_("problem with setting timezone"));
-    settz = 1;
 #elif defined(HAVE_PUTENV)
     {
         static char buff[1010];
@@ -640,9 +655,9 @@ static int set_tz(const char *tz, char *oldtz)
         if (putenv(buff))
             warning(_("problem with setting timezone"));
     }
-    settz = 1;
 #else
     warning(_("cannot set timezones on this system"));
+    settz = FALSE;
 #endif
     tzset();
     return settz;
@@ -708,7 +723,7 @@ static void glibc_fix(stm *tm, Rboolean *invalid)
     {
         /* since we have yday, let that take precedence over mon/mday */
         int yday = tm->tm_yday, mon = 0;
-        while (yday >= (tmp = days_in_month[mon] + ((mon == 1 && isleap(1900 + tm->tm_year)) ? 1 : 0)))
+        while (yday >= (tmp = days_in_month(mon, tm->tm_year)))
         {
             yday -= tmp;
             mon++;
@@ -733,8 +748,11 @@ static void glibc_fix(stm *tm, Rboolean *invalid)
     }
 }
 
-static const char ltnames[][7] = {"sec",  "min",  "hour",  "mday", "mon",   "year",
-                                  "wday", "yday", "isdst", "zone", "gmtoff"};
+static const char ltnames[][11] =
+    // 0     1      2       3       4      5       6       7       8
+    {"sec", "min", "hour", "mday", "mon", "year", "wday", "yday", "isdst",
+     // 9       10
+     "zone", "gmtoff"};
 
 static void makelt(stm *tm, SEXP ans, R_xlen_t i, Rboolean valid, double frac_secs)
 {
@@ -785,10 +803,9 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
     PROTECT(stz); /* it might be new */
-    int isgmt = (strcmp(tz, "GMT") == 0 || strcmp(tz, "UTC") == 0) ? 1 : 0;
-    int settz = 0;
+    Rboolean isGMT = (strcmp(tz, "GMT") == 0 || strcmp(tz, "UTC") == 0), settz = FALSE;
     char oldtz[1001] = "";
-    if (!isgmt && strlen(tz) > 0)
+    if (!isGMT && strlen(tz) > 0)
         settz = set_tz(tz, oldtz);
 #ifdef USE_INTERNAL_MKTIME
     else
@@ -798,7 +815,7 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
 
     // localtime may change tzname.
-    if (isgmt)
+    if (isGMT)
     {
         PROTECT(tzone = mkString(tz));
     }
@@ -812,14 +829,14 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 
     R_xlen_t n = XLENGTH(x);
 #ifdef HAVE_TM_GMTOFF
-    int nans = 11 - 2 * isgmt;
+    int nans = isGMT ? 9 : 11;
 #else
-    int nans = 10 - isgmt;
+    int nans = isGMT ? 9 : 10;
 #endif
     PROTECT(ans = allocVector(VECSXP, nans));
     for (int i = 0; i < 9; i++)
         SET_VECTOR_ELT(ans, i, allocVector(i > 0 ? INTSXP : REALSXP, n));
-    if (!isgmt)
+    if (!isGMT)
     {
         SET_VECTOR_ELT(ans, 9, allocVector(STRSXP, n));
 #ifdef HAVE_TM_GMTOFF
@@ -838,7 +855,7 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         Rboolean valid;
         if (R_FINITE(d))
         {
-            ptm = localtime0(&d, !isgmt, &dummy);
+            ptm = localtime0(&d, !isGMT, &dummy);
             /* in theory localtime/gmtime always return a valid
                struct tm pointer, but Windows uses NULL for error
                conditions (like negative times). */
@@ -849,7 +866,7 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
             valid = FALSE;
         }
         makelt(ptm, ans, i, valid, valid ? d - floor(d) : d);
-        if (!isgmt)
+        if (!isGMT)
         {
             char *p = "";
             // or ptm->tm_zone (but not specified by POSIX)
@@ -906,10 +923,10 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 
     PROTECT(stz); /* it might be new */
-    int isgmt = (strcmp(tz, "GMT") == 0 || strcmp(tz, "UTC") == 0) ? 1 : 0;
+    int isGMT = (strcmp(tz, "GMT") == 0 || strcmp(tz, "UTC") == 0) ? 1 : 0;
     char oldtz[1001] = "";
-    int settz = 0;
-    if (!isgmt && strlen(tz) > 0)
+    Rboolean settz = FALSE;
+    if (!isGMT && strlen(tz) > 0)
         settz = set_tz(tz, oldtz);
 #ifdef USE_INTERNAL_MKTIME
     else
@@ -949,7 +966,7 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
         tm.tm_mon = INTEGER(VECTOR_ELT(x, 4))[i % nlen[4]];
         tm.tm_year = INTEGER(VECTOR_ELT(x, 5))[i % nlen[5]];
         /* mktime ignores tm.tm_wday and tm.tm_yday */
-        tm.tm_isdst = isgmt ? 0 : INTEGER(VECTOR_ELT(x, 8))[i % nlen[8]];
+        tm.tm_isdst = isGMT ? 0 : INTEGER(VECTOR_ELT(x, 8))[i % nlen[8]];
         if (!R_FINITE(secs))
             REAL(ans)[i] = secs;
         else if (tm.tm_min == NA_INTEGER || tm.tm_hour == NA_INTEGER || tm.tm_mday == NA_INTEGER ||
@@ -958,14 +975,14 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
         else
         {
             errno = 0;
-            double tmp = mktime0(&tm, !isgmt);
+            double tmp = mktime0(&tm, !isGMT);
 #ifdef MKTIME_SETS_ERRNO
             REAL(ans)[i] = errno ? NA_REAL : tmp + (secs - fsecs);
 #else
             REAL(ans)
             [i] = ((tmp == -1.)
                    /* avoid silly gotcha at epoch minus one sec */
-                   && (tm.tm_sec != 59) && ((tm.tm_sec = 58), (mktime0(&tm, !isgmt) != -2.)))
+                   && (tm.tm_sec != 59) && ((tm.tm_sec = 58), (mktime0(&tm, !isGMT) != -2.)))
                       ? NA_REAL
                       : tmp + (secs - fsecs);
 #endif
@@ -990,11 +1007,6 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
 // .Internal(format.POSIXlt(x, format, usetz))
 SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    int settz = 0;
-    char buff[300];
-    char oldtz[1001] = "";
-    stm tm;
-
     checkArity(op, args);
     SEXP x = PROTECT(duplicate(CAR(args))); /* coerced below */
     if (!isVectorList(x) || LENGTH(x) < 9)
@@ -1010,6 +1022,8 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isNull(tz) && !isString(tz))
         error(_("invalid '%s'"), "attr(x, \"tzone\")");
 
+    Rboolean settz = FALSE;
+    char oldtz[1001] = "";
     const char *tz1;
     if (!isNull(tz) && strlen(tz1 = CHAR(STRING_ELT(tz, 0))))
     {
@@ -1035,6 +1049,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     /* workaround for glibc/FreeBSD/macOS strftime: they have
        non-POSIX/C99 time zone components
      */
+    stm tm;
     memset(&tm, 0, sizeof(tm));
 
     /* coerce fields, find length of longest one */
@@ -1171,6 +1186,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
             }
             // The overflow behaviour is not determined by C99.
             // We assume truncation, and ensure termination.
+            char buff[300];
 #ifdef USE_INTERNAL_MKTIME
             R_strftime(buff, 256, buf2, &tm);
 #else
@@ -1252,9 +1268,8 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(stz); /* it might be new */
 
     char oldtz[1001] = "";
-    int isgmt = (strcmp(tz, "GMT") == 0 || strcmp(tz, "UTC") == 0) ? 1 : 0;
-    int settz = 0;
-    if (!isgmt && strlen(tz) > 0)
+    Rboolean isGMT = (strcmp(tz, "GMT") == 0 || strcmp(tz, "UTC") == 0), settz = FALSE;
+    if (!isGMT && strlen(tz) > 0)
         settz = set_tz(tz, oldtz);
 #ifdef USE_INTERNAL_MKTIME
     else
@@ -1265,7 +1280,7 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
 
     // in case this gets changed by conversions.
     SEXP tzone;
-    if (isgmt)
+    if (isGMT)
     {
         PROTECT(tzone = mkString(tz));
     }
@@ -1282,14 +1297,14 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
     R_xlen_t n = XLENGTH(x), m = XLENGTH(sformat), N = (n > 0) ? ((m > n) ? m : n) : 0;
 
 #ifdef HAVE_TM_GMTOFF
-    int nans = 11 - 2 * isgmt;
+    int nans = isGMT ? 9 : 11;
 #else
-    int nans = 10 - isgmt;
+    int nans = isGMT ? 9 : 10;
 #endif
     SEXP ans = PROTECT(allocVector(VECSXP, nans));
     for (int i = 0; i < 9; i++)
         SET_VECTOR_ELT(ans, i, allocVector(i > 0 ? INTSXP : REALSXP, N));
-    if (!isgmt)
+    if (!isGMT)
     {
         SET_VECTOR_ELT(ans, 9, allocVector(STRSXP, N));
 #ifdef HAVE_TM_GMTOFF
@@ -1341,7 +1356,7 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
                 if (t0 != -1)
                 {
                     t0 -= offset; /* offset = -0800 is Seattle */
-                    ptm = localtime0(&t0, 1 - isgmt, &tm2);
+                    ptm = localtime0(&t0, !isGMT, &tm2);
                 }
                 else
                     invalid = TRUE;
@@ -1351,15 +1366,15 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
                 /* we do want to set wday, yday, isdst, but not to
                    adjust structure at DST boundaries */
                 memcpy(&tm2, &tm, sizeof(stm));
-                mktime0(&tm2, !isgmt); /* set wday, yday, isdst */
+                mktime0(&tm2, !isGMT); /* set wday, yday, isdst */
                 tm.tm_wday = tm2.tm_wday;
                 tm.tm_yday = tm2.tm_yday;
-                tm.tm_isdst = isgmt ? 0 : tm2.tm_isdst;
+                tm.tm_isdst = isGMT ? 0 : tm2.tm_isdst;
             }
             invalid = validate_tm(&tm) != 0;
         }
         makelt(ptm, ans, i, !invalid, invalid ? NA_REAL : psecs - floor(psecs));
-        if (!isgmt)
+        if (!isGMT)
         {
             const char *p = "";
             if (!invalid && tm.tm_isdst >= 0)
@@ -1434,8 +1449,7 @@ SEXP attribute_hidden do_D2POSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
             tm.tm_yday = day;
 
             /* month within year */
-            for (mon = 0; day >= (tmp = (days_in_month[mon]) + ((mon == 1 && isleap(y + 1900)) ? 1 : 0));
-                 day -= tmp, mon++)
+            for (mon = 0; day >= (tmp = days_in_month(mon, y)); day -= tmp, mon++)
                 ;
             tm.tm_mon = mon;
             tm.tm_mday = day + 1;
@@ -1506,11 +1520,8 @@ SEXP attribute_hidden do_POSIXlt2D(SEXP call, SEXP op, SEXP args, SEXP env)
         else if (validate_tm(&tm) < 0) /* validate_tm() fixes up out-of-range {sec,min,...} */
             REAL(ans)[i] = NA_REAL;
         else
-        {                                           // normal case:
-            tm.tm_sec = tm.tm_min = tm.tm_hour = 0; // -> result should already be multiple of 24*60*60 = 86400
-            /* -1 must be error as seconds were zeroed */
-            double tmp = mktime00(&tm);
-            REAL(ans)[i] = (tmp == -1) ? NA_REAL : nearbyint(tmp / 86400.); // nearbyint() "just in case"
+        { // normal case:
+            REAL(ans)[i] = mkdate00(&tm);
         }
     }
 
