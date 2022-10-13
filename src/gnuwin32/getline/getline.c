@@ -311,6 +311,7 @@ static int gl_getc(void)
                     c = gl_alt_to_ucs(bbb);
                     bbb = 0;
                     nAlt = 0;
+                    AltIsDown = 0;
                 }
                 else if (hex && nAlt == 8)
                 {
@@ -318,6 +319,7 @@ static int gl_getc(void)
                     bbb = 0;
                     nAlt = 0;
                     hex = 0;
+                    AltIsDown = 0;
                 }
             }
             /* Originally, these (LEFT, RIGHT, HOME, END, UP, DOWN, DELETE) were
@@ -360,7 +362,7 @@ static int gl_getc(void)
             {
                 c = bbb;
             }
-            else
+            else if (bbb)
             {
                 /* Handle Alt+xxx (Alt+xx).
                    Console implementations differ in whether and how they interpret
@@ -369,6 +371,8 @@ static int gl_getc(void)
                    send the result in Alt key up event (wc). See PR#18391. */
                 c = gl_alt_to_ucs(bbb);
             }
+            else
+                c = wc;
             /* This may have to be re-visited when extending support for combining
                marks, which have been seen arriving in Alt key up event as well. */
             AltIsDown = 0;
@@ -412,6 +416,7 @@ static int gl_getc(void)
                 c = gl_alt_to_ucs(bbb);
                 bbb = 0;
                 nAlt = 0;
+                AltIsDown = 0;
             }
             else if (hex && nAlt == 8)
             {
@@ -419,6 +424,7 @@ static int gl_getc(void)
                 bbb = 0;
                 nAlt = 0;
                 hex = 0;
+                AltIsDown = 0;
             }
         }
     }
