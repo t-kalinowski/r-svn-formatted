@@ -251,7 +251,8 @@ static int validate_tm(stm *tm)
 static double mktime00(stm *tm)
 {
 #define MKTIME_BODY                                                                                                    \
-    int day = tm->tm_mday - 1, year0 = 1900 + tm->tm_year;                                                             \
+    int day = tm->tm_mday - 1, /* not ok if it's NA_INTEGER */                                                         \
+        year0 = 1900 + tm->tm_year;                                                                                    \
     /* safety check for unbounded loops */                                                                             \
     double excess = 0.0;                                                                                               \
     if (year0 > 3000)                                                                                                  \
@@ -647,10 +648,9 @@ static stm *localtime0(const double *tp, const int local, stm *ltm)
 static Rboolean set_tz(const char *tz, char *oldtz)
 {
     Rboolean settz = TRUE; // typical result
-    char *p = NULL;
 
     strcpy(oldtz, "");
-    p = getenv("TZ");
+    char *p = getenv("TZ");
     if (p)
     {
         if (strlen(p) > 1000)
@@ -967,7 +967,7 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
     SET_VECTOR_ELT(x, 0, coerceVector(VECTOR_ELT(x, 0), REALSXP));
     for (int i = 1; i < 6; i++)
         SET_VECTOR_ELT(x, i, coerceVector(VECTOR_ELT(x, i), INTSXP));
-    SET_VECTOR_ELT(x, 8, coerceVector(VECTOR_ELT(x, 8), INTSXP));
+    SET_VECTOR_ELT(x, 8, coerceVector(VECTOR_ELT(x, 8), INTSXP)); // isdst
 
     SEXP ans = PROTECT(allocVector(REALSXP, n));
     for (R_xlen_t i = 0; i < n; i++)
@@ -1671,9 +1671,11 @@ SEXP attribute_hidden do_balancePOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
                           tm.tm_mday != NA_INTEGER && tm.tm_mon != NA_INTEGER && tm.tm_year != NA_INTEGER);
 
         if (valid)
+        {
             validate_tm(&tm);
-        // get correct {yday, wday}:
-        set_w_yday(&tm);
+            // get correct {yday, wday}:
+            set_w_yday(&tm);
+        }
 
         makelt(&tm, ans, i, valid,
                valid ? secs - fsecs : (R_FINITE(secs) ? NA_REAL : secs)); // fills ans[0..8]
