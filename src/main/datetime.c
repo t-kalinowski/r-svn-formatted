@@ -482,7 +482,7 @@ static double mktime0(stm *tm, const int local)
 #endif
     }
     else
-    OK = tm->tm_year < 138 && tm->tm_year >= 02);
+        OK = tm->tm_year < 138 && tm->tm_year >= 02;
     if (OK)
     {
         res = (double)mktime(tm);
