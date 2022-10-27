@@ -52,6 +52,9 @@
 #ifdef USE_INTERNAL_MKTIME
 // for R_time_t
 #include "datetime.h"
+#else
+// for time_t
+#include <time.t>
 #endif
 
 void attribute_hidden Init_R_Machine(SEXP rho)
