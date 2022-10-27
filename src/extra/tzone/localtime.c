@@ -1,6 +1,6 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Modifications copyright (C) 2007-2020  The R Core Team
+ *  Modifications copyright (C) 2007-2022  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ removing ATTRIBUTE_PURE, conditional parts for e.g. ALL_STATE
 use of 'unknown' isdst
 use of 64-bit time_t irrespective of platform.
 use of tm_zone and tm_gmtoff on all platforms.
+using R_ prefix for exported entry points.
 */
 
 #include <config.h>
@@ -346,6 +347,7 @@ static int differ_by_repeat(const time_t t1, const time_t t0)
     return (int_fast64_t)t1 - (int_fast64_t)t0 == SECSPERREPEAT;
 }
 
+// from main/util.c (Unix) or registryTZ.c (Windows)
 extern const char *getTZinfo(void);
 extern void Rf_warning(const char *, ...);
 
