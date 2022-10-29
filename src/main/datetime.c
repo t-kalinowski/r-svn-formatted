@@ -119,12 +119,13 @@ on Windows: it is the current default on macOS.
 // latterly these are set by configure, but not on Windows
 #undef MKTIME_SETS_ERRNO
 #define MKTIME_SETS_ERRNO
+// these should only be used in PATH 1)
 #undef HAVE_WORKING_MKTIME_AFTER_2037
 #define HAVE_WORKING_MKTIME_AFTER_2037 1
 #undef HAVE_WORKING_MKTIME_BEFORE_1902
 #define HAVE_WORKING_MKTIME_BEFORE_1902 1
-#undef HAVE_WORKING_MKTIME_BEFORE_1900
-#define HAVE_WORKING_MKTIME_BEFORE_1900 1
+#undef HAVE_WORKING_MKTIME_BEFORE_1970
+#define HAVE_WORKING_MKTIME_BEFORE_1970 1
 #else
 
 typedef struct tm stm;
@@ -136,6 +137,8 @@ extern char *tzname[2];
 #include <stdlib.h> /* for setenv or putenv */
 #include <Defn.h>
 #include <Internal.h>
+
+Rboolean warn1902 = FALSE, warn2037 = FALSE;
 
 /* Substitute based on glibc code. */
 #include "Rstrptime.h"
@@ -152,8 +155,9 @@ static const int month_days[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 3
   Return 0 if valid, -1 if invalid and uncorrectable, or a positive
   integer approximating the number of corrections done.
 
-  Used in both paths.
-  */
+  Used in both paths in mktime0, in do_asPOSIXctm, do_formatPOSIXlt,
+  do_balancePOSITlt.
+*/
 static int validate_tm(stm *tm)
 {
     int tmp, res = 0;
@@ -281,13 +285,14 @@ static int validate_tm(stm *tm)
     return res;
 } // validate_tm
 
-// to be used in POSIXlt2D()
 /*
    days_in_year is the same for year mod 400.
    We could avoid loops altogether by computing how many leap years
    there are between 1900 + tm->tm_year and 1900.
 
    This will fix up tm_yday and tm_wday.
+
+   Used in gmtime00 and guess_offset in PATH 1) and POSIXlt2D do_balancePOSIXct
 */
 static double mkdate00(stm *tm)
 {
@@ -336,13 +341,15 @@ static double mkdate00(stm *tm)
     return (day + excess * 146097);
 }
 
-/* Substitute for mktime -- no checking, always in GMT (so really for
+#ifndef USE_INTERNAL_MKTIME
+/*
+   PATH 1).
+
+   Substitute for mktime -- no checking, always in GMT (so really for
    timegm which is non-POSIX).  Also, returns double and needs to be
    wider than a 32-bit time_t.
-
-   Used in mktime0 on PATH 2).
 */
-static double mktime00(stm *tm)
+static double gmtime00(stm *tm)
 {
     if (tm->tm_mday == NA_INTEGER || tm->tm_year == NA_INTEGER || tm->tm_mon == NA_INTEGER ||
         tm->tm_sec == NA_INTEGER || tm->tm_min == NA_INTEGER || tm->tm_hour == NA_INTEGER)
@@ -353,10 +360,11 @@ static double mktime00(stm *tm)
     double day = mkdate00(tm);
     return tm->tm_sec + (tm->tm_min * 60) + (tm->tm_hour * 3600) + day * 86400.0;
 }
+#endif
 
 #ifdef USE_INTERNAL_MKTIME
 /*
-   PATH 1)
+   PATH 2), internal tzcode
 
    Interface to mktime or timegm, version in each PATH.
    Called from do_asPOSIXct and do_strptime.
@@ -372,11 +380,13 @@ static double mktime0(stm *tm, const int local)
 #endif
         return -1.;
     }
-    return local ? R_mktime(tm) : mktime00(tm);
+    //    return local ? R_mktime(tm) : gmtime00(tm);
+    return local ? R_mktime(tm) : R_timegm(tm);
 }
 
 /*
-   Interface to localtime_r or gmtime_r.  Version in each PATH.
+   Interface to localtime_r or gmtime_r.
+   Version in each PATH.  This is PATH 2)
    Used in do_asPOSIXlt and do_strptime.
 */
 static stm *localtime0(const double *tp, const int local, stm *ltm)
@@ -385,8 +395,9 @@ static stm *localtime0(const double *tp, const int local, stm *ltm)
     return local ? R_localtime_r(&t, ltm) : R_gmtime_r(&t, ltm);
 }
 
-#else // PATH 2)
+#else
 //--------------------------------------------------------- long clause ----
+// PATH 1)
 
 #ifndef HAVE_POSIX_LEAPSECONDS
 static int n_leapseconds = 27;      // 2017-01, sync with .leap.seconds in R (!)
@@ -417,7 +428,7 @@ static double guess_offset(stm *tm)
     { /* no DST */
         tm->tm_year = 2;
         mktime(tm);
-        offset1 = (double)mktime(tm) - mktime00(tm);
+        offset1 = (double)mktime(tm) - gmtime00(tm);
         memcpy(tm, &oldtm, sizeof(stm));
         tm->tm_isdst = 0;
         return offset1;
@@ -462,12 +473,12 @@ static double guess_offset(stm *tm)
     tm->tm_mon = 0;
     tm->tm_year = year;
     tm->tm_isdst = -1;
-    offset1 = (double)mktime(tm) - mktime00(tm);
+    offset1 = (double)mktime(tm) - gmtime00(tm);
     /* and in July */
     tm->tm_year = year;
     tm->tm_mon = 6;
     tm->tm_isdst = -1;
-    offset2 = (double)mktime(tm) - mktime00(tm);
+    offset2 = (double)mktime(tm) - gmtime00(tm);
     if (oldisdst > 0)
     {
         offset = (offset1 > offset2) ? offset2 : offset1;
@@ -481,7 +492,7 @@ static double guess_offset(stm *tm)
     tm->tm_isdst = -1;
     if (oldisdst < 0)
     {
-        offset1 = (double)mktime(tm) - mktime00(tm);
+        offset1 = (double)mktime(tm) - gmtime00(tm);
         oldisdst = (offset1 < offset) ? 1 : 0;
         if (oldisdst)
             offset = offset1;
@@ -494,8 +505,10 @@ static double guess_offset(stm *tm)
 }
 
 /*
-   Interface to mktime or mktime00, version in each PATH.
+   Interface to mktime or gmtime00, version in each PATH.
    Called from do_asPOSIXct and do_strptime.
+
+   This is the version for PATH 1)
 */
 static double mktime0(stm *tm, const int local)
 {
@@ -512,7 +525,7 @@ static double mktime0(stm *tm, const int local)
         return -1.;
     }
     if (!local)
-        return mktime00(tm);
+        return gmtime00(tm);
 
     /*
        Platforms with a 32-bit time_t will fail before 1901-12-13 and after 2038-01-19.
@@ -527,17 +540,45 @@ static double mktime0(stm *tm, const int local)
     {
         OK = TRUE;
 #ifndef HAVE_WORKING_MKTIME_AFTER_2037
+        if (tm->tm_year >= 138)
+        {
+            if (!warn2037)
+                warning(_("(dateimes after 2037 may not be accurate: warns once per seesion"));
+            warn2037 = TRUE;
+            OK = FALSE;
+        }
         OK = OK && tm->tm_year < 138;
 #endif
 #ifndef HAVE_WORKING_MKTIME_BEFORE_1902
-        OK = OK && tm->tm_year >= 02;
+        if (tm->tm_year < 02)
+        {
+            if (!warn1902)
+                warning(_("dateimes before 1902 may not be accurate: warns once per seesion"));
+            warn1902 = TRUE;
+            OK = FALSE;
+        }
 #endif
 #ifndef HAVE_WORKING_MKTIME_BEFORE_1970
         OK = OK && tm->tm_year >= 70;
 #endif
     }
     else
-        OK = tm->tm_year < 138 && tm->tm_year >= 02;
+    { // 32-bit time_t
+        if (tm->tm_year >= 138)
+        {
+            if (!warn2037)
+                warning(_("dateimes after 2037 may not be accurate: warns once per seesion"));
+            warn2037 = TRUE;
+            OK = FALSE;
+        }
+        else if (tm->tm_year < 02)
+        {
+            if (!warn1902)
+                warning(_("dateimes before 1902 may not be accurate: warns once per seesion"));
+            warn1902 = TRUE;
+            OK = FALSE;
+        }
+    }
     if (OK)
     {
         res = (double)mktime(tm);
@@ -552,32 +593,61 @@ static double mktime0(stm *tm, const int local)
         /* watch the side effect here: both calls alter their arg */
     }
     else
-        return guess_offset(tm) + mktime00(tm);
+        return guess_offset(tm) + gmtime00(tm);
 }
 
 /*
    Interface to localtime[_r] or gmtime[_r] or internal substitute.
-   Version in each PATH.
+   Version in each PATH: this is PATH 1)
    Used in do_asPOSIXlt and do_strptime.
 */
 static stm *localtime0(const double *tp, const int local, stm *ltm)
 {
     double d = *tp;
 
-    Rboolean OK;
+    Rboolean OK = TRUE;
+    ;
     /* as mktime is broken, do not trust localtime */
-    if (sizeof(time_t) == 8)
+    if (local)
     {
-        OK = TRUE;
+        if (sizeof(time_t) == 8)
+        {
+            OK = TRUE;
 #ifndef HAVE_WORKING_MKTIME_AFTER_2037
-        OK = OK && d < 2147483647.0;
+            if (d >= 2147483647.0)
+            {
+                warning(_("(dateimes after 2037 may not be accurate: warns once per seesion"));
+                warn2037 = TRUE;
+                OK = FALSE;
+            }
 #endif
 #ifndef HAVE_WORKING_MKTIME_BEFORE_1902
-        OK = OK && d > -2147483647.0;
+            if (d <= -2147483647.0)
+            {
+                if (!warn1902)
+                    warning(_("dateimes before 1902 may not be accurate: warns once per seesion"));
+                warn1902 = TRUE;
+                OK = FALSE;
+            }
 #endif
+        }
+        else
+        { // 32-bit time_t
+            if (d >= 2147483647.0)
+            {
+                warning(_("(dateimes after 2037 may not be accurate: warns once per seesion"));
+                warn2037 = TRUE;
+                OK = FALSE;
+            }
+            else if (d <= -2147483647.0)
+            {
+                if (!warn1902)
+                    warning(_("dateimes before 1902 may not be accurate: warns once per seesion"));
+                warn1902 = TRUE;
+                OK = FALSE;
+            }
+        }
     }
-    else
-        OK = d < 2147483647.0 && d > -2147483647.0;
     if (OK)
     {
         time_t t = (time_t)d;
@@ -702,7 +772,7 @@ static stm *localtime0(const double *tp, const int local, stm *ltm)
         return res;
     }
 } /* localtime0() */
-#endif // end of PATH 1).
+#endif // end of PATH 1) ---------------------------------------------
 
 static Rboolean set_tz(const char *tz, char *oldtz)
 {
@@ -1053,7 +1123,7 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
         else
         {
             errno = 0;
-            // Interface to mktime or mktime00, PATH-specific
+            // Interface to mktime or gmtime00, PATH-specific
             double tmp = mktime0(&tm, !isGMT);
 #ifdef MKTIME_SETS_ERRNO
             REAL(ans)[i] = errno ? NA_REAL : tmp + (secs - fsecs);
@@ -1436,7 +1506,7 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
                    adjust and convert back */
                 double t0;
                 memcpy(&tm2, &tm, sizeof(stm));
-                // Interface to mktime or mktime00, PATH-specific
+                // Interface to mktime or gmtime00, PATH-specific
                 t0 = mktime0(&tm2, 0);
                 if (t0 != -1)
                 {
