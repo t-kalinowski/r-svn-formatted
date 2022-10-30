@@ -411,7 +411,10 @@ static char *_fmt(const char *format, const stm *const t, char *pt, const char *
                 {
                     char buf[20] = "%";
                     int year = TM_YEAR_BASE + t->tm_year;
-                    if (pad == '\0')
+                    char *p = getenv("R_PAD_YEARS_BY_ZERO");
+                    if (!p)
+                        p = "yes";
+                    if (strcmp(p, "yes") == 0 && pad == '\0')
                     {
                         pad = '0';
                         width = 4;
