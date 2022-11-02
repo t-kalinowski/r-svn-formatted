@@ -1263,7 +1263,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef HAVE_TM_ZONE
             tm.tm_zone = tm_zone;
 //#elif defined USE_INTERNAL_MKTIME
-//	    // Hmm, tm_zone is defined in PATH 1) so never get here.
+//	    // Hmm, tm_zone is defined in PATH 2) so never get here.
 //	    if(tm.tm_isdst >= 0) R_tzname[tm.tm_isdst] = tm_zone;
 #else
             /* Modifying tzname causes memory corruption on Solaris. It
@@ -1274,8 +1274,19 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
 #ifdef HAVE_TM_GMTOFF
             int tmp = INTEGER(VECTOR_ELT(x, 10))[i % nlen[10]];
-            tm.tm_gmtoff = (tmp == NA_INTEGER) ? 0 : tmp;
+            if (tmp == NA_INTEGER)
+            {
+#ifdef USE_INTERNAL_MKTIME
+                tm.tm_gmtoff = R_timegm(&tm) - R_mktime(&tm);
+#else
+                // this gives wrong answers, but in general
+                // calling mktime will only work in the currently set tz.
+                tm.tm_gmtoff = 0;
 #endif
+#endif
+            }
+            else
+                tm.tm_gmtoff = tmp;
         }
         if (!R_FINITE(secs))
         {
@@ -1351,15 +1362,21 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
                     strcat(buf2, p + nused);
                 }
             }
-            // The overflow behaviour is not determined by C99.
-            // We assume truncation, and ensure termination.
-            char buff[300];
+            // The on-overflow behaviour is not determined by C99-C23.
+            // Hoowever, this should return 0 so we can throw an error.
+            char buff[2048];
+            size_t res;
 #ifdef USE_INTERNAL_MKTIME
-            R_strftime(buff, 256, buf2, &tm);
+            res = R_strftime(buff, 2048, buf2, &tm);
 #else
-            strftime(buff, 256, buf2, &tm);
+        res = strftime(buff, 2048, buf2, &tm);
 #endif
-            buff[256] = '\0';
+            if (res == 0)
+            { // overflow for at least internal and glibc
+                Rf_error("output string exceeded 2048 bytes");
+            }
+            // probably no longer needed.
+            buff[2047] = '\0';
             mbcsTruncateToValid(buff);
             // Now assume tzone abbreviated name is < 40 bytes,
             // but they are currently 3 or 4 bytes.
@@ -1511,6 +1528,7 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
             tm.tm_isdst = -1;
             if (offset != NA_INTEGER)
             {
+                // FIXME do we really want to allow an offset in UTC?
 #ifdef HAVE_TM_GMTOFF
                 tm.tm_gmtoff = offset;
 #endif
@@ -1890,7 +1908,7 @@ SEXP attribute_hidden do_balancePOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef HAVE_TM_ZONE
             tm.tm_zone = tm_zone;
 //#elif defined USE_INTERNAL_MKTIME
-//	    // Hmm, tm_zone is defined in PATH 1) so never get here.
+//	    // Hmm, tm_zone is defined in PATH 2) so never get here.
 //	    if(tm.tm_isdst >= 0) R_tzname[tm.tm_isdst] = tm_zone;
 #else
             /* Modifying tzname causes memory corruption on Solaris. It
