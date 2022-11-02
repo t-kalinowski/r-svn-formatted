@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2015  The R Core Team
+ *  Copyright (C) 1997--2022  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,6 +25,27 @@
 #include <Defn.h>
 #include <Internal.h>
 
+/* Handle NaN and NA in input for a cumulative operation, preserving
+   distinction between NA and NaN. */
+static SEXP handleNaN(SEXP x, SEXP s)
+{
+    Rboolean hasNA = FALSE;
+    Rboolean hasNaN = FALSE;
+    double *rx = REAL(x), *rs = REAL(s);
+
+    for (R_xlen_t i = 0; i < XLENGTH(x); i++)
+    {
+        hasNaN = hasNaN || ISNAN(rx[i]);
+        hasNA = hasNA || (hasNaN && R_IsNA(rx[i]));
+
+        if (hasNA)
+            rs[i] = NA_REAL;
+        else if (hasNaN)
+            rs[i] = R_NaN;
+    }
+    return s;
+}
+
 static SEXP cumsum(SEXP x, SEXP s)
 {
     LDOUBLE sum = 0.;
@@ -34,7 +55,7 @@ static SEXP cumsum(SEXP x, SEXP s)
         sum += rx[i]; /* NA and NaN propagated */
         rs[i] = (double)sum;
     }
-    return s;
+    return ISNAN(sum) ? handleNaN(x, s) : s;
 }
 
 /* We need to ensure that overflow gives NA here */
@@ -57,6 +78,30 @@ static SEXP icumsum(SEXP x, SEXP s)
     return s;
 }
 
+static SEXP chandleNaN(SEXP x, SEXP s)
+{
+    Rboolean hasNA = FALSE;
+    Rboolean hasNaN = FALSE;
+
+    for (R_xlen_t i = 0; i < XLENGTH(x); i++)
+    {
+        hasNaN = hasNaN || ISNAN(COMPLEX(x)[i].r) || ISNAN(COMPLEX(x)[i].i);
+        hasNA = hasNA || (hasNaN && (R_IsNA(COMPLEX(x)[i].r) || R_IsNA(COMPLEX(x)[i].i)));
+
+        if (hasNA)
+        {
+            COMPLEX(s)[i].r = NA_REAL;
+            COMPLEX(s)[i].i = NA_REAL;
+        }
+        else if (hasNaN)
+        {
+            COMPLEX(s)[i].r = R_NaN;
+            COMPLEX(s)[i].i = R_NaN;
+        }
+    }
+    return s;
+}
+
 static SEXP ccumsum(SEXP x, SEXP s)
 {
     Rcomplex sum;
@@ -69,7 +114,7 @@ static SEXP ccumsum(SEXP x, SEXP s)
         COMPLEX(s)[i].r = sum.r;
         COMPLEX(s)[i].i = sum.i;
     }
-    return s;
+    return (ISNAN(sum.r) || ISNAN(sum.i)) ? chandleNaN(x, s) : s;
 }
 
 static SEXP cumprod(SEXP x, SEXP s)
@@ -82,7 +127,7 @@ static SEXP cumprod(SEXP x, SEXP s)
         prod *= rx[i]; /* NA and NaN propagated */
         rs[i] = (double)prod;
     }
-    return s;
+    return ISNAN(prod) ? handleNaN(x, s) : s;
 }
 
 static SEXP ccumprod(SEXP x, SEXP s)
@@ -99,7 +144,7 @@ static SEXP ccumprod(SEXP x, SEXP s)
         COMPLEX(s)[i].r = prod.r;
         COMPLEX(s)[i].i = prod.i;
     }
-    return s;
+    return (ISNAN(prod.r) || ISNAN(prod.i)) ? chandleNaN(x, s) : s;
 }
 
 static SEXP cummax(SEXP x, SEXP s)
@@ -108,8 +153,8 @@ static SEXP cummax(SEXP x, SEXP s)
     max = R_NegInf;
     for (R_xlen_t i = 0; i < XLENGTH(x); i++)
     {
-        if (ISNAN(rx[i]) || ISNAN(max))
-            max = max + rx[i]; /* propagate NA and NaN */
+        if (ISNAN(rx[i]))
+            return handleNaN(x, s);
         else
             max = (max > rx[i]) ? max : rx[i];
         rs[i] = max;
@@ -123,8 +168,8 @@ static SEXP cummin(SEXP x, SEXP s)
     min = R_PosInf; /* always positive, not NA */
     for (R_xlen_t i = 0; i < XLENGTH(x); i++)
     {
-        if (ISNAN(rx[i]) || ISNAN(min))
-            min = min + rx[i]; /* propagate NA and NaN */
+        if (ISNAN(rx[i]))
+            return handleNaN(x, s);
         else
             min = (min < rx[i]) ? min : rx[i];
         rs[i] = min;
