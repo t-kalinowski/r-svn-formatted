@@ -1101,6 +1101,7 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
 
     PROTECT(stz); /* it might be new */
     int isGMT = (strcmp(tz, "GMT") == 0 || strcmp(tz, "UTC") == 0) ? 1 : 0;
+    // if !isGMT we need to set the tz.not set tm_isdst and use mktime not timegm
     char oldtz[1001] = "";
     Rboolean settz = FALSE;
     if (!isGMT && strlen(tz) > 0)
@@ -1293,7 +1294,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef HAVE_TM_GMTOFF
             int tmp = INTEGER(VECTOR_ELT(x, 10))[i % nlen[10]];
             if (tmp == NA_INTEGER)
-            {
+            { // only need it for %z
 #ifdef USE_INTERNAL_MKTIME
                 tm.tm_gmtoff = R_timegm(&tm) - R_mktime(&tm);
 #else
@@ -1471,6 +1472,7 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
 
     char oldtz[1001] = "";
     Rboolean isGMT = (strcmp(tz, "GMT") == 0 || strcmp(tz, "UTC") == 0), settz = FALSE;
+    // if isGMT, do not set TZ, set tzone to UTC/GMT, make 9 components
     if (!isGMT && strlen(tz) > 0)
         settz = set_tz(tz, oldtz);
 #ifdef USE_INTERNAL_MKTIME
@@ -1546,9 +1548,8 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
             tm.tm_isdst = -1;
             if (offset != NA_INTEGER)
             {
-                // FIXME do we really want to allow an offset in UTC?
 #ifdef HAVE_TM_GMTOFF
-                tm.tm_gmtoff = offset;
+//		tm.tm_gmtoff = offset;
 #endif
                 /* we know the offset, but not the timezone
                    so all we can do is to convert to time_t,
