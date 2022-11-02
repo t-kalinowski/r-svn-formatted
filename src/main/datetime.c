@@ -21,9 +21,9 @@
  */
 
 /*
-    These use POSIX functions which are now also part of C99 so are
-    almost universally available, albeit with more room for
-    implementation variations.
+    These use POSIX functions which are also part of C99 so are almost
+    universally available, albeit with more room for implementation
+    variations.
 
     A particular problem is the setting of the timezone TZ on
     Unix/Linux.  POSIX appears to require it, yet older Linux systems
@@ -46,6 +46,23 @@
 
     Via Rstrptime.h we use the system strftime or wcsftime to get the
     language-specific names.
+*/
+
+/*
+  R class "POSIXlt" is a list of 9 components, with two optional ones.
+  Currently a time known to be in UTC has only the 9.
+
+  On a system with tm_gmtoff (all current platforms) the components
+  zone and gmtoff are included, but gmtoff may be NA and usually will
+  be unless the value was supplied by strptime(, "%z") or by
+  conversion from "POSIXct".
+
+  There will usually be a "tzone" attribute, of length 1 if only the
+  name is knoen or is "UTC', of length 3 including the abbreviations
+  for all other timezones. (If the timezone does not have DST, the
+  second abbreviation may be empty or may repeat the first, depending
+  on the platform.)  However, if the call to strptime() does not
+  specify 'tz', this attribute is omitted.
 */
 
 #ifdef HAVE_CONFIG_H
@@ -1265,11 +1282,13 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 //	    // Hmm, tm_zone is defined in PATH 2) so never get here.
 //	    if(tm.tm_isdst >= 0) R_tzname[tm.tm_isdst] = tm_zone;
 #else
-            /* Modifying tzname causes memory corruption on Solaris. It
+            /* This used to be
+               if(tm.tm_isdst >= 0) tzname[tm.tm_isdst] = tm_zone;
+               Modifying tzname causes memory corruption on Solaris. It
                is not specified to have any effect and strftime is documented
                to call settz().*/
-            if (tm.tm_isdst >= 0 && strcmp(tzname[tm.tm_isdst], tm_zone))
-                warning(_("Timezone specified in the object field cannot be used on this system."));
+//	    if(tm.tm_isdst >= 0 && strcmp(tzname[tm.tm_isdst], tm_zone))
+//		warning(_("Timezone specified in the object field cannot be used on this system."));
 #endif
 #ifdef HAVE_TM_GMTOFF
             int tmp = INTEGER(VECTOR_ELT(x, 10))[i % nlen[10]];
@@ -1282,10 +1301,10 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
                 // calling mktime will only work in the currently set tz.
                 tm.tm_gmtoff = 0;
 #endif
-#endif
             }
             else
                 tm.tm_gmtoff = tmp;
+#endif
         }
         if (!R_FINITE(secs))
         {
@@ -1368,7 +1387,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef USE_INTERNAL_MKTIME
             res = R_strftime(buff, 2048, buf2, &tm);
 #else
-        res = strftime(buff, 2048, buf2, &tm);
+            res = strftime(buff, 2048, buf2, &tm);
 #endif
             if (res == 0)
             { // overflow for at least internal and glibc
