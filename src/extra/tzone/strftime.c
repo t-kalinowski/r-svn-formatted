@@ -444,16 +444,13 @@ static char *_fmt(const char *format, const stm *const t, char *pt, const char *
                 */
                 continue;
             case 'z': {
-                long diff;
+                long diff; // should be R_time_t
                 char const *sign;
 
                 if (t->tm_isdst < 0)
                     continue;
-#ifdef HAVE_TM_GMTOFF
+                // always used as this is part of USE_INTERNAL_TZONE
                 diff = t->tm_gmtoff;
-#else
-                diff = R_timegm(t) - R_mktime(t);
-#endif
                 if (diff < 0)
                 {
                     sign = "-";
