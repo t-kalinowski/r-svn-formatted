@@ -400,7 +400,7 @@ static stm *localtime0(const double *tp, const int local, stm *ltm)
 
 #else
 //--------------------------------------------------------- long clause ----
-// PATH 1)
+// PATH 1), using system functions.
 /*
    Substitute for timegm (which is non-POSIX) -- no checking.  Also,
    returns double and needs to be wider than a 32-bit time_t.  So we
@@ -1133,6 +1133,7 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP ans = PROTECT(allocVector(REALSXP, n));
     for (R_xlen_t i = 0; i < n; i++)
     {
+        // FIXME This codes assumes a fixed order of components.
         double secs = REAL(VECTOR_ELT(x, 0))[i % nlen[0]], fsecs = floor(secs);
         stm tm;
         // avoid (int) NAN
@@ -1267,6 +1268,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         warning(_("More than 9 list components in \"POSIXlt\" without timezone"));
     for (R_xlen_t i = 0; i < N; i++)
     {
+        // FIXME This codes assumes a fixed order of components.
         double secs = REAL(VECTOR_ELT(x, 0))[i % nlen[0]], fsecs = floor(secs);
         // avoid (int) NAN
         tm.tm_sec = R_FINITE(secs) ? (int)fsecs : NA_INTEGER;
@@ -1649,6 +1651,7 @@ SEXP attribute_hidden do_D2POSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         Rboolean valid = R_FINITE(x_i);
         if (valid)
         {
+            // FIXME: this is potentially rather slow
             int day = (int)floor(x_i);
             tm.tm_hour = tm.tm_min = tm.tm_sec = 0;
             /* weekday: 1970-01-01 was a Thursday */
@@ -1723,6 +1726,7 @@ SEXP attribute_hidden do_POSIXlt2D(SEXP call, SEXP op, SEXP args, SEXP env)
         double secs = REAL(VECTOR_ELT(x, 0))[i % nlen[0]], fsecs = floor(secs);
         stm tm;
         // avoid (int) NAN
+        // FIXEME: this assumes a fixed order of components.
         tm.tm_sec = R_FINITE(secs) ? (int)fsecs : NA_INTEGER;
         tm.tm_min = INTEGER(VECTOR_ELT(x, 1))[i % nlen[1]];
         tm.tm_hour = INTEGER(VECTOR_ELT(x, 2))[i % nlen[2]];
@@ -1758,9 +1762,16 @@ SEXP attribute_hidden do_balancePOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* FIXME
        This may be called on objects generated on other versions of R
-       with/without tm_zone/rm_offset, or even different versions of R.
-       Let alone hand-edited objects.
+       with/without tm_zone/rm_offset, or even different versions of
+       R.  Let alone hand-edited objects, as in datetime3.R, nor those
+       created in packages.
+
        So assuming the structure differs for UTC objects is unsafe.
+
+       Currently a POSIXlt object has 9, 10 or 11 components.  The
+       optional ones are zone and gmtoff, and it may have either or
+       both.  The description does not specify the order of the
+       components.  For now, assume the first nine are secs ... isdst.
     */
     checkArity(op, args);
     MAYBE_INIT_balanced SEXP _filled_ = ScalarLogical(NA_LOGICAL);
@@ -1788,8 +1799,8 @@ SEXP attribute_hidden do_balancePOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     if (!isVectorList(x) || n_comp < 9)
         error(_("invalid '%s' argument"), "x");
 
-    Rboolean have_zone, isUTC = n_comp == 9; // otherwise, 10 or 11:
-    /* This is very fragile.  isUTC means a patricular sub-format of
+    Rboolean have_zone, have_9 = n_comp == 9; // otherwise, 10 or 11:
+    /* This is fragile.  have_9 means a patricular sub-format of
        POSIXlt objects */
 #ifdef HAVE_TM_GMTOFF
     have_zone = n_comp >= 11; // {zone, gmtoff}
@@ -1911,7 +1922,7 @@ SEXP attribute_hidden do_balancePOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP ans = PROTECT(allocVector(VECSXP, n_comp));
     for (int i = 0; i < 9; i++)
         SET_VECTOR_ELT(ans, i, allocVector(i > 0 ? INTSXP : REALSXP, n));
-    if (!isUTC)
+    if (!have_9)
     {
         SET_VECTOR_ELT(ans, 9, allocVector(STRSXP, n));
 #ifdef HAVE_TM_GMTOFF
@@ -1929,6 +1940,7 @@ SEXP attribute_hidden do_balancePOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         // 1. fill 'tm'
         double secs = REAL(VECTOR_ELT(x, 0))[i % nlen[0]], fsecs = floor(secs);
         stm tm;
+        // FIXME: this assumes a fised order of components.
         // avoid (int) NAN
         tm.tm_sec = R_FINITE(secs) ? (int)fsecs : NA_INTEGER;
         tm.tm_min = INTEGER(VECTOR_ELT(x, 1))[i % nlen[1]];
@@ -1938,9 +1950,7 @@ SEXP attribute_hidden do_balancePOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         tm.tm_year = INTEGER(VECTOR_ELT(x, 5))[i % nlen[5]];
         tm.tm_wday = INTEGER(VECTOR_ELT(x, 6))[i % nlen[6]];
         tm.tm_yday = INTEGER(VECTOR_ELT(x, 7))[i % nlen[7]];
-        //	tm.tm_isdst = INTEGER(VECTOR_ELT(x, 8))[i%nlen[8]];
-        // This is surely wrong.
-        tm.tm_isdst = isUTC ? 0 : INTEGER(VECTOR_ELT(x, 8))[i % nlen[8]];
+        tm.tm_isdst = INTEGER(VECTOR_ELT(x, 8))[i % nlen[8]];
         char tm_zone[20];
         if (have_zone)
         { // not "UTC", e.g.
@@ -1948,9 +1958,6 @@ SEXP attribute_hidden do_balancePOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
             tm_zone[20 - 1] = '\0';
 #ifdef HAVE_TM_ZONE
             tm.tm_zone = tm_zone;
-//#elif defined USE_INTERNAL_MKTIME
-//	    // Hmm, tm_zone is defined in PATH 2) so never get here.
-//	    if(tm.tm_isdst >= 0) R_tzname[tm.tm_isdst] = tm_zone;
 #else
             /* Modifying tzname causes memory corruption on Solaris. It
                is not specified to have any effect and strftime is documented
@@ -1988,7 +1995,7 @@ SEXP attribute_hidden do_balancePOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         makelt(&tm, ans, i, valid,
                valid ? secs - fsecs : (R_FINITE(secs) ? NA_REAL : secs)); // fills ans[0..8]
 
-        if (!isUTC)
+        if (!have_9)
         { // set components 10 and 11
             const char *p = "";
             if (valid && tm.tm_isdst >= 0)
