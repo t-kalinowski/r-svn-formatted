@@ -897,12 +897,6 @@ static void glibc_fix(stm *tm, Rboolean *invalid)
     }
 }
 
-static const char ltnames[][11] =
-    // 0     1      2       3       4      5       6       7       8
-    {"sec", "min", "hour", "mday", "mon", "year", "wday", "yday", "isdst",
-     // 9       10
-     "zone", "gmtoff"};
-
 static void makelt(stm *tm, SEXP ans, R_xlen_t i, Rboolean valid, double frac_secs)
 {
     if (valid)
@@ -924,6 +918,66 @@ static void makelt(stm *tm, SEXP ans, R_xlen_t i, Rboolean valid, double frac_se
             INTEGER(VECTOR_ELT(ans, j))[i] = NA_INTEGER;
         INTEGER(VECTOR_ELT(ans, 8))[i] = -1;
     }
+}
+
+/*
+  Currently a POSIXlt object has 9, 10 or 11 components.  The
+  optional ones are zone and gmtoff, and it may have either or
+  both.  The description does not specify the order of the
+  components.  For now, assume the first nine are secs ... isdst.
+  and that the 10th and 11th are zone and gmtoff if present.
+
+  Object can have gmtoff even without HAVE_TM_GMTOFF.
+
+  Called from do_asPOSIXct do_formatPOSIXlt do_balancePOSIXlt
+*/
+
+// used by valid_POSIX do_asPOSIXlt do_strptime do_D2POSIXlt do_balancePOSIXlt
+static const char ltnames[][11] =
+    // 0     1      2       3       4      5       6       7       8
+    {"sec", "min", "hour", "mday", "mon", "year", "wday", "yday", "isdst",
+     // 9       10
+     "zone", "gmtoff"};
+
+/* FIXME: could move the coercions here */
+// validate components 1 ... nm
+#define isNum(s) ((TYPEOF(s) == INTSXP) || (TYPEOF(s) == REALSXP))
+static Rboolean valid_POSIXlt(SEXP x, int nm)
+{
+    int n_comp = LENGTH(x); // >= 9
+    int n_check = imin2(n_comp, nm);
+    if (!isVectorList(x) || n_comp < 9)
+        error(_("a valid \"POSIXlt\" object is a list of at least 9 elements"));
+
+    SEXP nms = getAttrib(x, R_NamesSymbol);
+    if (LENGTH(nms) < 9)
+        error(_("a valid \"POSIXlt\" object has names"));
+
+    // Now check the names
+    for (int i = 0; i < n_check; i++)
+    {
+        const char *nm = CHAR(STRING_ELT(nms, i));
+        if (strcmp(nm, ltnames[i]))
+            error(_("a valid \"POSIXlt\" object has element %d with name %s which should be"), i + 1, nm, ltnames[i]);
+    }
+
+    // And check the types
+    for (int i = 0; i < imin2(9, nm); i++)
+    {
+        if (!isNum(VECTOR_ELT(x, i)))
+            error(_("a valid \"POSIXlt\" object has a numeeric element %s"), ltnames[i]);
+    }
+    if (n_check >= 10)
+    {
+        if (!isString(VECTOR_ELT(x, 9)))
+            error(_("a valid \"POSIXlt\" object has a character element %s"), ltnames[9]);
+    }
+    if (n_check >= 11)
+    {
+        if (!isNum(VECTOR_ELT(x, 10)))
+            error(_("a valid \"POSIXlt\" object has a numeric element %s"), ltnames[10]);
+    }
+    return TRUE;
 }
 
 /* --------- R interfaces --------- */
@@ -1077,8 +1131,7 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
 
     SEXP x = PROTECT(duplicate(CAR(args))); /* coerced below */
-    if (!isVectorList(x) || LENGTH(x) < 9)  // must be 'POSIXlt'
-        error(_("invalid '%s' argument"), "x");
+    valid_POSIXlt(x, 9);
 
     SEXP stz;
     if (!isString((stz = CADR(args))) || LENGTH(stz) != 1)
@@ -1187,18 +1240,9 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
 // .Internal(format.POSIXlt(x, format, usetz))
 SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    /* FIXME
-       This may be called on objects generated on other versions of R
-       with/without tm_zone/tm_offset, or even different versions of R.
-       Let alone hand-edited objects or created in packages.
-       So assuming the structure differs for UTC objects is unsafe.
-
-       Add a validation step
-    */
     checkArity(op, args);
     SEXP x = PROTECT(duplicate(CAR(args))); /* coerced below */
-    if (!isVectorList(x) || LENGTH(x) < 9)
-        error(_("invalid '%s' argument"), "x");
+    valid_POSIXlt(x, 11);
     SEXP sformat;
     if (!isString((sformat = CADR(args))) || XLENGTH(sformat) == 0)
         error(_("invalid '%s' argument"), "format");
@@ -1264,11 +1308,13 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 #else
     Rboolean have_zone = LENGTH(x) >= 10;
 #endif
-    if (have_zone && !isString(VECTOR_ELT(x, 9)))
-        error(_("invalid component [[10]] in \"POSIXlt\", 'zone' should be character"));
-    if (!have_zone && LENGTH(x) > 9) // rather even error ?
-        /* never when !HAVE_GMTOFF */
-        warning(_("More than 9 list components in \"POSIXlt\" without timezone"));
+#if 0
+    if(have_zone && !isString(VECTOR_ELT(x, 9)))
+	error(_("invalid component [[10]] in \"POSIXlt\", 'zone' should be character"));
+    if(!have_zone && LENGTH(x) > 9) // rather even error ?
+	/* never when !HAVE_GMTOFF */
+	warning(_("More than 9 list components in \"POSIXlt\" without zone"));*/
+#endif
     for (R_xlen_t i = 0; i < N; i++)
     {
         // FIXME This codes assumes a fixed order of components.
@@ -1380,6 +1426,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef HAVE_TM_GMTOFF
             if (have_zone)
             { // so not in UTC
+                // Got coerced if necessary above
                 int tmp = INTEGER(VECTOR_ELT(x, 10))[i % nlen[10]];
                 if (tmp == NA_INTEGER && strstr(buf2, "%z"))
                 { // only need it for %z
@@ -1702,8 +1749,7 @@ SEXP attribute_hidden do_POSIXlt2D(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     SEXP x = PROTECT(duplicate(CAR(args)));
-    if (!isVectorList(x) || LENGTH(x) < 9)
-        error(_("invalid '%s' argument"), "x");
+    valid_POSIXlt(x, 6);
 
     R_xlen_t n = 0, nlen[9];
     for (int i = 0; i < 6; i++)
@@ -1763,19 +1809,11 @@ SEXP attribute_hidden do_POSIXlt2D(SEXP call, SEXP op, SEXP args, SEXP env)
 // .Internal(balancePOSIXlt(x, fill.only, classed)) called from balancePOSIXlt()
 SEXP attribute_hidden do_balancePOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    /* FIXME
+    /*
        This may be called on objects generated on other versions of R
        with/without tm_zone/rm_offset, or even different versions of
        R.  Let alone hand-edited objects, as in datetime3.R, or those
        created in packages.
-
-       Currently a POSIXlt object has 9, 10 or 11 components.  The
-       optional ones are zone and gmtoff, and it may have either or
-       both.  The description does not specify the order of the
-       components.  For now, assume the first nine are secs ... isdst.
-       and that the 10th and 11th are zone and gmtoff if present.
-
-       Object can have gmtoff even without HAVE_TM_GMTOFF.
     */
     checkArity(op, args);
     MAYBE_INIT_balanced SEXP _filled_ = ScalarLogical(NA_LOGICAL);
@@ -1799,33 +1837,8 @@ SEXP attribute_hidden do_balancePOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         return (x);
     }
 
-    int n_comp = LENGTH(x); // >= 9
-    if (!isVectorList(x) || n_comp < 9)
-        error(_("invalid '%s' argument"), "x");
-
-    Rboolean have_10 = n_comp >= 10, have_11 = n_comp >= 11;
-    /* This is fragile.
-       Objects can have zone or gmtoff even without HAVE_TM_GMTOFF.
-       For now we assume a fixed order. */
-    SEXP nms = getAttrib(x, R_NamesSymbol);
-    if (isNull(nms)) // it must have names
-        error(_("invalid '%s' argument"), "x");
-    if (have_10)
-    {
-        const char *n10 = CHAR(STRING_ELT(nms, 9));
-        if (strcmp(n10, "zone"))
-            error(_("invalid '%s' argument"), "x");
-        if (!isString(VECTOR_ELT(x, 9)))
-            error(_("invalid component [[10]] in \"POSIXlt\", 'zone' should be character"));
-    }
-    if (have_11)
-    {
-        const char *n11 = CHAR(STRING_ELT(nms, 10));
-        if (strcmp(n11, "gmtoff"))
-            error(_("invalid '%s' argument"), "x");
-        if (!isInteger(VECTOR_ELT(x, 10)))
-            error(_("invalid component [[11]] in \"POSIXlt\" 'gmtoff' should be integer"));
-    }
+    valid_POSIXlt(x, 11);
+    int n_comp = LENGTH(x);
 
     Rboolean need_fill = FALSE;
     R_xlen_t n = 0, nlen[n_comp];
@@ -1927,6 +1940,7 @@ SEXP attribute_hidden do_balancePOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 
     // fill *and* validate from now on:
 
+    Rboolean have_10 = n_comp >= 10, have_11 = n_comp >= 11;
     SEXP ans = PROTECT(allocVector(VECSXP, n_comp));
     for (int i = 0; i < 9; i++)
         SET_VECTOR_ELT(ans, i, allocVector(i > 0 ? INTSXP : REALSXP, n));
