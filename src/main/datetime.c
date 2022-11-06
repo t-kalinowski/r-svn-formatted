@@ -843,6 +843,7 @@ static void reset_tz(char *tz)
     tzset();
 }
 
+// called from do_strptime
 static void glibc_fix(stm *tm, Rboolean *invalid)
 {
     /* set mon and mday which glibc does not always set.
@@ -897,6 +898,7 @@ static void glibc_fix(stm *tm, Rboolean *invalid)
     }
 }
 
+// Used in do_asPOSIXlt do_strptime do_D2POSIXlt do_balancePOSIXlt
 static void makelt(stm *tm, SEXP ans, R_xlen_t i, Rboolean valid, double frac_secs)
 {
     if (valid)
@@ -920,12 +922,44 @@ static void makelt(stm *tm, SEXP ans, R_xlen_t i, Rboolean valid, double frac_se
     }
 }
 
+// Used in do_asPOSIXlt do_strptime
+#define BEGIN_MAKElt                                                                                                   \
+    SEXP tzone;                                                                                                        \
+    if (isUTC)                                                                                                         \
+    {                                                                                                                  \
+        tzone = PROTECT(mkString(tz));                                                                                 \
+    }                                                                                                                  \
+    else                                                                                                               \
+    {                                                                                                                  \
+        tzone = PROTECT(allocVector(STRSXP, 3));                                                                       \
+        SET_STRING_ELT(tzone, 0, mkChar(tz));                                                                          \
+        SET_STRING_ELT(tzone, 1, mkChar(R_tzname[0]));                                                                 \
+        SET_STRING_ELT(tzone, 2, mkChar(R_tzname[1]));                                                                 \
+    }
+
+// Used in do_asPOSIXlt do_strptime do_D2POSIXlt
+#define END_MAKElt                                                                                                     \
+    setAttrib(ans, R_NamesSymbol, ansnames);                                                                           \
+    SEXP klass = PROTECT(allocVector(STRSXP, 2));                                                                      \
+    SET_STRING_ELT(klass, 0, mkChar("POSIXlt"));                                                                       \
+    SET_STRING_ELT(klass, 1, mkChar("POSIXt"));                                                                        \
+    classgets(ans, klass);                                                                                             \
+    if (isString(tzone))                                                                                               \
+        setAttrib(ans, install("tzone"), tzone);                                                                       \
+    if (settz)                                                                                                         \
+        reset_tz(oldtz);                                                                                               \
+    SEXP nm = getAttrib(x, R_NamesSymbol);                                                                             \
+    if (nm != R_NilValue)                                                                                              \
+        setAttrib(VECTOR_ELT(ans, 5), R_NamesSymbol, nm);                                                              \
+    MAYBE_INIT_balanced setAttrib(ans, lt_balancedSymbol, _balanced_);
+
 /*
-  Currently a POSIXlt object has 9, 10 or 11 components.  The
-  optional ones are zone and gmtoff, and it may have either or
-  both.  The description does not specify the order of the
-  components.  For now, assume the first nine are secs ... isdst.
-  and that the 10th and 11th are zone and gmtoff if present.
+   A POSIXlt object may have 9, 10 or 11 components, but newly created
+  ones always have 11..  The optional ones are zone and gmtoff, and it
+  may have either or both.  The description does not specify the order
+  of the components.  The code assumes the first nine are secs
+  ... isdst.  and that the 10th and 11th are zone and gmtoff if
+  present.
 
   Object can have gmtoff even without HAVE_TM_GMTOFF.
 
@@ -1036,21 +1070,10 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     tzset();
 #endif
 
-    // localtime may change tzname.
-    SEXP tzone;
-    if (isUTC)
-    {
-        tzone = PROTECT(mkString(tz));
-    }
-    else
-    {
-        tzone = PROTECT(allocVector(STRSXP, 3));
-        SET_STRING_ELT(tzone, 0, mkChar(tz));
-        SET_STRING_ELT(tzone, 1, mkChar(R_tzname[0]));
-        SET_STRING_ELT(tzone, 2, mkChar(R_tzname[1]));
-    }
+    // Do now as localtime may change tzname.
+    BEGIN_MAKElt
 
-    R_xlen_t n = XLENGTH(x);
+        R_xlen_t n = XLENGTH(x);
     int nans = 11;
     SEXP ans = PROTECT(allocVector(VECSXP, nans));
     for (int i = 0; i < 9; i++)
@@ -1102,19 +1125,22 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
         }
     }
-    setAttrib(ans, R_NamesSymbol, ansnames);
-    SEXP klass = PROTECT(allocVector(STRSXP, 2));
-    SET_STRING_ELT(klass, 0, mkChar("POSIXlt"));
-    SET_STRING_ELT(klass, 1, mkChar("POSIXt"));
-    classgets(ans, klass);
-    setAttrib(ans, install("tzone"), tzone);
+    END_MAKElt
+        /*
+            setAttrib(ans, R_NamesSymbol, ansnames);
+            SEXP klass = PROTECT(allocVector(STRSXP, 2));
+            SET_STRING_ELT(klass, 0, mkChar("POSIXlt"));
+            SET_STRING_ELT(klass, 1, mkChar("POSIXt"));
+            classgets(ans, klass);
+            setAttrib(ans, install("tzone"), tzone);
+            SEXP nm = getAttrib(x, R_NamesSymbol);
+            if(nm != R_NilValue) setAttrib(VECTOR_ELT(ans, 5), R_NamesSymbol, nm);
+            MAYBE_INIT_balanced
+            setAttrib(ans, lt_balancedSymbol, _balanced_);
+        */
+        UNPROTECT(6);
     if (settz)
         reset_tz(oldtz);
-    SEXP nm = getAttrib(x, R_NamesSymbol);
-    if (nm != R_NilValue)
-        setAttrib(VECTOR_ELT(ans, 5), R_NamesSymbol, nm);
-    MAYBE_INIT_balanced setAttrib(ans, lt_balancedSymbol, _balanced_);
-    UNPROTECT(6);
     return ans;
 } // asPOSIXlt
 
@@ -1184,7 +1210,7 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
     SEXP ans = PROTECT(allocVector(REALSXP, n));
     for (R_xlen_t i = 0; i < n; i++)
     {
-        // FIXME This codes assumes a fixed order of components.
+        // This codes assumes a fixed order of components.
         double secs = REAL(VECTOR_ELT(x, 0))[i % nlen[0]], fsecs = floor(secs);
         stm tm;
         // avoid (int) NAN
@@ -1314,7 +1340,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
     for (R_xlen_t i = 0; i < N; i++)
     {
-        // FIXME This codes assumes a fixed order of components.
+        // This codes assumes a fixed order of components.
         double secs = REAL(VECTOR_ELT(x, 0))[i % nlen[0]], fsecs = floor(secs);
         // avoid (int) NAN
         tm.tm_sec = R_FINITE(secs) ? (int)fsecs : NA_INTEGER;
@@ -1362,7 +1388,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         }
         else
         {
-            /* FIXME: We could translate to wchar_t and use wcsftime,
+            /* We could translate to wchar_t and use wcsftime,
                But there is no R_wcsftime, nor suuport in IANA's
                tcode.  It might be safe enough to translate to UTF-8
                and use strftime -- this is only looking to replace
@@ -1430,12 +1456,10 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
                     tm.tm_gmtoff = 0;
 #ifdef USE_INTERNAL_MKTIME
                     R_mktime(&tm);
-//		    tm.tm_gmtoff = R_timegm(&tm) - R_mktime(&tm);
 #else
                     // At least on glibc this corrects it
                     mktime(&tm);
 #endif
-                    //		    printf("fixing tm_gmtoff to %ld\n", tm.tm_gmtoff);
                 }
                 else
                     tm.tm_gmtoff = tmp;
@@ -1543,23 +1567,11 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
     tzset();
 #endif
 
-    // in case this gets changed by conversions.
-    SEXP tzone;
-    if (isUTC)
-    {
-        PROTECT(tzone = mkString(tz));
-    }
-    else if (strlen(tz))
-    {
-        PROTECT(tzone = allocVector(STRSXP, 3));
-        SET_STRING_ELT(tzone, 0, mkChar(tz));
-        SET_STRING_ELT(tzone, 1, mkChar(R_tzname[0]));
-        SET_STRING_ELT(tzone, 2, mkChar(R_tzname[1]));
-    }
-    else
-        PROTECT(tzone = R_NilValue);
+    // do now in case this gets changed by conversions.
+    BEGIN_MAKElt
 
-    R_xlen_t n = XLENGTH(x), m = XLENGTH(sformat), N = (n > 0) ? ((m > n) ? m : n) : 0;
+        R_xlen_t n = XLENGTH(x),
+                 m = XLENGTH(sformat), N = (n > 0) ? ((m > n) ? m : n) : 0;
 
     int nans = 11;
     SEXP ans = PROTECT(allocVector(VECSXP, nans));
@@ -1656,32 +1668,23 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     } /* for(i ..) */
 
-    setAttrib(ans, R_NamesSymbol, ansnames); // sec, min, ...
-    SEXP klass = PROTECT(allocVector(STRSXP, 2));
-    SET_STRING_ELT(klass, 0, mkChar("POSIXlt"));
-    SET_STRING_ELT(klass, 1, mkChar("POSIXt"));
-    classgets(ans, klass);
-    if (isString(tzone))
-        setAttrib(ans, install("tzone"), tzone);
+    END_MAKElt UNPROTECT(5);
     if (settz)
         reset_tz(oldtz);
-    SEXP nm = getAttrib(x, R_NamesSymbol);
-    if (nm != R_NilValue)
-        setAttrib(VECTOR_ELT(ans, 5), R_NamesSymbol, nm);
-    MAYBE_INIT_balanced setAttrib(ans, lt_balancedSymbol, _balanced_);
-    UNPROTECT(5);
     return ans;
 } // strptime()
 
-// .Internal(Date2POSIXlt(x)) called from as.POSIXlt.Date .
-// This has a tz argument but does not process it.
+// .Internal(Date2POSIXlt(x)) called from as.POSIXlt.Date
+// It does not get paased tz and always returns a date-time in UTC.
 SEXP attribute_hidden do_D2POSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP x, ans, ansnames, klass;
+    SEXP x, ans, ansnames;
     stm tm;
+    const char *tz = "UTC";
 
     checkArity(op, args);
     PROTECT(x = coerceVector(CAR(args), REALSXP));
+
     R_xlen_t n = XLENGTH(x);
     PROTECT(ans = allocVector(VECSXP, 11));
     for (int i = 0; i < 9; i++)
@@ -1726,21 +1729,28 @@ SEXP attribute_hidden do_D2POSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
             tm.tm_isdst = 0; /* no dst in GMT */
         }
         makelt(&tm, ans, i, valid, valid ? 0.0 : x_i);
-        SET_STRING_ELT(VECTOR_ELT(ans, 9), i, mkChar("UTC"));
+        SET_STRING_ELT(VECTOR_ELT(ans, 9), i, mkChar(tz));
         INTEGER(VECTOR_ELT(ans, 10))[i] = 0;
     }
-    setAttrib(ans, R_NamesSymbol, ansnames);
-    PROTECT(klass = allocVector(STRSXP, 2));
-    SET_STRING_ELT(klass, 0, mkChar("POSIXlt"));
-    SET_STRING_ELT(klass, 1, mkChar("POSIXt"));
-    classgets(ans, klass);
-    SEXP s_tzone = install("tzone");
-    setAttrib(ans, s_tzone, mkString("UTC"));
-    SEXP nm = getAttrib(x, R_NamesSymbol);
-    if (nm != R_NilValue)
-        setAttrib(VECTOR_ELT(ans, 5), R_NamesSymbol, nm);
-    MAYBE_INIT_balanced setAttrib(ans, lt_balancedSymbol, _balanced_);
-    UNPROTECT(4);
+    SEXP tzone = mkString(tz);
+    Rboolean settz = FALSE;
+    char oldtz[1] = ""; // unused
+    END_MAKElt
+
+        /*
+        // Not quite the same as END_MAKElt
+        setAttrib(ans, R_NamesSymbol, ansnames);
+        SEXP klass = PROTECT(allocVector(STRSXP, 2));
+        SET_STRING_ELT(klass, 0, mkChar("POSIXlt"));
+        SET_STRING_ELT(klass, 1, mkChar("POSIXt"));
+        classgets(ans, klass);
+        setAttrib(ans, install("tzone"), mkString("UTC"));
+        SEXP nm = getAttrib(x, R_NamesSymbol);
+        if(nm != R_NilValue) setAttrib(VECTOR_ELT(ans, 5), R_NamesSymbol, nm);
+        MAYBE_INIT_balanced
+        setAttrib(ans, lt_balancedSymbol, _balanced_);*/
+
+        UNPROTECT(4);
     return ans;
 }
 
@@ -1958,7 +1968,7 @@ SEXP attribute_hidden do_balancePOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         // 1. fill 'tm'
         double secs = REAL(VECTOR_ELT(x, 0))[i % nlen[0]], fsecs = floor(secs);
         stm tm;
-        // FIXME: this assumes a fised order of components.
+        // this assumes a fixed order of components.
         // avoid (int) NAN
         tm.tm_sec = R_FINITE(secs) ? (int)fsecs : NA_INTEGER; // Ouch
         tm.tm_min = INTEGER(VECTOR_ELT(x, 1))[i % nlen[1]];
