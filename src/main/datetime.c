@@ -49,8 +49,8 @@
 */
 
 /*
-  R class "POSIXlt" is a list of 9 components, with two optional ones.
-  Currently a time known to be in UTC has only the 9.
+  R class "POSIXlt" is a list of 9 components, with two optional ones
+  (but alwasys added as from R 4.3.0).
 
   Onjects of this class are most often created from character inputs
   via strptime() (called by as.POSIXlt.character) or from "POSIXct"
@@ -1017,19 +1017,18 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
     PROTECT(stz); /* it might be new */
+    /*
+       In this function isUTC means that the timezonne has been set to
+       UTC either by default, for example as the system timezone or
+       via TZ="UTC", or via a 'tz' argument.
+
+       It controls setting TZ, the use of gmtime vs localtime, forcing
+       isdst = 0 and how the "tzone" attribute is set.
+    */
     Rboolean isUTC = (strcmp(tz, "GMT") == 0 || strcmp(tz, "UTC") == 0), settz = FALSE;
     char oldtz[1001] = "";
     if (!isUTC && strlen(tz) > 0)
         settz = set_tz(tz, oldtz);
-        /*
-           In this function isUTC means that the timezonne has been set to
-           UTC either by default, for example as the system timezone or
-           via TZ="UTC", or via a 'tz' argument.
-
-           It controls the format of the object created, and the use of
-           gmtime rather than localtime (but as the timezone is set that
-           should make no difference).
-        */
 #ifdef USE_INTERNAL_MKTIME
     else
         R_tzsetwall(); // to get the system timezone recorded
@@ -1052,21 +1051,12 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     }
 
     R_xlen_t n = XLENGTH(x);
-#ifdef HAVE_TM_GMTOFF
-    int nans = isUTC ? 9 : 11;
-#else
-    int nans = isUTC ? 9 : 10;
-#endif
+    int nans = 11;
     SEXP ans = PROTECT(allocVector(VECSXP, nans));
     for (int i = 0; i < 9; i++)
         SET_VECTOR_ELT(ans, i, allocVector(i > 0 ? INTSXP : REALSXP, n));
-    if (!isUTC)
-    {
-        SET_VECTOR_ELT(ans, 9, allocVector(STRSXP, n));
-#ifdef HAVE_TM_GMTOFF
-        SET_VECTOR_ELT(ans, 10, allocVector(INTSXP, n));
-#endif
-    }
+    SET_VECTOR_ELT(ans, 9, allocVector(STRSXP, n));
+    SET_VECTOR_ELT(ans, 10, allocVector(INTSXP, n));
 
     SEXP ansnames = PROTECT(allocVector(STRSXP, nans));
     for (int i = 0; i < nans; i++)
@@ -1093,7 +1083,12 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
             valid = FALSE;
         }
         makelt(ptm, ans, i, valid, valid ? d - floor(d) : d);
-        if (!isUTC)
+        if (isUTC)
+        {
+            SET_STRING_ELT(VECTOR_ELT(ans, 9), i, mkChar(tz));
+            INTEGER(VECTOR_ELT(ans, 10))[i] = 0;
+        }
+        else
         {
             char *p = "";
             // or ptm->tm_zone (but not specified by POSIX)
@@ -1102,6 +1097,8 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
             SET_STRING_ELT(VECTOR_ELT(ans, 9), i, mkChar(p));
 #ifdef HAVE_TM_GMTOFF
             INTEGER(VECTOR_ELT(ans, 10))[i] = valid ? (int)ptm->tm_gmtoff : NA_INTEGER;
+#else
+            INTEGER(VECTOR_ELT(ans, 10))[i] = NA_INTEGER;
 #endif
         }
     }
@@ -1222,7 +1219,7 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
 
-    // set names()  and class() :
+    // set names() and class() :
     SEXP nm = getAttrib(VECTOR_ELT(x, 5), R_NamesSymbol);
     if (nm != R_NilValue)
         setAttrib(ans, R_NamesSymbol, nm);
@@ -1369,7 +1366,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
                But there is no R_wcsftime, nor suuport in IANA's
                tcode.  It might be safe enough to translate to UTF-8
                and use strftime -- this is only looking to replace
-               short ASCII character sequqnces. */
+               short ASCII character sequences. */
             const char *q = translateChar(STRING_ELT(sformat, i % m));
             int nn = (int)strlen(q) + 50;
             char buf2[nn];
@@ -1535,8 +1532,8 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
     PROTECT(stz); /* it might be new */
 
     char oldtz[1001] = "";
+    // Usage of isUTC here follows do_asPOSIXlt
     Rboolean isUTC = (strcmp(tz, "GMT") == 0 || strcmp(tz, "UTC") == 0), settz = FALSE;
-    // if isUTC, do not set TZ, set tzone to UTC/GMT, make 9 components
     if (!isUTC && strlen(tz) > 0)
         settz = set_tz(tz, oldtz);
 #ifdef USE_INTERNAL_MKTIME
@@ -1564,21 +1561,12 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
 
     R_xlen_t n = XLENGTH(x), m = XLENGTH(sformat), N = (n > 0) ? ((m > n) ? m : n) : 0;
 
-#ifdef HAVE_TM_GMTOFF
-    int nans = isUTC ? 9 : 11;
-#else
-    int nans = isUTC ? 9 : 10;
-#endif
+    int nans = 11;
     SEXP ans = PROTECT(allocVector(VECSXP, nans));
     for (int i = 0; i < 9; i++)
         SET_VECTOR_ELT(ans, i, allocVector(i > 0 ? INTSXP : REALSXP, N));
-    if (!isUTC)
-    {
-        SET_VECTOR_ELT(ans, 9, allocVector(STRSXP, N));
-#ifdef HAVE_TM_GMTOFF
-        SET_VECTOR_ELT(ans, 10, allocVector(INTSXP, N));
-#endif
-    }
+    SET_VECTOR_ELT(ans, 9, allocVector(STRSXP, N));
+    SET_VECTOR_ELT(ans, 10, allocVector(INTSXP, N));
 
     SEXP ansnames = PROTECT(allocVector(STRSXP, nans));
     for (int i = 0; i < nans; i++)
@@ -1643,7 +1631,12 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
             invalid = validate_tm(&tm) != 0;
         }
         makelt(ptm, ans, i, !invalid, invalid ? NA_REAL : psecs - floor(psecs));
-        if (!isUTC)
+        if (isUTC)
+        {
+            SET_STRING_ELT(VECTOR_ELT(ans, 9), i, mkChar(tz));
+            INTEGER(VECTOR_ELT(ans, 10))[i] = 0;
+        }
+        else
         {
             const char *p = "";
             if (!invalid && tm.tm_isdst >= 0)
@@ -1657,6 +1650,8 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
             SET_STRING_ELT(VECTOR_ELT(ans, 9), i, mkChar(p));
 #ifdef HAVE_TM_GMTOFF
             INTEGER(VECTOR_ELT(ans, 10))[i] = invalid ? NA_INTEGER : (int)tm.tm_gmtoff;
+#else
+            INTEGER(VECTOR_ELT(ans, 10))[i] = NA_INTEGER;
 #endif
         }
     } /* for(i ..) */
@@ -1679,6 +1674,7 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
 } // strptime()
 
 // .Internal(Date2POSIXlt(x)) called from as.POSIXlt.Date .
+// This has a tz argument but does not process it.
 SEXP attribute_hidden do_D2POSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, ans, ansnames, klass;
@@ -1687,12 +1683,14 @@ SEXP attribute_hidden do_D2POSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     checkArity(op, args);
     PROTECT(x = coerceVector(CAR(args), REALSXP));
     R_xlen_t n = XLENGTH(x);
-    PROTECT(ans = allocVector(VECSXP, 9));
+    PROTECT(ans = allocVector(VECSXP, 11));
     for (int i = 0; i < 9; i++)
         SET_VECTOR_ELT(ans, i, allocVector(i > 0 ? INTSXP : REALSXP, n));
+    SET_VECTOR_ELT(ans, 9, allocVector(STRSXP, n));
+    SET_VECTOR_ELT(ans, 10, allocVector(INTSXP, n));
 
-    PROTECT(ansnames = allocVector(STRSXP, 9));
-    for (int i = 0; i < 9; i++)
+    PROTECT(ansnames = allocVector(STRSXP, 11));
+    for (int i = 0; i < 11; i++)
         SET_STRING_ELT(ansnames, i, mkChar(ltnames[i]));
 
     for (R_xlen_t i = 0; i < n; i++)
@@ -1728,6 +1726,8 @@ SEXP attribute_hidden do_D2POSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
             tm.tm_isdst = 0; /* no dst in GMT */
         }
         makelt(&tm, ans, i, valid, valid ? 0.0 : x_i);
+        SET_STRING_ELT(VECTOR_ELT(ans, 9), i, mkChar("UTC"));
+        INTEGER(VECTOR_ELT(ans, 10))[i] = 0;
     }
     setAttrib(ans, R_NamesSymbol, ansnames);
     PROTECT(klass = allocVector(STRSXP, 2));
