@@ -50,9 +50,9 @@
 
 /*
   R class "POSIXlt" is a list of 9 components, with two optional ones
-  (but alwasys added as from R 4.3.0).
+  (but always added as from R 4.3.0).
 
-  Onjects of this class are most often created from character inputs
+  Objects of this class are most often created from character inputs
   via strptime() (called by as.POSIXlt.character) or from "POSIXct"
   objects. In the first case they may or may not have an associated
   time zone: in the second they must.
@@ -178,8 +178,8 @@ static const int month_days[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 3
   Return 0 if valid, -1 if invalid and uncorrectable, or a positive
   integer approximating the number of corrections done.
 
-  Used in both paths in mktime0, in do_asPOSIXctm, do_formatPOSIXlt,
-  do_balancePOSITlt.
+  Used in both paths in mktime0, in do_asPOSIXct, do_formatPOSIXlt,
+  do_balancePOSIXlt.
 */
 static int validate_tm(stm *tm)
 {
@@ -257,7 +257,7 @@ static int validate_tm(stm *tm)
     }
 
     /* A limit on the loops of about 3000x round.
-       We could spin bacwards or forwards in multiples of 400 years.
+       We could spin backwards or forwards in multiples of 400 years.
      */
     if (tm->tm_mday < -1000000 || tm->tm_mday > 1000000)
         return -1;
@@ -316,7 +316,7 @@ static int validate_tm(stm *tm)
    This will fix up tm_yday and tm_wday.
 
    Used in timegm00 (possibly) and guess_offset in PATH 1)
-   and POSIXlt2D and do_balancePOSIXct
+   and POSIXlt2D and do_balancePOSIXlt
 */
 static double mkdate00(stm *tm)
 {
@@ -554,7 +554,7 @@ static double mktime0(stm *tm, const int local)
        macOS 13 gives -1 for dates prior to 1900
        Windows UCRT (and in 2004) gives -1 for dates prior to 1970
        https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap04.html#tag_04_16
-       states 'the releationship is undefined' prior to 1970.
+       states 'the relationship is undefined' prior to 1970.
        glibc from 2.2.5 until late 2004 also gave -1 for such dates.
     */
     if (sizeof(time_t) == 8)
@@ -568,7 +568,7 @@ static double mktime0(stm *tm, const int local)
         if (tm->tm_year < 02)
         {
             if (!warn1902)
-                warning(_("dateimes before 1902 may not be accurate: warns once per seesion"));
+                warning(_("datetimes before 1902 may not be accurate: warns once per session"));
             warn1902 = TRUE;
         }
 #endif
@@ -582,7 +582,7 @@ static double mktime0(stm *tm, const int local)
         if (tm->tm_year < 02)
         {
             if (!warn1902)
-                warning(_("dateimes before 1902 may not be accurate: warns once per seesion"));
+                warning(_("datetimes before 1902 may not be accurate: warns once per session"));
             warn1902 = TRUE;
         }
 #ifndef HAVE_WORKING_MKTIME_BEFORE_1970
@@ -628,7 +628,7 @@ static stm *localtime0(const double *tp, const int local, stm *ltm)
         if (d <= -2147483647.0)
         {
             if (!warn1902)
-                warning(_("dateimes before 1902 may not be accurate: warns once per seesion"));
+                warning(_("datetimes before 1902 may not be accurate: warns once per session"));
             warn1902 = TRUE;
             OK = FALSE;
         }
@@ -643,7 +643,7 @@ static stm *localtime0(const double *tp, const int local, stm *ltm)
         if (d <= -2147483647.0)
         {
             if (!warn1902)
-                warning(_("dateimes before 1902 may not be accurate: warns once per seesion"));
+                warning(_("datetimes before 1902 may not be accurate: warns once per session"));
             warn1902 = TRUE;
             OK = FALSE;
         }
@@ -999,7 +999,7 @@ static Rboolean valid_POSIXlt(SEXP x, int nm)
     for (int i = 0; i < imin2(9, nm); i++)
     {
         if (!isNum(VECTOR_ELT(x, i)))
-            error(_("a valid \"POSIXlt\" object has a numeeric element %s"), ltnames[i]);
+            error(_("a valid \"POSIXlt\" object has a numeric element %s"), ltnames[i]);
     }
     SET_VECTOR_ELT(x, 0, coerceVector(VECTOR_ELT(x, 0), REALSXP));
     for (int i = 1; i < n_check; i++)
@@ -1028,7 +1028,7 @@ static SEXP /* 'const' globals */
     lt_balancedSymbol = NULL,
     _balanced_ = NULL;
 
-// called from do_asPOXIXlt, do_strptime, do_D2POSIXlt, do_balancePOSIXlt
+// called from do_asPOSIXlt, do_strptime, do_D2POSIXlt, do_balancePOSIXlt
 #define MAYBE_INIT_balanced /* initialize when first used */                                                           \
     if (lt_balancedSymbol == NULL)                                                                                     \
     {                                                                                                                  \
@@ -1060,7 +1060,7 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     }
     PROTECT(stz); /* it might be new */
     /*
-       In this function isUTC means that the timezonne has been set to
+       In this function isUTC means that the timezone has been set to
        UTC either by default, for example as the system timezone or
        via TZ="UTC", or via a 'tz' argument.
 
@@ -1395,7 +1395,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         else
         {
             /* We could translate to wchar_t and use wcsftime if we
-               have it.  But there is no R_wcsftime, nor suuport in
+               have it.  But there is no R_wcsftime, nor support in
                IANA's tcode.  It might be safe enough to translate to
                UTF-8 and use strftime -- this is only looking to
                replace short ASCII character sequences. */
@@ -1475,7 +1475,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
             }
             // The on-overflow behaviour is not determined by C99-C23.
-            // Hoowever, this should return 0 so we can throw an error.
+            // However, this should return 0 so we can throw an error.
             char buff[2049];
             size_t res;
 #ifdef USE_INTERNAL_MKTIME
@@ -1684,7 +1684,7 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
 } // strptime()
 
 // .Internal(Date2POSIXlt(x)) called from as.POSIXlt.Date
-// It does not get paased tz and always returns a date-time in UTC.
+// It does not get passed tz and always returns a date-time in UTC.
 SEXP attribute_hidden do_D2POSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, ans, ansnames;
@@ -1875,7 +1875,7 @@ SEXP attribute_hidden do_balancePOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
             need_fill = TRUE;
     }
     if (fill_only && !need_fill)
-    {                                              // alredy filled; be fast
+    {                                              // already filled; be fast
         x = PROTECT(duplicate(x));                 // (could mutate in the do_class case)
         setAttrib(x, lt_balancedSymbol, _filled_); /* not there; checked above*/
         if (!do_class)
