@@ -683,7 +683,8 @@ static stm *localtime0(const double *tp, const int local, stm *ltm)
     */
 
     double dday = floor(d / 86400.0);
-    static stm ltm0, *res = &ltm0;
+    //    static stm ltm0, *res = &ltm0;
+    stm *res = ltm; // be like localtine_r
     // This cannot exceed (2^31-1) years in either direction from 1970
     if (fabs(dday) > 784368402400)
     { // bail out
@@ -744,7 +745,7 @@ static stm *localtime0(const double *tp, const int local, stm *ltm)
         /* Try to fix up time zone differences: cf PR#15480 */
         int sdiff = (int)guess_offset(res);
 
-        // New strategy: convert as if in GMT, then guess offset and redo.
+        // New strategy: convert as if in UTC, then guess offset and redo.
         d -= sdiff;
         dday = floor(d / 86400.0);
         left = (int)(d - dday * 86400.0 + 1e-6);
@@ -780,7 +781,7 @@ static stm *localtime0(const double *tp, const int local, stm *ltm)
         res->tm_gmtoff = -sdiff;
 #endif
 
-#if 0	
+#if 0
 	int diff = sdiff/60;
 	// just in case secs are out of range and might affect this.
 	shift = 60.*res->tm_hour + res->tm_min + res->tm_sec/60.;
@@ -788,7 +789,7 @@ static stm *localtime0(const double *tp, const int local, stm *ltm)
 	res->tm_sec -= (sdiff % 60);
 	validate_tm(res);
 	res->tm_isdst = -1;
-	printf("shift - diff %f\n", shift - diff); 
+	printf("shift - diff %f\n", shift - diff);
 	/* now this might be a different day */
 	if(shift - diff < 0.) {
 	    res->tm_yday--;
@@ -806,6 +807,7 @@ static stm *localtime0(const double *tp, const int local, stm *ltm)
 	    validate_tm(res);
 	}
 #endif
+
         // No DST before 1916
         if (res->tm_year < 16)
             res->tm_isdst = 0;
@@ -813,7 +815,7 @@ static stm *localtime0(const double *tp, const int local, stm *ltm)
     }
     else
     {
-        res->tm_isdst = 0; /* no dst in GMT */
+        res->tm_isdst = 0; /* no dst in UTC */
         return res;
     }
 } /* localtime0() */
@@ -1713,26 +1715,29 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
 // It does not get passed tz and always returns a date-time in UTC.
 SEXP attribute_hidden do_D2POSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 {
-    SEXP x, ans, ansnames;
-    stm tm;
-    const char *tz = "UTC";
-
     checkArity(op, args);
-    PROTECT(x = coerceVector(CAR(args), REALSXP));
-
+    SEXP x = PROTECT(coerceVector(CAR(args), REALSXP));
+    SEXP stz = CADR(args);
+    if (!isString((stz)) || LENGTH(stz) != 1)
+        error(_("invalid '%s' value"), "tz");
+    const char *tz = CHAR(STRING_ELT(stz, 0));
+    if (!tz[0])
+        tz = "UTC";
+    ;
     R_xlen_t n = XLENGTH(x);
-    PROTECT(ans = allocVector(VECSXP, 11));
+    SEXP ans = PROTECT(allocVector(VECSXP, 11));
     for (int i = 0; i < 9; i++)
         SET_VECTOR_ELT(ans, i, allocVector(i > 0 ? INTSXP : REALSXP, n));
     SET_VECTOR_ELT(ans, 9, allocVector(STRSXP, n));
     SET_VECTOR_ELT(ans, 10, allocVector(INTSXP, n));
 
-    PROTECT(ansnames = allocVector(STRSXP, 11));
+    SEXP ansnames = PROTECT(allocVector(STRSXP, 11));
     for (int i = 0; i < 11; i++)
         SET_STRING_ELT(ansnames, i, mkChar(ltnames[i]));
 
     for (R_xlen_t i = 0; i < n; i++)
     {
+        stm tm;
         double x_i = REAL(x)[i];
         Rboolean valid = R_FINITE(x_i);
         if (valid)
@@ -1775,19 +1780,6 @@ SEXP attribute_hidden do_D2POSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     Rboolean settz = FALSE;
     char oldtz[1] = ""; // unused
     END_MAKElt
-
-        /*
-        // Not quite the same as END_MAKElt
-        setAttrib(ans, R_NamesSymbol, ansnames);
-        SEXP klass = PROTECT(allocVector(STRSXP, 2));
-        SET_STRING_ELT(klass, 0, mkChar("POSIXlt"));
-        SET_STRING_ELT(klass, 1, mkChar("POSIXt"));
-        classgets(ans, klass);
-        setAttrib(ans, install("tzone"), mkString("UTC"));
-        SEXP nm = getAttrib(x, R_NamesSymbol);
-        if(nm != R_NilValue) setAttrib(VECTOR_ELT(ans, 5), R_NamesSymbol, nm);
-        MAYBE_INIT_balanced
-        setAttrib(ans, lt_balancedSymbol, _balanced_);*/
 
         UNPROTECT(4);
     return ans;
