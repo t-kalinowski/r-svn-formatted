@@ -66,8 +66,8 @@
   name is known or is "UTC', of length 3 including the abbreviations
   for all other timezones. (If the timezone does not use DST, the
   second abbreviation may be empty or may repeat the first, depending
-  on the platform.)  However, if the call to strptime() does not
-  specify 'tz', this attribute is omitted.
+  on the platform., but it woll always be present.)  However, if the
+  call to strptime() does not specify 'tz', this attribute is omitted.
 
   Names for the date-times are optional (and rarely supplied):
   they are attached to the 'year' element' and used by strptime().
@@ -1061,7 +1061,17 @@ static Rboolean valid_POSIXlt(SEXP x, int nm)
             error(_("a valid \"POSIXlt\" object has a numeric element %s"), ltnames[10]);
     }
 
-    // FIXME check the tzone attribute.
+    // check the tzone attribute.
+    SEXP tz = getAttrib(x, install("tzone"));
+    if (!isNull(tz))
+    {
+        if (!isString(tz))
+            error(_("invalid '%s'"), "attr(x, \"tzone\")");
+        int l = LENGTH(tz);
+        if (l != 1 && l != 3)
+            error(_("attr(x, \"tzone\") shouls have length 1 or 3"));
+    }
+
     return TRUE;
 }
 
@@ -1544,6 +1554,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
         }
     }
 
+    // FIXME: this needs to recycle names
     SEXP nm = getAttrib(VECTOR_ELT(x, 5), R_NamesSymbol);
     if (nm != R_NilValue)
         setAttrib(ans, R_NamesSymbol, nm);
