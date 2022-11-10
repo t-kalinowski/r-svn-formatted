@@ -28,6 +28,7 @@
 #include <Rinterface.h>
 #include <Fileio.h>
 #include <R_ext/Print.h>
+#include <errno.h>
 
 static SEXP bcEval(SEXP, SEXP, Rboolean);
 
@@ -226,6 +227,7 @@ static void doprof(int sig) /* sig is ignored in Windows */
     size_t bigv, smallv, nodes;
     size_t len;
     int prevnum = R_Line_Profiling;
+    int old_errno = errno;
 
     buf[0] = '\0';
 
@@ -235,6 +237,7 @@ static void doprof(int sig) /* sig is ignored in Windows */
     if (!pthread_equal(pthread_self(), R_profiled_thread))
     {
         pthread_kill(R_profiled_thread, sig);
+        errno = old_errno;
         return;
     }
 #endif /* Win32 */
@@ -349,6 +352,7 @@ static void doprof(int sig) /* sig is ignored in Windows */
 #ifndef Win32
     signal(SIGPROF, doprof);
 #endif /* not Win32 */
+    errno = old_errno;
 }
 
 #ifdef Win32
