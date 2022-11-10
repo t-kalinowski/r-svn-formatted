@@ -1428,22 +1428,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
             int nn = (int)strlen(q) + 50;
             char buf2[nn];
             const char *p;
-#ifdef OLD_Win32
-            /* We want to override Windows' TZ names */
-            p = strstr(q, "%Z");
-            if (p)
-            {
-                memset(buf2, 0, nn);
-                strncpy(buf2, q, p - q);
-                if (have_zone)
-                    strcat(buf2, tm_zone);
-                else
-                    strcat(buf2, tm.tm_isdst > 0 ? R_tzname[1] : R_tzname[0]);
-                strcat(buf2, p + 2);
-            }
-            else
-#endif
-                strcpy(buf2, q);
+            strcpy(buf2, q);
 
             p = strstr(q, "%OS");
             if (p)
@@ -1497,8 +1482,8 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
                 }
                 else
                     tm.tm_gmtoff = tmp;
-#endif
             }
+#endif
             // The on-overflow behaviour is not determined by C99-C23.
             // However, this should return 0 so we can throw an error.
             char buff[2049];
@@ -1506,7 +1491,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 #ifdef USE_INTERNAL_MKTIME
             res = R_strftime(buff, 2049, buf2, &tm);
 #else
-        res = strftime(buff, 2049, buf2, &tm);
+            res = strftime(buff, 2049, buf2, &tm);
 #endif
             if (res == 0)
             { // overflow for at least internal and glibc
@@ -2027,8 +2012,8 @@ SEXP attribute_hidden do_balancePOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
             /* Modifying tzname causes memory corruption on Solaris. It
                is not specified to have any effect and strftime is documented
                to call settz().*/
-            if (tm.tm_isdst >= 0 && strcmp(tzname[tm.tm_isdst], tm_zone))
-                warning(_("Timezone specified in the object field cannot be used on this system."));
+//	    if(tm.tm_isdst >= 0 && strcmp(tzname[tm.tm_isdst], tm_zone))
+//		warning(_("Timezone specified in the object's 'zone' component cannot be used on this system."));
 #endif
         }
 #ifdef HAVE_TM_GMTOFF
