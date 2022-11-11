@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
 
- *  Copyright (C) 1999-2016   The R Core Team
+ *  Copyright (C) 1999-2022   The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -117,6 +117,11 @@ SEXP rfilter(SEXP x, SEXP filter, SEXP out)
     for (R_xlen_t i = 0; i < nx; i++)
     {
         sum = rx[i];
+        if (!my_isok(sum))
+        {
+            r[nf + i] = NA_REAL;
+            goto bad3;
+        }
         for (R_xlen_t j = 0; j < nf; j++)
         {
             tmp = r[nf + i - j - 1];
