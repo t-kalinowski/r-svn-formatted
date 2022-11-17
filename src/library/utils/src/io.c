@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
- *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1998-2022   The R Core Team.
+ *  Copyright (C) 1998-2022  The R Core Team.
+ *  Copyright (C) 1995,1996  Robert Gentleman and Ross Ihaka
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -658,6 +658,9 @@ static void ruleout_types(const char *s, Typecvt_Info *typeInfo, LocalData *data
    the result is a character string if as.is == TRUE
    or a factor if as.is == FALSE. */
 
+/* Called from R's  type.convert.default()
+ * as  .External2(C_typeconvert,
+ *                x, na.strings, as.is, dec, match.arg(numerals), tryLogical) */
 SEXP typeconvert(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP cvec, a, dup, levs, dims, names, dec, numerals;
@@ -667,8 +670,8 @@ SEXP typeconvert(SEXP call, SEXP op, SEXP args, SEXP env)
     char *endp;
     const char *tmp = NULL;
     LocalData data = {NULL, 0, 0, '.', "", NO_COMCHAR, 0, NULL, FALSE, FALSE, 0, FALSE, FALSE};
-    Typecvt_Info typeInfo;     /* keep track of possible types of cvec */
-    typeInfo.islogical = TRUE; /* we can't rule anything out initially */
+    Typecvt_Info typeInfo; /* keep track of possible types of cvec */
+    /* we can't rule anything out initially,  but set 'islogical' below */
     typeInfo.isinteger = TRUE;
     typeInfo.isreal = TRUE;
     typeInfo.iscomplex = TRUE;
@@ -685,7 +688,7 @@ SEXP typeconvert(SEXP call, SEXP op, SEXP args, SEXP env)
 
     asIs = asLogical(CADDR(args));
     if (asIs == NA_LOGICAL)
-        asIs = 0;
+        asIs = FALSE;
 
     dec = CADDDR(args);
     if (isString(dec) || isNull(dec))
@@ -723,6 +726,15 @@ SEXP typeconvert(SEXP call, SEXP op, SEXP args, SEXP env)
         i_exact = FALSE;
         exact = FALSE;
     }
+
+#ifndef CAD5R
+#define CAD5R(e) CAD4R(CDR(e))
+#endif
+
+    Rboolean tryLogical = asLogical(CAD5R(args));
+    if (tryLogical == NA_LOGICAL)
+        tryLogical = FALSE;
+    typeInfo.islogical = tryLogical;
 
     cvec = CAR(args);
     len = length(cvec);
