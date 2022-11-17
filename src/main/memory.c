@@ -2815,7 +2815,7 @@ static void custom_node_free(void *ptr)
 SEXP allocVector3(SEXPTYPE type, R_xlen_t length, R_allocator_t *allocator)
 {
     SEXP s; /* For the generational collector it would be safer to
-       work in terms of a VECSEXP here, but that would
+       work in terms of a VECSXP here, but that would
        require several casts below... */
     R_size_t size = 0, alloc_size, old_R_VSize;
     int node_class;
@@ -4684,6 +4684,10 @@ SEXP(CADDDR)(SEXP e)
 SEXP(CAD4R)(SEXP e)
 {
     return CHK(CAD4R(CHKCONS(e)));
+}
+SEXP(CAD5R)(SEXP e)
+{
+    return CHK(CAD5R(CHKCONS(e)));
 }
 int(MISSING)(SEXP x)
 {
