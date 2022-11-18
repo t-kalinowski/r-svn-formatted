@@ -504,7 +504,7 @@ static void R_InitProfiling(SEXP filename, int append, double dinterval, int mem
        Seems not to be supported at all on macOS.
     */
     itv.it_interval.tv_sec = interval / 1000000;
-    itv.it_interval.tv_usec = (suseconds_t)(interval - itv.it_interval.tv_sec * 10000000);
+    itv.it_interval.tv_usec = (suseconds_t)(interval - itv.it_interval.tv_sec * 1000000);
     itv.it_value.tv_sec = interval / 1000000;
     itv.it_value.tv_usec = (suseconds_t)(interval - itv.it_value.tv_sec * 1000000);
     if (setitimer(ITIMER_PROF, &itv, NULL) == -1)
