@@ -607,11 +607,11 @@ extern CGFontRef CGContextGetFont(CGContextRef);
 
 #pragma mark Quartz Font Cache
 
-/* Font lookup is expesive yet frequent. Therefore we cache all used ATS fonts (which are global to the app). */
+/* Font lookup is expesive yet frequent. Therefore we cache all used CG fonts (which are global to the app). */
 
 typedef struct font_cache_entry_s
 {
-    ATSFontRef font;
+    CGFontRef font;
     char *family;
     int face;
 } font_cache_entry_t;
@@ -627,7 +627,7 @@ typedef struct font_cache_s
 
 font_cache_t font_cache, *font_cache_tail = &font_cache;
 
-static ATSFontRef RQuartz_CacheGetFont(const char *family, int face)
+static CGFontRef RQuartz_CacheGetFont(const char *family, int face)
 {
     font_cache_t *fc = &font_cache;
     while (fc)
@@ -644,7 +644,7 @@ static ATSFontRef RQuartz_CacheGetFont(const char *family, int face)
     return 0;
 }
 
-static void RQuartz_CacheAddFont(const char *family, int face, ATSFontRef font)
+static void RQuartz_CacheAddFont(const char *family, int face, CGFontRef font)
 {
     if (font_cache_tail->fonts >= max_fonts_per_block)
         font_cache_tail = font_cache_tail->next = (font_cache_t *)calloc(1, sizeof(font_cache_t));
@@ -707,7 +707,7 @@ const char *RQuartz_LookUpFontName(int fontface, const char *fontfamily)
 CGFontRef RQuartz_Font(CTXDESC)
 {
     const char *fontName = NULL, *fontFamily = gc->fontfamily;
-    ATSFontRef atsFont = 0;
+    CGFontRef cgFont = 0;
     int fontFace = gc->fontface;
     if (fontFace < 1 || fontFace > 5)
         fontFace = 1; /* just being paranoid */
@@ -717,24 +717,18 @@ CGFontRef RQuartz_Font(CTXDESC)
         fontName = RQuartz_LookUpFontName(fontFace, fontFamily[0] ? fontFamily : "default");
     if (fontName)
     {
-        atsFont = RQuartz_CacheGetFont(fontName, 0); /* face is 0 because we are passing a true font name */
-        if (!atsFont)
+        cgFont = RQuartz_CacheGetFont(fontName, 0); /* face is 0 because we are passing a true font name */
+        if (!cgFont)
         { /* not in the cache, get it */
             CFStringRef cfFontName = CFStringCreateWithCString(NULL, fontName, kCFStringEncodingUTF8);
-            /* ATSFontFindFromName and ATSFontFindFromPostScriptName
-             * are unavailable with the macOS 13 SDK when targetting
-             * macOS 13.  They will be removed for macOS 14, according to
-             * https://developer.apple.com/documentation/macos-release-notes/macos-13-release-notes */
-            atsFont = ATSFontFindFromName(cfFontName, kATSOptionFlagsDefault);
-            if (!atsFont)
-                atsFont = ATSFontFindFromPostScriptName(cfFontName, kATSOptionFlagsDefault);
+            cgFont = CGFontCreateWithFontName(cfFontName);
             CFRelease(cfFontName);
-            if (!atsFont)
+            if (!cgFont)
             {
                 warning(_("font \"%s\" could not be found for family \"%s\""), fontName, fontFamily);
                 return NULL;
             }
-            RQuartz_CacheAddFont(fontName, 0, atsFont);
+            RQuartz_CacheAddFont(fontName, 0, cgFont);
         }
     }
     else
@@ -743,10 +737,10 @@ CGFontRef RQuartz_Font(CTXDESC)
             fontFamily = "Arial";
         /* Arial is the default, because Helvetica doesn't have Oblique
            on 10.4 - maybe change later? */
-        atsFont = RQuartz_CacheGetFont(fontFamily, fontFace);
-        if (!atsFont)
+        cgFont = RQuartz_CacheGetFont(fontFamily, fontFace);
+        if (!cgFont)
         { /* not in the cache? Then we need to find the
- proper font name from the family name and face */
+  proper font name from the family name and face */
             /* as it turns out kATSFontFilterSelectorFontFamily is not
            implemented in macOS (!!) so there is no way to query for a
            font from a specific family. Therefore we have to use
@@ -755,7 +749,7 @@ CGFontRef RQuartz_Font(CTXDESC)
             /* CFStringRef cfFontName; */
             if (strlen(fontFamily) > 210)
                 error(_("font family name is too long"));
-            while (!atsFont)
+            while (!cgFont)
             { /* try different faces until exhausted or successful */
                 strcpy(compositeFontName, fontFamily);
                 if (fontFace == 2 || fontFace == 4)
@@ -763,24 +757,22 @@ CGFontRef RQuartz_Font(CTXDESC)
                 if (fontFace == 3 || fontFace == 4)
                     strcat(compositeFontName, " Italic");
                 CFStringRef cfFontName = CFStringCreateWithCString(NULL, compositeFontName, kCFStringEncodingUTF8);
-                atsFont = ATSFontFindFromName(cfFontName, kATSOptionFlagsDefault);
-                if (!atsFont)
-                    atsFont = ATSFontFindFromPostScriptName(cfFontName, kATSOptionFlagsDefault);
+                cgFont = CGFontCreateWithFontName(cfFontName);
                 CFRelease(cfFontName);
-                if (!atsFont)
+                if (!cgFont)
                 {
                     if (fontFace == 1)
                     { /* more guessing - fontFace == 1 may need Regular or Roman */
                         strcat(compositeFontName, " Regular");
                         cfFontName = CFStringCreateWithCString(NULL, compositeFontName, kCFStringEncodingUTF8);
-                        atsFont = ATSFontFindFromName(cfFontName, kATSOptionFlagsDefault);
+                        cgFont = CGFontCreateWithFontName(cfFontName);
                         CFRelease(cfFontName);
-                        if (!atsFont)
+                        if (!cgFont)
                         {
                             strcpy(compositeFontName, fontFamily);
                             strcat(compositeFontName, " Roman");
                             cfFontName = CFStringCreateWithCString(NULL, compositeFontName, kCFStringEncodingUTF8);
-                            atsFont = ATSFontFindFromName(cfFontName, kATSOptionFlagsDefault);
+                            cgFont = CGFontCreateWithFontName(cfFontName);
                             CFRelease(cfFontName);
                         }
                     }
@@ -791,11 +783,11 @@ CGFontRef RQuartz_Font(CTXDESC)
                             strcat(compositeFontName, " Bold");
                         strcat(compositeFontName, " Oblique");
                         cfFontName = CFStringCreateWithCString(NULL, compositeFontName, kCFStringEncodingUTF8);
-                        atsFont = ATSFontFindFromName(cfFontName, kATSOptionFlagsDefault);
+                        cgFont = CGFontCreateWithFontName(cfFontName);
                         CFRelease(cfFontName);
                     }
                 }
-                if (!atsFont)
+                if (!cgFont)
                 { /* try to fall back to a more plain face */
                     if (fontFace == 4)
                         fontFace = 2;
@@ -803,19 +795,19 @@ CGFontRef RQuartz_Font(CTXDESC)
                         fontFace = 1;
                     else
                         break;
-                    atsFont = RQuartz_CacheGetFont(fontFamily, fontFace);
-                    if (atsFont)
+                    cgFont = RQuartz_CacheGetFont(fontFamily, fontFace);
+                    if (cgFont)
                         break;
                 }
             }
-            if (!atsFont)
+            if (!cgFont)
                 warning(_("no font could be found for family \"%s\""), fontFamily);
             else
-                RQuartz_CacheAddFont(fontFamily, fontFace, atsFont);
+                RQuartz_CacheAddFont(fontFamily, fontFace, cgFont);
         }
     }
 
-    return CGFontCreateWithPlatformFont(&atsFont);
+    return cgFont;
 }
 
 #define RQUARTZ_FILL (1)
@@ -832,6 +824,7 @@ static void RQuartz_SetFont(CGContextRef ctx, const pGEcontext gc, QuartzDesc *x
         {
             if (xd->font)
                 CGFontRelease(xd->font);
+            CGFontRetain(font);
             xd->font = font;
         }
     }
