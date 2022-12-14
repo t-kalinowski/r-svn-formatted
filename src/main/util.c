@@ -3414,7 +3414,7 @@ static int compareNumericVersion(SEXP x, SEXP y)
     return 0;
 }
 
-SEXP do_compareNumericVersion(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_compareNumericVersion(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, x, y;
     int i, nx, ny, na;
