@@ -864,7 +864,7 @@ void R_DefCallbacks(Rstart Rp, int RstartVersion)
 
 void R_SetWin32(Rstart Rp)
 {
-    int dummy;
+    int dummy = 0; /* -Wmaybe-uninitialized */
 
     {
         /* Idea here is to ask about the memory block an automatic
