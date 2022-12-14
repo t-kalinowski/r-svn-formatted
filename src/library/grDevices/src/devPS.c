@@ -6216,7 +6216,7 @@ static void addStitchedGradientFunction(SEXP gradient, int nStops, int toDefn, R
             stop = R_GE_radialGradientStop(gradient, i);
             break;
         }
-        sprintf(buf, "%0.4f ", stop);
+        snprintf(buf, 100, "%0.4f ", stop);
         catDefn(buf, defNum, pd);
     }
     catDefn("]\n/Encode [", defNum, pd);
