@@ -59,7 +59,7 @@
     else                                                                                                               \
         errorcall(call, yy, A, B);
 
-static void NORET ECALL_OutOfBounds(SEXP x, int subscript, R_xlen_t index, SEXP call)
+NORET static void ECALL_OutOfBounds(SEXP x, int subscript, R_xlen_t index, SEXP call)
 {
     if (call == R_NilValue)
         call = R_CurrentExpression; /* default behaves like error() */
@@ -71,7 +71,7 @@ static void NORET ECALL_OutOfBounds(SEXP x, int subscript, R_xlen_t index, SEXP 
     UNPROTECT(2); /* sindex, cond; not reached */
 }
 
-static void NORET ECALL_MissingSubs(SEXP call) // no x
+NORET static void ECALL_MissingSubs(SEXP call) // no x
 {
     if (call == R_NilValue)
         call = R_CurrentExpression;
@@ -81,7 +81,7 @@ static void NORET ECALL_MissingSubs(SEXP call) // no x
     UNPROTECT(1); /* cond; not reached */
 }
 
-static void NORET ECALL_OutOfBoundsCHAR(SEXP x, int subscript, SEXP sindex, SEXP call)
+NORET static void ECALL_OutOfBoundsCHAR(SEXP x, int subscript, SEXP sindex, SEXP call)
 {
     if (call == R_NilValue)
         call = R_CurrentExpression; /* default behaves like error() */

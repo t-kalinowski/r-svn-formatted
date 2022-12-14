@@ -99,7 +99,7 @@ static R_INLINE SEXP VECTOR_ELT_FIX_NAMED(SEXP y, R_xlen_t i)
         }                                                                                                              \
     } while (0)
 
-static void NORET errorcallNotSubsettable(SEXP x, SEXP call)
+NORET static void errorcallNotSubsettable(SEXP x, SEXP call)
 {
     SEXP cond = R_makeNotSubsettableError(x, call);
     PROTECT(cond);
@@ -107,7 +107,7 @@ static void NORET errorcallNotSubsettable(SEXP x, SEXP call)
     UNPROTECT(1); /* cond; not reached */
 }
 
-static void NORET errorcallMissingSubs(SEXP x, SEXP call)
+NORET static void errorcallMissingSubs(SEXP x, SEXP call)
 {
     if (call == R_NilValue)
         call = R_CurrentExpression;
@@ -255,7 +255,7 @@ static SEXP VectorSubset(SEXP x, SEXP s, SEXP call)
     return result;
 }
 
-static void NORET errorcallOutOfBounds(SEXP x, int subscript, R_xlen_t index, SEXP call)
+NORET static void errorcallOutOfBounds(SEXP x, int subscript, R_xlen_t index, SEXP call)
 {
     SEXP sindex = ScalarReal((double)index);
     PROTECT(sindex);
@@ -265,7 +265,7 @@ static void NORET errorcallOutOfBounds(SEXP x, int subscript, R_xlen_t index, SE
     UNPROTECT(2); /* sindex, cond; not reached */
 }
 
-static void NORET errorcallOutOfBoundsSEXP(SEXP x, int subscript, SEXP sindex, SEXP call)
+NORET static void errorcallOutOfBoundsSEXP(SEXP x, int subscript, SEXP sindex, SEXP call)
 {
     SEXP cond = R_makeOutOfBoundsError(x, subscript, sindex, call, NULL);
     PROTECT(cond);

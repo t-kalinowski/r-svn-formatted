@@ -1282,9 +1282,9 @@ attribute_hidden
 /* Fortran-callable error routine for lapack */
 
 #ifdef FC_LEN_T
-void NORET F77_NAME(xerbla)(const char *srname, int *info, const FC_LEN_T srname_len)
+NORET void F77_NAME(xerbla)(const char *srname, int *info, const FC_LEN_T srname_len)
 #else
-void NORET F77_NAME(xerbla)(const char *srname, int *info)
+NORET void F77_NAME(xerbla)(const char *srname, int *info)
 #endif
 {
     /* srname is not null-terminated.  It will be 6 characters for
