@@ -66,7 +66,7 @@ extern FILE *ifp; /* from system.c */
  *  1) FATAL MESSAGES AT STARTUP
  */
 
-void attribute_hidden Rstd_Suicide(const char *s)
+attribute_hidden void Rstd_Suicide(const char *s)
 {
     REprintf("Fatal error: %s\n", s);
     /* Might be called before translation is running */
@@ -964,7 +964,7 @@ static void handleInterrupt(void)
 /* Fill a text buffer from stdin or with user typed console input. */
 static void *cd = NULL;
 
-int attribute_hidden Rstd_ReadConsole(const char *prompt, unsigned char *buf, int len, int addtohistory)
+attribute_hidden int Rstd_ReadConsole(const char *prompt, unsigned char *buf, int len, int addtohistory)
 {
     if (!R_Interactive)
     {
@@ -1129,7 +1129,7 @@ int attribute_hidden Rstd_ReadConsole(const char *prompt, unsigned char *buf, in
 /* Write a text buffer to the console. */
 /* All system output is filtered through this routine (unless R_Consolefile is used). */
 
-void attribute_hidden Rstd_WriteConsole(const char *buf, int len)
+attribute_hidden void Rstd_WriteConsole(const char *buf, int len)
 {
     printf("%s", buf);
     fflush(stdout);
@@ -1137,7 +1137,7 @@ void attribute_hidden Rstd_WriteConsole(const char *buf, int len)
 
 /* The extended version allows the distinction of errors and warnings.
    It is not enabled by default unless pretty-printing is desired. */
-void attribute_hidden Rstd_WriteConsoleEx(const char *buf, int len, int otype)
+attribute_hidden void Rstd_WriteConsoleEx(const char *buf, int len, int otype)
 {
     if (otype)
         printf("\033[1m%s\033[0m", buf);
@@ -1148,20 +1148,20 @@ void attribute_hidden Rstd_WriteConsoleEx(const char *buf, int len, int otype)
 
 /* Indicate that input is coming from the console */
 
-void attribute_hidden Rstd_ResetConsole(void)
+attribute_hidden void Rstd_ResetConsole(void)
 {
 }
 
 /* Stdio support to ensure the console file buffer is flushed */
 
-void attribute_hidden Rstd_FlushConsole(void)
+attribute_hidden void Rstd_FlushConsole(void)
 {
     /* fflush(stdin);  really work on Solaris on pipes */
 }
 
 /* Reset stdin if the user types EOF on the console. */
 
-void attribute_hidden Rstd_ClearerrConsole(void)
+attribute_hidden void Rstd_ClearerrConsole(void)
 {
     clearerr(stdin);
 }
@@ -1170,7 +1170,7 @@ void attribute_hidden Rstd_ClearerrConsole(void)
  *  3) ACTIONS DURING (LONG) COMPUTATIONS
  */
 
-void attribute_hidden Rstd_Busy(int which)
+attribute_hidden void Rstd_Busy(int which)
 {
 }
 
@@ -1210,7 +1210,7 @@ void R_CleanTempDir(void)
     }
 }
 
-void attribute_hidden NORET Rstd_CleanUp(SA_TYPE saveact, int status, int runLast)
+attribute_hidden void NORET Rstd_CleanUp(SA_TYPE saveact, int status, int runLast)
 {
     if (saveact == SA_DEFAULT) /* The normal case apart from R_Suicide */
         saveact = SaveAction;
@@ -1301,7 +1301,7 @@ void attribute_hidden NORET Rstd_CleanUp(SA_TYPE saveact, int status, int runLas
 
 #include <errno.h>
 
-int attribute_hidden Rstd_ShowFiles(int nfile,            /* number of files */
+attribute_hidden int Rstd_ShowFiles(int nfile,            /* number of files */
                                     const char **file,    /* array of filenames */
                                     const char **headers, /* the `headers' args of file.show.
                                              Printed before each file. */
@@ -1370,7 +1370,7 @@ int attribute_hidden Rstd_ShowFiles(int nfile,            /* number of files */
 
 #include <ctype.h> /* for isspace */
 
-int attribute_hidden Rstd_ChooseFile(int _new, char *buf, int len)
+attribute_hidden int Rstd_ChooseFile(int _new, char *buf, int len)
 {
     size_t namelen;
     char *bufp;
@@ -1382,12 +1382,12 @@ int attribute_hidden Rstd_ChooseFile(int _new, char *buf, int len)
     return (int)strlen(buf);
 }
 
-void attribute_hidden Rstd_ShowMessage(const char *s)
+attribute_hidden void Rstd_ShowMessage(const char *s)
 {
     REprintf("%s\n", s);
 }
 
-void attribute_hidden Rstd_read_history(const char *s)
+attribute_hidden void Rstd_read_history(const char *s)
 {
 #if defined(HAVE_LIBREADLINE) && defined(HAVE_READLINE_HISTORY_H)
     if (R_Interactive && UsingReadline)
@@ -1397,7 +1397,7 @@ void attribute_hidden Rstd_read_history(const char *s)
 #endif
 }
 
-void attribute_hidden Rstd_loadhistory(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden void Rstd_loadhistory(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP sfile;
     char file[PATH_MAX];
@@ -1423,7 +1423,7 @@ void attribute_hidden Rstd_loadhistory(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
 }
 
-void attribute_hidden Rstd_savehistory(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden void Rstd_savehistory(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP sfile;
     char file[PATH_MAX];
@@ -1459,7 +1459,7 @@ void attribute_hidden Rstd_savehistory(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
 }
 
-void attribute_hidden Rstd_addhistory(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden void Rstd_addhistory(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP stamp;
     int i;

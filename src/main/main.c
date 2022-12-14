@@ -43,7 +43,7 @@
 #include <R_ext/Print.h>
 
 #ifdef ENABLE_NLS
-void attribute_hidden nl_Rdummy(void)
+attribute_hidden void nl_Rdummy(void)
 {
     /* force this in as packages use it */
     dgettext("R", "dummy - do not translate");
@@ -754,7 +754,7 @@ int R_SignalHandlers = 1; /* Exposed in R_interface.h */
 
 const char *get_workspace_name(void); /* from startup.c */
 
-void attribute_hidden BindDomain(char *R_Home)
+attribute_hidden void BindDomain(char *R_Home)
 {
 #ifdef ENABLE_NLS
     char localedir[PATH_MAX + 20];
@@ -1235,7 +1235,7 @@ void mainloop(void)
 /*this functionality now appears in 3
   places-jump_to_toplevel/profile/here */
 
-void attribute_hidden printwhere(void)
+attribute_hidden void printwhere(void)
 {
     RCNTXT *cptr;
     int lct = 1;
@@ -1356,7 +1356,7 @@ static void PrintCall(SEXP call, SEXP rho)
 
 /* browser(text = "", condition = NULL, expr = TRUE, skipCalls = 0L)
  * ------- but also called from ./eval.c */
-SEXP attribute_hidden do_browser(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_browser(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     RCNTXT *saveToplevelContext;
     RCNTXT *saveGlobalContext;
@@ -1493,7 +1493,7 @@ void R_dot_Last(void)
     UNPROTECT(1);
 }
 
-SEXP attribute_hidden do_quit(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_quit(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     const char *tmp;
     SA_TYPE ask = SA_DEFAULT;
@@ -1934,14 +1934,14 @@ SEXP R_addTaskCallback(SEXP f, SEXP data, SEXP useData, SEXP name)
 #if defined FC_LEN_T
 #include <stddef.h>
 void F77_SYMBOL(rwarnc)(char *msg, int *nchar, FC_LEN_T msg_len);
-void attribute_hidden dummy54321(void)
+attribute_hidden void dummy54321(void)
 {
     int nc = 5;
     F77_CALL(rwarnc)("dummy", &nc, (FC_LEN_T)5);
 }
 #else
 void F77_SYMBOL(rwarnc)(char *msg, int *nchar);
-void attribute_hidden dummy54321(void)
+attribute_hidden void dummy54321(void)
 {
     int nc = 5;
     F77_CALL(rwarnc)("dummy", &nc);

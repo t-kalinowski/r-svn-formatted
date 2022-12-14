@@ -64,7 +64,7 @@ SEXP GetColNames(SEXP dimnames)
 }
 
 // .Internal(matrix(data, nrow, ncol, byrow, dimnames, missing(nrow), missing(ncol)))
-SEXP attribute_hidden do_matrix(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_matrix(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP vals, ans, snr, snc, dimnames;
     int nr = 1, nc = 1, byrow, miss_nr, miss_nc;
@@ -452,7 +452,7 @@ SEXP DropDims(SEXP x)
     return x;
 }
 
-SEXP attribute_hidden do_drop(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_drop(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, xdims;
     int i, n, shorten;
@@ -478,7 +478,7 @@ SEXP attribute_hidden do_drop(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 /* Length of Primitive Objects */
 
-SEXP attribute_hidden do_length(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_length(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     check1arg(args, call, "x");
@@ -511,7 +511,7 @@ SEXP attribute_hidden do_length(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ScalarInteger(length(x));
 }
 
-R_len_t attribute_hidden dispatch_length(SEXP x, SEXP call, SEXP rho)
+attribute_hidden R_len_t dispatch_length(SEXP x, SEXP call, SEXP rho)
 {
     R_xlen_t len = dispatch_xlength(x, call, rho);
 #ifdef LONG_VECTOR_SUPPORT
@@ -521,7 +521,7 @@ R_len_t attribute_hidden dispatch_length(SEXP x, SEXP call, SEXP rho)
     return (R_len_t)len;
 }
 
-R_xlen_t attribute_hidden dispatch_xlength(SEXP x, SEXP call, SEXP rho)
+attribute_hidden R_xlen_t dispatch_xlength(SEXP x, SEXP call, SEXP rho)
 {
     static SEXP length_op = NULL;
     if (isObject(x))
@@ -569,7 +569,7 @@ static SEXP do_lengths_long(SEXP x, SEXP call, SEXP rho)
 }
 #endif
 
-SEXP attribute_hidden do_lengths(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_lengths(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     SEXP x = CAR(args), ans;
@@ -641,7 +641,7 @@ SEXP attribute_hidden do_lengths(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-SEXP attribute_hidden do_rowscols(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_rowscols(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     SEXP dim = CAR(args);
@@ -1311,7 +1311,7 @@ static void tccrossprod(Rcomplex *x, int nrx, int ncx, Rcomplex *y, int nry, int
 }
 
 /* "%*%" (op = 0), crossprod (op = 1) or tcrossprod (op = 2) */
-SEXP attribute_hidden do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int ldx, ldy, nrx, ncx, nry, ncy, mode;
     SEXP x = CAR(args), y = CADR(args), xdims, ydims, ans;
@@ -1671,7 +1671,7 @@ SEXP attribute_hidden do_matprod(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 #undef YDIMS_ET_CETERA
 
-SEXP attribute_hidden do_transpose(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_transpose(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP a, r, dims, dimnames, dimnamesnames = R_NilValue, ndimnamesnames, rnames, cnames;
     int ldim, ncol = 0, nrow = 0;
@@ -1836,7 +1836,7 @@ not_matrix:
         lj += iip[itmp] * stride[itmp];
 
 /* aperm (a, perm, resize = TRUE) */
-SEXP attribute_hidden do_aperm(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_aperm(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP a, perm, r, dimsa, dimsr, dna;
     int i, j, n, itmp;
@@ -2052,7 +2052,7 @@ SEXP attribute_hidden do_aperm(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 
 /* colSums(x, n, p, na.rm) and friends */
-SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, ans = R_NilValue;
     int type;
@@ -2281,7 +2281,7 @@ SEXP attribute_hidden do_colsum(SEXP call, SEXP op, SEXP args, SEXP rho)
 */
 
 /* array(data, dim, dimnames) */
-SEXP attribute_hidden do_array(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_array(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP vals, ans, dims, dimnames;
     R_xlen_t lendat, i, nans;
@@ -2405,7 +2405,7 @@ SEXP attribute_hidden do_array(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-SEXP attribute_hidden do_diag(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_diag(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, x, snr, snc;
     int nr = 1, nc = 1, nprotect = 1;
@@ -2494,7 +2494,7 @@ SEXP attribute_hidden do_diag(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 
 /* backsolve(r, b, k, upper.tri, transpose) */
-SEXP attribute_hidden do_backsolve(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_backsolve(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int nprot = 1;
     checkArity(op, args);
@@ -2555,7 +2555,7 @@ SEXP attribute_hidden do_backsolve(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 
 /* max.col(m, ties.method) */
-SEXP attribute_hidden do_maxcol(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_maxcol(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     SEXP m = CAR(args);

@@ -1694,7 +1694,7 @@ static R_INLINE int R_DispatchOrEvalSP(SEXP call, SEXP op, const char *generic, 
 /* and the remainder of args have not.  If this was called directly */
 /* the CAR(args) and the last arg won't have been. */
 
-SEXP attribute_hidden do_subassign(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_subassign(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans;
 
@@ -1726,7 +1726,7 @@ static void NORET errorMissingSubscript(SEXP x)
     UNPROTECT(1); /* cond; not reached */
 }
 
-SEXP attribute_hidden do_subassign_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_subassign_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP subs, x, y;
     int nsubs, oldtype;
@@ -1883,7 +1883,7 @@ static SEXP DeleteOneVectorListItem(SEXP x, R_xlen_t which)
  * args[1] =: x    = object being subscripted
  * args[2] =: subs = list of subscripts
  * args[3] =: y    = replacement values */
-SEXP attribute_hidden do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_subassign2(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans;
 
@@ -1904,7 +1904,7 @@ static void NORET errorOutOfBoundsSEXP(SEXP x, int subscript, SEXP sindex)
     UNPROTECT(1); /* cond; not reached */
 }
 
-SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP dims, indx, names, newname, subs, x, xtop, xup, y, thesub = R_NilValue, xOrig = R_NilValue;
     int i, ndims, nsubs, which, len = 0 /* -Wall */;
@@ -2287,7 +2287,7 @@ SEXP attribute_hidden do_subassign2_dflt(SEXP call, SEXP op, SEXP args, SEXP rho
    to get DispatchOrEval to work we need to first translate it
    to a string
 */
-SEXP attribute_hidden do_subassign3(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_subassign3(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, nlist = R_NilValue;
 

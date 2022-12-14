@@ -140,7 +140,7 @@ unsigned long attribute_hidden get_duplicate_counter(void)
     return duplicate_counter;
 }
 
-void attribute_hidden reset_duplicate_counter(void)
+attribute_hidden void reset_duplicate_counter(void)
 {
     duplicate_counter = 0;
     return;
@@ -540,7 +540,7 @@ void copyMatrix(SEXP s, SEXP t, Rboolean byrow)
 }
 
 #define COPY_WITH_RECYCLE(VALTYPE, TNAME)                                                                              \
-    void attribute_hidden xcopy##TNAME##WithRecycle(VALTYPE *dst, VALTYPE *src, R_xlen_t dstart, R_xlen_t n,           \
+    attribute_hidden void xcopy##TNAME##WithRecycle(VALTYPE *dst, VALTYPE *src, R_xlen_t dstart, R_xlen_t n,           \
                                                     R_xlen_t nsrc)                                                     \
     {                                                                                                                  \
                                                                                                                        \
@@ -575,7 +575,7 @@ COPY_WITH_RECYCLE(Rbyte, Raw)        /* xcopyRawWithRecycle */
 COPY_WITH_RECYCLE(double, Real)      /* xcopyRealWithRecycle */
 
 #define COPY_ELT_WITH_RECYCLE(TNAME, GETELT, SETELT)                                                                   \
-    void attribute_hidden xcopy##TNAME##WithRecycle(SEXP dst, SEXP src, R_xlen_t dstart, R_xlen_t n, R_xlen_t nsrc)    \
+    attribute_hidden void xcopy##TNAME##WithRecycle(SEXP dst, SEXP src, R_xlen_t dstart, R_xlen_t n, R_xlen_t nsrc)    \
     {                                                                                                                  \
                                                                                                                        \
         if (nsrc >= n)                                                                                                 \
@@ -606,7 +606,7 @@ COPY_ELT_WITH_RECYCLE(String, STRING_ELT, SET_STRING_ELT)    /* xcopyStringWithR
 COPY_ELT_WITH_RECYCLE(Vector, VECTOR_ELT_LD, SET_VECTOR_ELT) /* xcopyVectorWithRecycle */
 
 #define FILL_WITH_RECYCLE(VALTYPE, TNAME)                                                                              \
-    void attribute_hidden xfill##TNAME##MatrixWithRecycle(VALTYPE *dst, VALTYPE *src, R_xlen_t dstart, R_xlen_t drows, \
+    attribute_hidden void xfill##TNAME##MatrixWithRecycle(VALTYPE *dst, VALTYPE *src, R_xlen_t dstart, R_xlen_t drows, \
                                                           R_xlen_t srows, R_xlen_t cols, R_xlen_t nsrc)                \
     {                                                                                                                  \
                                                                                                                        \
@@ -621,7 +621,7 @@ FILL_WITH_RECYCLE(Rbyte, Raw)        /* xfillRawMatrixWithRecycle */
 FILL_WITH_RECYCLE(double, Real)      /* xfillRealMatrixWithRecycle */
 
 #define FILL_ELT_WITH_RECYCLE(TNAME, GETELT, SETELT)                                                                   \
-    void attribute_hidden xfill##TNAME##MatrixWithRecycle(SEXP dst, SEXP src, R_xlen_t dstart, R_xlen_t drows,         \
+    attribute_hidden void xfill##TNAME##MatrixWithRecycle(SEXP dst, SEXP src, R_xlen_t dstart, R_xlen_t drows,         \
                                                           R_xlen_t srows, R_xlen_t cols, R_xlen_t nsrc)                \
     {                                                                                                                  \
                                                                                                                        \

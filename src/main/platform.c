@@ -136,7 +136,7 @@ static void Init_R_Platform(SEXP rho)
 
 void Init_R_Machine(SEXP rho); // from machine.c
 
-void attribute_hidden Init_R_Variables(SEXP rho)
+attribute_hidden void Init_R_Variables(SEXP rho)
 {
     Init_R_Machine(rho);
     Init_R_Platform(rho);
@@ -201,7 +201,7 @@ static int defaultLocaleACP(const char *ctype)
    known_to_be_latin1, utf8locale, latin1locale and mbcslocale) */
 
 static char codeset[R_CODESET_MAX + 1];
-void attribute_hidden R_check_locale(void)
+attribute_hidden void R_check_locale(void)
 {
     known_to_be_utf8 = utf8locale = FALSE;
     known_to_be_latin1 = latin1locale = FALSE;
@@ -306,7 +306,7 @@ static char *R_Date(void)
     return s;
 }
 
-SEXP attribute_hidden do_date(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_date(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     return mkString(R_Date());
@@ -320,7 +320,7 @@ SEXP attribute_hidden do_date(SEXP call, SEXP op, SEXP args, SEXP rho)
  */
 
 // .Internal so manages R_alloc stack used by acopy_string
-SEXP attribute_hidden do_fileshow(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_fileshow(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP fn, tl, hd, pg;
     const char **f, **h, *t, *pager = NULL /* -Wall */;
@@ -427,7 +427,7 @@ append_error:
     return status;
 }
 
-SEXP attribute_hidden do_fileappend(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_fileappend(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP f1, f2, ans;
     int n, n1, n2;
@@ -504,7 +504,7 @@ done:
     return ans;
 }
 
-SEXP attribute_hidden do_filecreate(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_filecreate(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP fn, ans;
     FILE *fp;
@@ -539,7 +539,7 @@ SEXP attribute_hidden do_filecreate(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-SEXP attribute_hidden do_fileremove(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_fileremove(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP f, ans;
     int i, n;
@@ -579,7 +579,7 @@ SEXP attribute_hidden do_fileremove(SEXP call, SEXP op, SEXP args, SEXP rho)
    have, and which many people report granting in the Policy Editor
    fails to work.
 */
-SEXP attribute_hidden do_filesymlink(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_filesymlink(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP f1, f2;
     int n, n1, n2;
@@ -669,7 +669,7 @@ SEXP attribute_hidden do_filesymlink(SEXP call, SEXP op, SEXP args, SEXP rho)
 #endif
 }
 
-SEXP attribute_hidden do_filelink(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_filelink(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP f1, f2;
     int n, n1, n2;
@@ -751,7 +751,7 @@ int Rwin_rename(char *from, char *to); /* in src/gnuwin32/extra.c */
 int Rwin_wrename(const wchar_t *from, const wchar_t *to);
 #endif
 
-SEXP attribute_hidden do_filerename(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_filerename(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP f1, f2, ans;
     int i, n1, n2;
@@ -845,7 +845,7 @@ SEXP attribute_hidden do_filerename(SEXP call, SEXP op, SEXP args, SEXP rho)
 #define STAT_TIMESPEC_NS(st, st_xtim) ((st).st_xtim.st__tim.tv_nsec)
 #endif
 
-SEXP attribute_hidden do_fileinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_fileinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP fn, ans, ansnames, fsize, mtime, ctime, atime, isdir, mode, xxclass;
 #ifdef UNIX_EXTRAS
@@ -1080,7 +1080,7 @@ SEXP attribute_hidden do_fileinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-SEXP attribute_hidden do_direxists(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_direxists(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP fn, ans;
 
@@ -1263,7 +1263,7 @@ static void list_files(const char *dnp, const char *stem, int *count, SEXP *pans
 }
 #undef IF_MATCH_ADD_TO_ANS
 
-SEXP attribute_hidden do_listfiles(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_listfiles(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int countmax = 128;
 
@@ -1403,7 +1403,7 @@ static void list_dirs(const char *dnp, const char *nm, Rboolean full, int *count
     }
 }
 
-SEXP attribute_hidden do_listdirs(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_listdirs(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int countmax = 128;
 
@@ -1441,7 +1441,7 @@ SEXP attribute_hidden do_listdirs(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-SEXP attribute_hidden do_Rhome(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_Rhome(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     char *path;
     checkArity(op, args);
@@ -1458,7 +1458,7 @@ static Rboolean attribute_hidden R_WFileExists(const wchar_t *path)
 }
 #endif
 
-SEXP attribute_hidden do_fileexists(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_fileexists(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP file, ans;
     int i, nfile;
@@ -1499,7 +1499,7 @@ SEXP attribute_hidden do_fileexists(SEXP call, SEXP op, SEXP args, SEXP rho)
 #define CHOOSEBUFSIZE 1024
 
 #ifndef Win32
-SEXP attribute_hidden do_filechoose(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_filechoose(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int _new, len;
     char buf[CHOOSEBUFSIZE];
@@ -1523,7 +1523,7 @@ extern int winAccessW(const wchar_t *path, int mode);
 #endif
 
 /* we require 'access' as from 2.12.0 */
-SEXP attribute_hidden do_fileaccess(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_fileaccess(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP fn, ans;
     int i, n, mode, modemask;
@@ -1781,7 +1781,7 @@ static int R_unlink(const char *name, int recursive, int force)
 /* Note that wildcards are allowed in 'names' */
 #ifdef Win32
 #include <dos_wglob.h>
-SEXP attribute_hidden do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP fn;
     int i, j, nfiles, res, failures = 0, recursive, force, expand;
@@ -1838,7 +1838,7 @@ SEXP attribute_hidden do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
 #include <glob.h>
 #endif
 
-SEXP attribute_hidden do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP fn;
     int i, nfiles, failures = 0, recursive, force, expand;
@@ -1906,7 +1906,7 @@ SEXP attribute_hidden do_unlink(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 #endif
 
-SEXP attribute_hidden do_getlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_getlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int cat;
     char *p = NULL;
@@ -1961,7 +1961,7 @@ SEXP attribute_hidden do_getlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 
 /* Locale specs are always ASCII */
-SEXP attribute_hidden do_setlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_setlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP locale = CADR(args), ans;
     int cat;
@@ -2086,7 +2086,7 @@ SEXP attribute_hidden do_setlocale(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-SEXP attribute_hidden do_localeconv(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_localeconv(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, ansnames;
     struct lconv *lc = localeconv();
@@ -2146,7 +2146,7 @@ SEXP attribute_hidden do_localeconv(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 
 /* .Internal function for path.expand */
-SEXP attribute_hidden do_pathexpand(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_pathexpand(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP fn, ans;
     int i, n;
@@ -2216,7 +2216,7 @@ static Rboolean R_can_use_X11(void)
 #endif
 
 /* only actually used on Unix */
-SEXP attribute_hidden do_capabilitiesX11(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_capabilitiesX11(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
 #ifdef Unix
@@ -2226,7 +2226,7 @@ SEXP attribute_hidden do_capabilitiesX11(SEXP call, SEXP op, SEXP args, SEXP rho
 #endif
 }
 
-SEXP attribute_hidden do_capabilities(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_capabilities(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, ansnames;
     int i = 0;
@@ -2404,7 +2404,7 @@ SEXP attribute_hidden do_capabilities(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-SEXP attribute_hidden do_sysgetpid(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_sysgetpid(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     return ScalarInteger(getpid());
@@ -2418,7 +2418,7 @@ SEXP attribute_hidden do_sysgetpid(SEXP call, SEXP op, SEXP args, SEXP rho)
 */
 #ifndef Win32
 /* mkdir is defined in <sys/stat.h> */
-SEXP attribute_hidden do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP path;
     int res, show, recursive, mode, serrno = 0;
@@ -2489,7 +2489,7 @@ end:
 }
 #else           /* Win32 */
 #include <io.h> /* mkdir is defined here */
-SEXP attribute_hidden do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_dircreate(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP path;
     wchar_t *p, dir[MAX_PATH];
@@ -2741,7 +2741,7 @@ static int do_copy(const wchar_t *from, const wchar_t *name, const wchar_t *to, 
 
 /* file.copy(from, to, overwrite, recursive, copy.mode, copy.date)
  * --------- Windows */
-SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     SEXP fn = CAR(args);
@@ -3061,7 +3061,7 @@ static int do_copy(const char *from, const char *name, const char *to, int over,
 
 /* file.copy(from, to, overwrite, recursive, copy.mode, copy.date)
  * --------- Unix-alike */
-SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     SEXP fn = CAR(args);
@@ -3144,7 +3144,7 @@ SEXP attribute_hidden do_filecopy(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 #endif
 
-SEXP attribute_hidden do_l10n_info(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_l10n_info(SEXP call, SEXP op, SEXP args, SEXP env)
 {
 #ifdef Win32
     int len = 5;
@@ -3178,7 +3178,7 @@ SEXP attribute_hidden do_l10n_info(SEXP call, SEXP op, SEXP args, SEXP env)
 
 /* do_normalizepath moved to util.c in R 2.13.0 */
 
-SEXP attribute_hidden do_syschmod(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_syschmod(SEXP call, SEXP op, SEXP args, SEXP env)
 {
 #ifdef HAVE_CHMOD
     SEXP paths, smode, ans;
@@ -3250,7 +3250,7 @@ SEXP attribute_hidden do_syschmod(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif
 }
 
-SEXP attribute_hidden do_sysumask(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_sysumask(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans;
     int mode;
@@ -3282,7 +3282,7 @@ SEXP attribute_hidden do_sysumask(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-SEXP attribute_hidden do_readlink(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_readlink(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     SEXP paths = CAR(args);
@@ -3319,7 +3319,7 @@ SEXP attribute_hidden do_readlink(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-SEXP attribute_hidden do_Cstack_info(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_Cstack_info(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, nms;
 
@@ -3374,7 +3374,7 @@ static int winSetFileTime(const char *fn, double ftime)
 }
 #endif
 
-SEXP attribute_hidden do_setFileTime(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_setFileTime(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     const char *fn;
@@ -3445,7 +3445,7 @@ typedef struct TMN_REPARSE_DATA_BUFFER
     WCHAR PathBuffer[1024];
 } TMN_REPARSE_DATA_BUFFER;
 
-SEXP attribute_hidden do_mkjunction(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_mkjunction(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     wchar_t from[10000];
     const wchar_t *to;
@@ -3540,7 +3540,7 @@ extern void *dlsym(void *handle, const char *symbol);
    without loading any modules; libraries available via modules are
    treated individually (libcurlVersion(), La_version(), etc)
 */
-SEXP attribute_hidden do_eSoftVersion(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_eSoftVersion(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     SEXP ans = PROTECT(allocVector(STRSXP, 9));
@@ -3687,7 +3687,7 @@ SEXP attribute_hidden do_eSoftVersion(SEXP call, SEXP op, SEXP args, SEXP rho)
 /* platform-specific */
 extern void Rsleep(double timeint);
 
-SEXP attribute_hidden do_syssleep(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_syssleep(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     double time = asReal(CAR(args));

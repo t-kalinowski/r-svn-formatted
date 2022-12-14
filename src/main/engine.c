@@ -3491,7 +3491,7 @@ SEXP do_playSnapshot(SEXP call, SEXP op, SEXP args, SEXP env)
  ****************************************************************
  */
 
-SEXP attribute_hidden do_recordGraphics(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_recordGraphics(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP x, evalenv, retval;
     pGEDevDesc dd = GEcurrentDevice();

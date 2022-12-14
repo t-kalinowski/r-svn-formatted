@@ -39,7 +39,7 @@ static SEXP checkArgIsSymbol(SEXP x)
 
    FUN must be unevaluated for use in e.g. bquote .
 */
-SEXP attribute_hidden do_lapply(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_lapply(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     PROTECT_INDEX pidx, cidx;
 
@@ -98,7 +98,7 @@ SEXP attribute_hidden do_lapply(SEXP call, SEXP op, SEXP args, SEXP rho)
 /* .Internal(vapply(X, FUN, FUN.VALUE, USE.NAMES)) */
 
 /* This is a special .Internal */
-SEXP attribute_hidden do_vapply(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_vapply(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP R_fcall, ans, names = R_NilValue, rowNames = R_NilValue, X, XX, FUN, value, dim_v;
     R_xlen_t i, n;
@@ -380,7 +380,7 @@ static SEXP do_one(SEXP X, SEXP FUN, SEXP classes, SEXP deflt, Rboolean replace,
         return lazy_duplicate(deflt);
 }
 
-SEXP attribute_hidden do_rapply(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_rapply(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP X, FUN, classes, deflt, how, ans;
 
@@ -452,7 +452,7 @@ static int islistfactor(SEXP X)
 
 /* is this a tree with only factor leaves? */
 // currently only called from unlist()
-SEXP attribute_hidden do_islistfactor(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_islistfactor(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     SEXP X = CAR(args);

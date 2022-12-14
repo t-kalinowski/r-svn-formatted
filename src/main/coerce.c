@@ -309,7 +309,7 @@ Rcomplex attribute_hidden ComplexFromString(SEXP x, int *warn)
     return z;
 }
 
-SEXP attribute_hidden StringFromLogical(int x, int *warn)
+attribute_hidden SEXP StringFromLogical(int x, int *warn)
 {
     int w;
     formatLogical(&x, 1, &w);
@@ -323,7 +323,7 @@ SEXP attribute_hidden StringFromLogical(int x, int *warn)
 #define SFI_CACHE_SIZE 512
 static SEXP sficache = NULL;
 
-SEXP attribute_hidden StringFromInteger(int x, int *warn)
+attribute_hidden SEXP StringFromInteger(int x, int *warn)
 {
     if (x == NA_INTEGER)
         return NA_STRING;
@@ -354,7 +354,7 @@ SEXP attribute_hidden StringFromInteger(int x, int *warn)
 
 // dropTrailing0 and StringFromReal moved to printutils.c
 
-SEXP attribute_hidden StringFromComplex(Rcomplex x, int *warn)
+attribute_hidden SEXP StringFromComplex(Rcomplex x, int *warn)
 {
     int wr, dr, er, wi, di, ei;
     formatComplex(&x, 1, &wr, &dr, &er, &wi, &di, &ei, 0);
@@ -1550,7 +1550,7 @@ static SEXP ascommon(SEXP call, SEXP u, SEXPTYPE type)
     return u; /* -Wall */
 }
 
-SEXP attribute_hidden do_asCharacterFactor(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_asCharacterFactor(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x;
     checkArity(op, args);
@@ -1587,7 +1587,7 @@ SEXP asCharacterFactor(SEXP x)
     return ans;
 }
 
-SEXP attribute_hidden do_asatomic(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_asatomic(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, x;
 
@@ -1663,7 +1663,7 @@ static int do_is_as_vector_experiments = -1;
 
 /* NB: as.vector is used for several other as.xxxx, including
    as.expression, as.list, as.pairlist, as.symbol, (as.single) */
-SEXP attribute_hidden do_asvector(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_asvector(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans;
     /* DispatchOrEval internal generic: as.vector */
@@ -1765,7 +1765,7 @@ SEXP attribute_hidden do_asvector(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-SEXP attribute_hidden do_asfunction(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_asfunction(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP arglist, envir, names, pargs, body;
     int i, n;
@@ -1832,7 +1832,7 @@ static void parse_cleanup(void *data)
 /* primitive,
  * op = 0 : str2lang(s)
  * op = 1 : str2expression(text) */
-SEXP attribute_hidden do_str2lang(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_str2lang(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     // check1arg(args, call, "s");
@@ -1901,7 +1901,7 @@ SEXP attribute_hidden do_str2lang(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 
 /* primitive */
-SEXP attribute_hidden do_ascall(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_ascall(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     check1arg(args, call, "x");
@@ -2144,7 +2144,7 @@ Rcomplex asComplex(SEXP x)
 }
 
 /* return the type (= "detailed mode") of the SEXP */
-SEXP attribute_hidden do_typeof(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_typeof(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     return type2rstr(TYPEOF(CAR(args)));
@@ -2153,7 +2153,7 @@ SEXP attribute_hidden do_typeof(SEXP call, SEXP op, SEXP args, SEXP rho)
 /* Define many of the <primitive> "is.xxx" functions :
    Note that  isNull, isNumeric, etc are defined in util.c or ../include/Rinlinedfuns.h
 */
-SEXP attribute_hidden do_is(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_is(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans;
     checkArity(op, args);
@@ -2333,7 +2333,7 @@ SEXP attribute_hidden do_is(SEXP call, SEXP op, SEXP args, SEXP rho)
  */
 
 // is.vector(x, mode) :
-SEXP attribute_hidden do_isvector(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_isvector(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     SEXP x = CAR(args);
@@ -2433,7 +2433,7 @@ static R_INLINE void copyDimAndNames(SEXP x, SEXP ans)
     }
 }
 
-SEXP attribute_hidden do_isna(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_isna(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, x;
     R_xlen_t i, n;
@@ -2659,7 +2659,7 @@ static Rboolean anyNA(SEXP call, SEXP op, SEXP args, SEXP env)
     return FALSE;
 } // anyNA()
 
-SEXP attribute_hidden do_anyNA(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_anyNA(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans;
     static SEXP do_anyNA_formals = NULL;
@@ -2692,7 +2692,7 @@ SEXP attribute_hidden do_anyNA(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-SEXP attribute_hidden do_isnan(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_isnan(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, x;
     R_xlen_t i, n;
@@ -2742,7 +2742,7 @@ SEXP attribute_hidden do_isnan(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-SEXP attribute_hidden do_isfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_isfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, x, names, dims;
     R_xlen_t i, n;
@@ -2814,7 +2814,7 @@ SEXP attribute_hidden do_isfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
     return ans;
 }
 
-SEXP attribute_hidden do_isinfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_isinfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, x, names, dims;
     double xr, xi;
@@ -2896,7 +2896,7 @@ SEXP attribute_hidden do_isinfinite(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 
 /* This is a primitive SPECIALSXP */
-SEXP attribute_hidden do_call(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_call(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP rest, evargs, rfun, tmp;
 
@@ -2926,7 +2926,7 @@ SEXP attribute_hidden do_call(SEXP call, SEXP op, SEXP args, SEXP rho)
     return (rfun);
 }
 
-SEXP attribute_hidden do_docall(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_docall(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP c, fun, names, envir;
     int i, n;
@@ -3045,7 +3045,7 @@ SEXP substitute(SEXP lang, SEXP rho)
 /* Work through a list doing substitute on the
    elements taking particular care to handle '...' */
 
-SEXP attribute_hidden substituteList(SEXP el, SEXP rho)
+attribute_hidden SEXP substituteList(SEXP el, SEXP rho)
 {
     SEXP h, p = R_NilValue, res = R_NilValue;
 
@@ -3107,7 +3107,7 @@ SEXP attribute_hidden substituteList(SEXP el, SEXP rho)
 }
 
 /* This is a primitive SPECIALSXP */
-SEXP attribute_hidden do_substitute(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_substitute(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP argList, env, s, t;
     static SEXP do_substitute_formals = NULL;
@@ -3140,7 +3140,7 @@ SEXP attribute_hidden do_substitute(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 
 /* This is a primitive SPECIALSXP */
-SEXP attribute_hidden do_quote(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_quote(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     check1arg(args, call, "expr");
@@ -3310,7 +3310,7 @@ static SEXP R_set_class(SEXP obj, SEXP value, SEXP call)
     return obj;
 }
 
-SEXP attribute_hidden R_do_set_class(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP R_do_set_class(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans;
     checkArity(op, args);
@@ -3324,7 +3324,7 @@ SEXP attribute_hidden R_do_set_class(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 /* primitive */
-SEXP attribute_hidden do_storage_mode(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_storage_mode(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /* storage.mode(obj) <- value */
     SEXP obj, value, ans;

@@ -62,7 +62,7 @@ static Rboolean random1(double (*f)(double), double *a, R_xlen_t na, double *x, 
 /* "do_random1" - random sampling from 1 parameter families. */
 /* See switch below for distributions. */
 
-SEXP attribute_hidden do_random1(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_random1(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, a;
     R_xlen_t i, n, na;
@@ -148,7 +148,7 @@ static Rboolean random2(double (*f)(double, double), double *a, R_xlen_t na, dou
 /* "do_random2" - random sampling from 2 parameter families. */
 /* See switch below for distributions. */
 
-SEXP attribute_hidden do_random2(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_random2(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, a, b;
     R_xlen_t i, n, na, nb;
@@ -245,7 +245,7 @@ static Rboolean random3(double (*f)(double, double, double), double *a, R_xlen_t
 /* "do_random3" - random sampling from 3 parameter families. */
 /* See switch below for distributions. */
 
-SEXP attribute_hidden do_random3(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_random3(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, a, b, c;
     R_xlen_t i, n, na, nb, nc;
@@ -496,7 +496,7 @@ static void FixupProb(double *p, int n, int require_k, Rboolean replace)
 /* do_sample - probability sampling with/without replacement.
    .Internal(sample(n, size, replace, prob))
 */
-SEXP attribute_hidden do_sample(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_sample(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP x, y, sn, sk, prob, sreplace;
 

@@ -582,7 +582,7 @@ static void Samp_kind(Sampletype kind)
 
 /*------ .Internal interface ------------------------*/
 
-SEXP attribute_hidden do_RNGkind(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_RNGkind(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, rng, norm, sample;
 
@@ -612,7 +612,7 @@ SEXP attribute_hidden do_RNGkind(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-SEXP attribute_hidden do_setseed(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_setseed(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP skind, nkind, sampkind;
     int seed;

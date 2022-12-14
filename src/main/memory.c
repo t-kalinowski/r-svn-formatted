@@ -462,7 +462,7 @@ R_size_t attribute_hidden R_GetMaxVSize(void)
     return R_MaxVSize * vsfac;
 }
 
-void attribute_hidden R_SetMaxVSize(R_size_t size)
+attribute_hidden void R_SetMaxVSize(R_size_t size)
 {
     if (size == R_SIZE_T_MAX)
         return;
@@ -475,18 +475,18 @@ R_size_t attribute_hidden R_GetMaxNSize(void)
     return R_MaxNSize;
 }
 
-void attribute_hidden R_SetMaxNSize(R_size_t size)
+attribute_hidden void R_SetMaxNSize(R_size_t size)
 {
     if (size >= R_NSize)
         R_MaxNSize = size;
 }
 
-void attribute_hidden R_SetPPSize(R_size_t size)
+attribute_hidden void R_SetPPSize(R_size_t size)
 {
     R_PPStackSize = (int)size;
 }
 
-SEXP attribute_hidden do_maxVSize(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_maxVSize(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     const double MB = 1048576.0;
     double newval = asReal(CAR(args));
@@ -505,7 +505,7 @@ SEXP attribute_hidden do_maxVSize(SEXP call, SEXP op, SEXP args, SEXP rho)
         return ScalarReal(R_GetMaxVSize() / MB);
 }
 
-SEXP attribute_hidden do_maxNSize(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_maxNSize(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     double newval = asReal(CAR(args));
 
@@ -1722,7 +1722,7 @@ void R_RegisterCFinalizer(SEXP s, R_CFinalizer_t fun)
 
 /* R interface function */
 
-SEXP attribute_hidden do_regFinaliz(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_regFinaliz(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int onexit;
 
@@ -2143,7 +2143,7 @@ void R_gc_torture(int gap, int wait, Rboolean inhibit)
 #endif
 }
 
-SEXP attribute_hidden do_gctorture(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_gctorture(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int gap;
     SEXP old = ScalarLogical(gc_force_wait > 0);
@@ -2168,7 +2168,7 @@ SEXP attribute_hidden do_gctorture(SEXP call, SEXP op, SEXP args, SEXP rho)
     return old;
 }
 
-SEXP attribute_hidden do_gctorture2(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_gctorture2(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int gap, wait;
     Rboolean inhibit;
@@ -2215,7 +2215,7 @@ static void init_gctorture(void)
     }
 }
 
-SEXP attribute_hidden do_gcinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_gcinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     int i;
     SEXP old = ScalarLogical(gc_reporting);
@@ -2228,7 +2228,7 @@ SEXP attribute_hidden do_gcinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 /* reports memory use to profiler in eval.c */
 
-void attribute_hidden get_current_mem(size_t *smallvsize, size_t *largevsize, size_t *nodes)
+attribute_hidden void get_current_mem(size_t *smallvsize, size_t *largevsize, size_t *nodes)
 {
     *smallvsize = R_SmallVallocSize;
     *largevsize = R_LargeVallocSize;
@@ -2236,7 +2236,7 @@ void attribute_hidden get_current_mem(size_t *smallvsize, size_t *largevsize, si
     return;
 }
 
-SEXP attribute_hidden do_gc(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_gc(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP value;
     int ogc, reset_max, full;
@@ -2300,7 +2300,7 @@ static void NORET mem_err_malloc(R_size_t size)
 #define PP_REDZONE_SIZE 1000L
 static int R_StandardPPStackSize, R_RealPPStackSize;
 
-void attribute_hidden InitMemory(void)
+attribute_hidden void InitMemory(void)
 {
     int i;
     int gen;
@@ -2619,7 +2619,7 @@ SEXP cons(SEXP car, SEXP cdr)
     return s;
 }
 
-SEXP attribute_hidden CONS_NR(SEXP car, SEXP cdr)
+attribute_hidden SEXP CONS_NR(SEXP car, SEXP cdr)
 {
     SEXP s;
     if (FORCE_GC || NO_FREE_NODES())
@@ -2721,7 +2721,7 @@ SEXP NewEnvironment(SEXP namelist, SEXP valuelist, SEXP rho)
 
 /* mkPROMISE is defined directly do avoid the need to protect its arguments
    unless a GC will actually occur. */
-SEXP attribute_hidden mkPROMISE(SEXP expr, SEXP rho)
+attribute_hidden SEXP mkPROMISE(SEXP expr, SEXP rho)
 {
     SEXP s;
     if (FORCE_GC || NO_FREE_NODES())
@@ -2768,7 +2768,7 @@ SEXP R_mkEVPROMISE(SEXP expr, SEXP val)
     return prom;
 }
 
-SEXP attribute_hidden R_mkEVPROMISE_NR(SEXP expr, SEXP val)
+attribute_hidden SEXP R_mkEVPROMISE_NR(SEXP expr, SEXP val)
 {
     SEXP prom = mkPROMISE(expr, R_NilValue);
     DISABLE_REFCNT(prom);
@@ -3142,7 +3142,7 @@ SEXP allocVector3(SEXPTYPE type, R_xlen_t length, R_allocator_t *allocator)
 }
 
 /* For future hiding of allocVector(CHARSXP) */
-SEXP attribute_hidden allocCharsxp(R_len_t len)
+attribute_hidden SEXP allocCharsxp(R_len_t len)
 {
     return allocVector(intCHARSXP, len);
 }
@@ -3245,7 +3245,7 @@ static double gctimes[5], gcstarttimes[5];
 static Rboolean gctime_enabled = FALSE;
 
 /* this is primitive */
-SEXP attribute_hidden do_gctime(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_gctime(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans;
 
@@ -3299,7 +3299,7 @@ static void gc_end_timing(void)
 #ifdef THREADCHECK
 #if !defined(Win32) && defined(HAVE_PTHREAD)
 #include <pthread.h>
-void attribute_hidden R_check_thread(const char *s)
+attribute_hidden void R_check_thread(const char *s)
 {
     static Rboolean main_thread_inited = FALSE;
     static pthread_t main_thread;
@@ -3319,7 +3319,7 @@ void attribute_hidden R_check_thread(const char *s)
 }
 #else
 /* This could be implemented for Windows using their threading API */
-void attribute_hidden R_check_thread(const char *s)
+attribute_hidden void R_check_thread(const char *s)
 {
 }
 #endif
@@ -3474,7 +3474,7 @@ again:
     }
 }
 
-SEXP attribute_hidden do_memoryprofile(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_memoryprofile(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, nms;
     int i, tmp;
@@ -4601,7 +4601,7 @@ attribute_hidden void R_expand_binding_value(SEXP b)
 #endif
 }
 
-void attribute_hidden R_args_enable_refcnt(SEXP args)
+attribute_hidden void R_args_enable_refcnt(SEXP args)
 {
 #ifdef SWITCH_TO_REFCNT
     /* args is escaping into user C code and might get captured, so
@@ -4622,7 +4622,7 @@ void attribute_hidden R_args_enable_refcnt(SEXP args)
 #endif
 }
 
-void attribute_hidden R_try_clear_args_refcnt(SEXP args)
+attribute_hidden void R_try_clear_args_refcnt(SEXP args)
 {
 #ifdef SWITCH_TO_REFCNT
     /* If args excapes properly its reference count will have been
@@ -5076,15 +5076,15 @@ Rboolean attribute_hidden(BINDING_IS_LOCKED)(SEXP b)
 {
     return BINDING_IS_LOCKED(CHK(b));
 }
-void attribute_hidden(SET_ACTIVE_BINDING_BIT)(SEXP b)
+attribute_hidden void(SET_ACTIVE_BINDING_BIT)(SEXP b)
 {
     SET_ACTIVE_BINDING_BIT(CHK(b));
 }
-void attribute_hidden(LOCK_BINDING)(SEXP b)
+attribute_hidden void(LOCK_BINDING)(SEXP b)
 {
     LOCK_BINDING(CHK(b));
 }
-void attribute_hidden(UNLOCK_BINDING)(SEXP b)
+attribute_hidden void(UNLOCK_BINDING)(SEXP b)
 {
     UNLOCK_BINDING(CHK(b));
 }
@@ -5163,19 +5163,19 @@ int(IS_UTF8)(SEXP x)
 {
     return IS_UTF8(CHK(x));
 }
-void attribute_hidden(SET_BYTES)(SEXP x)
+attribute_hidden void(SET_BYTES)(SEXP x)
 {
     SET_BYTES(CHK(x));
 }
-void attribute_hidden(SET_LATIN1)(SEXP x)
+attribute_hidden void(SET_LATIN1)(SEXP x)
 {
     SET_LATIN1(CHK(x));
 }
-void attribute_hidden(SET_UTF8)(SEXP x)
+attribute_hidden void(SET_UTF8)(SEXP x)
 {
     SET_UTF8(CHK(x));
 }
-void attribute_hidden(SET_ASCII)(SEXP x)
+attribute_hidden void(SET_ASCII)(SEXP x)
 {
     SET_ASCII(CHK(x));
 }
@@ -5183,7 +5183,7 @@ int(ENC_KNOWN)(SEXP x)
 {
     return ENC_KNOWN(CHK(x));
 }
-void attribute_hidden(SET_CACHED)(SEXP x)
+attribute_hidden void(SET_CACHED)(SEXP x)
 {
     SET_CACHED(CHK(x));
 }
@@ -5344,7 +5344,7 @@ void R_FreeStringBuffer(R_StringBuffer *buf)
     }
 }
 
-void attribute_hidden R_FreeStringBufferL(R_StringBuffer *buf)
+attribute_hidden void R_FreeStringBufferL(R_StringBuffer *buf)
 {
     if (buf->bufsize > buf->defaultSize)
     {

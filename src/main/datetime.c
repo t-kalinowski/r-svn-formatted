@@ -1089,7 +1089,7 @@ static SEXP /* 'const' globals */
 // We assume time zone names/abbreviations are ASCII, as all known ones are.
 
 // .Internal(as.POSIXlt(x, tz)) -- called only from  as.POSIXlt.POSIXct()
-SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     SEXP x = PROTECT(coerceVector(CAR(args), REALSXP));
@@ -1194,7 +1194,7 @@ SEXP attribute_hidden do_asPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
     error(_("zero-length component [[%d]] in non-empty \"POSIXlt\" structure"), (_i_) + 1)
 
 // .Internal(as.POSIXct(x, tz)) -- called only from  as.POSIXct.POSIXlt()
-SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
 
@@ -1301,7 +1301,7 @@ SEXP attribute_hidden do_asPOSIXct(SEXP call, SEXP op, SEXP args, SEXP env)
 } // as.POSIXct()
 
 // .Internal(format.POSIXlt(x, format, usetz)) aka strftime
-SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     SEXP x = PROTECT(duplicate(CAR(args))); /* maybe coerced in next line */
@@ -1556,7 +1556,7 @@ SEXP attribute_hidden do_formatPOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 // .Internal(strptime(as.character(x), format, tz))
-SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
 
@@ -1712,7 +1712,7 @@ SEXP attribute_hidden do_strptime(SEXP call, SEXP op, SEXP args, SEXP env)
 
 // .Internal(Date2POSIXlt(x)) called from as.POSIXlt.Date
 // It always returns a date-time in UTC.
-SEXP attribute_hidden do_D2POSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_D2POSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     SEXP x = PROTECT(coerceVector(CAR(args), REALSXP));
@@ -1785,7 +1785,7 @@ SEXP attribute_hidden do_D2POSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 // .Internal(POSIXlt2Date(x)), called from as.Date.POSIXlt(x)
-SEXP attribute_hidden do_POSIXlt2D(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_POSIXlt2D(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     SEXP x = PROTECT(duplicate(CAR(args)));
@@ -2084,7 +2084,7 @@ SEXP balancePOSIXlt(SEXP x, Rboolean fill_only, Rboolean do_class)
 
 // .Internal(balancePOSIXlt(x, fill.only, classed)) called from R's balancePOSIXlt()
 // or primitive  unCfillPOSIXlt(x)
-SEXP attribute_hidden do_balancePOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_balancePOSIXlt(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     /*
        This may be called on objects generated on other versions of R

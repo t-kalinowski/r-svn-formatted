@@ -215,7 +215,7 @@ const char *R_ExpandFileName(const char *s)
  *  7) PLATFORM DEPENDENT FUNCTIONS
  */
 
-SEXP attribute_hidden do_machine(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_machine(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     return mkString("Unix");
@@ -736,7 +736,7 @@ static void NORET cmdError(const char *cmd, const char *format, ...)
 }
 
 #define INTERN_BUFSIZE 8096
-SEXP attribute_hidden do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP tlist = R_NilValue;
     int intern = 0;
@@ -935,7 +935,7 @@ SEXP attribute_hidden do_system(SEXP call, SEXP op, SEXP args, SEXP rho)
 #include <pwd.h>
 #endif
 
-SEXP attribute_hidden do_sysinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_sysinfo(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans, ansnames;
     struct utsname name;

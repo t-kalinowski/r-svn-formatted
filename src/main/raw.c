@@ -27,7 +27,7 @@
 #define isRaw(x) (TYPEOF(x) == RAWSXP)
 
 /* charToRaw works at byte level, ignores encoding */
-SEXP attribute_hidden do_charToRaw(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_charToRaw(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, x = CAR(args);
     int nc;
@@ -45,7 +45,7 @@ SEXP attribute_hidden do_charToRaw(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 /* <UTF8>  rawToChar should work at byte level */
-SEXP attribute_hidden do_rawToChar(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_rawToChar(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, x = CAR(args);
 
@@ -84,7 +84,7 @@ SEXP attribute_hidden do_rawToChar(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-SEXP attribute_hidden do_rawShift(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_rawShift(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
 
@@ -106,7 +106,7 @@ SEXP attribute_hidden do_rawShift(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-SEXP attribute_hidden do_rawToBits(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_rawToBits(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
 
@@ -127,7 +127,7 @@ SEXP attribute_hidden do_rawToBits(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-SEXP attribute_hidden do_intToBits(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_intToBits(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     SEXP x = PROTECT(coerceVector(CAR(args), INTSXP));
@@ -154,7 +154,7 @@ SEXP attribute_hidden do_intToBits(SEXP call, SEXP op, SEXP args, SEXP env)
 #endif /* WORDS_BIGENDIAN */
 
 // split "real" (double = 64-bit) into two 32-bit parts (which the user can split to bits):
-SEXP attribute_hidden do_numToInts(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_numToInts(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     SEXP x = PROTECT(coerceVector(CAR(args), REALSXP));
@@ -178,7 +178,7 @@ SEXP attribute_hidden do_numToInts(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 // split "real", i.e. = double = 64-bitd, to bits (<==> do_intToBits( do_numToInts(..) .. ))
-SEXP attribute_hidden do_numToBits(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_numToBits(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     SEXP x = PROTECT(coerceVector(CAR(args), REALSXP));
@@ -203,7 +203,7 @@ SEXP attribute_hidden do_numToBits(SEXP call, SEXP op, SEXP args, SEXP env)
     return ans;
 }
 
-SEXP attribute_hidden do_packBits(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_packBits(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     SEXP ans, x = CAR(args), stype = CADR(args);
@@ -353,7 +353,7 @@ int mbrtoint(int *w, const char *s)
     /* return -2; not reached */
 }
 
-SEXP attribute_hidden do_utf8ToInt(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_utf8ToInt(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, x = CAR(args);
     int tmp, used = 0; /* -Wall */
@@ -418,7 +418,7 @@ static size_t inttomb(char *s, const int wc)
 
 #include <R_ext/RS.h> /* for R_Calloc/R_Free */
 
-SEXP attribute_hidden do_intToUtf8(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_intToUtf8(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP ans, x;
     int multiple, s_pair;

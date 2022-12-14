@@ -259,7 +259,7 @@ Rboolean isUnsorted(SEXP x, Rboolean strictly)
     (XLENGTH(x) > 1 &&                                                                                                 \
      ((TYPEOF(x) == INTSXP && FIRST_LAST_DIFF(x, INTEGER)) || (TYPEOF(x) == REALSXP && FIRST_LAST_DIFF(x, REAL))))
 
-SEXP attribute_hidden do_isunsorted(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_isunsorted(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     if (length(args) == 2)
     {
@@ -387,7 +387,7 @@ void R_csort(Rcomplex *x, int n)
 }
 
 /* used in platform.c */
-void attribute_hidden ssort(SEXP *x, int n)
+attribute_hidden void ssort(SEXP *x, int n)
 {
     SEXP v;
     sort_body(scmp, PROTECT, UNPROTECT(1))
@@ -478,7 +478,7 @@ void revsort(double *a, int *ib, int n)
     }
 }
 
-SEXP attribute_hidden do_sort(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_sort(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ans;
     Rboolean decreasing;
@@ -590,7 +590,7 @@ static int makeSortEnum(int decr, int nalast)
 }
 
 /* .Internal(sorted_fpass(x, decr, nalast)) */
-SEXP attribute_hidden do_sorted_fpass(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_sorted_fpass(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
 
@@ -889,7 +889,7 @@ static void Psort0(SEXP x, R_xlen_t lo, R_xlen_t hi, R_xlen_t *ind, int nind)
 }
 
 /* FUNCTION psort(x, indices) */
-SEXP attribute_hidden do_psort(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_psort(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     SEXP x = CAR(args), p = CADR(args);
@@ -1296,7 +1296,7 @@ void R_orderVector1(int *indx, int n, SEXP x, Rboolean nalast, Rboolean decreasi
    Also used by do_options and  ../gnuwin32/extra.c
    Called with rho != R_NilValue only from do_rank, when NAs are not involved.
  */
-void attribute_hidden orderVector1(int *indx, int n, SEXP key, Rboolean nalast, Rboolean decreasing, SEXP rho)
+attribute_hidden void orderVector1(int *indx, int n, SEXP key, Rboolean nalast, Rboolean decreasing, SEXP rho)
 {
     int c, i, j, h, t, lo = 0, hi = n - 1;
     int itmp, *isna = NULL, numna = 0;
@@ -1629,7 +1629,7 @@ static void orderVector1l(R_xlen_t *indx, R_xlen_t n, SEXP key, Rboolean nalast,
 #endif
 
 /* FUNCTION order(...) */
-SEXP attribute_hidden do_order(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_order(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP ap, ans = R_NilValue /* -Wall */;
     int narg = 0;
@@ -1715,7 +1715,7 @@ SEXP attribute_hidden do_order(SEXP call, SEXP op, SEXP args, SEXP rho)
 }
 
 /* FUNCTION: rank(x, length, ties.method) */
-SEXP attribute_hidden do_rank(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_rank(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP rank, x;
     int *ik = NULL /* -Wall */;
@@ -1848,7 +1848,7 @@ SEXP attribute_hidden do_rank(SEXP call, SEXP op, SEXP args, SEXP rho)
     return rank;
 }
 
-SEXP attribute_hidden do_xtfrm(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_xtfrm(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     SEXP fn, prargs, ans;
 

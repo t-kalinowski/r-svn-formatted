@@ -139,7 +139,7 @@ void R_init_base(DllInfo *); /* In Registration.c */
 
 static void initLoadedDLL(void);
 
-void attribute_hidden InitDynload(void)
+attribute_hidden void InitDynload(void)
 {
     initLoadedDLL();
     int which = addDLL(Rstrdup("base"), "base", NULL);
@@ -430,7 +430,7 @@ static SEXP getSymbolComponent(SEXP sSym, const char *name, SEXPTYPE type, int o
 /* This takes a list objects of any of the classes CRoutine, CallRoutine,
    FortranRoutine, ExternalRoutine containing registration info in either
    numParameters or nativeParamTypes and registers them using R_registerRoutines. */
-SEXP attribute_hidden Rf_registerRoutines(SEXP sSymbolList)
+attribute_hidden SEXP Rf_registerRoutines(SEXP sSymbolList)
 {
     DllInfo *dll = NULL;
     int i = 0, n;
@@ -1093,7 +1093,7 @@ static DL_FUNC R_getDLLRegisteredSymbol(DllInfo *info, const char *name, R_Regis
     return ((DL_FUNC)NULL);
 }
 
-DL_FUNC attribute_hidden R_dlsym(DllInfo *info, char const *name, R_RegisteredNativeSymbol *symbol)
+attribute_hidden DL_FUNC R_dlsym(DllInfo *info, char const *name, R_RegisteredNativeSymbol *symbol)
 {
     size_t len = strlen(name) + 4;
     char buf[len]; /* up to 3 additional underscores */
@@ -1224,7 +1224,7 @@ static void GetFullDLLPath(SEXP call, char *buf, const char *const path)
   call routines from "incomplete" DLLs.
  */
 
-SEXP attribute_hidden do_dynload(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_dynload(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     char buf[2 * PATH_MAX];
     DllInfo *info;
@@ -1240,7 +1240,7 @@ SEXP attribute_hidden do_dynload(SEXP call, SEXP op, SEXP args, SEXP env)
     return (Rf_MakeDLLInfo(info));
 }
 
-SEXP attribute_hidden do_dynunload(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_dynunload(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     char buf[2 * PATH_MAX];
 
@@ -1425,7 +1425,7 @@ static SEXP Rf_MakeDLLInfo(DllInfo *info)
   registered, we add a class identifying the interface type
   for which it is intended (i.e. .C(), .Call(), etc.)
  */
-SEXP attribute_hidden R_getSymbolInfo(SEXP sname, SEXP spackage, SEXP withRegistrationInfo)
+attribute_hidden SEXP R_getSymbolInfo(SEXP sname, SEXP spackage, SEXP withRegistrationInfo)
 {
     const void *vmax = vmaxget();
     const char *package, *name;
@@ -1465,7 +1465,7 @@ SEXP attribute_hidden R_getSymbolInfo(SEXP sname, SEXP spackage, SEXP withRegist
     return sym;
 }
 
-SEXP attribute_hidden R_getDllTable(void)
+attribute_hidden SEXP R_getDllTable(void)
 {
     int i;
     SEXP ans, nm;
@@ -1638,7 +1638,7 @@ static SEXP R_getRoutineSymbols(NativeSymbolType type, DllInfo *info)
     return (ans);
 }
 
-SEXP attribute_hidden R_getRegisteredRoutines(SEXP dll)
+attribute_hidden SEXP R_getRegisteredRoutines(SEXP dll)
 {
     DllInfo *info;
     SEXP ans, snames;
@@ -1667,20 +1667,20 @@ SEXP attribute_hidden R_getRegisteredRoutines(SEXP dll)
     return (ans);
 }
 
-SEXP attribute_hidden do_getSymbolInfo(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_getSymbolInfo(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     return R_getSymbolInfo(CAR(args), CADR(args), CADDR(args));
 }
 
 /* .Internal(getLoadedDLLs()) */
-SEXP attribute_hidden do_getDllTable(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_getDllTable(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     return R_getDllTable();
 }
 
-SEXP attribute_hidden do_getRegisteredRoutines(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_getRegisteredRoutines(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     return R_getRegisteredRoutines(CAR(args));
