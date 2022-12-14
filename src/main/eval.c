@@ -340,7 +340,7 @@ static void doprof(int sig) /* sig is ignored in Windows */
                 }
                 else
                 {
-                    sprintf(itembuf, "<Anonymous>");
+                    snprintf(itembuf, PROFITEMMAX, "<Anonymous>");
                 }
 
                 strcat(buf, itembuf);

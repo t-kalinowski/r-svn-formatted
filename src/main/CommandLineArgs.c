@@ -247,7 +247,7 @@ void R_common_command_line(int *pac, char **argv, Rstart Rp)
                     if (ierr < 0)
                         snprintf(msg, 1024, _("WARNING: '%s' value is invalid: ignored"), *av);
                     else
-                        sprintf(msg, _("WARNING: %s: too large and ignored"), *av);
+                        snprintf(msg, 1024, _("WARNING: %s: too large and ignored"), *av);
                     R_ShowMessage(msg);
                 }
                 else
