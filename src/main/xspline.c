@@ -468,8 +468,8 @@ static Rboolean compute_open_spline(int n, double *x, double *y, double *s, Rboo
 {
     int k;
     double step = 0.0 /* -Wall */;
-    double px[4];
-    double py[4];
+    double px[4] = {0., 0., 0., 0.}; /* -Wmaybe-uninitialized */
+    double py[4] = {0., 0., 0., 0.}; /* -Wmaybe-uninitialized */
     double ps[4] = {0., 0., 0., 0.};
 
     max_points = 0;
