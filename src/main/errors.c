@@ -2668,7 +2668,7 @@ SEXP R_tryCatch(SEXP (*body)(void *), void *bdata, SEXP conds, SEXP (*handler)(S
     return val;
 }
 
-SEXP do_tryCatchHelper(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_tryCatchHelper(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP eptr = CAR(args);
     SEXP sw = CADR(args);

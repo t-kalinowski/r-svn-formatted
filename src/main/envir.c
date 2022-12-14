@@ -4146,14 +4146,14 @@ SEXP do_getNSValue(SEXP call, SEXP op, SEXP args, SEXP rho)
     return R_getNSValue(R_NilValue, ns, name, exported);
 }
 
-SEXP do_colon2(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_colon2(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     /* use R_NilValue for the call to avoid changing the error message */
     return R_getNSValue(R_NilValue, CAR(args), CADR(args), TRUE);
 }
 
-SEXP do_colon3(SEXP call, SEXP op, SEXP args, SEXP rho)
+attribute_hidden SEXP do_colon3(SEXP call, SEXP op, SEXP args, SEXP rho)
 {
     checkArity(op, args);
     return R_getNSValue(call, CAR(args), CADR(args), FALSE);

@@ -8977,7 +8977,7 @@ SEXP attribute_hidden do_getconst(SEXP call, SEXP op, SEXP args, SEXP env)
 }
 
 #ifdef BC_PROFILING
-SEXP do_bcprofcounts(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_bcprofcounts(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP val;
     int i;
@@ -8996,7 +8996,7 @@ static void dobcprof(int sig)
     signal(SIGPROF, dobcprof);
 }
 
-SEXP do_bcprofstart(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_bcprofstart(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     struct itimerval itv;
     int interval;
@@ -9037,7 +9037,7 @@ static void dobcprof_null(int sig)
     signal(SIGPROF, dobcprof_null);
 }
 
-SEXP do_bcprofstop(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP do_bcprofstop(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     struct itimerval itv;
 
@@ -9057,17 +9057,17 @@ SEXP do_bcprofstop(SEXP call, SEXP op, SEXP args, SEXP env)
     return R_NilValue;
 }
 #else
-SEXP NORET do_bcprofcounts(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP NORET do_bcprofcounts(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     error(_("byte code profiling is not supported in this build"));
 }
-SEXP NORET do_bcprofstart(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP NORET do_bcprofstart(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     error(_("byte code profiling is not supported in this build"));
 }
-SEXP NORET do_bcprofstop(SEXP call, SEXP op, SEXP args, SEXP env)
+attribute_hidden SEXP NORET do_bcprofstop(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     checkArity(op, args);
     error(_("byte code profiling is not supported in this build"));
