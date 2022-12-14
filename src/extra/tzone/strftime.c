@@ -320,8 +320,8 @@ static char *_fmt(const char *format, const stm *const t, char *pt, const char *
                 continue;
             case 's': {
                 stm tm = *t;
-                char buf[22]; // <= 19 digs + sign + terminator
-                int_fast64_t mkt = R_mktime(&tm);
+                char buf[22];                     // <= 19 digs + sign + terminator
+                int_fast64_t mkt = R_mktime(&tm); // we know -1 is valid tine
                 (void)snprintf(buf, 22, "%lld", (long long)mkt);
                 pt = _add(buf, pt, ptlim);
             }
@@ -407,7 +407,7 @@ static char *_fmt(const char *format, const stm *const t, char *pt, const char *
                 pt = _yconv(t->tm_year, TM_YEAR_BASE, 0, 1, pt, ptlim);
                 continue;
             case 'Y':
-                // Changed to agree wirh glibc
+                // Changed to allow glibc's way (no padding)
                 //		pt = _yconv(t->tm_year, TM_YEAR_BASE, 1, 1, pt, ptlim);
                 {
                     char buf[20] = "%";
@@ -423,7 +423,10 @@ static char *_fmt(const char *format, const stm *const t, char *pt, const char *
                     if (pad == '0' || pad == '+')
                         strcat(buf, "0");
                     if (width > 0)
-                        sprintf(buf + strlen(buf), "%u", width);
+                    {
+                        size_t sz = strlen(buf);
+                        snprintf(buf + sz, 20 - sz, "%u", width);
+                    }
                     if (pad == '+' && year > 9999)
                         strcat(buf, "+");
                     strcat(buf, "d");
