@@ -182,7 +182,7 @@ attribute_hidden const char *EncodeEnvironment(SEXP x)
     else if (x == R_BaseEnv)
         snprintf(ch, 1000, "<environment: base>");
     else if (x == R_EmptyEnv)
-        sprintf(ch, "<environment: R_EmptyEnv>");
+        snprintf(ch, 1000, "<environment: R_EmptyEnv>");
     else if (R_IsPackageEnv(x))
         snprintf(ch, 1000, "<environment: %s>", translateChar(STRING_ELT(R_PackageEnvName(x), 0)));
     else if (R_IsNamespaceEnv(x))
@@ -1182,7 +1182,7 @@ attribute_hidden void Rcons_vprintf(const char *format, va_list arg)
         /* dummy_vfprintf protects against `res` being counted short; we do not
            do that here */
         p = R_alloc(res + 1, sizeof(char));
-        vsprintf(p, format, arg);
+        vnsprintf(p, res + 1, format, arg);
     }
     else if (res < 0)
     {
