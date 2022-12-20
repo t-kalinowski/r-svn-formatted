@@ -2068,6 +2068,10 @@ int consolereads(control c, const char *prompt, char *buf, int len, int addtohis
 {
     ConsoleData p = getdata(c);
 
+    if (p->cursor_blink == 2)
+        /* The caret may be visible via SetUpCaret flag (see newconsole) for
+           startup. It needs to be hidden now to be protected agains redraw. */
+        showcaret(c, 0);
     wchar_t *cur_line, *P;
     wchar_t *aLine;
     int ns0 = NUMLINES, w0 = 0, pre_prompt_len;
@@ -2665,6 +2669,14 @@ console newconsole(char *name, int flags)
                        CONSOLE, consolebuffered, consoleblink);
     if (!p)
         return NULL;
+    if (p->cursor_blink == 2)
+        /* Arrange for a dummy caret to be created when the new window
+           gets focus. This is to help NVDA (screen reader) to choose
+           a correct display model and correctly detect characters
+           under the caret. After the first redraw, which will happen
+           right away in consolereads, a correct caret will be set up
+           and destroyed/restored when loosing/gaining focus. */
+        flags |= SetUpCaret;
     c = (console)newwindow(name, rect(consolex, consoley, WIDTH, HEIGHT), flags | TrackMouse | VScrollbar | HScrollbar);
     HEIGHT = getheight(c);
     WIDTH = getwidth(c);
