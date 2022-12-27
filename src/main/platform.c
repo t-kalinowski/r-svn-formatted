@@ -47,7 +47,6 @@
 #include <string.h>
 #include <stdlib.h> /* for realpath */
 #include <time.h>   /* for ctime */
-
 #include <errno.h>
 
 #ifdef HAVE_UNISTD_H
