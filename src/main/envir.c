@@ -2591,6 +2591,16 @@ attribute_hidden SEXP do_emptyenv(SEXP call, SEXP op, SEXP args, SEXP rho)
 
 */
 
+static void set_attach_frame_value(SEXP p, SEXP s)
+{
+    defineVar(TAG(p), lazy_duplicate(CAR(p)), s);
+    if (IS_ACTIVE_BINDING(p))
+    {
+        SEXP np = findVarLocInFrame(s, TAG(p), NULL);
+        SET_ACTIVE_BINDING_BIT(np);
+    }
+}
+
 attribute_hidden SEXP do_attach(SEXP call, SEXP op, SEXP args, SEXP env)
 {
     SEXP name, s, t, x;
@@ -2635,7 +2645,7 @@ attribute_hidden SEXP do_attach(SEXP call, SEXP op, SEXP args, SEXP env)
                     p = VECTOR_ELT(HASHTAB(loadenv), i);
                     while (p != R_NilValue)
                     {
-                        defineVar(TAG(p), lazy_duplicate(CAR(p)), s);
+                        set_attach_frame_value(p, s);
                         p = CDR(p);
                     }
                 }
@@ -2644,7 +2654,7 @@ attribute_hidden SEXP do_attach(SEXP call, SEXP op, SEXP args, SEXP env)
             else
             {
                 for (p = FRAME(loadenv); p != R_NilValue; p = CDR(p))
-                    defineVar(TAG(p), lazy_duplicate(CAR(p)), s);
+                    set_attach_frame_value(p, s);
             }
         }
         else
